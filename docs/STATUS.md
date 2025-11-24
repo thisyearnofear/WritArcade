@@ -6,9 +6,9 @@
 
 ## 📊 Current Phase
 
-**Phase 2: Game Generation & Customization** (Week 3)
+**Phase 3: Smart Contracts & Payments** (Week 4)
 
-Status: **85% Complete** (API & UI done, testing pending)
+Status: **20% Complete** (Contracts written, integration pending)
 
 ---
 
@@ -59,9 +59,11 @@ Status: **85% Complete** (API & UI done, testing pending)
 - [ ] Verify error handling works correctly
 
 ### Week 4: Writer Coin Payments
-- [ ] Write `WriterCoinPayment.sol` smart contract
-- [ ] Write `GameNFT.sol` (ERC-721)
+- [x] Write `WriterCoinPayment.sol` smart contract
+- [x] Write `GameNFT.sol` (ERC-721)
 - [ ] Deploy to Base Sepolia testnet
+- [ ] Create payment initiation API endpoint
+- [ ] Create payment verification API endpoint
 - [ ] Integrate Farcaster Wallet payment flow
 - [ ] Add "Pay with [Writer Coin]" button
 - [ ] Verify payment on-chain before game generation
@@ -147,14 +149,15 @@ WritArcade/
 │   ├── farcaster.ts                      ✅ DONE - Mini App SDK integration
 │   ├── writerCoins.ts                    ✅ DONE - Configuration
 │   ├── paragraph.ts                      ✅ DONE - Article fetching
-│   └── (contracts.ts)                    ⏳ WEEK 4
+│   └── contracts.ts                      ✅ WEEK 4 - Smart contract helpers
 │
 ├── public/.well-known/
 │   └── farcaster.json                    ✅ DONE - Mini App manifest
 │
-├── contracts/                            ⏳ WEEK 4
-│   ├── WriterCoinPayment.sol
-│   └── GameNFT.sol
+├── contracts/                            ✅ WEEK 4 (Smart contracts)
+│   ├── WriterCoinPayment.sol             ✅ Revenue distribution & payment processing
+│   ├── GameNFT.sol                       ✅ ERC-721 NFT contract
+│   └── deploy.md                         ✅ Deployment guide
 │
 └── docs/
     ├── STATUS.md                         ✅ NEW - This file
