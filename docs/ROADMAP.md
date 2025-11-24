@@ -29,8 +29,8 @@ Each version is a unique creative expression, making games collectible and incen
 
 ## Current Status
 
-**Phase 3: Smart Contracts & Payments** (Week 4)
-Status: **60% Complete** (Contracts + UI done, Farcaster wallet pending)
+**Phase 3: Smart Contracts & Payments** (Week 4-5)
+Status: **95% Complete** (Deployed to mainnet, Farcaster wallet integrated)
 
 ### ✅ Completed Tasks
 
@@ -66,8 +66,11 @@ Status: **60% Complete** (Contracts + UI done, Farcaster wallet pending)
 - ✅ Update database schema with articleUrl, writerCoinId, difficulty
 
 #### Smart Contracts & Payments (Week 4)
-- ✅ Write `WriterCoinPayment.sol` smart contract
-- ✅ Write `GameNFT.sol` (ERC-721)
+- ✅ Write `WriterCoinPayment.sol` smart contract (updatable costs, configurable distributions)
+- ✅ Write `GameNFT.sol` (ERC-721 with metadata)
+- ✅ Deploy GameNFT to Base mainnet: `0x2b440Ee81A783E41eec5dEfFB2D1Daa6E35bCC34`
+- ✅ Deploy WriterCoinPayment to Base mainnet: `0x786AC70DAf4d9779B93EC2DE244cBA66a2b44B80`
+- ✅ Whitelist AVC token in WriterCoinPayment
 - ✅ Create payment initiation API endpoint (`/api/mini-app/payments/initiate`)
 - ✅ Create payment verification API endpoint (`/api/mini-app/payments/verify`)
 - ✅ Create PaymentButton component (UI for payment flow)
@@ -75,11 +78,18 @@ Status: **60% Complete** (Contracts + UI done, Farcaster wallet pending)
 - ✅ Add "Mint as NFT" button to GamePlayer (with modal & payment)
 - ✅ Handle payment errors gracefully
 
+#### Farcaster Wallet Integration (Week 4-5)
+- ✅ Create `lib/farcasterWallet.ts` module for transaction signing
+- ✅ Implement `sendTransaction()` via Farcaster Wallet SDK
+- ✅ Add ABI encoding for contract calls (encodePayForGameGeneration, encodePayForMinting)
+- ✅ Integrate real wallet flow in PaymentButton
+- ✅ Get user wallet address from Farcaster context
+- ✅ Implement on-chain verification via viem for Base network
+- ✅ Full documentation: FARCASTER_INTEGRATION.md
+
 ### 🚧 In Progress / Blockers
-- Testing game generation with all 6 genre/difficulty combinations
+- Testing payment flow end-to-end on mainnet
 - Database schema migration (pending DB access)
-- Farcaster Wallet integration (sendTransaction)
-- Deploy to Base Sepolia testnet
 
 ## Implementation Phases (MVP: 5 Weeks)
 
@@ -104,32 +114,40 @@ Status: **60% Complete** (Contracts + UI done, Farcaster wallet pending)
 - [x] Stream game response back to user
 - [x] Play game in Mini App
 
-### Phase 3: Writer Coin Payments (Week 4) ⏳ 60% COMPLETE
+### Phase 3: Writer Coin Payments (Week 4-5) ✅ 95% COMPLETE
 **Week 4a**: Smart Contracts
-- [x] Deploy GamePayment.sol (Base Sepolia, then mainnet)
-- [x] Deploy GameNFT.sol (Base Sepolia, then mainnet)
-- [x] Test token transfers with Farcaster Wallet
+- [x] Deploy GameNFT.sol to Base mainnet
+- [x] Deploy WriterCoinPayment.sol to Base mainnet
+- [x] Configure treasury addresses and cost structure
+- [x] Whitelist AVC token
 
 **Week 4b**: Payment Flow
 - [x] Add "Pay with Writer Coin" button
-- [x] Trigger Farcaster Wallet approval flow
-- [ ] Verify payment on-chain
-- [ ] Unlock game generation after payment
-- [ ] Handle payment errors gracefully
+- [x] Integrate Farcaster Wallet approval flow
+- [x] Verify payment on-chain via viem
+- [x] Unlock game generation after payment
+- [x] Handle payment errors gracefully
 
-### Phase 4: NFT Minting + Launch (Week 5) ⏳ NOT STARTED
-**Week 5a**: NFT Minting
-- [ ] Add "Mint as NFT" button post-game
-- [ ] Generate NFT metadata (title, description, image)
-- [ ] Call GameNFT.mintGame() contract
-- [ ] Track minted NFT in database
-- [ ] Show NFT in user profile
+**Week 5**: Farcaster Wallet Integration
+- [x] Implement sendTransaction() for signing
+- [x] ABI encoding for contract function calls
+- [x] Real wallet flow in PaymentButton
+- [x] On-chain verification for Base mainnet
+- [x] Complete documentation
 
-**Week 5b**: Polish & Launch
-- [ ] Fix bugs found in testing
-- [ ] Optimize image/metadata generation
+### Phase 4: Launch & Polish (Week 5) ⏳ NEXT
+**Week 5a**: Testing & Polish
+- [ ] End-to-end payment flow testing on mainnet
+- [ ] User acceptance testing
+- [ ] Error handling and edge cases
+- [ ] Performance optimization
+
+**Week 5b**: Launch Preparation
+- [ ] Database migrations
+- [ ] Create launch post/cast
+- [ ] Prepare community communication
 - [ ] Deploy to Farcaster production
-- [ ] Create launch plan for Farcaster community
+- [ ] Monitoring and alerts
 
 ## Next Immediate Actions
 
@@ -260,14 +278,13 @@ Estimated effort for Week 4: **3-4 days**
 
 ## Deployment Status
 
-| Environment | Status | Notes |
-|-------------|--------|-------|
-| Dev | ✅ Ready | Local testing working |
-| Vercel (staging) | ✅ Ready | Can deploy anytime |
-| Farcaster (testnet) | ⏳ Week 4 | After smart contracts |
-| Base Sepolia | ⏳ Week 4 | Contract deployment |
-| Farcaster (mainnet) | ⏳ Week 5 | Launch |
-| Base Mainnet | ⏳ Week 5 | Production contracts |
+| Environment | Status | Contract Address | Notes |
+|-------------|--------|------------------|-------|
+| Dev | ✅ Ready | N/A | Local testing working |
+| Vercel (staging) | ✅ Ready | N/A | Can deploy anytime |
+| Base Mainnet | ✅ Live | GameNFT: `0x2b440Ee81A783E41eec5dEfFB2D1Daa6E35bCC34` | Deployed, AVC whitelisted |
+| Base Mainnet | ✅ Live | WriterCoinPayment: `0x786AC70DAf4d9779B93EC2DE244cBA66a2b44B80` | Deployed, configured |
+| Farcaster (mainnet) | ⏳ Week 5 | N/A | End-to-end testing in progress |
 
 ## Architecture Principles (Active)
 
