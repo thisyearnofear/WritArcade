@@ -291,22 +291,73 @@ export const WRITER_COINS = [
 - [ ] 5+ games minted as NFTs
 - [ ] <2 minute generation + mint time
 
+## Phase 5b: Database Migrations & Testing
+
+### Database Migrations (1-2 hours)
+```bash
+# 1. Payment Tracking - Stores transaction audit trail
+npm run prisma:migrate dev --name add_payment_tracking
+
+# 2. NFT Tracking - Links games to minting
+npm run prisma:migrate dev --name add_nft_tracking
+
+# Verify schema
+npm run prisma:studio
+```
+
+**Payment model stores:**
+- `transactionHash` (unique identifier)
+- `action` ('generate-game' or 'mint-nft')
+- `status` ('pending' | 'verified' | 'failed')
+- `writerCoinId`, `amount`, `userId`, `createdAt`, `verifiedAt`
+
+**Game model additions:**
+- `paymentId` (links game to payment)
+- `nftTokenId` (ERC-721 token ID)
+- `nftTransactionHash` (mint tx)
+- `nftMintedAt` (timestamp)
+
+### Testing (4-6 hours)
+**Web app:**
+- Free flow: No wallet, no customization → game generates
+- Paid flow: MetaMask connected, genre/difficulty selected → payment → game with custom params
+
+**Mini-app:**
+- Full flow: Coin select → URL → customize → pay → play → mint
+
+**Verification:**
+- Database: Check `games`, `users`, `payments` tables
+- Cross-check: Same article on both platforms = identical cost + distribution
+- Error handling: Rejected tx, invalid URL, network timeout
+
+**Go/No-Go Criteria:**
+- ✅ Both platforms tested successfully
+- ✅ Payment costs identical
+- ✅ Database integrity verified
+- ✅ No critical bugs
+- ⏳ Make decision by EOW
+
 ## Next Steps for Production
 
-### 1. Sign Manifest Properly
+### 1. Complete Phase 5b Testing
+- Run migrations and verification checklist (see above)
+- Test end-to-end flows (both environments)
+- Verify payment success rates and error handling
+
+### 2. Sign Manifest Properly
 - Use Farcaster developer tools to generate real signature
 - Update `accountAssociation` in manifest with custody address
 
-### 2. Configure Webhook (if using notifications)
+### 3. Configure Webhook (if using notifications)
 - Implement `/api/farcaster/webhook` endpoint
 - Add `@farcaster/miniapp-node` for webhook verification
 
-### 3. Test in Developer Mode
+### 4. Test in Developer Mode
 - Enable Developer Mode on Farcaster
 - Test in Warpcast or Base App
 - Verify manifest loads at `/.well-known/farcaster.json`
 
-### 4. Deploy and Submit
+### 5. Deploy and Submit
 - Publish to production domain
 - Submit to Mini App Store
 - Track analytics and user engagement

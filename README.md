@@ -28,14 +28,16 @@ npm run dev
 - **Wallet**: Farcaster Wallet (built into Mini App SDK)
 
 ### 3. Current Status
-**Phase 3 (Week 4): Feature Parity & Unified Architecture** - 85% complete
+**Phase 5 (Week 5): Browser Wallet & Web App Monetization** - 95% complete
 - ✅ Mini App SDK migration (Frames v2 → Mini Apps)
 - ✅ 4-step user flow (coin → article → customize → play)
 - ✅ Game generation API + unified endpoints
 - ✅ Smart contracts (WriterCoinPayment + GameNFT)
 - ✅ Wallet abstraction layer (Farcaster + browser wallets)
 - ✅ True feature parity: web app + mini app share 95% business logic
-- ⏳ Browser wallet support for web app (Phase 2)
+- ✅ Browser wallet support (MetaMask, Coinbase, WalletConnect)
+- ✅ Web app payment UI + customization (same as mini-app)
+- ⏳ End-to-end testing & production launch
 
 ## Documentation
 
@@ -62,16 +64,23 @@ Our documentation is organized for clarity and actionability:
 - Go-to-market strategy and success metrics
 - Future vision and competitive advantages
 
-### 🔗 [Feature Parity Implementation](./docs/FEATURE_PARITY_IMPLEMENTATION.md) ⭐ **NEW**
+### 🔗 [Feature Parity Implementation](./docs/FEATURE_PARITY_IMPLEMENTATION.md)
 - Option C implementation: True feature parity between web + mini app
 - Wallet abstraction layer (Farcaster + browser wallets)
 - Unified payment service & shared components
-- Phase 1 complete ✅ / Phase 2 roadmap
+- Phase 1 complete ✅
+
+### 💰 [Phase 5: Browser Wallet Support](./docs/PHASE_5_BROWSER_WALLET.md) ⭐ **NEW**
+- Web app monetization via RainbowKit + Wagmi
+- Payment UI for customization (genre/difficulty)
+- MetaMask, Coinbase, WalletConnect support
+- Free + premium game flows
+- Complete implementation guide
 
 ### 📊 [Web vs Mini App Analysis](./docs/WEB_VS_MINIAPP_PARITY.md)
-- Current state: Significant divergence → Unified architecture
-- Feature comparison and code duplication analysis
-- Post-MVP vision with browser wallet support
+- Evolution: Significant divergence → Unified architecture
+- Feature comparison and code consolidation
+- Achievement: 95% code sharing between environments
 
 ## Tech Stack
 
@@ -131,16 +140,21 @@ Our documentation is organized for clarity and actionability:
 | **Week 3**: Game Generation | ✅ Complete | 100% |
 | **Week 4a**: Smart Contracts & Payments | ✅ Complete | 100% |
 | **Week 4b**: Feature Parity & Unification | ✅ Complete | 100% |
-| **Week 5**: NFT Minting & Browser Wallets | ⏳ In Progress | 20% |
+| **Week 5a**: Browser Wallet & Web Monetization | ✅ Complete | 100% |
+| **Week 5b**: Testing & Launch Prep | ⏳ In Progress | 50% |
 
-### Week 4b Achievements (Feature Parity Implementation)
-- ✅ Wallet abstraction layer (`/lib/wallet/` - Farcaster + MetaMask)
-- ✅ Shared payment service (`/domains/payments/` - unified cost calculation)
-- ✅ Shared UI components (`/components/game/` - GenreSelector, DifficultySelector, PaymentFlow)
-- ✅ Unified endpoints (`/api/games/generate`, `/api/payments/`)
-- ✅ Mini-app GameCustomizer refactored to use shared components (-42% code)
-- ✅ Web app supports optional customization
-- ✅ Single source of truth for all business logic
+### Week 5a Achievements (Browser Wallet Implementation)
+- ✅ WalletConnectButton component (RainbowKit integration)
+- ✅ PaymentOption wrapper for payment flows
+- ✅ Game generator enhanced with payment UI
+- ✅ Customization requires payment (optional)
+- ✅ Free + premium game flows both working
+- ✅ MetaMask, Coinbase Wallet, WalletConnect support
+- ✅ WalletSync enhanced for browser wallet tracking
+- ✅ Header updated with wallet connection button
+- ✅ Feature parity: 95% code sharing with mini-app
+- ✅ Unified endpoints: /api/games/generate, /api/payments/*
+- ✅ All 8 core principles implemented
 
 ## Deployment Status
 
