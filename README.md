@@ -41,46 +41,30 @@ npm run dev
 
 ## Documentation
 
-Our documentation is organized for clarity and actionability:
+Our documentation is consolidated into 4 comprehensive guides:
 
 ### 📋 [Architecture & System Design](./docs/ARCHITECTURE.md)
-- Farcaster-native identity architecture
-- Database schema and purpose
-- Writer coin economics and revenue distribution
-- Smart contracts (Base blockchain)
-- Deployment checklist and environment setup
+- Unified architecture for web app + mini-app
+- Database schema and payment tracking
+- Smart contracts and writer coin economics
+- Wallet abstraction layer and shared components
 
 ### 🛠️ [Development Guide](./docs/DEVELOPMENT.md)
 - Local setup and configuration
-- Mini App SDK migration guide (Frames v2 → Mini Apps)
-- File structure and key components
+- Mini App SDK integration and wallet setup
+- Payment flow implementation and testing
 - Common issues and troubleshooting
-- Testing procedures and success metrics
 
 ### 🗺️ [Roadmap & Status](./docs/ROADMAP.md)
-- Complete product vision and strategic planning
-- Current development status and completed tasks
-- Implementation phases (5-week MVP timeline)
+- Complete implementation phases and timeline
+- Current status and achievements
 - Go-to-market strategy and success metrics
 - Future vision and competitive advantages
 
-### 🔗 [Feature Parity Implementation](./docs/FEATURE_PARITY_IMPLEMENTATION.md)
-- Option C implementation: True feature parity between web + mini app
-- Wallet abstraction layer (Farcaster + browser wallets)
-- Unified payment service & shared components
-- Phase 1 complete ✅
-
-### 💰 [Phase 5: Browser Wallet Support](./docs/PHASE_5_BROWSER_WALLET.md) ⭐ **NEW**
-- Web app monetization via RainbowKit + Wagmi
-- Payment UI for customization (genre/difficulty)
-- MetaMask, Coinbase, WalletConnect support
-- Free + premium game flows
-- Complete implementation guide
-
-### 📊 [Web vs Mini App Analysis](./docs/WEB_VS_MINIAPP_PARITY.md)
-- Evolution: Significant divergence → Unified architecture
-- Feature comparison and code consolidation
-- Achievement: 95% code sharing between environments
+### 📖 [Documentation Index](./docs/INDEX.md)
+- Navigation guide for all documentation
+- Quick reference for key concepts
+- Development workflow guidance
 
 ## Tech Stack
 

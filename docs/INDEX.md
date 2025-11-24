@@ -1,332 +1,130 @@
 # WritArcade Documentation Index
 
 **Last Updated:** November 24, 2025  
-**Project Status:** Phase 4 Complete - Feature Parity Achieved ✅
+**Status:** Documentation consolidated to 4 key documents
 
 ---
 
 ## Quick Navigation
 
-### 📖 Start Here
-- **[README.md](../README.md)** - Project overview, quick start, current status
-- **[SESSION_SUMMARY.md](./SESSION_SUMMARY.md)** ⭐ **NEW** - Latest progress (Feature Parity Implementation)
+### 📋 [README.md](../README.md) - Project Overview
+- Project vision, quick start instructions, current status
+- Tech stack overview, architecture principles
+- Writer coin information and success metrics
 
-### 🏗️ Architecture & Design
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design, database schema, smart contracts
-- **[FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md)** ⭐ **NEW** - How we unified web + mini app
+### 🏗️ [ARCHITECTURE.md](./ARCHITECTURE.md) - System Design
+- Unified architecture for web app + mini-app
+- Database schema and payment tracking
+- Smart contracts and writer coin economics
+- Wallet abstraction layer and shared components
 
-### 🛠️ Development
-- **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Setup, configuration, troubleshooting
-- **[WEB_VS_MINIAPP_PARITY.md](./WEB_VS_MINIAPP_PARITY.md)** - Feature analysis, code sharing strategy
+### 🛠️ [DEVELOPMENT.md](./DEVELOPMENT.md) - Development Guide
+- Local setup and configuration
+- Mini App SDK integration and wallet setup
+- Payment flow implementation
+- Common issues and testing procedures
 
-### 🗺️ Planning
-- **[ROADMAP.md](./ROADMAP.md)** - Implementation phases, timeline, success metrics
+### 🗺️ [ROADMAP.md](./ROADMAP.md) - Project Timeline & Status
+- Complete implementation phases (5-week MVP)
+- Current status and next steps
+- Go-to-market strategy and success metrics
+- Future vision and competitive advantages
 
 ---
 
-## Document Purposes
+## Document Purpose
 
 ### README.md
-**Purpose:** Project entry point  
 **Audience:** Everyone  
+**Purpose:** Project entry point with vision and quick start  
 **Contains:**
-- Vision statement
+- Project overview and vision statement
 - Quick start instructions
-- Current phase status
-- Documentation links
-- Tech stack
-- Architecture principles
-
-**When to Read:** First time visiting the project
-
----
-
-### SESSION_SUMMARY.md ⭐ NEW
-**Purpose:** Latest session accomplishments  
-**Audience:** Team, stakeholders, future developers  
-**Contains:**
-- Problem statement
-- Solution approach
-- Files changed
-- Core principles alignment
-- Metrics & impact
-- Testing checklist
-- Next steps
-
-**When to Read:** Understanding recent changes (Feature Parity Implementation)
-
----
+- Current development status
+- Tech stack and architecture overview
+- Success metrics and deployment status
 
 ### ARCHITECTURE.md
-**Purpose:** System design reference  
-**Audience:** Backend developers, architects  
+**Audience:** Architects, backend developers  
+**Purpose:** Technical system design reference  
 **Contains:**
-- Farcaster-native identity architecture
-- Database schema with Prisma types
-- Writer coin economics
+- Unified system architecture (web + mini-app)
+- Database schema and payment tracking
 - Smart contracts (Base blockchain)
-- Deployment checklist
-- Environment setup
-
-**When to Read:** Understanding system design, making architectural changes
-
----
-
-### FEATURE_PARITY_IMPLEMENTATION.md ⭐ NEW
-**Purpose:** How web + mini app were unified  
-**Audience:** Frontend developers, architects  
-**Contains:**
-- Architecture consolidation approach
-- Wallet abstraction layer details
-- Shared payment domain
-- Shared UI components
-- Unified endpoints
-- File structure changes
-- Phase 2 roadmap
-- Core principles alignment
-
-**When to Read:** Understanding unification strategy, modifying shared components
-
----
+- Wallet abstraction and shared components
+- Writer coin economics and revenue distribution
 
 ### DEVELOPMENT.md
-**Purpose:** Development guide  
-**Audience:** Frontend developers  
+**Audience:** Frontend and full-stack developers  
+**Purpose:** Development setup and implementation guide  
 **Contains:**
-- Local setup & configuration
-- Mini App SDK migration guide
-- File structure explanation
-- Common issues & troubleshooting
-- Testing procedures
-- Success metrics
-
-**When to Read:** Setting up local development, debugging issues
-
----
-
-### WEB_VS_MINIAPP_PARITY.md
-**Purpose:** Feature analysis & strategy  
-**Audience:** Product, architects  
-**Contains:**
-- Historical context (what changed)
-- Feature comparison (before unification)
-- Code duplication analysis
-- Recommended solutions
-- Post-MVP vision
-
-**When to Read:** Understanding why we unified, planning future features
-
----
+- Local development setup
+- Mini App SDK integration (Frames v2 → Mini Apps)
+- Browser wallet integration (MetaMask, Coinbase, WalletConnect)
+- Payment flow implementation
+- Common issues and testing procedures
 
 ### ROADMAP.md
-**Purpose:** Implementation timeline & milestones  
-**Audience:** Product managers, team leads  
+**Audience:** Product managers, stakeholders, team leads  
+**Purpose:** Project timeline and strategic planning  
 **Contains:**
-- 5-week MVP timeline (Weeks 1-5)
-- Completed phases summary
-- In-progress tasks
-- Blockers & next steps
-- Success metrics
+- Implementation phases and timeline
+- Current status and achievements
 - Go-to-market strategy
-
-**When to Read:** Understanding project timeline, tracking progress
+- Success metrics and future vision
+- Competitive advantages and business model
 
 ---
 
 ## Key Concepts Quick Reference
 
-### Wallet Abstraction
-See: [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md#1-wallet-abstraction-layer)
-- Located: `/lib/wallet/`
-- Supports: Farcaster (mini-app) + MetaMask (web)
-- Key File: `/lib/wallet/index.ts` → `detectWalletProvider()`
+### Unified Architecture
+See: [ARCHITECTURE.md](./ARCHITECTURE.md#unified-system-architecture)
+- **Wallet Abstraction**: Runtime detection between Farcaster + browser wallets
+- **Shared Components**: GenreSelector, DifficultySelector, PaymentFlow
+- **Unified Endpoints**: Same API for both environments
+- **Payment Service**: Single source of truth for cost calculations
 
-### Shared Payment Service
-See: [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md#2-shared-payment-domain)
-- Located: `/domains/payments/`
-- Key File: `/domains/payments/services/payment-cost.service.ts`
-- Used by: All payment endpoints, UI components
+### Development Workflow
+See: [DEVELOPMENT.md](./DEVELOPMENT.md#development-tools)
+- **Local Setup**: `npm install --legacy-peer-deps && npm run dev`
+- **Database**: `npm run db:studio` (Prisma Studio)
+- **Wallet Testing**: MetaMask (web) + Farcaster Wallet (mini-app)
+- **Payment Testing**: Complete flow in both environments
 
-### Shared UI Components
-See: [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md#3-shared-ui-components)
-- Located: `/components/game/`
-- Components: GenreSelector, DifficultySelector, PaymentFlow, CostPreview
-
-### Unified Endpoints
-See: [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md#4-unified-payment-endpoints)
-- Game Generation: `/api/games/generate` (both environments)
-- Payments: `/api/payments/initiate`, `/api/payments/verify` (both environments)
-
----
-
-## Development Workflow
-
-### Adding a New Feature
-
-1. **Understand the context:**
-   - Read [ROADMAP.md](./ROADMAP.md) for current phase
-   - Check [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md) for architecture
-
-2. **Set up locally:**
-   - Follow [DEVELOPMENT.md](./DEVELOPMENT.md#local-setup)
-   - Configure environment variables
-
-3. **Make changes:**
-   - Follow Core Principles (see below)
-   - Use shared components where possible
-   - Add to appropriate domain (`/domains/`, `/components/`, `/lib/`)
-
-4. **Test:**
-   - Verify both mini-app + web app work (see [SESSION_SUMMARY.md](./SESSION_SUMMARY.md#testing-checklist))
-   - Check no duplication introduced
-
-5. **Document:**
-   - Update relevant .md file
-   - Add to appropriate section
-   - Update [ROADMAP.md](./ROADMAP.md) if phase-related
-
----
-
-## Core Principles (Architecture Guide)
-
-Extracted from: [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md#core-principles-alignment)
-
-| Principle | What It Means | Example |
-|-----------|---------------|---------|
-| **ENHANCEMENT FIRST** | Improve existing components before creating new ones | Used shared GenreSelector instead of duplicate in web app |
-| **AGGRESSIVE CONSOLIDATION** | Delete unnecessary code rather than deprecate | Merged 2 payment endpoints into 1 unified endpoint |
-| **DRY** | Single source of truth for all shared logic | `PaymentCostService` used everywhere, never duplicated |
-| **CLEAN** | Clear separation of concerns | Wallet abstraction separate from payment logic separate from UI |
-| **MODULAR** | Composable, testable, independent modules | Each component (wallet, payment, UI) can be tested separately |
-| **ORGANIZED** | Predictable file structure | Domain-driven: `/domains/payments/`, `/lib/wallet/` |
-
----
-
-## Current Phase Status
-
-### Phase 1-3: ✅ Complete
-- Mini app foundation
-- Game generation
-- Writer coin payments
-
-### Phase 4: ✅ Complete
-- Feature parity implementation
-- Wallet abstraction
-- Shared components
-- Unified endpoints
-
-### Phase 5: ⏳ In Progress
-- Browser wallet support for web app
-- End-to-end testing
-- Launch preparation
-
-See [ROADMAP.md](./ROADMAP.md#implementation-phases-mvp-5-weeks) for detailed timeline.
-
----
-
-## Key Files Map
-
-### Critical Files (Read First)
-```
-README.md                                    ← Start here
-docs/ROADMAP.md                             ← Timeline
-docs/ARCHITECTURE.md                        ← System design
-docs/FEATURE_PARITY_IMPLEMENTATION.md       ← Latest achievement
-```
-
-### Wallet Layer
-```
-lib/wallet/
-├── types.ts                               ← WalletProvider interface
-├── farcaster.ts                          ← Farcaster implementation
-├── browser.ts                            ← MetaMask implementation
-└── index.ts                              ← detectWalletProvider()
-```
-
-### Payment Domain
-```
-domains/payments/
-├── types.ts                              ← Payment types
-└── services/payment-cost.service.ts      ← Cost calculations
-```
-
-### Game Components
-```
-components/game/
-├── GenreSelector.tsx
-├── DifficultySelector.tsx
-├── CostPreview.tsx
-└── PaymentFlow.tsx
-```
-
-### Unified Endpoints
-```
-app/api/
-├── games/generate/route.ts              ← Both environments
-├── payments/initiate/route.ts           ← Both environments
-└── payments/verify/route.ts             ← Both environments
-```
-
----
-
-## FAQ
-
-**Q: Why was the original code split between web and mini-app?**  
-A: The original codebase was a web app. When we added the mini-app for Farcaster, we created separate endpoints to avoid breaking the web app. See [WEB_VS_MINIAPP_PARITY.md](./WEB_VS_MINIAPP_PARITY.md).
-
-**Q: What changed in Feature Parity Implementation?**  
-A: We unified all business logic by:
-1. Creating a wallet abstraction layer
-2. Consolidating payment calculations
-3. Extracting shared UI components
-4. Merging endpoints
-
-See [SESSION_SUMMARY.md](./SESSION_SUMMARY.md#solution-implemented-option-c-true-feature-parity).
-
-**Q: Can I use the web app to pay for games now?**  
-A: Not yet. The payment infrastructure is ready (`PaymentFlow` supports MetaMask), but we need to add the wallet connection UI. This is Phase 5, coming next week.
-
-**Q: How much code is shared between web and mini-app now?**  
-A: 95%+ of business logic is shared. Only the wallet type differs (Farcaster vs. MetaMask), and that's abstracted away. See [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md#phase-1-architecture-consolidation).
-
-**Q: Should I create new components or use existing shared ones?**  
-A: Always check `/components/game/` and `/domains/payments/` first. Follow ENHANCEMENT FIRST principle.
+### Current Status
+See: [ROADMAP.md](./ROADMAP.md#current-status-summary)
+- **Phase 5 Complete**: Browser wallet support, feature parity achieved
+- **95% Code Sharing**: Web app + mini-app unified architecture
+- **Production Ready**: Smart contracts deployed, testing in progress
+- **Launch Ready**: Go/no-go decision target EOW
 
 ---
 
 ## Getting Help
 
-- **Setup Issues:** See [DEVELOPMENT.md](./DEVELOPMENT.md#troubleshooting)
-- **Architecture Questions:** See [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **Feature Status:** See [ROADMAP.md](./ROADMAP.md)
-- **Recent Changes:** See [SESSION_SUMMARY.md](./SESSION_SUMMARY.md)
-- **Code Design:** See [FEATURE_PARITY_IMPLEMENTATION.md](./FEATURE_PARITY_IMPLEMENTATION.md)
+- **Setup Issues**: See [DEVELOPMENT.md](./DEVELOPMENT.md#common-issues--solutions)
+- **Architecture Questions**: See [ARCHITECTURE.md](./ARCHITECTURE.md#unified-system-architecture)
+- **Feature Status**: See [ROADMAP.md](./ROADMAP.md#current-status-summary)
+- **Code Design**: See [ARCHITECTURE.md](./ARCHITECTURE.md#unified-system-architecture)
 
 ---
 
-## Document Statistics
+## Current Phase Status
 
-| Document | Lines | Focus | Last Updated |
-|----------|-------|-------|--------------|
-| ARCHITECTURE.md | ~300 | Backend design | Week 4a |
-| DEVELOPMENT.md | ~250 | Frontend setup | Week 3 |
-| FEATURE_PARITY_IMPLEMENTATION.md | ~427 | Unification | Week 4b ⭐ |
-| ROADMAP.md | ~300 | Timeline | Week 4b |
-| SESSION_SUMMARY.md | ~359 | Latest progress | Week 4b ⭐ |
-| WEB_VS_MINIAPP_PARITY.md | ~229 | Analysis | Week 4a |
+### ✅ Phase 1-5 Complete (MVP)
+- Mini app foundation and integration
+- Game generation and customization
+- Writer coin payments and smart contracts
+- Feature parity and unified architecture
+- Browser wallet support
 
-**Total Documentation:** ~1,865 lines of organized, focused guides
-
----
-
-## Next Documentation Updates
-
-- [ ] Add Phase 5 progress (browser wallet)
-- [ ] Database migration guide
-- [ ] Testing procedures (end-to-end)
-- [ ] Deployment guide (to Farcaster production)
-- [ ] Post-launch monitoring guide
+### ⏳ Phase 5b In Progress
+- Database migrations and payment tracking
+- End-to-end testing across both platforms
+- Production deployment preparation
+- Launch readiness assessment
 
 ---
 
-**Status: Documentation complete for Phase 4. Ready for Phase 5 implementation.**
+**Status: Documentation consolidated for Phase 5b launch preparation**
