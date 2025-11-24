@@ -48,7 +48,7 @@ contract GameNFT is ERC721URIStorage, Ownable {
         string articleUrl
     );
     
-    constructor() ERC721("WritArcade Games", "GAME") {}
+    constructor(address initialOwner) ERC721("WritArcade Games", "GAME") Ownable(initialOwner) {}
     
     /**
      * @dev Mint a new game NFT
