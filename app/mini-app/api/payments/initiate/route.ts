@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWriterCoinById } from '@/lib/writerCoins'
+import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
+import type { PaymentInitiateRequest, PaymentInfo } from '@/domains/payments/types'
 import { z } from 'zod'
 
 /**
- * Initiate a payment for game generation or NFT minting
+ * Initiate a payment for game generation or NFT minting (Mini App)
  * 
+ * Uses unified PaymentCostService - same logic as web app
  * This endpoint prepares payment information and returns it to the frontend,
  * where the user approves spending in their Farcaster wallet.
  */
@@ -19,7 +22,7 @@ const initiatePaymentSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const validatedData = initiatePaymentSchema.parse(body)
+    const validatedData = initiatePaymentSchema.parse(body) as PaymentInitiateRequest
 
     // Get writer coin config
     const writerCoin = getWriterCoinById(validatedData.writerCoinId)
@@ -30,36 +33,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Determine the amount based on action
-    const amount = validatedData.action === 'generate-game'
-      ? writerCoin.gameGenerationCost
-      : writerCoin.mintCost
-
-    // Calculate revenue distribution
-    let distribution = {
-      writerShare: 0n,
-      platformShare: 0n,
-      creatorShare: 0n,
-    }
-
-    if (validatedData.action === 'generate-game') {
-      // Game generation distribution: 60% writer, 20% platform, 20% creator
-      distribution.writerShare = (amount * BigInt(writerCoin.revenueDistribution.writer)) / BigInt(100)
-      distribution.platformShare = (amount * BigInt(writerCoin.revenueDistribution.platform)) / BigInt(100)
-      distribution.creatorShare = (amount * BigInt(writerCoin.revenueDistribution.creatorPool)) / BigInt(100)
-    } else {
-      // NFT minting distribution: 30% creator, 15% writer, 5% platform, 50% to user
-      const creatorShare = (amount * BigInt(30)) / BigInt(100)
-      const writerShare = (amount * BigInt(15)) / BigInt(100)
-      const platformShare = (amount * BigInt(5)) / BigInt(100)
-      
-      distribution.writerShare = writerShare
-      distribution.platformShare = platformShare
-      distribution.creatorShare = creatorShare
-    }
+    // Calculate cost and distribution using unified service
+    const cost = PaymentCostService.calculateCost(validatedData.writerCoinId, validatedData.action)
+    const distribution = PaymentCostService.calculateDistribution(validatedData.writerCoinId, validatedData.action)
 
     // Return payment info
-    return NextResponse.json({
+    const paymentInfo: PaymentInfo = {
       writerCoin: {
         id: writerCoin.id,
         name: writerCoin.name,
@@ -68,16 +47,18 @@ export async function POST(request: NextRequest) {
         decimals: writerCoin.decimals,
       },
       action: validatedData.action,
-      amount: amount.toString(),
-      amountFormatted: (Number(amount) / 10 ** writerCoin.decimals).toFixed(2),
+      amount: cost.amount.toString(),
+      amountFormatted: cost.amountFormatted,
       distribution: {
         writerShare: distribution.writerShare.toString(),
         platformShare: distribution.platformShare.toString(),
         creatorShare: distribution.creatorShare.toString(),
       },
-      contractAddress: process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS,
+      contractAddress: (process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS as `0x${string}`) || undefined,
       chainId: 8453, // Base mainnet
-    })
+    }
+
+    return NextResponse.json(paymentInfo)
   } catch (error) {
     console.error('Payment initiation error:', error)
 

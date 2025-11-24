@@ -4,14 +4,15 @@ import { createPublicClient, http } from 'viem'
 import { base } from 'viem/chains'
 
 /**
- * Verify that a payment transaction was successful on-chain
+ * Verify payment transaction (Mini App)
  * 
  * Called after user approves payment in Farcaster wallet.
  * Verifies the transaction hash and confirms payment was processed on Base.
+ * Uses same validation logic as web app, with full on-chain verification.
  */
 
 const verifyPaymentSchema = z.object({
-  transactionHash: z.string().min(66, 'Invalid transaction hash').max(66),
+  transactionHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/, 'Invalid transaction hash'),
   writerCoinId: z.string().min(1, 'Writer coin ID is required'),
   action: z.enum(['generate-game', 'mint-nft']),
 })
