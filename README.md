@@ -1,89 +1,242 @@
-# Infinity Arcade
+# WritArcade - Next.js 16 Migration
 
-> create and play any game
+**Week 2 Complete**: Enhanced game generation, database integration, and interactive gameplay
 
-![infinityarcade-product](infinityarcade-product.png)
+Turn articles into mintable games using AI - now with modern Next.js 16 architecture, consolidated services, and real-time gameplay.
 
-[Infinity Arcade](https://infinityarcade.com/) is a game that can create any game. It uses GPT-4 to create interactive text games based on the users prompts. It also calls Stable Diffusion to generate game art. It's open source and can be installed on your computer (mac, windows, linux) or played at [https://infinityarcade.com](https://infinityarcade.com).
+## 🚀 What's New in Week 2
 
+### ✅ **Database Integration**
+- **Prisma ORM** with PostgreSQL
+- **Data migration** from existing Sequelize database
+- **Enhanced models** for games, users, chats, and sessions
+- **Real-time game storage** and retrieval
 
+### ✅ **Consolidated AI Services** 
+- **Unified GameAIService** (merged GenerateGame, StartGame, ChatGame)
+- **Enhanced ContentProcessor** with multiple scraping fallbacks
+- **Streaming gameplay** with real-time AI responses
+- **Multi-model support** (OpenAI, Anthropic)
 
-## Features
+### ✅ **Interactive Gameplay**
+- **Real-time chat interface** with streaming responses
+- **Session management** for game continuity
+- **Multiple choice options** parsed from AI responses
+- **Game history persistence**
 
--   Uses GPT-4 and AI to create any game text-based game
--   Uses Stable Diffusion to generate game art
--   Open source
+### ✅ **Modern Architecture**
+- **Next.js 16** with Turbopack, PPR, and React Compiler
+- **Domain-driven structure** with clean separation
+- **Type-safe APIs** with Zod validation
+- **Performance optimizations** and caching
 
+## 📦 Installation
 
-
-### Prerequisites
-
-To run InfinityArcade locally, you'll need:
-
--   Node.js
--   PostgreSQL
--   OpenAI API key
--   Replicate or Stability API key
-
-
-
-### Installing
-
-1. Clone the repository:
-
-```
-git clone https://github.com/username/InfinityArcade.git
-cd InfinityArcade
-```
-
-2. Create a `.env` file in the root directory with the following content:
-
-```
-OPENAI_API_KEY=your_openai_api_key
-REPLICATE_API_KEY=your_replicate_api_key
-STABILITY_API_KEY=your_stability_api_key
-DATABASE_URI=postgres://username:password@localhost:5432/infinityarcade
-DEBUG=ia:*
-PORT=3000
-NODE_ENV=development
-AI_MODEL=gpt-4
-AI_IMAGE_MODEL=stability
-```
-
-3. Install dependencies:
-
-```
+```bash
+# Clone and setup
+cd writarcade-next
 npm install
-```
 
-4. Run the project in development mode:
+# Database setup
+cp .env.example .env.local
+# Add your DATABASE_URL and API keys
 
-```
+# Initialize database
+npm run db:setup
+
+# Optional: Migrate data from existing database
+# npm run migrate:data
+
+# Start development server
 npm run dev
 ```
 
-The application will now be running at `http://localhost:3000`.
+## 🔧 Environment Variables
 
+```env
+# Database
+DATABASE_URL="postgresql://username:password@localhost:5432/writarcade"
 
+# AI Services
+OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
 
-## Contributing
+# Content Scraping
+SCRAPINGWEB_API_KEY="your-key"
+EXTRACTOR_API_KEY="your-key"
 
-To contribute to the project, please create a pull request.
+# Authentication (Week 3)
+JWT_SECRET="your-jwt-secret"
+```
 
+## 🎮 Current Features
 
+### **Game Generation**
+- **Article URLs**: Paste links from Substack, Medium, blogs
+- **Text Input**: Describe any game idea
+- **AI Models**: Choose between GPT-4, Claude, etc.
+- **Auto-scraping**: Intelligent content extraction and processing
 
-## Demo
+### **Interactive Gameplay** 
+- **Streaming responses**: Real-time AI generation
+- **Choice-based gameplay**: Multiple options per turn
+- **Session persistence**: Continue games across visits
+- **Chat history**: Full conversation tracking
 
-A live demo is available at [https://infinityarcade.com](https://infinityarcade.com).
+### **Game Library**
+- **Public games**: Browse all generated games
+- **Search & filter**: Find games by genre, title, content
+- **Game pages**: Dedicated page for each game
+- **Responsive design**: Works on mobile and desktop
 
+## 🏗️ Architecture
 
+### **Domain Structure**
+```
+writarcade-next/
+├── app/                     # Next.js 16 app router
+│   ├── api/                 # API routes
+│   ├── games/[slug]/        # Individual game pages
+│   └── page.tsx             # Homepage
+├── domains/
+│   ├── games/               # Game domain
+│   │   ├── services/        # GameAI, GameDatabase services
+│   │   ├── components/      # Game UI components
+│   │   └── types.ts         # Game type definitions
+│   ├── content/             # Content processing domain
+│   └── users/               # User domain (Week 3)
+├── lib/
+│   ├── database.ts          # Prisma client
+│   └── migrations/          # Data migration utilities
+├── components/ui/           # Reusable UI components
+└── prisma/
+    └── schema.prisma        # Database schema
+```
 
-## Authors
+### **Key Services**
 
--   The Maximalist - [hello@themaximalist.com](mailto:hello@themaximalist.com)
+#### **GameAIService** (Enhanced)
+```typescript
+// Unified game generation and gameplay
+await GameAIService.generateGame(request)
+await GameAIService.startGame(game, sessionId)
+await GameAIService.chatGame(messages, userInput)
+```
 
+#### **ContentProcessorService** (New)
+```typescript
+// Smart content extraction
+const content = await ContentProcessorService.processUrl(url)
+// Supports: Substack, Medium, HackerNews, blogs, etc.
+```
 
+#### **GameDatabaseService** (New)
+```typescript
+// Full game CRUD operations
+await GameDatabaseService.createGame(gameData)
+await GameDatabaseService.getGameBySlug(slug)
+await GameDatabaseService.getGames({ search, genre, limit })
+```
 
-## License
+## 🔄 API Endpoints
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/themaximal1st/InfinityArcade/blob/main/LICENSE.md) file for details.
+### **Game Generation**
+```bash
+POST /api/games/generate
+{
+  "promptText": "A cyberpunk detective story",
+  "url": "https://newsletter.substack.com/p/article"
+}
+```
+
+### **Game Gameplay**
+```bash
+POST /api/games/{slug}/start      # Start new game session
+POST /api/games/chat              # Continue conversation
+GET  /api/session/new             # Create new session
+```
+
+### **Game Library**
+```bash
+GET /api/games/generate?limit=25&search=mystery&genre=thriller
+```
+
+## 📊 Database Schema
+
+### **Enhanced Models**
+- **Games**: Title, description, AI metadata, prompts, assets
+- **Users**: Auth, preferences, wallet prep for Week 4
+- **Sessions**: Game session management
+- **Chats**: Full conversation history with threading
+- **ContentSources**: Newsletter/blog integration prep
+
+### **Migration Support**
+- **Data migrator** from existing Sequelize database
+- **Zero-downtime** migration strategy
+- **Integrity verification** and cleanup
+
+## 🎯 Week 3 Preview
+
+Next week will focus on:
+- **User Authentication** (traditional + wallet preparation)
+- **Game ownership** and private games
+- **User profiles** and preferences
+- **Enhanced UI/UX** with user features
+
+## 🧪 Testing
+
+```bash
+# Generate a test game
+curl -X POST http://localhost:3000/api/games/generate \
+  -H "Content-Type: application/json" \
+  -d '{"promptText": "A space adventure game"}'
+
+# Test content processing
+curl -X POST http://localhost:3000/api/games/generate \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://news.ycombinator.com/item?id=123456"}'
+```
+
+## 📈 Performance Features
+
+- **Next.js 16 optimizations**: Turbopack bundling, PPR caching
+- **React Compiler**: Automatic memoization
+- **Database indexing**: Optimized queries
+- **Streaming responses**: Real-time AI interaction
+- **Aggressive caching**: Fast game loading
+
+## 🐛 Troubleshooting
+
+### Database Issues
+```bash
+# Reset database
+npm run db:push
+
+# View database
+npm run db:studio
+```
+
+### Migration Issues
+```bash
+# Check migration logs
+npm run migrate:data 2>&1 | tee migration.log
+```
+
+## 📝 Development Notes
+
+### **Enhancement First Principle**
+- All existing functionality preserved and enhanced
+- Aggressive consolidation of duplicate code
+- Single source of truth for all services
+- Clean separation of concerns
+
+### **Modern Stack Benefits**
+- **50%+ faster builds** with Turbopack
+- **Automatic memoization** with React Compiler
+- **Type safety** across all domains
+- **Performance-first** routing and caching
+
+---
+
+**Week 2 Status: ✅ Complete**  
+**Next: Week 3 - User Authentication & Enhanced UI**

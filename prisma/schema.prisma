@@ -1,0 +1,248 @@
+// Enhanced Prisma schema - consolidating existing Sequelize models
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Minimal User model - wallet-based preferences only
+// Social profiles (username, avatar, bio) fetched from Farcaster at runtime
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique // Primary identifier
+  
+  // Game generation preferences (user-specific settings)
+  preferredModel String  @default("gpt-4o-mini")
+  private        Boolean @default(false) // Hide games from public discovery
+  
+  // Relations
+  games    Game[]
+  chats    Chat[]
+  sessions Session[]
+  orders   Order[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("users")
+}
+
+model Game {
+  id          String @id @default(cuid())
+  title       String
+  slug        String @unique
+  description String @db.Text
+  tagline     String @db.Text
+  genre       String
+  subgenre    String
+  
+  // Visual customization
+  primaryColor String?
+  
+  // AI generation metadata (consolidated)
+  promptName       String  @default("GenerateGame-v2")
+  promptText       String? @db.Text
+  promptModel      String  @default("gpt-4o-mini")
+  
+  // Image generation
+  imagePromptModel String? 
+  imagePromptName  String?
+  imagePromptText  String? @db.Text
+  imageData        Bytes?
+  
+  // Music generation  
+  musicPromptText      String?
+  musicPromptSeedImage String?
+  
+  // Access control
+  private Boolean @default(false)
+  
+  // Relations
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  chats Chat[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("games")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  
+  // Relations
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  chats Chat[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("sessions")
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  parentId  String?
+  role      ChatRole
+  content   String   @db.Text
+  model     String
+  
+  // Relations
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Self-referential for conversation threading
+  parent   Chat?  @relation("ChatThread", fields: [parentId], references: [id])
+  children Chat[] @relation("ChatThread")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("chats")
+}
+
+enum ChatRole {
+  user
+  assistant
+  system
+}
+
+model Article {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  description String?   @db.Text
+  content     String    @db.Text
+  author      String?
+  publishedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("articles")
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  stripeId     String?     @unique
+  amount       Int         // in cents
+  currency     String      @default("usd")
+  status       OrderStatus @default(pending)
+  
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("orders")
+}
+
+enum OrderStatus {
+  pending
+  completed
+  failed
+  refunded
+}
+
+// New models for WritArcade features
+
+model ContentSource {
+  id              String      @id @default(cuid())
+  url             String      @unique
+  type            ContentType
+  title           String?
+  author          String?
+  
+  // Newsletter/blog metadata
+  rssUrl          String?
+  webhookUrl      String?
+  memecoinContract String?    // Base contract address
+  tokenSymbol     String?
+  tokenDecimals   Int?        @default(18)
+  
+  // Revenue sharing
+  royaltyPercentage Int       @default(10) // percentage to creator
+  pricePerGame      Int       @default(100) // tokens required
+  
+  // Scraping config
+  autoScrapeFreq    String?   @default("daily")
+  lastScrapedAt     DateTime?
+  
+  // Relations
+  articles ProcessedArticle[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("content_sources")
+}
+
+enum ContentType {
+  newsletter
+  blog
+  article
+  unknown
+}
+
+model ProcessedArticle {
+  id              String @id @default(cuid())
+  originalUrl     String
+  title           String?
+  author          String?
+  content         String @db.Text
+  wordCount       Int
+  estimatedReadTime Int // in minutes
+  publishedAt     DateTime?
+  
+  // Relations
+  sourceId String
+  source   ContentSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  
+  // Generated games from this article
+  games GameFromArticle[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([sourceId, originalUrl])
+  @@map("processed_articles")
+}
+
+model GameFromArticle {
+  id String @id @default(cuid())
+  
+  // Relations
+  gameId    String
+  // Note: We'll handle game relation through application logic for now
+  
+  articleId String
+  article   ProcessedArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  
+  // User who generated this interpretation
+  userId String
+  
+  // Generation metadata
+  generationPrompt String @db.Text
+  tokensSpent      Int
+  memecoinUsed     String // token symbol
+  
+  createdAt DateTime @default(now())
+  
+  @@map("games_from_articles")
+}
