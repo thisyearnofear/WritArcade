@@ -1,9 +1,13 @@
 /**
- * Farcaster Profile Utilities
+ * Farcaster Integration Utilities
  * 
- * Fetches social profile data (username, avatar, bio) from Farcaster
- * based on wallet address. No database caching - always fresh from Farcaster.
+ * Provides functions to interact with Farcaster Mini Apps for:
+ * - User profile data (username, avatar, bio)
+ * - Mini App SDK integration for actions and context
+ * - Social features (sharing, wallet)
  */
+
+import { sdk } from '@farcaster/miniapp-sdk'
 
 export interface FarcasterProfile {
     fid?: number
@@ -15,39 +19,137 @@ export interface FarcasterProfile {
 }
 
 /**
+ * Get Farcaster context for current user
+ * Returns user info, client data, etc.
+ */
+export async function getFarcasterContext(): Promise<any> {
+    try {
+        const context = await sdk.context
+        console.log('Farcaster context loaded:', context)
+        return context
+    } catch (error) {
+        console.error('Failed to load Farcaster context:', error)
+        return null
+    }
+}
+
+/**
+ * Signal that the Mini App is ready to display
+ * Call this after your UI has loaded to hide the splash screen
+ */
+export async function readyMiniApp(): Promise<void> {
+    try {
+        await sdk.actions.ready()
+    } catch (error) {
+        console.error('Failed to signal ready:', error)
+    }
+}
+
+/**
+ * Check if app is running in Farcaster context
+ */
+export function isInFarcasterContext(): boolean {
+    try {
+        return sdk.context !== null
+    } catch {
+        return false
+    }
+}
+
+/**
  * Get Farcaster profile for a wallet address
- * TODO: Implement using Neynar API or Farcaster Hub
+ * Uses Neynar API (free tier supports bulk lookups)
  */
 export async function getFarcasterProfile(
     walletAddress: string
 ): Promise<FarcasterProfile | null> {
     try {
-        // TODO: Implement Farcaster API call
-        // For now, return null (will show wallet address as fallback)
+        const apiKey = process.env.NEXT_PUBLIC_NEYNAR_API_KEY || process.env.NEYNAR_API_KEY
 
-        // Example implementation with Neynar:
-        // const response = await fetch(
-        //   `https://api.neynar.com/v2/farcaster/user/by-verification?address=${walletAddress}`,
-        //   {
-        //     headers: {
-        //       'api_key': process.env.NEYNAR_API_KEY!,
-        //     },
-        //   }
-        // )
-        // const data = await response.json()
-        // return {
-        //   fid: data.user.fid,
-        //   username: data.user.username,
-        //   displayName: data.user.display_name,
-        //   bio: data.user.profile.bio.text,
-        //   pfpUrl: data.user.pfp_url,
-        //   verifiedAddresses: data.user.verified_addresses.eth_addresses,
-        // }
+        if (!apiKey) {
+            console.warn('NEYNAR_API_KEY not configured, skipping Farcaster profile fetch')
+            return null
+        }
 
-        return null
+        const response = await fetch(
+            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${walletAddress}`,
+            {
+                headers: {
+                    'api_key': apiKey,
+                },
+            }
+        )
+
+        if (!response.ok) {
+            console.error('Neynar API error:', response.status)
+            return null
+        }
+
+        const data = await response.json()
+
+        if (!data || Object.keys(data).length === 0) {
+            return null
+        }
+
+        // Get first user from response
+        const users = Object.values(data) as any[]
+        const user = users[0]?.[0]
+
+        if (!user) return null
+
+        return {
+            fid: user.fid,
+            username: user.username,
+            displayName: user.display_name || user.username,
+            bio: user.profile?.bio?.text,
+            pfpUrl: user.pfp_url,
+            verifiedAddresses: user.verified_addresses?.eth_addresses || [],
+        }
     } catch (error) {
         console.error('Failed to fetch Farcaster profile:', error)
         return null
+    }
+}
+
+/**
+ * Compose a new cast
+ * Only works in Farcaster Mini App context
+ */
+export async function composeCast(params: {
+    text: string
+    embeds?: string[]
+}): Promise<boolean> {
+    try {
+        if (!isInFarcasterContext()) {
+            console.warn('Not in Farcaster context, cannot compose cast')
+            return false
+        }
+
+        await sdk.actions.composeCast({
+            text: params.text,
+        })
+        return true
+    } catch (error) {
+        console.error('Error composing cast:', error)
+        return false
+    }
+}
+
+/**
+ * Open external URL in Mini App context
+ */
+export async function openUrl(url: string): Promise<boolean> {
+    try {
+        if (!isInFarcasterContext()) {
+            console.warn('Not in Farcaster context, cannot open URL')
+            return false
+        }
+
+        await sdk.actions.openUrl(url)
+        return true
+    } catch (error) {
+        console.error('Error opening URL:', error)
+        return false
     }
 }
 

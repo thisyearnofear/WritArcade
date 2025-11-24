@@ -1,242 +1,54 @@
-# WritArcade - Next.js 16 Migration
+# WritArcade
 
-**Week 2 Complete**: Enhanced game generation, database integration, and interactive gameplay
+Transform articles into mintable games where newsletter/blog readers can spend memecoin to generate customizable games and track usage onchain.
 
-Turn articles into mintable games using AI - now with modern Next.js 16 architecture, consolidated services, and real-time gameplay.
+## Documentation
 
-## 🚀 What's New in Week 2
+For detailed information about WritArcade, please refer to our consolidated documentation:
 
-### ✅ **Database Integration**
-- **Prisma ORM** with PostgreSQL
-- **Data migration** from existing Sequelize database
-- **Enhanced models** for games, users, chats, and sessions
-- **Real-time game storage** and retrieval
+- **[Development Status](./docs/STATUS.md)** - Current progress, completed tasks, and next week priorities
+- **[Product Roadmap](./docs/ROADMAP.md)** - 5-week MVP plan, tokenomics, and competitive advantages
+- **[Implementation Plan](./docs/NEXT_STEPS.md)** - Week-by-week technical tasks and deliverables
+- **[Architecture Guide](./docs/ARCHITECTURE.md)** - System design, database schema, and onchain integration
+- **[Setup Guide](./docs/IMPLEMENTATION.md)** - Migration guide and development setup
+- **[Mini App Migration](./docs/MINI_APP_MIGRATION.md)** - November 2025 SDK upgrade notes (Frames v2 → Mini Apps)
 
-### ✅ **Consolidated AI Services** 
-- **Unified GameAIService** (merged GenerateGame, StartGame, ChatGame)
-- **Enhanced ContentProcessor** with multiple scraping fallbacks
-- **Streaming gameplay** with real-time AI responses
-- **Multi-model support** (OpenAI, Anthropic)
+## Quick Start
 
-### ✅ **Interactive Gameplay**
-- **Real-time chat interface** with streaming responses
-- **Session management** for game continuity
-- **Multiple choice options** parsed from AI responses
-- **Game history persistence**
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up your environment variables (see `.env.example`)
+4. Configure your database connection
+5. Run the development server: `npm run dev`
 
-### ✅ **Modern Architecture**
-- **Next.js 16** with Turbopack, PPR, and React Compiler
-- **Domain-driven structure** with clean separation
-- **Type-safe APIs** with Zod validation
-- **Performance optimizations** and caching
+For detailed setup instructions, see the [Implementation Guide](./docs/IMPLEMENTATION.md).
 
-## 📦 Installation
+## Core Features
 
-```bash
-# Clone and setup
-cd writarcade-next
-npm install
+- **Article-to-Game Pipeline**: URL scraping → AI game generation → Interactive gameplay
+- **Customizable Parameters**: Genre, style, colors, AI models, prompt variations
+- **Content Sources**: HackerNews, direct URLs, custom text input
+- **Interactive Gameplay**: Streaming chat-based game mechanics with options
+- **Onchain Integration**: Game NFTs, memecoin payments, creator revenue sharing
+- **Farcaster Native**: Social features leveraging existing Farcaster profiles
 
-# Database setup
-cp .env.example .env.local
-# Add your DATABASE_URL and API keys
+## Tech Stack
 
-# Initialize database
-npm run db:setup
+- **Frontend**: Next.js 16, React 19.2, TypeScript
+- **Backend**: Node.js, PostgreSQL with Prisma ORM
+- **Blockchain**: Base network, smart contracts for NFTs
+- **Wallets**: WalletConnect, Coinbase Smart Wallet
+- **AI Services**: OpenAI, Anthropic integration
+- **Deployment**: Vercel with edge functions
 
-# Optional: Migrate data from existing database
-# npm run migrate:data
+## Architecture Highlights
 
-# Start development server
-npm run dev
-```
-
-## 🔧 Environment Variables
-
-```env
-# Database
-DATABASE_URL="postgresql://username:password@localhost:5432/writarcade"
-
-# AI Services
-OPENAI_API_KEY="sk-..."
-ANTHROPIC_API_KEY="sk-ant-..."
-
-# Content Scraping
-SCRAPINGWEB_API_KEY="your-key"
-EXTRACTOR_API_KEY="your-key"
-
-# Authentication (Week 3)
-JWT_SECRET="your-jwt-secret"
-```
-
-## 🎮 Current Features
-
-### **Game Generation**
-- **Article URLs**: Paste links from Substack, Medium, blogs
-- **Text Input**: Describe any game idea
-- **AI Models**: Choose between GPT-4, Claude, etc.
-- **Auto-scraping**: Intelligent content extraction and processing
-
-### **Interactive Gameplay** 
-- **Streaming responses**: Real-time AI generation
-- **Choice-based gameplay**: Multiple options per turn
-- **Session persistence**: Continue games across visits
-- **Chat history**: Full conversation tracking
-
-### **Game Library**
-- **Public games**: Browse all generated games
-- **Search & filter**: Find games by genre, title, content
-- **Game pages**: Dedicated page for each game
-- **Responsive design**: Works on mobile and desktop
-
-## 🏗️ Architecture
-
-### **Domain Structure**
-```
-writarcade-next/
-├── app/                     # Next.js 16 app router
-│   ├── api/                 # API routes
-│   ├── games/[slug]/        # Individual game pages
-│   └── page.tsx             # Homepage
-├── domains/
-│   ├── games/               # Game domain
-│   │   ├── services/        # GameAI, GameDatabase services
-│   │   ├── components/      # Game UI components
-│   │   └── types.ts         # Game type definitions
-│   ├── content/             # Content processing domain
-│   └── users/               # User domain (Week 3)
-├── lib/
-│   ├── database.ts          # Prisma client
-│   └── migrations/          # Data migration utilities
-├── components/ui/           # Reusable UI components
-└── prisma/
-    └── schema.prisma        # Database schema
-```
-
-### **Key Services**
-
-#### **GameAIService** (Enhanced)
-```typescript
-// Unified game generation and gameplay
-await GameAIService.generateGame(request)
-await GameAIService.startGame(game, sessionId)
-await GameAIService.chatGame(messages, userInput)
-```
-
-#### **ContentProcessorService** (New)
-```typescript
-// Smart content extraction
-const content = await ContentProcessorService.processUrl(url)
-// Supports: Substack, Medium, HackerNews, blogs, etc.
-```
-
-#### **GameDatabaseService** (New)
-```typescript
-// Full game CRUD operations
-await GameDatabaseService.createGame(gameData)
-await GameDatabaseService.getGameBySlug(slug)
-await GameDatabaseService.getGames({ search, genre, limit })
-```
-
-## 🔄 API Endpoints
-
-### **Game Generation**
-```bash
-POST /api/games/generate
-{
-  "promptText": "A cyberpunk detective story",
-  "url": "https://newsletter.substack.com/p/article"
-}
-```
-
-### **Game Gameplay**
-```bash
-POST /api/games/{slug}/start      # Start new game session
-POST /api/games/chat              # Continue conversation
-GET  /api/session/new             # Create new session
-```
-
-### **Game Library**
-```bash
-GET /api/games/generate?limit=25&search=mystery&genre=thriller
-```
-
-## 📊 Database Schema
-
-### **Enhanced Models**
-- **Games**: Title, description, AI metadata, prompts, assets
-- **Users**: Auth, preferences, wallet prep for Week 4
-- **Sessions**: Game session management
-- **Chats**: Full conversation history with threading
-- **ContentSources**: Newsletter/blog integration prep
-
-### **Migration Support**
-- **Data migrator** from existing Sequelize database
-- **Zero-downtime** migration strategy
-- **Integrity verification** and cleanup
-
-## 🎯 Week 3 Preview
-
-Next week will focus on:
-- **User Authentication** (traditional + wallet preparation)
-- **Game ownership** and private games
-- **User profiles** and preferences
-- **Enhanced UI/UX** with user features
-
-## 🧪 Testing
-
-```bash
-# Generate a test game
-curl -X POST http://localhost:3000/api/games/generate \
-  -H "Content-Type: application/json" \
-  -d '{"promptText": "A space adventure game"}'
-
-# Test content processing
-curl -X POST http://localhost:3000/api/games/generate \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://news.ycombinator.com/item?id=123456"}'
-```
-
-## 📈 Performance Features
-
-- **Next.js 16 optimizations**: Turbopack bundling, PPR caching
-- **React Compiler**: Automatic memoization
-- **Database indexing**: Optimized queries
-- **Streaming responses**: Real-time AI interaction
-- **Aggressive caching**: Fast game loading
-
-## 🐛 Troubleshooting
-
-### Database Issues
-```bash
-# Reset database
-npm run db:push
-
-# View database
-npm run db:studio
-```
-
-### Migration Issues
-```bash
-# Check migration logs
-npm run migrate:data 2>&1 | tee migration.log
-```
-
-## 📝 Development Notes
-
-### **Enhancement First Principle**
-- All existing functionality preserved and enhanced
-- Aggressive consolidation of duplicate code
-- Single source of truth for all services
-- Clean separation of concerns
-
-### **Modern Stack Benefits**
-- **50%+ faster builds** with Turbopack
-- **Automatic memoization** with React Compiler
-- **Type safety** across all domains
-- **Performance-first** routing and caching
+- **Domain-driven design** with clean separation of concerns
+- **Farcaster-native identity** leveraging existing social profiles
+- **Wallet-first authentication** with minimal PII storage
+- **Performance-first** with caching and streaming responses
+- **Modular, testable** components and services
 
 ---
 
-**Week 2 Status: ✅ Complete**  
-**Next: Week 3 - User Authentication & Enhanced UI**
+*For complete information about setup, development, and architecture decisions, see our documentation files.*
