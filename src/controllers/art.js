@@ -1,7 +1,7 @@
 const log = require("debug")("ia:controllers:art");
 
 const fs = require("fs");
-const sharp = require("sharp");
+const Jimp = require("jimp");
 
 const Game = require("../models/game");
 const GenerateGameArt = require("../services/GenerateGameArt");
@@ -28,11 +28,20 @@ async function generate(req, res) {
 
             if (art.image_data) {
 
-                const image = await sharp(art.image_data).png();
-
-                await image.toFile(filename);
-                await image.resize(256, 256).toFile(filename_256);
-                await image.resize(50, 50).toFile(filename_50);
+                const image = await Jimp.read(art.image_data);
+                
+                // Convert to PNG
+                image.png();
+                
+                await image.writeAsync(filename);
+                
+                // Create 256x256 thumbnail
+                const image256 = image.clone().resize(256, 256);
+                await image256.writeAsync(filename_256);
+                
+                // Create 50x50 thumbnail  
+                const image50 = image.clone().resize(50, 50);
+                await image50.writeAsync(filename_50);
 
                 delete art.image_data;
             }

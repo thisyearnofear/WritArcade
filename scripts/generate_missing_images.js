@@ -5,7 +5,7 @@ const log = require("debug")("ia:scripts:generate_missing_images");
 const GetGames = require("../src/services/GetGames");
 const GenerateGameArt = require("../src/services/GenerateGameArt");
 const Game = require("../src/models/game");
-const sharp = require("sharp");
+const Jimp = require("jimp");
 const fs = require("fs").promises;
 const path = require("path");
 const { join } = require("path");
@@ -37,13 +37,21 @@ async function generateMissingImages() {
 
             // Save the image and create thumbnails
             const baseFilename = path.join(__dirname, "..", "public", "images", "art", `${game.id}`);
-            const image = sharp(art.image_data);
-
-            await Promise.all([
-                image.clone().png().toFile(`${baseFilename}.png`),
-                image.clone().resize(256, 256).png().toFile(`${baseFilename}-256.png`),
-                image.clone().resize(50, 50).png().toFile(`${baseFilename}-50.png`)
-            ]);
+            const image = await Jimp.read(art.image_data);
+            
+            // Convert to PNG format
+            image.png();
+            
+            // Save main image
+            await image.writeAsync(`${baseFilename}.png`);
+            
+            // Create and save 256x256 thumbnail
+            const image256 = image.clone().resize(256, 256);
+            await image256.writeAsync(`${baseFilename}-256.png`);
+            
+            // Create and save 50x50 thumbnail
+            const image50 = image.clone().resize(50, 50);
+            await image50.writeAsync(`${baseFilename}-50.png`);
 
             // Update the game record in the database
             delete art.image_data;
