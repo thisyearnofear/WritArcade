@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { UserMenu } from '@/domains/users/components/user-menu'
+import { WalletConnectButton } from '@/components/game/WalletConnectButton'
 
 export function Header() {
   return (
@@ -26,6 +27,10 @@ export function Header() {
             </Link>
           </div>
           
+          {/* Wallet Connect */}
+          <WalletConnectButton />
+          
+          {/* User Menu */}
           <UserMenu />
         </nav>
       </div>

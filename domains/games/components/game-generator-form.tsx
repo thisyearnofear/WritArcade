@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAccount } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -8,28 +9,37 @@ import { Label } from '@/components/ui/label'
 import { Loader2, Sparkles } from 'lucide-react'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
+import { PaymentOption } from '@/components/game/PaymentOption'
+import { getWriterCoinById } from '@/lib/writerCoins'
 
 interface GameGeneratorFormProps {
   onGameGenerated?: (game: any) => void
 }
 
 export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
+  const { isConnected } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
   const [promptText, setPromptText] = useState('')
   const [url, setUrl] = useState('')
   const [genre, setGenre] = useState<GameGenre>('horror')
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy')
   const [showCustomization, setShowCustomization] = useState(false)
+  const [showPayment, setShowPayment] = useState(false)
+  const [paymentApproved, setPaymentApproved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const writerCoin = getWriterCoinById('avc') // Default to AVC for web app
+  if (!writerCoin) {
+    return <div className="text-red-500">Error: Writer coin not configured</div>
+  }
 
-    if (!promptText.trim() && !url.trim()) {
-      setError('Please provide either text or a URL')
-      return
-    }
+  const handlePaymentSuccess = async (transactionHash: string) => {
+    setPaymentApproved(true)
+    setError(null)
+    await generateGame()
+  }
 
+  const generateGame = async () => {
     setIsGenerating(true)
     setError(null)
 
@@ -42,10 +52,15 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
         body: JSON.stringify({
           promptText: promptText.trim() || undefined,
           url: url.trim() || undefined,
-          ...(showCustomization && {
+          ...(showCustomization && paymentApproved && {
             customization: {
               genre,
               difficulty,
+            },
+          }),
+          ...(paymentApproved && {
+            payment: {
+              writerCoinId: writerCoin.id,
             },
           }),
         }),
@@ -62,11 +77,41 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
       // Reset form
       setPromptText('')
       setUrl('')
+      setPaymentApproved(false)
+      setShowPayment(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(message)
+      setPaymentApproved(false)
+      console.error('Error generating game:', err)
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!promptText.trim() && !url.trim()) {
+      setError('Please provide either text or a URL')
+      return
+    }
+
+    // If customization requested, require payment
+    if (showCustomization && !isConnected) {
+      setError('Please connect your wallet to use customization')
+      setShowPayment(true)
+      return
+    }
+
+    // If customization but not approved payment yet, show payment
+    if (showCustomization && !paymentApproved) {
+      setShowPayment(true)
+      return
+    }
+
+    // Otherwise generate normally
+    await generateGame()
   }
 
   return (
@@ -135,25 +180,50 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
           </div>
         )}
 
-        <Button
-          type="submit"
-          disabled={isGenerating}
-          className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
-          size="lg"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating Game...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Create Game
-            </>
-          )}
-        </Button>
-      </form>
+        {/* Payment Section (shown when customization requested) */}
+        {showPayment && (
+          <div className="space-y-4 p-4 bg-purple-900/20 rounded-lg border border-purple-600/30">
+            <h3 className="font-semibold text-purple-200">Enable Customization</h3>
+            <p className="text-sm text-purple-300">
+              Connect your wallet and approve payment to unlock genre/difficulty customization. You can generate games for free without payment.
+            </p>
+            <PaymentOption
+              writerCoin={writerCoin}
+              action="generate-game"
+              onPaymentSuccess={handlePaymentSuccess}
+              onPaymentError={(err) => setError(err)}
+              disabled={isGenerating}
+              optional={true}
+              onSkip={() => {
+                setShowPayment(false)
+                setShowCustomization(false)
+                generateGame()
+              }}
+            />
+          </div>
+        )}
+
+        {!showPayment && (
+          <Button
+            type="submit"
+            disabled={isGenerating}
+            className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating Game...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                {paymentApproved ? 'Generate Custom Game' : 'Create Game'}
+              </>
+            )}
+          </Button>
+        )}
+        </form>
 
       {/* Tips */}
       <div className="mt-8 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
