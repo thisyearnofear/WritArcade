@@ -1,4 +1,4 @@
-# Week 3: Game Generation Integration
+# Week 3: Game Generation Integration Plan
 
 **Objective**: Connect GameCustomizer to actual game generation API and render playable games.
 
@@ -6,11 +6,9 @@
 
 **Status**: ✅ API & UI Complete - Testing Phase
 
----
+## Current Completed Status
 
-## Tasks Overview
-
-### 1. API Endpoint Creation (Day 1)
+### ✅ API Endpoint Creation
 **File**: `app/mini-app/api/games/generate/route.ts`
 
 ```typescript
@@ -41,11 +39,7 @@ Response:
 5. Stream response back to frontend
 6. Store game metadata in database
 
-**Key**: Use existing game generation pipeline from Infinity Arcade
-
----
-
-### 2. GameCustomizer Integration (Day 1)
+### ✅ GameCustomizer Integration
 **File**: `app/mini-app/components/GameCustomizer.tsx`
 
 **Update**:
@@ -65,15 +59,13 @@ const handleGenerateGame = async () => {
     })
     
     const game = await response.json()
-    // TODO: Navigate to game player or show inline
+    // Navigate to game player or show inline
   }
 }
 ```
 
----
-
-### 3. Game Player Component (Day 2)
-**File**: `app/mini-app/components/GamePlayer.tsx` (NEW)
+### ✅ Game Player Component
+**File**: `app/mini-app/components/GamePlayer.tsx`
 
 Display the generated game with:
 - Game title
@@ -83,12 +75,9 @@ Display the generated game with:
 - "Share on Farcaster" button
 
 **Input**: `game` object from API response
-
 **Output**: Interactive game UI
 
----
-
-### 4. Game Flow Integration (Day 2)
+### ✅ Game Flow Integration
 **File**: `app/mini-app/page.tsx`
 
 Add new step: `play-game`
@@ -117,12 +106,10 @@ const handleGameGenerated = (game) => {
 )}
 ```
 
----
-
-### 5. Database Schema Update (Day 2)
+### ✅ Database Schema Update
 **File**: `prisma/schema.prisma`
 
-Add game table if not present:
+Add game table:
 
 ```prisma
 model Game {
@@ -141,21 +128,58 @@ model Game {
 }
 ```
 
-Then:
-```bash
-npm run db:push
+## Current Implementation Status
+
+### Code Structure
+```
+app/mini-app/
+├── page.tsx                          ✅ Main flow coordinator (4 steps)
+├── layout.tsx                        ✅ Manifest metadata
+├── components/
+│   ├── WriterCoinSelector.tsx        ✅ DONE
+│   ├── ArticleInput.tsx              ✅ DONE
+│   ├── GameCustomizer.tsx            ✅ DONE (genre/difficulty)
+│   ├── GamePlayer.tsx                ✅ DONE - Interactive gameplay
+│   └── PaymentButton.tsx             ⏳ WEEK 4
+└── api/
+    └── games/
+        ├── generate/
+        │   └── route.ts              ✅ DONE - Writer coin validation + game generation
+        └── mint/
+            └── route.ts              ⏳ WEEK 5
 ```
 
----
+## Remaining Testing Tasks
 
-### 6. Error Handling & Polish (Day 3)
+### 1. Game Generation Testing
+- [ ] Test all 6 genre/difficulty combinations (Horror/Easy, Horror/Hard, Comedy/Easy, Comedy/Hard, Mystery/Easy, Mystery/Hard)
+- [ ] Verify game generation completes in <30 seconds
+- [ ] Ensure all generated games are playable and complete
+- [ ] Test with different article types and lengths
+
+### 2. Error Handling & Polish
 - [ ] Handle API errors gracefully
 - [ ] Show loading state while generating
 - [ ] Add retry logic for failed generations
 - [ ] Optimize game response times
-- [ ] Test all 6 combinations (3 genres × 2 difficulties)
+- [ ] Test edge cases (very short articles, very long articles)
 
----
+### 3. Database Migration
+- [ ] Apply database schema updates when DB access is available
+- [ ] Verify game records are stored correctly
+- [ ] Test game retrieval and display
+
+### 4. Integration Testing
+- [ ] Full end-to-end flow: Select coin → Input article → Customize → Generate → Play
+- [ ] Test navigation between steps
+- [ ] Verify data persistence across steps
+- [ ] Test user experience flow
+
+### 5. UI/UX Polish
+- [ ] Loading animations during game generation
+- [ ] Error messages with helpful guidance
+- [ ] Responsive design for mobile Mini App
+- [ ] Accessibility improvements
 
 ## Success Criteria
 
@@ -171,31 +195,6 @@ npm run db:push
 - [ ] Loading states work smoothly
 - [ ] Database migration applied
 
----
-
-## Code Structure
-
-```
-app/mini-app/
-├── page.tsx                          ✅ Main flow coordinator (4 steps)
-├── layout.tsx                        ✅ Manifest metadata
-├── components/
-│   ├── WriterCoinSelector.tsx        ✅ DONE
-│   ├── ArticleInput.tsx              ✅ DONE
-│   ├── GameCustomizer.tsx            ✅ DONE (genre/difficulty)
-│   ├── GamePlayer.tsx                ✅ DONE - Interactive gameplay
-│   ├── PaymentButton.tsx             ⏳ WEEK 4
-│   └── MintButton.tsx                ⏳ WEEK 5
-└── api/
-    └── games/
-        ├── generate/
-        │   └── route.ts              ✅ DONE - Writer coin validation + game generation
-        └── mint/
-            └── route.ts              ⏳ WEEK 5
-```
-
----
-
 ## Integration Points
 
 ### Existing Services
@@ -207,26 +206,22 @@ app/mini-app/
 - Game generation API wrapper (`app/mini-app/api/games/generate/route.ts`)
 - Game player component (`app/mini-app/components/GamePlayer.tsx`)
 
----
+## Manual Testing Checklist
 
-## Testing Checklist
-
-### Manual Testing
+### Core Flow Testing
 - [ ] Select AVC coin
 - [ ] Paste valid AVC article URL (e.g., https://avc.xyz/...)
 - [ ] Click generate for Horror + Easy
 - [ ] Game renders in <30 seconds
-- [ ] All controls work
+- [ ] All game controls work
 - [ ] Repeat for other genre/difficulty combos
 
-### Error Cases
+### Error Cases Testing
 - [ ] Invalid article URL
 - [ ] Article from different author
 - [ ] API timeout (>60 seconds)
 - [ ] Network error
 - [ ] Game generation failure
-
----
 
 ## Dependencies Check
 
@@ -234,44 +229,7 @@ app/mini-app/
 npm list | grep -E "(infinity|arcade)"
 ```
 
-Need to confirm existing game generation service is available and callable.
-
----
-
-## Estimated Effort Breakdown
-
-| Task | Effort | Risk |
-|------|--------|------|
-| API endpoint | 2-3 hours | Low |
-| GameCustomizer integration | 1 hour | Low |
-| GamePlayer component | 3-4 hours | Medium |
-| Flow integration | 1-2 hours | Low |
-| DB schema update | 30 minutes | Low |
-| Error handling & polish | 2-3 hours | Low |
-| **Total** | **10-14 hours** | **Low** |
-
----
-
-## Next Session Priorities
-
-1. ✅ Confirm Infinity Arcade API is callable
-2. ✅ Create `/api/games/generate` endpoint
-3. ✅ Build GamePlayer component
-4. ✅ Integrate into main flow
-5. ✅ Test all 6 game combinations
-6. ✅ Deploy to staging (Vercel)
-7. ⏳ Then move to Week 4 (Smart contracts)
-
----
-
-## Key Files to Review Before Starting
-
-- `docs/ROADMAP.md` - Overall vision (section: Game Customization)
-- `docs/NEXT_STEPS.md` - Week 3 tasks (section: Week 3: Game Generation)
-- `app/mini-app/components/GameCustomizer.tsx` - Current UI (needs integration)
-- Existing game generation code (find Infinity Arcade integration)
-
----
+Confirm existing game generation service is available and callable.
 
 ## Potential Blockers & Solutions
 
@@ -283,21 +241,36 @@ Need to confirm existing game generation service is available and callable.
 | Database migrations fail | Review Prisma schema, check PostgreSQL connection |
 | Game player rendering issues | Test with simple game first, add debug logs |
 
----
-
 ## Post-Week 3 Checklist
 
 Before moving to Week 4, confirm:
 - [ ] Game generation works end-to-end
-- [ ] All 6 combinations tested (CURRENT)
+- [ ] All 6 combinations tested
 - [x] Error handling in place
 - [ ] Database stores games correctly (pending migration)
 - [x] UI responds quickly
 - [ ] Deploy to staging works
 - [ ] Ready for Week 4 (Payments)
 
----
+## Key Files to Review
 
-**Ready to start!** 🚀
+- `docs/ROADMAP.md` - Overall vision (section: Game Customization)
+- `app/mini-app/components/GameCustomizer.tsx` - Current UI integration
+- `app/mini-app/api/games/generate/route.ts` - Game generation API
+- `app/mini-app/components/GamePlayer.tsx` - Game display component
 
-Begin with the API endpoint. Once that's working, everything else flows naturally.
+## Next Phase Preparation
+
+Once Week 3 is complete and tested:
+1. **Week 4: Smart Contracts & Payments**
+   - Farcaster Wallet integration
+   - Payment verification before game generation
+   - Base network deployment
+   - Revenue distribution logic
+
+2. **Week 5: NFT Minting & Launch**
+   - Game NFT creation and metadata
+   - Production deployment
+   - Farcaster community launch
+
+**Ready to proceed!** 🚀

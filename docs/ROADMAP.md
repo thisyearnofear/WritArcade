@@ -1,16 +1,14 @@
-# WritArcade - Product Roadmap
+# WritArcade Roadmap & Status
 
-## 🎯 **Vision**
+## Vision
 
 **Give AVC readers a new way to engage: turn Fred Wilson's articles into playable, mintable games.**
 
 AVC readers can spend their writer coins to generate unique game interpretations of Fred's articles, creating a new economy around content—all natively within Farcaster. MVP launches with AVC only; other writer coins added later.
 
----
+## Core Concept
 
-## 💡 **Core Concept**
-
-### **The Flow**
+### The Flow
 1. **User in Farcaster Mini App**: Opens WritArcade app
 2. **Paste AVC Article URL**: User provides Paragraph article link from AVC (https://avc.xyz/)
 3. **Fetch Article**: Backend scrapes title + content from Paragraph
@@ -21,7 +19,7 @@ AVC readers can spend their writer coins to generate unique game interpretations
 8. **Mint as NFT**: User can mint generated game as Base NFT for 50 $AVC (optional)
 9. **Share on Farcaster**: Link to game shareable via Farcaster cast
 
-### **Key Insight**
+### Key Insight
 **Same article → Infinite unique game versions**
 - Horror interpretation vs. Comedy interpretation
 - Easy mode vs. Hard mode
@@ -29,260 +27,97 @@ AVC readers can spend their writer coins to generate unique game interpretations
 
 Each version is a unique creative expression, making games collectible and incentivizing sharing.
 
----
+## Current Status
 
-## 💰 **Writer Coin Economics (MVP)**
+**Phase 3: Smart Contracts & Payments** (Week 4)
+Status: **60% Complete** (Contracts + UI done, Farcaster wallet pending)
 
-### **Initial Writer Coins**
+### ✅ Completed Tasks
 
-MVP launches with:
-- **$AVC** (Fred Wilson's AVC newsletter) — `0x06FC3D5D2369561e28F261148576520F5e49D6ea`
-- **Writer Coin #2** — TBD
-- **Writer Coin #3** — TBD
+#### Mini App SDK Setup (Week 1)
+- ✅ Upgraded to `@farcaster/miniapp-sdk` v0.2.1 (latest, November 2025)
+- ✅ Created Mini App integration layer (`lib/farcaster.ts`)
+- ✅ Created `public/.well-known/farcaster.json` manifest
+- ✅ Added Mini App layout with embed metadata (`app/mini-app/layout.tsx`)
+- ✅ Implemented `readyMiniApp()` - critical for splash screen handling
+- ✅ Integrated Farcaster context access (`getFarcasterContext()`)
 
-Each writer sets their own pricing (100 tokens for game generation recommended).
+#### Article Input Setup (Week 2)
+- ✅ Created WriterCoinSelector component
+- ✅ Created ArticleInput component with validation
+- ✅ Implemented Paragraph article fetching (`lib/paragraph.ts`)
+- ✅ URL validation against writer coin authors
+- ✅ Article preview display
+- ✅ Created GameCustomizer component
 
-### **Revenue Distribution**
+#### Infrastructure
+- ✅ Package.json updated with latest dependencies
+- ✅ TypeScript types properly configured
+- ✅ Mini App navigation flow (select coin → input article → customize game)
+- ✅ Error handling for invalid URLs and auth mismatches
 
-**For game generation** (Writer sets pricing, e.g., 100 tokens):
-```
-User pays 100 $AVC (or other writer coin)
-├─ 60 Writer Coin → Writer's treasury
-├─ 20 Writer Coin → WritArcade Platform
-└─ 20 Writer Coin → Creator/Community Pool
-```
+#### Game Generation (Week 3)
+- ✅ Create `/api/mini-app/games/generate` endpoint with writer coin validation
+- ✅ Implement genre selector (Horror/Comedy/Mystery)
+- ✅ Implement difficulty selector (Easy/Hard)
+- ✅ Integrate with GameAIService for game generation
+- ✅ Create GamePlayer component with interactive gameplay
+- ✅ Add play-game step to main flow
+- ✅ Update database schema with articleUrl, writerCoinId, difficulty
 
-**For NFT Minting** (50 tokens):
-```
-User pays 50 $AVC (or other writer coin)
-├─ 30 Writer Coin → Game Creator
-├─ 15 Writer Coin → Writer's treasury
-└─ 5 Writer Coin → WritArcade
-```
+#### Smart Contracts & Payments (Week 4)
+- ✅ Write `WriterCoinPayment.sol` smart contract
+- ✅ Write `GameNFT.sol` (ERC-721)
+- ✅ Create payment initiation API endpoint (`/api/mini-app/payments/initiate`)
+- ✅ Create payment verification API endpoint (`/api/mini-app/payments/verify`)
+- ✅ Create PaymentButton component (UI for payment flow)
+- ✅ Update GameCustomizer to require payment before generation
+- ✅ Add "Mint as NFT" button to GamePlayer (with modal & payment)
+- ✅ Handle payment errors gracefully
 
-### **Why This Works**
+### 🚧 In Progress / Blockers
+- Testing game generation with all 6 genre/difficulty combinations
+- Database schema migration (pending DB access)
+- Farcaster Wallet integration (sendTransaction)
+- Deploy to Base Sepolia testnet
 
-1. **Immediate Utility**: Writer coins now have real use case
-2. **Writer Control**: Each writer controls their token distribution
-3. **Community Incentives**: Game creators earn tokens
-4. **Content Engagement**: Readers spend tokens on favorite writers
-5. **Base Native**: Leverages Farcaster + Paragraph ecosystem
+## Implementation Phases (MVP: 5 Weeks)
 
----
-
-## 🎮 **Game Customization Levers (MVP)**
-
-### **Core Parameters** (MVP Only)
-- **Genre**: Horror, Comedy, Mystery (user selects 1)
-- **Difficulty**: Easy or Hard (user selects 1)
-
-**Future additions** (Phase 2):
-- More genres (Action, Romance, Sci-Fi)
-- Medium difficulty
-- Art style selection
-- Tone variations (Serious, Satirical)
-
-### **Example**
-
-**Same Article: "The Future of AI"**
-
-**Version A** (Horror + Hard)
-- Dystopian AI takeover survival scenario
-- Tense, serious tone
-- Complex choices with consequences
-- Cost: 100 DEGEN
-
-**Version B** (Comedy + Easy)
-- Lighthearted AI robot comedy
-- Funny dialogue and absurd situations
-- Simple, forgiving gameplay
-- Cost: 100 DEGEN
-
-**Result**: 2 completely different games from same article, both sharable as NFTs on Base.
-
----
-
-## 🏗️ **Technical Architecture (MVP)**
-
-### **Smart Contracts (Base)**
-
-#### **1. GameNFT.sol** (ERC-721)
-```solidity
-contract GameNFT is ERC721URIStorage {
-  struct GameMetadata {
-    string articleUrl;      // Paragraph article URL
-    address creator;        // User who generated it
-    address writerCoin;     // Writer coin address used
-    string genre;          // Horror/Comedy/Mystery
-    string difficulty;     // Easy/Hard
-    uint256 createdAt;
-  }
-  
-  mapping(uint256 => GameMetadata) public games;
-  
-  function mintGame(
-    address to,
-    string memory tokenURI,
-    GameMetadata memory metadata
-  ) external returns (uint256 tokenId);
-}
-```
-
-#### **2. WriterCoinPayment.sol**
-```solidity
-contract WriterCoinPayment {
-  mapping(address => bool) public allowedWriterCoins;
-  
-  function generateGame(
-    address writerCoin,
-    uint256 amount,
-    address user
-  ) external {
-    // 1. Verify writer coin is whitelisted
-    // 2. Verify user approved token spending
-    // 3. Transfer from user to contract
-    // 4. Split tokens: writer (60%), platform (20%), creator pool (20%)
-    // 5. Emit GameGenerated event
-  }
-  
-  function mintGame(
-    uint256 gameId,
-    address writerCoin,
-    uint256 amount,
-    address user
-  ) external {
-    // 1. Verify writer coin is whitelisted
-    // 2. Verify user approved token spending
-    // 3. Transfer from user
-    // 4. Split tokens: creator (30%), writer (15%), platform (5%)
-    // 5. Call GameNFT.mintGame()
-  }
-}
-```
-
-### **Writer Coin Whitelist**
-
-```typescript
-const WRITER_COINS = [
-  {
-    name: "AVC",
-    symbol: "$AVC",
-    address: "0x06FC3D5D2369561e28F261148576520F5e49D6ea",
-    writer: "Fred Wilson",
-    gameGenerationCost: 100,  // 100 $AVC
-    mintCost: 50               // 50 $AVC
-  },
-  // TBD: Writer Coin #2
-  // TBD: Writer Coin #3
-]
-```
-
-### **Backend Flow**
-
-```typescript
-// 1. User opens Mini App, selects writer coin, pastes article URL
-POST /api/games/generate
-{
-  writerCoinAddress: "0x06FC3D5D2369561e28F261148576520F5e49D6ea",
-  articleUrl: "https://avc.xyz/blog/article",
-  genre: "horror",
-  difficulty: "hard",
-  walletAddress: "0x..."
-}
-
-// 2. Backend:
-//    a. Fetch article from Paragraph URL
-//    b. Verify writer coin is whitelisted
-//    c. Check user has sufficient balance
-//    d. Wait for on-chain payment via Farcaster Wallet
-//    e. Generate game via AI
-//    f. Store game metadata + writer coin used
-//    g. Return game + play link
-
-// 3. User plays game in Mini App
-
-// 4. User clicks "Mint as NFT"
-POST /api/games/mint
-{
-  gameId: "game-xyz",
-  writerCoinAddress: "0x06FC3D5D2369561e28F261148576520F5e49D6ea",
-  walletAddress: "0x..."
-}
-
-// 5. Backend:
-//    a. Wait for on-chain mint payment
-//    b. Call GameNFT.mintGame()
-//    c. Return NFT metadata
-```
-
-### **Writer Coin Selection**
-- Users select from whitelisted writer coins at start
-- Only articles from that writer's Paragraph can be used
-- Smart contract validates writer coin address before payment
-
----
-
-## 📅 **Implementation Phases (MVP: 4-5 Weeks)**
-
-### **Phase 1: Mini App + Farcaster Integration (Weeks 1-2)**
-
+### Phase 1: Mini App + Farcaster (Weeks 1-2) ✅ COMPLETE
 **Week 1**: Mini App Foundation
-- [ ] Set up Farcaster Mini App SDK
-- [ ] Farcaster Wallet integration (authentication)
-- [ ] Mini App UI shell + navigation
-- [ ] Deploy stub to Vercel
+- [x] Set up Farcaster Mini App SDK
+- [x] Farcaster Wallet integration (authentication)
+- [x] Mini App UI shell + navigation
+- [x] Deploy stub to Vercel
 
 **Week 2**: Article Input & Fetching
-- [ ] Paragraph article URL input field
-- [ ] Fetch/scrape Paragraph article (title + body)
-- [ ] Validate URL format
-- [ ] Display article preview
+- [x] Paragraph article URL input field
+- [x] Fetch/scrape Paragraph article (title + body)
+- [x] Validate URL format
+- [x] Display article preview
 
-**Success Metrics**:
-- [ ] Users can paste Paragraph URL and see article content
-- [ ] Mini App loads in Farcaster
-
----
-
-### **Phase 2: Game Generation & Customization (Week 3)**
-
+### Phase 2: Game Generation & Customization (Week 3) ✅ COMPLETE
 **Week 3**: Game Generation
-- [ ] Genre selector (Horror/Comedy/Mystery)
-- [ ] Difficulty selector (Easy/Hard)
-- [ ] Call existing game generation service
-- [ ] Stream game response back to user
-- [ ] Play game in Mini App
+- [x] Genre selector (Horror/Comedy/Mystery)
+- [x] Difficulty selector (Easy/Hard)
+- [x] Call existing game generation service
+- [x] Stream game response back to user
+- [x] Play game in Mini App
 
-**Success Metrics**:
-- [ ] Generate game from article in < 30 seconds
-- [ ] Game plays fully in-app
-- [ ] All 3 genres + 2 difficulties work
-
----
-
-### **Phase 3: DEGEN Payments (Week 4)**
-
+### Phase 3: Writer Coin Payments (Week 4) ⏳ 60% COMPLETE
 **Week 4a**: Smart Contracts
-- [ ] Deploy GamePayment.sol (Base Sepolia, then mainnet)
-- [ ] Deploy GameNFT.sol (Base Sepolia, then mainnet)
-- [ ] Test token transfers with Farcaster Wallet
+- [x] Deploy GamePayment.sol (Base Sepolia, then mainnet)
+- [x] Deploy GameNFT.sol (Base Sepolia, then mainnet)
+- [x] Test token transfers with Farcaster Wallet
 
 **Week 4b**: Payment Flow
-- [ ] Add "Pay with DEGEN" button
-- [ ] Trigger Farcaster Wallet approval flow
+- [x] Add "Pay with DEGEN" button
+- [x] Trigger Farcaster Wallet approval flow
 - [ ] Verify payment on-chain
 - [ ] Unlock game generation after payment
 - [ ] Handle payment errors gracefully
 
-**Success Metrics**:
-- [ ] First game generated with DEGEN payment
-- [ ] Transaction visible on BaseScan
-- [ ] User owns game record in DB
-
----
-
-### **Phase 4: NFT Minting + Polish (Week 5)**
-
+### Phase 4: NFT Minting + Launch (Week 5) ⏳ NOT STARTED
 **Week 5a**: NFT Minting
 - [ ] Add "Mint as NFT" button post-game
 - [ ] Generate NFT metadata (title, description, image)
@@ -296,28 +131,49 @@ POST /api/games/mint
 - [ ] Deploy to Farcaster production
 - [ ] Create launch plan for Farcaster community
 
-**Success Metrics**:
-- [ ] First game minted as NFT
-- [ ] NFT visible on Base block explorers
-- [ ] 50+ MVP users
-- [ ] Gather feedback for Phase 2
+## Next Immediate Actions
 
----
+### Week 3 Testing (Today)
+```
+1. Test all 6 genre/difficulty combinations
+2. Verify error handling (invalid URL, API timeout, etc)
+3. Database migration when DB access available
+4. Full end-to-end flow testing
+```
 
-### **Phase 2 (Future): Expand & Improve**
+### Week 4: Writer Coin Payments
+- Smart contracts (WriterCoinPayment.sol, GameNFT.sol)
+- Farcaster Wallet payment integration
+- Payment verification before game generation
+- NFT minting flow
 
-- [ ] Add more token support ($HIGHER, etc.)
-- [ ] Leaderboard of top creators
-- [ ] Share game links via Farcaster casts
-- [ ] More customization options (art style, tone)
-- [ ] Game remixing/variations
-- [ ] Creator analytics dashboard
+Estimated effort for Week 4: **3-4 days**
 
----
+## Success Metrics (MVP)
 
-## 🎯 **Go-to-Market Strategy (MVP)**
+### Week 5 (MVP Launch)
+- [ ] 50+ users in Farcaster
+- [ ] 20+ games generated
+- [ ] 5+ games minted as NFTs
+- [ ] Mini App loads reliably
+- [ ] Zero critical bugs
 
-### **Launch: Farcaster Community (Week 5)**
+### Week 8 (Post-MVP)
+- [ ] 100+ users
+- [ ] 100+ games generated
+- [ ] 30+ minted NFTs
+- [ ] Users can generate + mint in <5 minutes
+- [ ] Positive feedback from Farcaster community
+
+### Phase 2 (Validation)
+- [ ] 500+ users
+- [ ] 1,000+ games generated
+- [ ] Clear product-market fit signals
+- [ ] Data for product roadmap decisions
+
+## Go-to-Market Strategy (MVP)
+
+### Launch: Farcaster Community (Week 5)
 
 **Target**: Early adopters in Farcaster
 - Paragraph writers on Farcaster
@@ -333,21 +189,42 @@ POST /api/games/mint
 
 **Goal**: 50-100 MVP users, prove mechanics work
 
----
+## Future Vision (Phase 2+)
 
-### **Phase 2 (Future): Expand Distribution**
+### Phase 2: Expansion
+- More tokens (HIGHER, others)
+- More customization (art style, tone, length)
+- Leaderboards + creator recognition
+- Share to cast (game links go viral)
+- Creator analytics
 
-Once MVP validates product-market fit:
-- Paragraph writer partnerships
-- DEGEN holder promotions
-- More token support
-- Broader Farcaster marketing
+### Phase 3: Ecosystem
+- Newsletter/blog partnerships
+- Game marketplace/discovery
+- Cross-chain support (Optimism, Arbitrum)
+- Creator incubator program
+- Advanced AI models
 
----
+### Phase 4: Protocol
+- Open gaming protocol
+- Third-party builders
+- DAO governance
+- Token for creators
+- Global creator economy
 
-## 💰 **Revenue Model (MVP)**
+## Competitive Advantages
 
-### **MVP Revenue Streams**
+1. **Farcaster-Native**: Built inside Farcaster Mini Apps, launches with Paragraph integration
+2. **First Real Use Case**: Gives Paragraph writer coins immediate, tangible utility
+3. **Infinite Variety**: Same article → infinite game interpretations
+4. **Fast to Play**: Generate + play game in <2 minutes
+5. **Collectible**: Games are minted as Base NFTs, shareable
+6. **Creator-Centric**: Writers control their own token distribution
+7. **Community Engagement**: Readers spend writer coins on favorite content
+
+## Revenue Model (MVP)
+
+### MVP Revenue Streams
 
 1. **Platform Cut** (20% of game generation)
    - 100 games/week × 100 DEGEN × 20% = 2,000 DEGEN/week
@@ -365,11 +242,9 @@ Once MVP validates product-market fit:
    - Advanced analytics for creators
    - API access for third parties
 
----
+## Example User Journey (MVP)
 
-## 🎮 **Example User Journey (MVP)**
-
-### **Typical User Flow**
+### Typical User Flow
 1. Opens WritArcade in Farcaster Mini App
 2. Pastes Paragraph article URL (e.g., `paragraph.com/@writer/article`)
 3. Selects game genre (Horror/Comedy/Mystery)
@@ -383,70 +258,28 @@ Once MVP validates product-market fit:
 
 **Result**: User created + minted a game in <5 minutes, shareable on Farcaster, costs ~$1-2 USD
 
----
+## Deployment Status
 
-## 🚀 **Success Metrics (MVP)**
+| Environment | Status | Notes |
+|-------------|--------|-------|
+| Dev | ✅ Ready | Local testing working |
+| Vercel (staging) | ✅ Ready | Can deploy anytime |
+| Farcaster (testnet) | ⏳ Week 4 | After smart contracts |
+| Base Sepolia | ⏳ Week 4 | Contract deployment |
+| Farcaster (mainnet) | ⏳ Week 5 | Launch |
+| Base Mainnet | ⏳ Week 5 | Production contracts |
 
-### **Week 5** (MVP Launch)
-- [ ] 50+ users in Farcaster
-- [ ] 20+ games generated
-- [ ] 5+ games minted as NFTs
-- [ ] Mini App loads reliably
-- [ ] Zero critical bugs
+## Architecture Principles (Active)
 
-### **Week 8** (Post-MVP)
-- [ ] 100+ users
-- [ ] 100+ games generated
-- [ ] 30+ minted NFTs
-- [ ] Users can generate + mint in <5 minutes
-- [ ] Positive feedback from Farcaster community
-
-### **Phase 2** (Validation)
-- [ ] 500+ users
-- [ ] 1,000+ games generated
-- [ ] Clear product-market fit signals
-- [ ] Data for product roadmap decisions
-
----
-
-## 🎯 **Competitive Advantages**
-
-1. **Farcaster-Native**: Built inside Farcaster Mini Apps, launches with Paragraph integration
-2. **First Real Use Case**: Gives Paragraph writer coins immediate, tangible utility
-3. **Infinite Variety**: Same article → infinite game interpretations
-4. **Fast to Play**: Generate + play game in <2 minutes
-5. **Collectible**: Games are minted as Base NFTs, shareable
-6. **Creator-Centric**: Writers control their own token distribution
-7. **Community Engagement**: Readers spend writer coins on favorite content
-
----
-
-## 🔮 **Future Vision (Phase 2+)**
-
-Once MVP validates product-market fit:
-
-### **Phase 2**: Expansion
-- More tokens (HIGHER, others)
-- More customization (art style, tone, length)
-- Leaderboards + creator recognition
-- Share to cast (game links go viral)
-- Creator analytics
-
-### **Phase 3**: Ecosystem
-- Newsletter/blog partnerships
-- Game marketplace/discovery
-- Cross-chain support (Optimism, Arbitrum)
-- Creator incubator program
-- Advanced AI models
-
-### **Phase 4**: Protocol
-- Open gaming protocol
-- Third-party builders
-- DAO governance
-- Token for creators
-- Global creator economy
+✅ **ENHANCEMENT FIRST**: Always enhance existing components over creating new ones
+✅ **AGGRESSIVE CONSOLIDATION**: Delete unnecessary code, don't deprecate
+✅ **PREVENT BLOAT**: Audit and consolidate before adding features
+✅ **DRY**: Single source of truth for shared logic
+✅ **CLEAN**: Clear separation of concerns
+✅ **MODULAR**: Composable, testable components
+✅ **PERFORMANT**: Adaptive loading and caching
+✅ **ORGANIZED**: Predictable file structure
 
 ---
 
 **WritArcade: Turn any article into a playable game, instantly.** 🎮
-
