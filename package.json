@@ -20,6 +20,7 @@
     "@ai-sdk/anthropic": "^0.0.55",
     "@ai-sdk/openai": "^0.0.66",
     "@farcaster/miniapp-sdk": "^0.2.1",
+    "@paragraph_xyz/sdk": "^0.0.13",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-select": "^2.2.6",
@@ -51,6 +52,7 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.8.6",
+    "@types/node-fetch": "^2.6.13",
     "@types/pg": "^8.11.10",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -61,6 +63,7 @@
     "pg": "^8.12.0",
     "postcss": "^8.4.47",
     "prisma": "^5.22.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3"
   },

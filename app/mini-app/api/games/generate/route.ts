@@ -68,9 +68,11 @@ export async function POST(request: NextRequest) {
     
 ${
   processedContent
-    ? `Based on this article: "${articleTitle}"
+    ? `Based on this article: "${processedContent.title || 'Untitled'}"
 
-Content (${processedContent.wordCount} words):
+Article metadata: From publication "${processedContent.publicationName || 'Unknown'}" with ${processedContent.subscriberCount || 0} subscribers. Author: ${processedContent.author || 'Unknown'} (wallet: ${processedContent.authorWallet || 'N/A'}). Published: ${processedContent.publishedAt?.toISOString() || 'Unknown'}.
+
+Content summary (${processedContent.wordCount} words, ~${processedContent.estimatedReadTime || 0}min read):
 ${processedContent.text}`
     : `Based on the content from: ${validatedData.articleUrl}`
 }

@@ -35,19 +35,17 @@ export async function POST(request: NextRequest) {
     const validatedData = generateGameSchema.parse(body)
     
     let processedPrompt = validatedData.promptText || ''
+    let processedContent
     
     // If URL provided, extract and process content
     if (validatedData.url && ContentProcessorService.isValidUrl(validatedData.url)) {
       try {
-        const processedContent = await ContentProcessorService.processUrl(validatedData.url)
+        processedContent = await ContentProcessorService.processUrl(validatedData.url)
         
         processedPrompt = `Create a game based on this article: "${processedContent.title || 'Untitled'}"
-        
-Content summary (${processedContent.wordCount} words, ~${processedContent.estimatedReadTime}min read):
-${processedContent.text}
-
-Make the game capture the essence and themes of this article while being engaging and interactive.`
-
+\nArticle metadata: From publication "${processedContent.publicationName}" with ${processedContent.subscriberCount} subscribers. Author: ${processedContent.author || 'Unknown'} (wallet: ${processedContent.authorWallet || 'N/A'}). Published: ${processedContent.publishedAt?.toISOString() || 'Unknown'}.
+        \nContent summary (${processedContent.wordCount} words, ~${processedContent.estimatedReadTime}min read):
+${processedContent.text}\n\nMake the game capture the essence and themes of this article while being engaging and interactive.`
       } catch (error) {
         console.error('Content processing failed:', error)
         // Fallback to basic URL-based generation
@@ -70,7 +68,17 @@ Make the game capture the essence and themes of this article while being engagin
     const gameData = await GameAIService.generateGame(gameRequest)
     
     // Save to database using enhanced database service
-    const savedGame = await GameDatabaseService.createGame(gameData, user?.id)
+    const miniAppData = processedContent ? {
+      articleUrl: validatedData.url,
+      difficulty: validatedData.customization?.difficulty,
+      writerCoinId: validatedData.payment?.writerCoinId,
+      authorWallet: processedContent.authorWallet,
+      publicationName: processedContent.publicationName,
+      publicationSummary: processedContent.publicationSummary,
+      subscriberCount: processedContent.subscriberCount,
+      articlePublishedAt: processedContent.publishedAt,
+    } : undefined
+    const savedGame = await GameDatabaseService.createGame(gameData, user?.id, miniAppData)
     
     return NextResponse.json({
       success: true,

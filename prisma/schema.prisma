@@ -59,9 +59,7 @@ model Game {
   musicPromptSeedImage String?
 
   // Mini App specific fields
-  articleUrl       String?  // Original article URL (Paragraph)
-  writerCoinId     String?  // Which writer coin was used (e.g., "avc")
-  difficulty       String?  // Game difficulty: "easy" or "hard"
+  articleUrl         String?  // Original article URL (Paragraph)\n  authorWallet       String?\n  publicationName    String?\n  publicationSummary String?\n  subscriberCount    Int?\n  articlePublishedAt DateTime?\n  writerCoinId       String?  // Which writer coin was used (e.g., \"avc\")\n  difficulty         String?  // Game difficulty: \"easy\" or \"hard\""hard"
 
   // NFT minting fields
   nftTokenId       String?  // ERC-721 token ID

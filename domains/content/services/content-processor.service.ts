@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { marked } from 'marked'
 
+
 export interface ContentSource {
   url: string
   type: 'newsletter' | 'blog' | 'article' | 'unknown'
@@ -13,7 +14,11 @@ export interface ProcessedContent {
   text: string
   title?: string
   author?: string
+  authorWallet?: string
   publishedAt?: Date
+  publicationName?: string
+  publicationSummary?: string
+  subscriberCount?: number
   wordCount: number
   estimatedReadTime: number
   source: ContentSource
@@ -25,8 +30,7 @@ export interface ProcessedContent {
  */
 export class ContentProcessorService {
   
-  private static readonly SCRAPING_API_KEY = process.env.SCRAPINGWEB_API_KEY
-  private static readonly EXTRACTOR_API_KEY = process.env.EXTRACTOR_API_KEY
+  
   
   /**
    * Process content from URL - enhanced consolidation of existing scrapers
@@ -37,16 +41,16 @@ export class ContentProcessorService {
       const contentType = this.detectContentType(url)
       
       // Extract content based on type
-      let extractedText: string
-      let metadata: Partial<ProcessedContent> = {}
+      let extractedData: { text: string; metadata: Partial<ProcessedContent> }
       
       if (this.isHackerNewsUrl(url)) {
-        const hnData = await this.processHackerNewsUrl(url)
-        extractedText = hnData.text
-        metadata = hnData.metadata
+        extractedData = await this.processHackerNewsUrl(url)
       } else {
-        extractedText = await this.scrapeGenericUrl(url)
+        extractedData = await this.scrapeGenericUrl(url)
       }
+      
+      const extractedText = extractedData.text
+      const metadata = extractedData.metadata || {}
       
       // Process and clean the text
       const cleanText = this.cleanAndProcessText(extractedText)
@@ -84,41 +88,54 @@ export class ContentProcessorService {
   /**
    * Enhanced URL scraping with fallback methods
    */
-  private static async scrapeGenericUrl(url: string): Promise<string> {
-    // Try primary scraping service
-    if (this.SCRAPINGWEB_API_KEY) {
-      try {
-        const response = await axios.get('https://scrapingweb.com/api/v1/text', {
-          params: {
-            apikey: this.SCRAPINGWEB_API_KEY,
-            url: url
-          },
-          timeout: 10000
-        })
-        
-        if (response.data?.text) {
-          return response.data.text
-        }
-      } catch (error) {
-        console.warn('ScrapingWeb API failed, trying fallback:', error)
-      }
+  private static async scrapeGenericUrl(url: string): Promise<{ text: string; metadata: Partial<ProcessedContent> }> {
+    if (!url.includes('paragraph.com')) {
+      throw new Error('Only Paragraph URLs supported');
     }
-    
-    // Try fallback extractor service
-    if (this.EXTRACTOR_API_KEY) {
-      try {
-        const endpoint = `https://extractorapi.com/api/v1/extractor/?apikey=${this.EXTRACTOR_API_KEY}&url=${encodeURIComponent(url)}`
-        const response = await axios.get(endpoint, { timeout: 10000 })
-        
-        if (response.data?.text) {
-          return response.data.text
-        }
-      } catch (error) {
-        console.warn('ExtractorAPI failed:', error)
-      }
+
+    const urlParts = new URL(url).pathname.split('/').filter(Boolean);
+    const publicationSlug = urlParts[0].replace('@', '');
+    const postSlug = urlParts[1] || '';
+
+    if (!publicationSlug || !postSlug) {
+      throw new Error('Invalid Paragraph URL format');
     }
-    
-    throw new Error('All scraping methods failed')
+
+    const postApiUrl = `https://api.paragraph.com/v1/posts/${publicationSlug}/${postSlug}?includeContent=true`;
+
+    try {
+      const postResponse = await axios.get(postApiUrl, { timeout: 10000 });
+
+      const postData = postResponse.data;
+      if (!postData?.markdown) {
+        throw new Error('No content found in response');
+      }
+
+      // Fetch additional metadata using publicationId from post
+      const publicationId = postData.publicationId;
+      const [pubResponse, subResponse] = await Promise.all([
+        axios.get(`https://api.paragraph.com/v1/publications/${publicationId}`, { timeout: 5000 }),
+        axios.get(`https://api.paragraph.com/v1/publications/${publicationId}/subscriberCount`, { timeout: 5000 })
+      ]);
+
+      const pubData = pubResponse.data;
+      const subData = subResponse.data;
+
+      const metadata: Partial<ProcessedContent> = {
+        title: postData.title,
+        author: pubData.ownerUserId ? `User ${pubData.ownerUserId}` : undefined, // Can enhance to fetch user details if needed
+        authorWallet: pubData.ownerWalletAddress, // Assuming this exists; adjust based on actual response
+        publishedAt: new Date(postData.publishedAt),
+        publicationName: pubData.name,
+        publicationSummary: pubData.summary,
+        subscriberCount: subData.count
+      };
+
+      return { text: postData.markdown, metadata };
+    } catch (error) {
+      console.error('Paragraph API error:', error);
+      throw new Error('Failed to extract content and metadata from Paragraph API');
+    }
   }
   
   /**
@@ -143,14 +160,15 @@ export class ContentProcessorService {
         
         if (story?.url) {
           // Get the actual article content
-          const articleText = await this.scrapeGenericUrl(story.url)
+          const article = await this.scrapeGenericUrl(story.url)
           
           return {
-            text: articleText,
+            text: article.text,
             metadata: {
-              title: story.title,
-              author: story.by,
-              publishedAt: story.time ? new Date(story.time * 1000) : undefined,
+              ...article.metadata,
+              title: story.title || article.metadata.title,
+              author: story.by || article.metadata.author,
+              publishedAt: story.time ? new Date(story.time * 1000) : article.metadata.publishedAt,
             }
           }
         } else if (story?.text) {
@@ -170,8 +188,13 @@ export class ContentProcessorService {
     } catch (error) {
       console.error('HackerNews processing error:', error)
       // Fallback to regular scraping
-      const text = await this.scrapeGenericUrl(url)
-      return { text, metadata: {} }
+      const fallback = await this.scrapeGenericUrl(url);
+      return {
+        text: fallback.text,
+        metadata: fallback.metadata
+      };
+      const data = await this.scrapeGenericUrl(url)
+      return { text: data.text, metadata: data.metadata || {} }
     }
   }
   
@@ -241,9 +264,9 @@ export class ContentProcessorService {
   /**
    * Process markdown content to plain text
    */
-  static processMarkdown(markdown: string): string {
+  static async processMarkdown(markdown: string): Promise<string> {
     // Convert markdown to HTML then strip HTML tags
-    const html = marked(markdown)
+    const html = await marked(markdown)
     const text = html.replace(/<[^>]*>/g, ' ')
     return this.cleanAndProcessText(text)
   }
