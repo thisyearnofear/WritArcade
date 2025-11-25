@@ -10,9 +10,11 @@ const startGameSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const params = await context.params
+
     const body = await request.json()
     const { sessionId } = startGameSchema.parse(body)
     

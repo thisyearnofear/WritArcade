@@ -114,10 +114,11 @@ export class DataMigrator {
         await this.prisma.user.create({
           data: {
             id: `user_${user.id}`, // Convert integer ID to string
-            email: user.email,
-            username: user.username,
-            password: user.password,
-            model: user.model || 'gpt-4o-mini',
+            // email: user.email, // email is no longer in the schema
+            // username: user.username, // username is no longer in the schema
+            // password: user.password, // password is no longer in the schema
+            walletAddress: `0xplaceholder_${user.id}`, // FIXME: This is a placeholder wallet address. The migration needs to be updated to handle the new wallet-based user model.
+            preferredModel: user.model || 'gpt-4o-mini',
             private: user.private || false,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,

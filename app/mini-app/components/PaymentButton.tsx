@@ -1,14 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { type WriterCoin } from '@/lib/writerCoins'
 import {
-  sendTransaction,
   encodePayForGameGeneration,
   encodePayForMinting,
-  getUserWalletAddress,
-  isFarcasterWalletAvailable,
-} from '@/lib/farcasterWallet'
+} from '@/lib/contracts'
+import { detectWalletProvider, type WalletProvider } from '@/lib/wallet'
 
 interface PaymentButtonProps {
   writerCoin: WriterCoin
@@ -25,8 +23,17 @@ export function PaymentButton({
   onPaymentError,
   disabled = false,
 }: PaymentButtonProps) {
+  const [provider, setProvider] = useState<WalletProvider | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function setupProvider() {
+      const { provider } = await detectWalletProvider()
+      setProvider(provider)
+    }
+    setupProvider()
+  }, [])
 
   const cost = action === 'generate-game'
     ? writerCoin.gameGenerationCost
@@ -44,14 +51,14 @@ export function PaymentButton({
 
     try {
       // Check wallet availability
-      if (!isFarcasterWalletAvailable()) {
-        throw new Error('Farcaster Wallet is not available in this context')
+      if (!provider) {
+        throw new Error('Wallet is not available in this context')
       }
 
       // Step 1: Get user's wallet address
-      const userAddress = await getUserWalletAddress()
+      const userAddress = await provider.getAddress()
       if (!userAddress) {
-        throw new Error('Failed to get wallet address from Farcaster')
+        throw new Error('Failed to get wallet address from wallet')
       }
 
       // Step 2: Initiate payment on backend to get payment details
@@ -70,7 +77,7 @@ export function PaymentButton({
       }
 
       const paymentInfo = await initiateResponse.json()
-      const contractAddress = paymentInfo.contractAddress
+      const contractAddress = paymentInfo.contractAddress as `0x${string}`
 
       // Step 3: Encode transaction data based on action
       let transactionData: string
@@ -89,9 +96,9 @@ export function PaymentButton({
       }
 
       // Step 4: Send transaction through Farcaster Wallet
-      const txResult = await sendTransaction({
+      const txResult = await provider.sendTransaction({
         to: contractAddress,
-        data: transactionData,
+        data: transactionData as `0x${string}`,
       })
 
       if (!txResult.success || !txResult.transactionHash) {

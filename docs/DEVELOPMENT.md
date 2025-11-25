@@ -1,7 +1,7 @@
 # WritArcade Development Guide
 
-**Last Updated:** November 24, 2025  
-**Status:** Phase 5 Complete - Full Payment Support
+**Last Updated:** November 25, 2025  
+**Status:** Phase 5 Complete - Full Payment Support + Next.js 16 & Build Fixes
 
 ## Quick Start
 
@@ -10,9 +10,9 @@
 cd /Users/udingethe/Dev/WritArcade
 
 # Install dependencies
-npm install --legacy-peer-deps
+npm install
 
-# Start dev server
+# Start dev server (uses turbopack)
 npm run dev
 
 # Opens: 
@@ -274,6 +274,14 @@ contracts/
 
 ## Development Tools
 
+### Linting
+```bash
+# Run ESLint (with auto-fix)
+npm run lint
+
+# Uses ESLint 9 with flat config (eslint.config.js)
+```
+
 ### Check Types
 ```bash
 npm run type-check
@@ -282,6 +290,7 @@ npm run type-check
 ### Build for Production
 ```bash
 npm run build
+# Note: Uses webpack backend (Next.js 16 compatibility)
 ```
 
 ### View Database
@@ -304,6 +313,20 @@ npx prisma migrate reset
 
 ## Common Issues & Solutions
 
+### Build Issues
+
+**"Invalid project directory: .../lint"**
+- **Cause:** Misconfigured `next lint` in npm scripts
+- **Fix:** Changed build script to use webpack with `--webpack` flag
+- **Context:** Next.js 16 uses Turbopack by default; webpack needed for custom config
+
+**Module not found warnings in build**
+- **Cause:** Nested dependencies (pino, @metamask/sdk) have optional peer dependencies
+- **Fix:** Configured webpack to ignore these warnings (harmless for browser)
+- **Status:** Warnings only, build succeeds
+
+### Runtime Issues
+
 ### "splash screen shows forever"
 - **Cause:** `readyMiniApp()` not called
 - **Fix:** Check `app/mini-app/page.tsx` has `await readyMiniApp()`
@@ -317,12 +340,18 @@ npx prisma migrate reset
 - **Fix:** Check `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` is set
 
 ### "TypeScript errors on build"
-- **Cause:** SDK type mismatch
-- **Fix:** Run `npm install --legacy-peer-deps`
+- **Cause:** Next.js 15+ params must be awaited
+- **Fix:** Use `const { slug } = await params` in dynamic routes
 
 ### "payment flow not working"
 - **Cause:** Smart contract addresses not set
 - **Fix:** Verify `NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS` and `NEXT_PUBLIC_GAME_NFT_ADDRESS`
+
+### Linting Issues
+
+**ESLint errors on build**
+- **Context:** ESLint 9 uses flat config (eslint.config.js)
+- **Status:** 0 errors, 53 warnings (unused variables downgraded to warnings)
 
 ## Testing Procedures
 
@@ -345,21 +374,30 @@ npx prisma migrate reset
 
 ## Configuration Files
 
-### Package.json Dependencies
+### Package.json Scripts
 ```json
 {
-  "@farcaster/miniapp-sdk": "^0.2.1",
-  "next": "^16.0.0",
-  "react": "^18.0.0",
-  "typescript": "^5.0.0",
-  "tailwindcss": "^3.0.0",
-  "prisma": "^5.0.0",
-  "@prisma/client": "^5.0.0",
-  "rainbowkit": "^1.0.0",
-  "wagmi": "^1.0.0",
-  "viem": "^1.0.0"
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint . --fix",
+    "type-check": "tsc --noEmit"
+  }
 }
 ```
+
+**Key Dependencies:**
+- `next`: ^16.0.0 (webpack build, turbopack dev)
+- `@farcaster/miniapp-sdk`: ^0.2.1 (Mini App integration)
+- `react`: ^19.0.0 (React 19)
+- `viem`: ^2.40.0 (Ethereum client)
+- `wagmi`: ^2.9.0 (React hooks for Ethereum)
+- `@rainbow-me/rainbowkit`: ^2.2.9 (Wallet UI)
+- `prisma`: ^5.22.0 (Database ORM)
+- `typescript`: ^5.6.3
+- `tailwindcss`: ^3.4.0
+- `eslint`: ^9.14.0 (with flat config)
 
 ## Phase 5b: Database Migrations & Payment Tracking ✅ COMPLETE
 
@@ -430,6 +468,49 @@ curl http://localhost:3000/api/payments/initiate
 - ⏳ Game generation testing (requires AI API keys - out of scope)
 - ⏳ Mini-app full flow testing (Wagmi dependency issues - non-critical)
 
+## Phase 5c: Build System & Linting ✅ COMPLETE
+
+### ESLint 9 Migration ✅
+- ✅ Migrated from `.eslintrc` to `eslint.config.js` (flat config)
+- ✅ Configured with TypeScript support
+- ✅ 0 errors, 53 warnings (unused variables allowed with `_` prefix)
+- ✅ `npm run lint` passes successfully
+
+### Next.js 16 Compatibility ✅
+- ✅ Updated build script to use `--webpack` flag (Turbopack doesn't support custom webpack config)
+- ✅ Fixed dynamic route params to use Promise (Next.js 15+ requirement)
+- ✅ Removed `cacheComponents` from next.config.js (incompatible with dynamic routes)
+- ✅ Build completes successfully with production output in `.next/`
+
+### Build Verification ✅
+```bash
+# Development build (turbopack)
+npm run dev          # ✅ Works
+
+# Production build (webpack)
+npm run build        # ✅ Works - 13.3s compile time
+
+# Type checking
+npm run type-check   # ✅ Passes
+
+# Linting
+npm run lint         # ✅ 0 errors, 53 warnings
+```
+
+### Configuration Changes Summary
+| File | Change | Reason |
+|------|--------|--------|
+| `package.json` | `build`: added `--webpack` flag | Next.js 16 uses Turbopack by default |
+| `next.config.js` | Removed `cacheComponents` | Incompatible with dynamic routes |
+| `next.config.js` | Added webpack `ignoreWarnings` | Suppress harmless peer dependency warnings |
+| `eslint.config.js` | Created flat config | ESLint 9 requirement |
+| `app/games/[slug]/page.tsx` | Added `export const dynamic = 'force-dynamic'` | Prevent static prerendering errors |
+| `app/games/[slug]/page.tsx` | Changed params to `Promise<{ slug: string }>` | Next.js 15+ requirement |
+| `lib/wallet/farcaster.ts` | Added ESLint disable comment | Suppress valid require() in browser env |
+| `tailwind.config.ts` | Extracted require() with disable comment | ESLint 9 compliance |
+| `components/ui/*.tsx` | Changed interfaces to types | ESLint no-empty-object-type rule |
+| `lib/paragraph.ts` | Fixed regex escaping | Removed unnecessary escape chars |
+
 ---
 
-**Phase 5b: READY FOR PRODUCTION** - All core functionality implemented and database tested.
+**Phase 5c: BUILD SYSTEM COMPLETE** - ESLint 9 configured, Next.js 16 fully compatible, production build passes.

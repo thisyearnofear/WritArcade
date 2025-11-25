@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  cacheComponents: true, // Cache Components support
   images: {
     remotePatterns: [
       {
@@ -16,6 +15,14 @@ const nextConfig = {
   typescript: {
     // Enable strict type checking
     tsconfigPath: './tsconfig.json',
+  },
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      ...config.ignoreWarnings || [],
+      // Ignore pino/thread-stream test files
+      /thread-stream\/test/,
+    ]
+    return config
   },
 }
 

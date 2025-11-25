@@ -1,17 +1,20 @@
 /**
  * Farcaster Wallet Provider
- * 
+ *
  * Implements WalletProvider interface for Farcaster Mini App SDK
  * Used in /app/mini-app environment
  */
 
 import type { WalletProvider, TransactionRequest, TransactionResult } from './types'
+import { createWalletClient, custom, WalletClient } from 'viem'
+import { base } from 'viem/chains'
 
 let sdk: any = null
 
 // Lazy-load SDK only in browser and Farcaster context
 try {
   if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const farcasterModule = require('@farcaster/miniapp-sdk')
     if (farcasterModule && farcasterModule.sdk) {
       sdk = farcasterModule.sdk
@@ -21,14 +24,30 @@ try {
   // SDK not available
 }
 
+async function getViemClient(): Promise<WalletClient | null> {
+  try {
+    const provider = await sdk.wallet.getEthereumProvider()
+    if (!provider) return null
+
+    const client = createWalletClient({
+      chain: base,
+      transport: custom(provider),
+    })
+    return client
+  } catch (error) {
+    console.error('[FarcasterWallet] Failed to get viem client:', error)
+    return null
+  }
+}
+
 export class FarcasterWalletProvider implements WalletProvider {
   type = 'farcaster' as const
 
   async isAvailable(): Promise<boolean> {
     try {
       if (!sdk) return false
-      const available = sdk && sdk.actions && typeof sdk.actions.sendTransaction === 'function'
-      return available
+      const provider = await sdk.wallet.getEthereumProvider()
+      return !!provider
     } catch {
       return false
     }
@@ -36,12 +55,10 @@ export class FarcasterWalletProvider implements WalletProvider {
 
   async getAddress(): Promise<`0x${string}` | null> {
     try {
-      if (!sdk) return null
-      const context = await sdk.context
-      if (context?.user?.walletAddress) {
-        return context.user.walletAddress as `0x${string}`
-      }
-      return null
+      const client = await getViemClient()
+      if (!client) return null
+      const addresses = await client.getAddresses()
+      return addresses[0] || null
     } catch (error) {
       console.error('[FarcasterWallet] Failed to get address:', error)
       return null
@@ -50,11 +67,21 @@ export class FarcasterWalletProvider implements WalletProvider {
 
   async sendTransaction(request: TransactionRequest): Promise<TransactionResult> {
     try {
-      if (!sdk) {
+      const client = await getViemClient()
+      if (!client) {
         return {
           transactionHash: '0x',
           success: false,
           error: 'Farcaster Wallet SDK not available',
+        }
+      }
+
+      const [account] = await client.getAddresses()
+      if (!account) {
+        return {
+          transactionHash: '0x',
+          success: false,
+          error: 'No wallet address found',
         }
       }
 
@@ -63,32 +90,20 @@ export class FarcasterWalletProvider implements WalletProvider {
         throw new Error('Invalid transaction request: missing to or data')
       }
 
-      // Ensure proper hex formatting
-      if (!request.to.startsWith('0x') || request.to.length !== 42) {
-        throw new Error('Invalid to address format')
-      }
-
-      if (!request.data.startsWith('0x')) {
-        throw new Error('Invalid data format - must start with 0x')
-      }
-
       const txRequest = {
+        account,
         to: request.to,
         data: request.data,
-        value: request.value || '0',
-        chainId: request.chainId || 8453, // Base mainnet
+        value: request.value ? BigInt(request.value) : undefined,
+        chain: base,
       }
 
       console.log('[FarcasterWallet] Sending transaction:', txRequest)
 
-      const result = await sdk.actions.sendTransaction(txRequest)
-
-      if (!result || !result.transactionHash) {
-        throw new Error('Transaction failed - no hash returned')
-      }
+      const hash = await client.sendTransaction(txRequest)
 
       return {
-        transactionHash: result.transactionHash as `0x${string}`,
+        transactionHash: hash,
         success: true,
       }
     } catch (error) {

@@ -193,8 +193,6 @@ export class ContentProcessorService {
         text: fallback.text,
         metadata: fallback.metadata
       };
-      const data = await this.scrapeGenericUrl(url)
-      return { text: data.text, metadata: data.metadata || {} }
     }
   }
   

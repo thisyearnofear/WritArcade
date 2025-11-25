@@ -24,7 +24,7 @@ export interface ParagraphArticle {
 export function extractParagraphAuthor(url: string): string | null {
     try {
         const urlObj = new URL(url)
-        const pathMatch = urlObj.pathname.match(/\/@([^\/]+)/)
+        const pathMatch = urlObj.pathname.match(/@([^/]+)/)
         return pathMatch ? pathMatch[1] : null
     } catch {
         return null

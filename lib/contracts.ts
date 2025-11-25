@@ -86,7 +86,7 @@ export function formatTokenAmount(amount: bigint, decimals: number = 18): string
   const wholePart = amount / divisor
   const fractionalPart = amount % divisor
   
-  if (fractionalPart === 0n) {
+  if (fractionalPart === BigInt(0)) {
     return wholePart.toString()
   }
   
@@ -213,4 +213,54 @@ export function gameToMetadata(data: {
     createdAt: Math.floor(data.createdAt.getTime() / 1000),
     gameTitle: data.gameTitle,
   }
+}
+
+/**
+ * Prepare transaction data for game generation payment
+ * 
+ * @param contractAddress - WriterCoinPayment contract address
+ * @param writerCoinAddress - ERC-20 token address
+ * @param userAddress - User's wallet address
+ * @returns Encoded transaction data
+ */
+export function encodePayForGameGeneration(
+  contractAddress: string,
+  writerCoinAddress: string,
+  userAddress: string
+): string {
+  // Function signature: payForGameGeneration(address writerCoin, address user)
+  // Selector: 0x7c4f5c5b (calculated from keccak256("payForGameGeneration(address,address)"))
+  
+  const selector = '0x7c4f5c5b'
+  
+  // Encode parameters
+  const encodedCoin = writerCoinAddress.slice(2).padStart(64, '0')
+  const encodedUser = userAddress.slice(2).padStart(64, '0')
+  
+  return selector + encodedCoin + encodedUser
+}
+
+/**
+ * Prepare transaction data for NFT minting payment
+ * 
+ * @param contractAddress - WriterCoinPayment contract address
+ * @param writerCoinAddress - ERC-20 token address
+ * @param userAddress - User's wallet address
+ * @returns Encoded transaction data
+ */
+export function encodePayForMinting(
+  contractAddress: string,
+  writerCoinAddress: string,
+  userAddress: string
+): string {
+  // Function signature: payForMinting(address writerCoin, address user)
+  // Selector: 0xd0e521c0 (calculated from keccak256("payForMinting(address,address)"))
+  
+  const selector = '0xd0e521c0'
+  
+  // Encode parameters
+  const encodedCoin = writerCoinAddress.slice(2).padStart(64, '0')
+  const encodedUser = userAddress.slice(2).padStart(64, '0')
+  
+  return selector + encodedCoin + encodedUser
 }

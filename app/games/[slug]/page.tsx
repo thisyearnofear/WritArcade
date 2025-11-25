@@ -4,14 +4,17 @@ import { GamePlayInterface } from '@/domains/games/components/game-play-interfac
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 
+export const dynamic = 'force-dynamic'
+
 interface GamePageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export default async function GamePage({ params }: GamePageProps) {
-  const game = await GameDatabaseService.getGameBySlug(params.slug)
+  const { slug } = await params
+  const game = await GameDatabaseService.getGameBySlug(slug)
   
   if (!game) {
     notFound()
@@ -79,7 +82,8 @@ export default async function GamePage({ params }: GamePageProps) {
 }
 
 export async function generateMetadata({ params }: GamePageProps) {
-  const game = await GameDatabaseService.getGameBySlug(params.slug)
+  const { slug } = await params
+  const game = await GameDatabaseService.getGameBySlug(slug)
   
   if (!game) {
     return {
