@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint . --fix",
     "type-check": "tsc --noEmit",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -78,6 +79,6 @@
     "typescript": "^5.6.3"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   }
 }

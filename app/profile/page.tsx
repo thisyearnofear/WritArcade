@@ -7,6 +7,8 @@ import { GameGrid } from '@/domains/games/components/game-grid'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProfilePage() {
   const user = await getCurrentUser()
 

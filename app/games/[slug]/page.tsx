@@ -82,6 +82,14 @@ export default async function GamePage({ params }: GamePageProps) {
 }
 
 export async function generateMetadata({ params }: GamePageProps) {
+  // Skip database query during build
+  if (!process.env.DATABASE_URL) {
+    return {
+      title: 'WritArcade Game',
+      description: 'Play interactive games generated from articles',
+    }
+  }
+
   const { slug } = await params
   const game = await GameDatabaseService.getGameBySlug(slug)
   
