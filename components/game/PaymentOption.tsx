@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi'
 import { type WriterCoin } from '@/lib/writerCoins'
 import { PaymentFlow } from './PaymentFlow'
 import { CostPreview } from './CostPreview'
-import { WalletConnectButton } from '@/components/ui/wallet-connect'
+import { WalletConnect } from '@/components/ui/wallet-connect'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import { useMemo } from 'react'
 import type { PaymentAction } from '@/domains/payments/types'
@@ -55,7 +55,7 @@ export function PaymentOption({
               <p className="text-sm text-amber-300 mb-3">
                 To proceed with payment and customization, please connect your wallet. You'll need to approve a transaction on the Base blockchain.
               </p>
-              <WalletConnectButton className="w-full" />
+              <WalletConnect />
             </div>
           </div>
         </div>
