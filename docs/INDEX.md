@@ -1,7 +1,7 @@
 # WritArcade Documentation Index
 
 **Last Updated:** November 26, 2025  
-**Status:** Documentation consolidated to 4 core documents (lean & maintainable)
+**Status:** Documentation consolidated to 5 core documents (lean & maintainable)
 
 ---
 
@@ -23,6 +23,14 @@
 - Mini App SDK integration and wallet setup
 - Payment flow implementation
 - Common issues and testing procedures
+
+### 🎯 [HACKATHON.md](./HACKATHON.md) - Story Protocol IPFi Buildathon
+- Hackathon strategy and track eligibility
+- Week 1 implementation status (10 files, 2000+ LOC)
+- Story Protocol integration details
+- Multichain architecture (Story + Base)
+- Setup instructions and deployment guide
+- Testing checklist and troubleshooting
 
 ### 🗺️ [ROADMAP.md](./ROADMAP.md) - Project Timeline & Status
 - Complete implementation phases (5-week MVP)

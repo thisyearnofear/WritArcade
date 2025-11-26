@@ -32,6 +32,7 @@
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@safe-global/safe-apps-provider": "^0.18.6",
     "@safe-global/safe-apps-sdk": "^9.1.0",
+    "@story-protocol/core-sdk": "^0.8.0",
     "@tanstack/react-query": "^5.90.10",
     "@walletconnect/ethereum-provider": "^2.23.0",
     "ai": "^4.0.0",
