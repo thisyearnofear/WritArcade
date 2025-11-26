@@ -16,18 +16,18 @@ const nextConfig = {
     // Enable strict type checking
     tsconfigPath: './tsconfig.json',
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Exclude test files and unnecessary files from bundle
     config.module.rules.push({
-      test: /node_modules\/@wagmi\/connectors\/node_modules\/thread-stream\/(test|bench)/,
+      test: /\.(test|spec)\.(js|ts)$/,
+      use: 'null-loader'
+    });
+    // Also exclude thread-stream test directory entirely
+    config.module.rules.push({
+      test: /thread-stream\/test/,
       use: 'null-loader'
     });
     return config;
-  },
-  experimental: {
-    turbotrace: {
-      logLevel: 'error'
-    }
   }
 }
 
