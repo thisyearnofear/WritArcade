@@ -21,10 +21,10 @@ interface Game {
 }
 
 interface GameStats {
-  total: number
-  public: number
+  totalGames: number
+  publicGames: number
   topGenres: Array<{ genre: string; count: number }>
-  recentGames: Game[]
+  recentGames: number
 }
 
 export default function GamesPage() {
@@ -60,7 +60,7 @@ export default function GamesPage() {
         }
 
         const fetchedGames = await GameDatabaseService.getGames(options)
-        setGames(fetchedGames)
+        setGames(fetchedGames.games)
       } catch (error) {
         console.error('Failed to fetch games:', error)
         setGames([])
@@ -85,7 +85,7 @@ export default function GamesPage() {
           <div className="max-w-6xl mx-auto">
             <h1 className="text-5xl font-bold mb-4">Game Gallery</h1>
             <p className="text-gray-400 text-lg">
-              Explore {stats?.public || 0} games created from articles and newsletters
+              Explore {stats?.publicGames || 0} games created from articles and newsletters
             </p>
           </div>
         </section>
@@ -96,11 +96,11 @@ export default function GamesPage() {
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
-                  <div className="text-3xl font-bold text-purple-400">{stats.public}</div>
+                  <div className="text-3xl font-bold text-purple-400">{stats.publicGames}</div>
                   <div className="text-gray-400 mt-2">Public Games</div>
                 </div>
                 <div className="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
-                  <div className="text-3xl font-bold text-blue-400">{stats.total}</div>
+                  <div className="text-3xl font-bold text-blue-400">{stats.totalGames}</div>
                   <div className="text-gray-400 mt-2">Total Games</div>
                 </div>
                 <div className="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
