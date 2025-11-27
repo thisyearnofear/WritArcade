@@ -1,7 +1,7 @@
 # WritArcade Development Guide
 
-**Last Updated:** November 25, 2025  
-**Status:** Phase 5 Complete - Full Payment Support + Next.js 16 & Build Fixes
+**Last Updated:** November 27, 2025  
+**Status:** Phase 5b Complete - UI/UX Polish & Visual Identity
 
 ## Quick Start
 
@@ -28,12 +28,18 @@ npm run dev
 1. Select Genre = "Horror", connect wallet, generate custom game
 2. Verify horror-themed content and article context integration
 
+**Visual Identity:**
+- Games now generate with Venice AI cover art (requires API key)
+- Hero images display on game pages with genre-specific styling
+- Compact success modal navigates to game page (no new tabs)
+
 **Error Handling:**
 - Test offline/network errors → Should show red banner (no alert dialogs)
 - Auto-retry mechanism triggers after 2 seconds
 
 **Common Issues & Fixes:**
 - Missing OpenAI API key → Games won't generate  
+- Missing Venice API key → Games generate without images (graceful)
 - Options not parsing → Check browser console for errors
 - Genre not respected → Automatic retry logic activates
 
@@ -44,6 +50,8 @@ DATABASE_URL="postgresql://user:pass@localhost:5432/writarcade"
 
 # API Keys
 OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
+VENICE_API_KEY="your-venice-key"  # Optional: for game cover art generation
 NEYNAR_API_KEY="your-key"
 
 # Blockchain

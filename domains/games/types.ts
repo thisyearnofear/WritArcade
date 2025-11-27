@@ -15,6 +15,7 @@ export interface Game {
   promptModel: string
   
   // Visual assets
+  imageUrl?: string
   imagePromptModel?: string
   imagePromptName?: string
   imagePromptText?: string

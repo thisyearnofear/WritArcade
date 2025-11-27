@@ -49,6 +49,7 @@ model Game {
   promptModel      String  @default("gpt-4o-mini")
 
   // Image generation
+  imageUrl         String?  // Generated image URL (Venice AI)
   imagePromptModel String? 
   imagePromptName  String?
   imagePromptText  String? @db.Text

@@ -21,17 +21,10 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [userInput, setUserInput] = useState('')
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
-  const [streamError, setStreamError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const streamRetryCountRef = useRef(0)
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-  
-  // Exponential backoff for retries
-  const getRetryDelay = (attempt: number) => {
-    return Math.min(1000 * Math.pow(2, attempt), 10000) // Max 10 seconds
   }
   
   useEffect(() => {
@@ -42,7 +35,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     setIsStarting(true)
     
     try {
-      // Create a new session
       const sessionResponse = await fetch('/api/session/new')
       const sessionData = await sessionResponse.json()
       
@@ -53,7 +45,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       const newSessionId = sessionData.data.sessionId
       setSessionId(newSessionId)
       
-      // Start the game
       const startResponse = await fetch(`/api/games/${game.slug}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +55,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         throw new Error('Failed to start game')
       }
       
-      // Handle streaming response
       const reader = startResponse.body?.getReader()
       if (!reader) throw new Error('No response body')
       
@@ -79,72 +69,60 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         const lines = chunk.split('\n')
         
         for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6))
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.type === 'content') {
+                currentMessage += data.content
                 
-                // Handle error responses
-                if (data.type === 'error') {
-                  setStreamError(data.error || 'An error occurred during streaming')
-                  throw new Error(data.error || 'Stream error')
-                }
-                
-                if (data.type === 'content') {
-                  currentMessage += data.content
-                  setStreamError(null) // Clear any previous errors
+                setMessages(prev => {
+                  const newMessages = [...prev]
+                  const lastMessage = newMessages[newMessages.length - 1]
                   
-                  // Update the current message in real-time
-                  setMessages(prev => {
-                    const newMessages = [...prev]
-                    const lastMessage = newMessages[newMessages.length - 1]
-                    
-                    if (lastMessage && lastMessage.role === 'assistant') {
-                      lastMessage.content = currentMessage
-                    } else {
-                      newMessages.push({
-                        id: `temp-${Date.now()}`,
-                        sessionId: newSessionId,
-                        gameId: game.id,
-                        role: 'assistant',
-                        content: currentMessage,
-                        model: game.promptModel,
-                        createdAt: new Date(),
-                      })
-                    }
-                    
-                    return newMessages
-                  })
-                } else if (data.type === 'options') {
-                  currentOptions = data.options || []
-                } else if (data.type === 'end') {
-                  // Finalize the message with options
-                  setMessages(prev => {
-                    const newMessages = [...prev]
-                    const lastMessage = newMessages[newMessages.length - 1]
-                    if (lastMessage) {
-                      lastMessage.options = currentOptions
-                    }
-                    return newMessages
-                  })
-                }
-              } catch (error) {
-                console.error('Error parsing stream data:', error, { line })
-                setStreamError('Failed to parse game response. Retrying...')
-                // Don't fail the entire stream for a single parse error
+                  if (lastMessage && lastMessage.role === 'assistant') {
+                    lastMessage.content = currentMessage
+                  } else {
+                    newMessages.push({
+                      id: `temp-${Date.now()}`,
+                      sessionId: newSessionId,
+                      gameId: game.id,
+                      role: 'assistant',
+                      content: currentMessage,
+                      model: game.promptModel,
+                      createdAt: new Date(),
+                    })
+                  }
+                  
+                  return newMessages
+                })
+              } else if (data.type === 'options') {
+                currentOptions = data.options || []
+              } else if (data.type === 'end') {
+                setMessages(prev => {
+                  const newMessages = [...prev]
+                  const lastMessage = newMessages[newMessages.length - 1]
+                  if (lastMessage) {
+                    lastMessage.options = currentOptions
+                  }
+                  return newMessages
+                })
               }
+            } catch (error) {
+              console.error('Error parsing stream data:', error)
             }
           }
+        }
       }
       
       setIsPlaying(true)
       
     } catch (error) {
-       console.error('Failed to start game:', error)
-       setStreamError('Failed to start game. Please try again.')
-     } finally {
-       setIsStarting(false)
-     }
+      console.error('Failed to start game:', error)
+    } finally {
+      setIsStarting(false)
     }
+  }
   
   const sendMessage = async (message: string) => {
     if (!sessionId || !message.trim()) return
@@ -152,7 +130,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     setIsWaitingForResponse(true)
     setUserInput('')
     
-    // Add user message
     const userMessage: ChatEntry = {
       id: `user-${Date.now()}`,
       sessionId,
@@ -180,7 +157,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         throw new Error('Failed to send message')
       }
       
-      // Handle streaming response similar to startGame
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No response body')
       
@@ -241,15 +217,12 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       }
       
     } catch (error) {
-       console.error('Failed to send message:', error)
-       setStreamError('Failed to send message. Please try again.')
-       
-       // Remove the user message we added if the request failed
-       setMessages(prev => prev.filter(m => m.id !== userMessage.id))
-     } finally {
-       setIsWaitingForResponse(false)
-     }
+      console.error('Failed to send message:', error)
+      setMessages(prev => prev.filter(m => m.id !== userMessage.id))
+    } finally {
+      setIsWaitingForResponse(false)
     }
+  }
   
   const handleOptionClick = (option: GameplayOption) => {
     sendMessage(option.text)
@@ -265,84 +238,61 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   if (!isPlaying) {
     return (
       <div className="text-center py-12">
-        <div className="max-w-md mx-auto">
-          <h2 className="text-2xl font-semibold mb-4">Ready to Play?</h2>
-          <p className="text-gray-400 mb-8">
-            Start your interactive adventure in {game.title}. 
-            Make choices, explore the story, and see where your decisions lead.
-          </p>
-          
-          <Button
-            onClick={startGame}
-            disabled={isStarting}
-            size="lg"
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            {isStarting ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Starting Game...
-              </>
-            ) : (
-              <>
-                <Play className="w-5 h-5 mr-2" />
-                Start Game
-              </>
-            )}
-          </Button>
-        </div>
+        <Button
+          onClick={startGame}
+          disabled={isStarting}
+          size="lg"
+          className="bg-purple-600 hover:bg-purple-700"
+          style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}
+        >
+          {isStarting ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Starting...
+            </>
+          ) : (
+            <>
+              <Play className="w-5 h-5 mr-2" />
+              Start Game
+            </>
+          )}
+        </Button>
       </div>
     )
   }
   
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Stream Error Display */}
-      {streamError && (
-        <div className="mb-4 p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
-          <div className="flex items-start gap-3">
-            <span className="text-red-400 font-semibold">⚠️ Error</span>
-            <div className="flex-1">
-              <p className="text-red-300">{streamError}</p>
-              <button
-                onClick={() => setStreamError(null)}
-                className="mt-2 text-sm text-red-400 hover:text-red-300 underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Chat Messages */}
-      <div className="bg-gray-900/50 rounded-lg border border-gray-700 min-h-[600px] flex flex-col">
-        <div className="flex-1 p-6 overflow-y-auto">
+      <div className="bg-gray-900/50 rounded-lg border border-gray-700 min-h-[500px] flex flex-col">
+        <div className="flex-1 p-4 overflow-y-auto space-y-4">
           {messages.map((message) => (
-            <div key={message.id} className={`mb-6 ${message.role === 'user' ? 'ml-8' : 'mr-8'}`}>
-              <div className={`p-4 rounded-lg ${
+            <div key={message.id} className={message.role === 'user' ? 'flex justify-end' : ''}>
+              <div className={`max-w-[85%] ${
                 message.role === 'user' 
-                  ? 'bg-blue-600/20 border-l-4 border-blue-500' 
-                  : 'bg-gray-800/50 border-l-4 border-purple-500'
-              }`}>
-                <div className="text-xs text-gray-500 mb-2 capitalize">
-                  {message.role}
-                </div>
-                <div className="prose prose-invert max-w-none">
+                  ? 'bg-blue-600/20 border-l-2 border-blue-500' 
+                  : 'bg-gray-800/50 border-l-2'
+              } p-3 rounded`}
+              style={message.role === 'assistant' ? { borderColor: game.primaryColor || '#8b5cf6' } : {}}
+              >
+                <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {message.content}
                 </div>
                 
-                {/* Options */}
                 {message.options && message.options.length > 0 && (
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-3 space-y-2">
                     {message.options.map((option) => (
                       <button
                         key={option.id}
                         onClick={() => handleOptionClick(option)}
                         disabled={isWaitingForResponse}
-                        className="w-full text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded border border-gray-600 hover:border-purple-500 transition-colors disabled:opacity-50"
+                        className="w-full text-left text-sm p-2 bg-gray-700/50 hover:bg-gray-700 rounded border border-gray-600 transition-colors disabled:opacity-50"
+                        style={{ 
+                          borderColor: `${game.primaryColor || '#8b5cf6'}40`,
+                        }}
                       >
-                        <span className="font-medium text-purple-300">{option.id}.</span>{' '}
+                        <span className="font-medium" style={{ color: game.primaryColor || '#8b5cf6' }}>
+                          {option.id}.
+                        </span>{' '}
                         {option.text}
                       </button>
                     ))}
@@ -353,40 +303,33 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           ))}
           
           {isWaitingForResponse && (
-            <div className="mr-8 mb-6">
-              <div className="p-4 rounded-lg bg-gray-800/50 border-l-4 border-purple-500">
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-gray-400">The game is responding to your action...</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Thinking...</span>
             </div>
           )}
           
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Input Area */}
-        <div className="border-t border-gray-700 p-4">
-          <div className="flex space-x-2">
+        <div className="border-t border-gray-700 p-3">
+          <div className="flex gap-2">
             <Textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="What do you do? Describe your action or response..."
+              placeholder="What do you do?"
               disabled={isWaitingForResponse}
-              className="flex-1 min-h-[60px] resize-none"
+              className="flex-1 min-h-[50px] resize-none text-sm"
             />
             <Button
               onClick={() => sendMessage(userInput)}
               disabled={!userInput.trim() || isWaitingForResponse}
               className="self-end"
+              style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}
             >
               <Send className="w-4 h-4" />
             </Button>
-          </div>
-          <div className="text-xs text-gray-500 mt-2">
-            Press Enter to send • Shift+Enter for new line
           </div>
         </div>
       </div>

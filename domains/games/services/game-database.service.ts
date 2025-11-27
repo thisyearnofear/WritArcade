@@ -204,6 +204,24 @@ export class GameDatabaseService {
       return null
     }
   }
+
+  /**
+   * Update game image URL
+   */
+  static async updateGameImage(id: string, imageUrl: string): Promise<Game | null> {
+    try {
+      const game = await prisma.game.update({
+        where: { id },
+        data: { imageUrl },
+      })
+      
+      return this.mapPrismaGameToGame(game)
+      
+    } catch (error) {
+      console.error('Failed to update game image:', error)
+      return null
+    }
+  }
   
   /**
    * Delete game
@@ -287,6 +305,7 @@ export class GameDatabaseService {
       promptName: prismaGame.promptName,
       promptText: prismaGame.promptText,
       promptModel: prismaGame.promptModel,
+      imageUrl: prismaGame.imageUrl,
       imagePromptModel: prismaGame.imagePromptModel,
       imagePromptName: prismaGame.imagePromptName,
       imagePromptText: prismaGame.imagePromptText,
