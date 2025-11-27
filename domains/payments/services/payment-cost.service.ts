@@ -49,7 +49,7 @@ export class PaymentCostService {
       return {
         writerShare: (amount * BigInt(coin.revenueDistribution.writer)) / BigInt(100),
         platformShare: (amount * BigInt(coin.revenueDistribution.platform)) / BigInt(100),
-        creatorShare: (amount * BigInt(coin.revenueDistribution.creatorPool)) / BigInt(100),
+        creatorShare: (amount * BigInt(coin.revenueDistribution.creator)) / BigInt(100),
       }
     } else {
       // NFT minting: 30% creator, 15% writer, 5% platform, 50% user

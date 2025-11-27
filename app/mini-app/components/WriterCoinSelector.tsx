@@ -72,7 +72,7 @@ export function WriterCoinSelector({ onSelect }: WriterCoinSelectorProps) {
                         <div className="mt-4 rounded-md bg-purple-900/30 p-3">
                             <p className="text-xs text-purple-200">
                                 <span className="font-semibold">Revenue Split:</span>{' '}
-                                {coin.revenueDistribution.writer}% Writer • {coin.revenueDistribution.platform}% Platform • {coin.revenueDistribution.creatorPool}% Community
+                                {coin.revenueDistribution.writer}% Writer • {coin.revenueDistribution.creator}% Creator • {coin.revenueDistribution.platform}% Platform • {coin.revenueDistribution.burn}% Burn
                             </p>
                         </div>
                     </button>

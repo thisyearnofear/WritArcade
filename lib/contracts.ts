@@ -85,16 +85,16 @@ export function formatTokenAmount(amount: bigint, decimals: number = 18): string
   const divisor = BigInt(10 ** decimals)
   const wholePart = amount / divisor
   const fractionalPart = amount % divisor
-  
+
   if (fractionalPart === BigInt(0)) {
     return wholePart.toString()
   }
-  
+
   const paddedFractional = fractionalPart
     .toString()
     .padStart(decimals, '0')
     .replace(/0+$/, '')
-  
+
   return `${wholePart}.${paddedFractional}`
 }
 
@@ -103,11 +103,11 @@ export function formatTokenAmount(amount: bigint, decimals: number = 18): string
  */
 export function parseTokenAmount(amount: string, decimals: number = 18): bigint {
   const [wholePart, fractionalPart = ''] = amount.split('.')
-  
+
   const fractional = fractionalPart
     .padEnd(decimals, '0')
     .slice(0, decimals)
-  
+
   return BigInt(wholePart + fractional)
 }
 
@@ -141,13 +141,13 @@ export function calculateGameRevenueSplit(amount: bigint, writerCoinId: string) 
   if (!coin) {
     throw new Error(`Unknown writer coin: ${writerCoinId}`)
   }
-  
-  const { writer, platform, creatorPool } = coin.revenueDistribution
-  
+
+  const { writer, platform, creator } = coin.revenueDistribution
+
   const writerShare = (amount * BigInt(writer)) / BigInt(100)
   const platformShare = (amount * BigInt(platform)) / BigInt(100)
-  const creatorShare = (amount * BigInt(creatorPool)) / BigInt(100)
-  
+  const creatorShare = (amount * BigInt(creator)) / BigInt(100)
+
   return {
     writerShare,
     platformShare,
@@ -164,7 +164,7 @@ export function calculateMintRevenueSplit(amount: bigint) {
   const writerShare = (amount * BigInt(15)) / BigInt(100)   // 15%
   const platformShare = (amount * BigInt(5)) / BigInt(100)  // 5%
   const userShare = amount - creatorShare - writerShare - platformShare  // 50%
-  
+
   return {
     creatorShare,
     writerShare,
@@ -203,7 +203,7 @@ export function gameToMetadata(data: {
   if (!coin) {
     throw new Error(`Unknown writer coin: ${data.writerCoinId}`)
   }
-  
+
   return {
     articleUrl: data.articleUrl,
     creator: data.creator,
@@ -230,13 +230,13 @@ export function encodePayForGameGeneration(
 ): string {
   // Function signature: payForGameGeneration(address writerCoin, address user)
   // Selector: 0x7c4f5c5b (calculated from keccak256("payForGameGeneration(address,address)"))
-  
+
   const selector = '0x7c4f5c5b'
-  
+
   // Encode parameters
   const encodedCoin = writerCoinAddress.slice(2).padStart(64, '0')
   const encodedUser = userAddress.slice(2).padStart(64, '0')
-  
+
   return selector + encodedCoin + encodedUser
 }
 
@@ -255,12 +255,12 @@ export function encodePayForMinting(
 ): string {
   // Function signature: payForMinting(address writerCoin, address user)
   // Selector: 0xd0e521c0 (calculated from keccak256("payForMinting(address,address)"))
-  
+
   const selector = '0xd0e521c0'
-  
+
   // Encode parameters
   const encodedCoin = writerCoinAddress.slice(2).padStart(64, '0')
   const encodedUser = userAddress.slice(2).padStart(64, '0')
-  
+
   return selector + encodedCoin + encodedUser
 }

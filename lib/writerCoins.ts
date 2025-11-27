@@ -18,11 +18,12 @@ export interface WriterCoin {
     mintCost: bigint // Cost in tokens to mint game as NFT
     decimals: number
 
-    // Revenue distribution (percentages)
+    // Revenue distribution (percentages, should sum to 100)
     revenueDistribution: {
         writer: number // % to writer's treasury
+        creator: number // % to game creator
         platform: number // % to WritArcade
-        creatorPool: number // % to game creator/community pool
+        burn: number // % token burn (deflationary)
     }
 }
 
@@ -66,9 +67,10 @@ export const WRITER_COINS: WriterCoin[] = [
     //   mintCost: BigInt(50 * 10 ** 18),
     //   decimals: 18,
     //   revenueDistribution: {
-    //     writer: 60,
+    //     writer: 40,
+    //     creator: 30,
     //     platform: 20,
-    //     creatorPool: 20,
+    //     burn: 10,
     //   },
     // },
     // TODO: Add Writer Coin #3
