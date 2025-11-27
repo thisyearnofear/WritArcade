@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { marked } from 'marked'
-import { processArticleFromUrl, getPublicationSubscriberCount, fetchPublicationBySlug, parseParagraphUrl } from '@/lib/paragraph-sdk'
+import { processArticleFromUrl, fetchPublicationBySlug, parseParagraphUrl } from '@/lib/paragraph-sdk'
 
 
 export interface ContentSource {
@@ -26,16 +26,13 @@ export interface ProcessedContent {
 }
 
 /**
- * Consolidated Content Processing Service
- * Merges scraper.js, hackernews.js functionality with enhancements
+ * Content Processing Service - Paragraph.xyz only
  */
 export class ContentProcessorService {
   
-  
-  
   /**
-   * Process content from URL - enhanced consolidation of existing scrapers
-   */
+    * Process content from Paragraph.xyz URL
+    */
   static async processUrl(url: string): Promise<ProcessedContent> {
     try {
       // Validate URL format first
@@ -43,17 +40,15 @@ export class ContentProcessorService {
         throw new Error('Invalid URL format. Please ensure the URL starts with http:// or https://')
       }
 
-      // Determine content type
+      // Normalize custom domain URLs to Paragraph format
+      const normalizedUrl = this.normalizeCustomDomainUrl(url)
+
+      // Detect content type from original URL
       const contentType = this.detectContentType(url)
-      
-      // Extract content based on type
+
+      // Extract content from Paragraph
       let extractedData: { text: string; metadata: Partial<ProcessedContent> }
-      
-      if (this.isHackerNewsUrl(url)) {
-        extractedData = await this.processHackerNewsUrl(url)
-      } else {
-        extractedData = await this.scrapeGenericUrl(url)
-      }
+      extractedData = await this.scrapeGenericUrl(normalizedUrl)
       
       const extractedText = extractedData.text
       const metadata = extractedData.metadata || {}
@@ -79,7 +74,7 @@ export class ContentProcessorService {
           throw error
         }
         if (error.message.includes('Paragraph')) {
-          throw new Error('This URL is not from a supported source. We support Substack, Medium, dev.to, Hashnode, and HackerNews.')
+          throw new Error('Only Paragraph.xyz URLs are supported.')
         }
         if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
           throw new Error('The URL took too long to load. The website might be down or blocking our access.')
@@ -125,15 +120,14 @@ export class ContentProcessorService {
         throw new Error('Failed to process article');
       }
 
-      // Get subscriber count
-      const subscriberCount = await getPublicationSubscriberCount(article.source.publicationId);
-
       const metadata: Partial<ProcessedContent> = {
         title: article.title,
         author: article.author,
+        authorWallet: article.authorWallet,
         publishedAt: article.publishedAt,
         publicationName: article.source.publicationName,
-        subscriberCount: subscriberCount || undefined,
+        publicationSummary: article.publicationSummary,
+        subscriberCount: article.subscriberCount,
       };
 
       return { text: article.plainText, metadata };
@@ -144,91 +138,14 @@ export class ContentProcessorService {
   }
   
   /**
-   * Process HackerNews URLs (enhanced from hackernews.js)
-   */
-  private static async processHackerNewsUrl(url: string): Promise<{
-    text: string
-    metadata: Partial<ProcessedContent>
-  }> {
-    try {
-      // Extract story ID from HN URL
-      const storyId = this.extractHackerNewsId(url)
-      
-      if (storyId) {
-        // Get HN story data
-        const hnResponse = await axios.get(
-          `https://hacker-news.firebaseio.com/v0/item/${storyId}.json`,
-          { timeout: 5000 }
-        )
-        
-        const story = hnResponse.data
-        
-        if (story?.url) {
-          // Get the actual article content
-          const article = await this.scrapeGenericUrl(story.url)
-          
-          return {
-            text: article.text,
-            metadata: {
-              ...article.metadata,
-              title: story.title || article.metadata.title,
-              author: story.by || article.metadata.author,
-              publishedAt: story.time ? new Date(story.time * 1000) : article.metadata.publishedAt,
-            }
-          }
-        } else if (story?.text) {
-          // HN text post
-          return {
-            text: story.text,
-            metadata: {
-              title: story.title,
-              author: story.by,
-              publishedAt: story.time ? new Date(story.time * 1000) : undefined,
-            }
-          }
-        }
-      }
-      
-      throw new Error('Unable to extract HackerNews content')
-    } catch (error) {
-      console.error('HackerNews processing error:', error)
-      // Fallback to regular scraping
-      const fallback = await this.scrapeGenericUrl(url);
-      return {
-        text: fallback.text,
-        metadata: fallback.metadata
-      };
-    }
-  }
-  
-  /**
-   * Detect content type from URL patterns
+   * Detect content type - Paragraph only
    */
   private static detectContentType(url: string): ContentSource['type'] {
     const hostname = new URL(url).hostname.toLowerCase()
     
-    if (hostname.includes('substack.com')) return 'newsletter'
-    if (hostname.includes('medium.com')) return 'blog'
-    if (hostname.includes('dev.to')) return 'blog'
-    if (hostname.includes('hashnode.')) return 'blog'
-    if (hostname.includes('news.ycombinator.com')) return 'article'
+    if (hostname.includes('paragraph')) return 'newsletter'
     
     return 'unknown'
-  }
-  
-  /**
-   * Check if URL is from HackerNews
-   */
-  private static isHackerNewsUrl(url: string): boolean {
-    return url.includes('news.ycombinator.com')
-  }
-  
-  /**
-   * Extract HackerNews story ID from URL
-   */
-  private static extractHackerNewsId(url: string): string | null {
-    const match = url.match(/item\?id=(\d+)/)
-    return match ? match[1] : null
   }
   
   /**
@@ -275,8 +192,43 @@ export class ContentProcessorService {
   }
   
   /**
-   * Validate URL format
-   */
+    * Normalize custom domain URLs to Paragraph.xyz format
+    * Converts URLs like https://avc.xyz/post-slug to https://paragraph.xyz/@avc/post-slug
+    */
+  private static normalizeCustomDomainUrl(url: string): string {
+    try {
+      const urlObj = new URL(url)
+      const hostname = urlObj.hostname.toLowerCase()
+      const pathname = urlObj.pathname
+
+      // Map of known custom domains to their Paragraph publication slugs
+      const customDomainMap: Record<string, string> = {
+        'avc.xyz': 'avc',
+        'eriktorenberg.substack.com': 'eriktorenberg',
+        // Add more mappings as needed
+      }
+
+      // Check if this is a custom domain
+      for (const [domain, pubSlug] of Object.entries(customDomainMap)) {
+        if (hostname === domain) {
+          // Extract the post slug from the path (remove leading slash)
+          const postSlug = pathname.slice(1).split('/')[0]
+          if (postSlug) {
+            return `https://paragraph.xyz/@${pubSlug}/${postSlug}`
+          }
+        }
+      }
+
+      // Return original URL if no custom domain mapping found
+      return url
+    } catch {
+      return url
+    }
+  }
+
+  /**
+    * Validate URL format
+    */
   static isValidUrl(url: string): boolean {
     try {
       new URL(url)

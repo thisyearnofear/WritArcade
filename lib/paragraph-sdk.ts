@@ -14,6 +14,7 @@ export interface ProcessedArticleData {
   plainText: string
   author?: string
   authorId?: string
+  authorWallet?: string
   publishedAt: Date
   url: string
   source: {
@@ -26,6 +27,8 @@ export interface ProcessedArticleData {
     estimatedReadTime: number
     hasCoin: boolean
   }
+  publicationSummary?: string
+  subscriberCount?: number
 }
 
 /**
@@ -154,6 +157,22 @@ export async function fetchPostBySlug(
 }
 
 /**
+ * Fetch user by ID to get wallet address
+ */
+export async function fetchUserById(userId: string): Promise<{ walletAddress?: string } | null> {
+  try {
+    const user = await paragraphAPI.getUser(userId)
+    return user || null
+  } catch (error) {
+    console.error(
+      `Failed to fetch user ${userId}:`,
+      error instanceof Error ? error.message : error
+    )
+    return null
+  }
+}
+
+/**
  * Fetch publication metadata by slug
  */
 export async function fetchPublicationBySlug(
@@ -218,6 +237,13 @@ export async function processArticleFromUrl(url: string): Promise<ProcessedArtic
     // Get subscriber count
     const subscriberCount = await getPublicationSubscriberCount(publication.id)
 
+    // Get owner's wallet address
+    let authorWallet: string | undefined
+    if (publication.ownerUserId) {
+      const owner = await fetchUserById(publication.ownerUserId)
+      authorWallet = owner?.walletAddress
+    }
+
     // Get content
     const content = post.content || ''
     const wordCount = post.wordCount || countWords(content)
@@ -230,6 +256,7 @@ export async function processArticleFromUrl(url: string): Promise<ProcessedArtic
       plainText: content, // Already plain text from schema
       author: publication.name,
       authorId: publication.ownerUserId,
+      authorWallet,
       publishedAt: new Date(publishedTime),
       url,
       source: {
@@ -242,6 +269,8 @@ export async function processArticleFromUrl(url: string): Promise<ProcessedArtic
         estimatedReadTime,
         hasCoin: !!post.coinId,
       },
+      publicationSummary: (publication as any).summary,
+      subscriberCount: subscriberCount || undefined,
     }
   } catch (error) {
     console.error('Error processing article:', error instanceof Error ? error.message : error)
