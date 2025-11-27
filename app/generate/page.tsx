@@ -1,4 +1,4 @@
-import { GameGenerator } from '@/domains/games/components/game-generator'
+import { GameGeneratorForm as GameGenerator } from '@/domains/games/components/game-generator-form'
 
 export default function GeneratePage() {
   return (
