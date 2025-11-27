@@ -8,6 +8,13 @@ const walletAuthSchema = z.object({
 
 export async function POST(req: Request) {
     try {
+        if (!process.env.DATABASE_URL) {
+            return NextResponse.json(
+                { success: false, error: 'Database not configured' },
+                { status: 503 }
+            )
+        }
+
         const body = await req.json()
         const { address } = walletAuthSchema.parse(body)
 
