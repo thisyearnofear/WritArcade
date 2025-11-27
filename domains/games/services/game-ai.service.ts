@@ -2,10 +2,10 @@ import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { generateObject, streamText } from 'ai'
 import { z } from 'zod'
-import type { 
-  GameGenerationRequest, 
-  GameGenerationResponse, 
-  GameplayResponse 
+import type {
+  GameGenerationRequest,
+  GameGenerationResponse,
+  GameplayResponse
 } from '../types'
 
 // Consolidate AI model providers
@@ -33,7 +33,7 @@ const gameGenerationSchema = z.object({
  * Merges GenerateGame.js, StartGame.js, and ChatGame.js functionality
  */
 export class GameAIService {
-  
+
   /**
    * Generate a new game from prompt text or URL content
    * Enhanced version of original GenerateGame.js
@@ -44,34 +44,34 @@ export class GameAIService {
   static async generateGame(request: GameGenerationRequest, retryCount = 0): Promise<GameGenerationResponse> {
     const model = getModel(request.model || 'gpt-4o-mini')
     const maxRetries = 2
-    
+
     let promptText = request.promptText || ''
-    
+
     // If URL provided, we'll handle content extraction separately
     if (request.url && !promptText) {
       promptText = `Generate a game based on content from: ${request.url}`
     }
-    
+
     const prompt = this.buildGenerationPrompt(promptText, request.customization)
-    
+
     try {
       const { object: game } = await generateObject({
         model,
         schema: gameGenerationSchema,
         prompt,
       })
-      
+
       // Validate customization constraints
       if (request.customization?.genre) {
         const generatedGenre = game.genre.toLowerCase()
         const requestedGenre = request.customization.genre.toLowerCase()
-        
+
         // Check if generated genre roughly matches requested genre
         if (!generatedGenre.includes(requestedGenre) && !requestedGenre.includes(generatedGenre)) {
           console.warn(
             `Genre mismatch: requested "${requestedGenre}", got "${generatedGenre}". Retrying with stricter prompt.`
           )
-          
+
           if (retryCount < maxRetries) {
             // Retry with stricter genre constraint
             const stricterRequest = {
@@ -82,7 +82,7 @@ export class GameAIService {
           }
         }
       }
-      
+
       return {
         title: game.title,
         description: game.description,
@@ -96,11 +96,11 @@ export class GameAIService {
       }
     } catch (error) {
       console.error('Game generation error:', error)
-      
+
       // If this is a validation/schema error and we have retries left, retry
       if (retryCount < maxRetries && error instanceof Error && error.message.includes('schema')) {
         console.warn(`Schema validation failed. Retrying (${retryCount + 1}/${maxRetries})`)
-        
+
         // Add stricter instructions
         const stricterRequest = {
           ...request,
@@ -108,15 +108,15 @@ export class GameAIService {
         }
         return this.generateGame(stricterRequest, retryCount + 1)
       }
-      
+
       throw new Error(
-        retryCount > 0 
+        retryCount > 0
           ? `Failed to generate game after ${retryCount + 1} attempts`
           : 'Failed to generate game'
       )
     }
   }
-  
+
   /**
    * Start a new game session with initial narrative
    * Enhanced version of original StartGame.js
@@ -129,18 +129,18 @@ export class GameAIService {
     model: string = 'gpt-4o-mini',
     articleContext?: string
   ): AsyncGenerator<GameplayResponse> {
-    
+
     const aiModel = getModel(model)
     const prompt = this.buildStartGamePrompt(game, articleContext)
-    
+
     try {
       const { textStream } = await streamText({
         model: aiModel,
         prompt,
       })
-      
+
       let content = ''
-      
+
       for await (const delta of textStream) {
         content += delta
         yield {
@@ -148,25 +148,25 @@ export class GameAIService {
           content: delta,
         }
       }
-      
+
       // Parse options from the final content
       const options = this.parseGameOptions(content)
-      
+
       yield {
         type: 'options',
         options,
       }
-      
+
       yield {
         type: 'end',
       }
-      
+
     } catch (error) {
       console.error('Game start error:', error)
       throw new Error('Failed to start game')
     }
   }
-  
+
   /**
    * Continue game conversation with user input
    * Enhanced version of original ChatGame.js
@@ -176,23 +176,23 @@ export class GameAIService {
     userInput: string,
     model: string = 'gpt-4o-mini'
   ): AsyncGenerator<GameplayResponse> {
-    
+
     const aiModel = getModel(model)
-    
+
     // Add user input to conversation
     const conversationMessages = [
       ...messages,
       { role: 'user' as const, content: userInput }
     ]
-    
+
     try {
       const { textStream } = await streamText({
         model: aiModel,
         messages: conversationMessages,
       })
-      
+
       let content = ''
-      
+
       for await (const delta of textStream) {
         content += delta
         yield {
@@ -200,27 +200,27 @@ export class GameAIService {
           content: delta,
         }
       }
-      
+
       // Parse options from response
       const options = this.parseGameOptions(content)
-      
+
       if (options.length > 0) {
         yield {
           type: 'options',
           options,
         }
       }
-      
+
       yield {
         type: 'end',
       }
-      
+
     } catch (error) {
       console.error('Game chat error:', error)
       throw new Error('Failed to process game input')
     }
   }
-  
+
   /**
    * Build generation prompt (enhanced from original)
    * 
@@ -261,7 +261,7 @@ Please provide a JSON response with the following structure:
 
     return basePrompt
   }
-  
+
   /**
    * Build start game prompt (enhanced from original)
    * Now optionally includes article context for narrative continuity
@@ -292,7 +292,7 @@ Start the game now. Set the scene and present 4 initial choices.`
 
     return basePrompt
   }
-  
+
   /**
    * Parse numbered options from AI response
    * Enhanced version of original parseTokenStream.js logic
@@ -306,26 +306,26 @@ Start the game now. Set the scene and present 4 initial choices.`
   private static parseGameOptions(content: string): Array<{ id: number; text: string }> {
     const options: Array<{ id: number; text: string }> = []
     const lines = content.split('\n')
-    
+
     // Primary pattern: strict "1. " or "1) " format
-    const primaryPattern = /^[\*\-]?\s*(\d+)[.\)]\s+(.+)$/
-    
+    const primaryPattern = /^[-*]?\s*(\d+)[.)]\s+(.+)$/
+
     for (const line of lines) {
       const trimmed = line.trim()
-      
+
       // Try primary pattern first (most common)
-      let match = trimmed.match(primaryPattern)
-      
+      const match = trimmed.match(primaryPattern)
+
       if (match && match[2]) {
         const id = parseInt(match[1])
         const text = match[2].trim()
-        
+
         if (id >= 1 && id <= 4 && text.length > 0) {
           options.push({ id, text })
         }
         continue
       }
-      
+
       // Fallback pattern: "Option text" after empty line with just number
       // This handles cases where AI formats oddly with numbers on separate lines
       if (trimmed.length > 0 && !trimmed.match(/^\d+$/) && options.length > 0) {
@@ -336,21 +336,21 @@ Start the game now. Set the scene and present 4 initial choices.`
         }
       }
     }
-    
+
     // If we found fewer than expected options, try more aggressive parsing
     if (options.length < 2) {
       options.length = 0 // Reset
-      
+
       // Look for any line with a number 1-4 at start
       for (const line of lines) {
         const trimmed = line.trim()
         // Even more lenient: just a number followed by content
-        const match = trimmed.match(/^(\d+)[\.\)\:\-\s]+(.+)$/)
-        
+        const match = trimmed.match(/^(\d+)[-.:)\s]+(.+)$/)
+
         if (match) {
           const id = parseInt(match[1])
           const text = match[2].trim()
-          
+
           if (id >= 1 && id <= 4 && text.length > 0) {
             // Check if already added (avoid duplicates)
             if (!options.find(o => o.id === id)) {
@@ -360,7 +360,7 @@ Start the game now. Set the scene and present 4 initial choices.`
         }
       }
     }
-    
+
     return options.sort((a, b) => a.id - b.id)
   }
 }

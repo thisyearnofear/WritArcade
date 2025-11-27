@@ -4,7 +4,7 @@
  */
 export class ImageGenerationService {
   private static readonly VENICE_API_URL = 'https://api.venice.ai/api/v1/images/generations'
-  
+
   /**
    * Generate an image for a game based on its metadata
    */
@@ -16,7 +16,7 @@ export class ImageGenerationService {
     tagline: string
   }): Promise<string | null> {
     const apiKey = process.env.VENICE_API_KEY
-    
+
     if (!apiKey) {
       console.warn('Venice API key not configured, skipping image generation')
       return null
@@ -24,7 +24,7 @@ export class ImageGenerationService {
 
     try {
       const prompt = this.buildImagePrompt(game)
-      
+
       const response = await fetch(this.VENICE_API_URL, {
         method: 'POST',
         headers: {
@@ -36,19 +36,19 @@ export class ImageGenerationService {
           model: 'fluently-xl',
           width: 1024,
           height: 768,
-          num_images: 1,
         }),
       })
 
       if (!response.ok) {
-        console.error('Venice API error:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Venice API error:', response.status, errorText)
         return null
       }
 
       const data = await response.json()
-      
-      // Venice returns base64 encoded images
-      if (data.data && data.data[0] && data.data[0].b64_json) {
+
+      // Venice returns base64 encoded images in data array
+      if (data.data?.[0]?.b64_json) {
         return `data:image/png;base64,${data.data[0].b64_json}`
       }
 
@@ -78,7 +78,7 @@ export class ImageGenerationService {
     }
 
     const style = genreStyles[game.genre.toLowerCase()] || 'cinematic, dramatic'
-    
+
     return `A ${style} scene representing "${game.title}". ${game.description.substring(0, 200)}. High quality digital art, game cover art style, professional illustration.`
   }
 }
