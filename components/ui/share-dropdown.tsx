@@ -12,15 +12,15 @@ import { socialShareService, type ComicShareData } from '@/lib/services/social-s
 interface ShareDropdownProps {
   data: ComicShareData
   variant?: 'default' | 'outline' | 'ghost'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
   className?: string
 }
 
-export function ShareDropdown({ 
-  data, 
-  variant = 'outline', 
-  size = 'md',
-  className = '' 
+export function ShareDropdown({
+  data,
+  variant = 'outline',
+  size = 'default',
+  className = ''
 }: ShareDropdownProps) {
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)

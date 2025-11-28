@@ -118,7 +118,7 @@ export class IPFSMetadataService {
         { trait_type: 'Difficulty', value: gameData.difficulty },
         { trait_type: 'Panels', value: totalPanels },
         { trait_type: 'Creator', value: creator.displayName },
-        { trait_type: 'Author', value: author.displayName },
+        { trait_type: 'Author', value: author.displayName || author.paragraphUsername || 'Unknown Author' },
         { trait_type: 'Source', value: 'Paragraph' },
         { trait_type: 'Platform', value: 'WritArcade' },
         { trait_type: 'Version', value: '1.0' }

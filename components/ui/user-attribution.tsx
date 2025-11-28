@@ -100,7 +100,7 @@ export function UserAttribution({
             onError={(e) => {
               // Fallback to identicon if image fails
               const target = e.target as HTMLImageElement
-              target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.walletAddress || userData.paragraphUsername}`
+              target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.walletAddress || 'default'}`
             }}
           />
         ) : (
