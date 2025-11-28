@@ -10,8 +10,8 @@ import { Prisma } from '@prisma/client'
 export class GameDatabaseService {
   
   /**
-   * Create a new game from AI generation response
-   */
+    * Create a new game from AI generation response
+    */
   static async createGame(
     gameData: GameGenerationResponse,
     userId?: string,
@@ -20,6 +20,13 @@ export class GameDatabaseService {
       writerCoinId?: string
       difficulty?: string
       articleContext?: string
+      // Source material attribution
+      authorParagraphUsername?: string
+      authorWallet?: string
+      publicationName?: string
+      publicationSummary?: string
+      subscriberCount?: number
+      articlePublishedAt?: Date
     }
   ): Promise<Game> {
     try {
@@ -51,6 +58,15 @@ export class GameDatabaseService {
           articleContext: miniAppData?.articleContext,
           writerCoinId: miniAppData?.writerCoinId,
           difficulty: miniAppData?.difficulty,
+          // Source material attribution - preserves original author
+          authorParagraphUsername: miniAppData?.authorParagraphUsername,
+          authorWallet: miniAppData?.authorWallet,
+          publicationName: miniAppData?.publicationName,
+          publicationSummary: miniAppData?.publicationSummary,
+          subscriberCount: miniAppData?.subscriberCount,
+          articlePublishedAt: miniAppData?.articlePublishedAt,
+          // Creator attribution
+          creatorWallet: gameData.creatorWallet,
           private: false, // Default to public for now
           userId: userId || null,
         }
@@ -316,6 +332,14 @@ export class GameDatabaseService {
       articleContext: prismaGame.articleContext,
       writerCoinId: prismaGame.writerCoinId,
       difficulty: prismaGame.difficulty,
+      // Attribution data - preserves source material author for NFT & Story Protocol
+      creatorWallet: prismaGame.creatorWallet,
+      authorWallet: prismaGame.authorWallet,
+      authorParagraphUsername: prismaGame.authorParagraphUsername,
+      publicationName: prismaGame.publicationName,
+      publicationSummary: prismaGame.publicationSummary,
+      subscriberCount: prismaGame.subscriberCount,
+      articlePublishedAt: prismaGame.articlePublishedAt,
       private: prismaGame.private,
       userId: prismaGame.userId,
       createdAt: prismaGame.createdAt,

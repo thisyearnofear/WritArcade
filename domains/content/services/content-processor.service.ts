@@ -149,8 +149,9 @@ export class ContentProcessorService {
   }
   
   /**
-   * Clean and process extracted text
-   */
+    * Clean and process extracted text
+    * Preserves full content (no truncation) for better article understanding
+    */
   private static cleanAndProcessText(text: string): string {
     // Remove excessive whitespace
     let cleaned = text.replace(/\s+/g, ' ').trim()
@@ -166,12 +167,70 @@ export class ContentProcessorService {
     // Remove excessive line breaks
     cleaned = cleaned.replace(/\n\s*\n/g, '\n\n')
     
-    // Limit length for AI processing (keep first ~4000 chars for context)
-    if (cleaned.length > 4000) {
-      cleaned = cleaned.substring(0, 4000) + '...'
-    }
+    // Keep full content for article theme extraction (no truncation)
+    // AI can handle longer context with proper summarization in prompts
     
     return cleaned
+  }
+
+  /**
+    * Extract key themes and concepts from article
+    * Identifies the article's core ideas for game thematic integration
+    * Returns structured themes that games can authentically interpret
+    */
+  static extractArticleThemes(text: string, title?: string): string {
+    // Identify key themes by analyzing sentence structure and keyword clustering
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || []
+    
+    // Extract opening (establishes premise)
+    const opening = sentences.slice(0, 2).join(' ').trim()
+    
+    // Extract closing (conclusions/implications)
+    const closing = sentences.slice(-2).join(' ').trim()
+    
+    // Identify potential themes by looking for emphasized concepts (caps, repeated words)
+    const words = text.toLowerCase().match(/\b\w+\b/g) || []
+    const wordFreq = new Map<string, number>()
+    
+    words.forEach(word => {
+      if (word.length > 4 && !this.isCommonWord(word)) {
+        wordFreq.set(word, (wordFreq.get(word) || 0) + 1)
+      }
+    })
+    
+    // Get top themes (words appearing 3+ times)
+    const topThemes = Array.from(wordFreq.entries())
+      .filter(([, count]) => count >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([word]) => word)
+    
+    // Build structured theme description
+    const themeDescription = [
+      title ? `Article Title: "${title}"` : '',
+      `Core Premise: ${opening}`,
+      `Key Themes: ${topThemes.length > 0 ? topThemes.join(', ') : 'general concepts'}`,
+      `Conclusion: ${closing}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
+    
+    return themeDescription
+  }
+
+  /**
+    * Check if word is common/stop word
+    */
+  private static isCommonWord(word: string): boolean {
+    const stopWords = new Set([
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+      'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+      'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+      'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might',
+      'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she',
+      'it', 'we', 'they', 'what', 'which', 'who', 'when', 'where', 'why', 'how'
+    ])
+    return stopWords.has(word)
   }
   
   /**

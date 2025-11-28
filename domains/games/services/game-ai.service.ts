@@ -171,13 +171,15 @@ export class GameAIService {
      * Continue game conversation with user input
      * Story-aware version with panel pacing awareness
      * Enforces 2-3 sentences per panel with intelligent escalation
+     * Maintains thematic connection to source article if provided
      */
   static async* chatGame(
     messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
     userInput: string,
     model: string = 'gpt-4o-mini',
     currentPanel: number = 1,
-    maxPanels: number = 5
+    maxPanels: number = 5,
+    articleContext?: string
   ): AsyncGenerator<GameplayResponse> {
 
     const aiModel = getModel(model)
@@ -200,6 +202,8 @@ export class GameAIService {
   SCENE FOCUS: Describe ONE scene only. Do NOT recap previous scenes or include flashbacks. Focus entirely on the NEW moment resulting from the user's choice.
 
   LENGTH REQUIREMENT: Keep narrative to exactly 2-3 sentences maximum. Use vivid, visual language that's punchy and engaging. Every sentence should describe the CURRENT scene.
+
+  ${articleContext ? `\n  THEMATIC CONTINUITY: Keep the player's choices and journey grounded in the themes from the source article:\n  ${articleContext.split('\n').slice(0, 3).join('\n  ')}\n  Every moment should reinforce why this game was created based on that material.` : ''}
 
   ${paceGuidance}
 
@@ -380,53 +384,77 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
   }
 
   /**
-   * Build generation prompt (enhanced from original)
-   * 
-   * Optionally constrains genre/difficulty if provided
-   */
+    * Build generation prompt (enhanced from original)
+    * 
+    * ARTICLE INTEGRITY FIRST: When article content is provided, its themes must be
+    * authentically interpreted in the game. Genre/difficulty are secondary flavoring,
+    * not primary constraints.
+    */
   private static buildGenerationPrompt(
     promptText: string,
     customization?: { genre?: string; difficulty?: string }
   ): string {
-    let basePrompt = `I am GameCreator-GPT, an AI specializing in generating creative and engaging game ideas.`
+    let basePrompt = `You are GameCreator-GPT, an AI specializing in generating game ideas that authentically capture the essence of source material.
 
-    // Add strict customization constraints FIRST if provided
+  Your PRIMARY obligation is to create a game that faithfully interprets the article's core themes and arguments.
+  Secondary constraints (genre/difficulty) should enhance—not override—thematic authenticity.`
+
+    // Detect if this is article-based generation
+    const isArticleContent = promptText?.includes('article:') || promptText?.includes('Article:')
+    
+    if (isArticleContent) {
+      basePrompt += `
+
+  CRITICAL: ARTICLE THEMATIC INTEGRATION
+  ========================================
+  The following article content defines your creative direction. Every game element MUST connect to its themes:
+  - Title, description, and tagline should reference or evoke the article's core ideas
+  - Game mechanics should reflect the article's arguments or narrative arc
+  - The subgenre should authentically represent the article's tone and subject matter
+  - Avoid generic "adventure" framing—this game must be specifically about this article's concepts
+
+  ${promptText}
+
+  After reading the above, you will design a game that makes readers think differently about these concepts.`
+    } else if (promptText) {
+      basePrompt += `\n\nCreate a game based on this concept: ${promptText}`
+    }
+
+    // Genre and difficulty are secondary flourishes
     if (customization?.genre) {
-      basePrompt += `\n\nCRITICAL REQUIREMENT: This game MUST be in the "${customization.genre}" genre. The genre field in your response MUST contain "${customization.genre}". This is non-negotiable and will be validated.`
+      basePrompt += `\n\nAPPLY GENRE FLAVOR: The game's aesthetic should feel "${customization.genre}", but only if it enhances the core theme. The genre field MUST be set to "${customization.genre}".`
     }
 
     if (customization?.difficulty) {
       const difficultyGuide =
         customization.difficulty === 'easy'
-          ? 'The game MUST be easy with straightforward choices, clear consequences, and simple mechanics. Avoid complex puzzles or hidden mechanics.'
-          : 'The game MUST be challenging with complex choices, hidden mechanics, difficult decisions, and consequences that are not immediately obvious.'
-      basePrompt += `\n\nDifficulty Requirement: ${difficultyGuide}`
+          ? 'Make it accessible: straightforward choices, clear consequences, simple mechanics.'
+          : 'Make it challenging: complex choices, hidden mechanics, non-obvious consequences.'
+      basePrompt += `\n\nDIFFICULTY FLAVOR: ${difficultyGuide}`
     }
 
-    basePrompt += `\n\nGenerate a unique interactive text-based game idea that avoids common tropes like escape rooms and island games. The game should be exciting, dramatic, and fun.
+    basePrompt += `
 
-Please provide a JSON response with the following structure:
-- title: An engaging game title
-- genre: Main genre (e.g., "Mystery", "Adventure", "Sci-Fi")${customization?.genre ? ` - MUST include "${customization.genre}"` : ''}
-- subgenre: More specific genre (e.g., "Detective Thriller", "Space Opera")
-- description: Detailed game description that matches the genre${customization?.difficulty ? ` and ${customization.difficulty} difficulty` : ''}
-- tagline: A funny, witty, and edgy tagline the main character would say
-- primaryColor: A hex color with high contrast against #000000`
-
-    if (promptText) {
-      basePrompt += `\n\nThe user has specifically requested a game about: ${promptText}`
-    }
+  Please provide a JSON response with the following structure:
+  - title: Game title that connects to the article's core idea
+  - genre: Main genre (e.g., "Mystery", "Adventure", "Sci-Fi")${customization?.genre ? ` - MUST be "${customization.genre}"` : ''}
+  - subgenre: Specific subgenre that reflects the article's tone/subject
+  - description: How this game authentically interprets the article's themes${customization?.difficulty ? ` with ${customization.difficulty} difficulty` : ''}
+  - tagline: A statement that captures the game's thematic core (not just witty)
+  - primaryColor: A hex color with high contrast against #000000`
 
     return basePrompt
   }
 
   /**
-   * Build start game prompt (enhanced from original)
-   * Now optionally includes article context for narrative continuity
-   * Enforces 2-3 sentences for opening panel
-   */
+    * Build start game prompt (enhanced from original)
+    * ARTICLE CONTEXT INTEGRATION: When provided, article themes guide the narrative
+    * so players engage with the source material's ideas, not a generic adventure
+    * Enforces 2-3 sentences for opening panel
+    */
   private static buildStartGamePrompt(game: any, articleContext?: string): string {
     const basePrompt = `You are an interactive text game engine designed for visual comic-style gameplay.
+  The game's opening must ground players in the world and themes they're about to explore.
 
   # GAME DETAILS
   Title: ${game.title}
@@ -435,10 +463,22 @@ Please provide a JSON response with the following structure:
   Description: ${game.description}
   Tagline: ${game.tagline}
 
-  ${articleContext ? `# ARTICLE CONTEXT (use to enhance narrative authenticity)
+  ${articleContext ? `# SOURCE MATERIAL CONTEXT (This is the heart of the game)
+  The following article inspired this game. Your opening scene should make players feel
+  the article's core themes, questions, or dilemmas. Reference the article's concepts
+  in how you frame the world, the character's challenge, and the initial choice.
+
   ${articleContext}
 
-  ` : ''}# CRITICAL RULES - COMIC PANEL FORMAT
+  OPENING SCENE REQUIREMENT:
+  - Frame the game world in a way that reflects the article's themes
+  - Present the player's initial challenge as a direct interpretation of the article's core question/argument
+  - Use language that echoes or references the article's key concepts
+  ` : `# OPENING SCENE REQUIREMENT:
+  - Establish an engaging world and central conflict
+  `}
+
+  # CRITICAL RULES - COMIC PANEL FORMAT
   * Keep narrative to exactly 2-3 sentences maximum describing ONE SCENE ONLY
   * Use vivid, visual language that translates to imagery
   * Paint clear pictures for the comic panel image
@@ -448,6 +488,7 @@ Please provide a JSON response with the following structure:
   * Always end with exactly 4 numbered options (1. 2. 3. 4.)
   * Begin each option with the number, period, and space (e.g., "1. ")
   * Make choices meaningful with real consequences
+  ${articleContext ? '\n  * Your options should present different approaches to the article\'s central dilemma' : ''}
 
   Start the game now. Describe the opening scene vividly in 2-3 sentences, then present 4 initial choices.`
 

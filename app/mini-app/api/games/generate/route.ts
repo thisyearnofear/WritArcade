@@ -42,46 +42,47 @@ export async function POST(request: NextRequest) {
     // Fetch and process article content
     let processedContent = null
     let articleTitle = 'Article'
+    let articleThemes = ''
 
     try {
       if (ContentProcessorService.isValidUrl(validatedData.articleUrl)) {
         processedContent = await ContentProcessorService.processUrl(validatedData.articleUrl)
         articleTitle = processedContent.title || 'Article'
+        articleThemes = ContentProcessorService.extractArticleThemes(
+          processedContent.text,
+          processedContent.title
+        )
       }
     } catch (error) {
       console.error('Content processing failed:', error)
       // Continue with just the URL if content processing fails
     }
 
-    // Build the game generation prompt with genre and difficulty
-    const difficultyDescriptor = validatedData.difficulty === 'easy' 
-      ? 'accessible, simple choices, forgiving gameplay'
-      : 'challenging, complex choices, consequences matter'
+    // Build the game generation prompt: ARTICLE FIRST, then genre/difficulty as flavor
+    const promptText = processedContent
+      ? `Create a game based on this article: "${processedContent.title || 'Untitled'}"
 
-    const genreDescriptor = {
-      horror: 'dark, suspenseful, with tension and fear elements',
-      comedy: 'humorous, lighthearted, with absurd situations and jokes',
-      mystery: 'intriguing, puzzle-like, with clues to uncover',
-    }[validatedData.genre]
+ARTICLE SOURCE MATERIAL:
+Author: ${processedContent.author || 'Unknown'} | Publication: ${processedContent.publicationName || 'Unknown'} | ${processedContent.wordCount} words
 
-    const promptText = `Create a ${validatedData.genre} game with ${validatedData.difficulty} difficulty that is ${genreDescriptor}.
-    
-${
-  processedContent
-    ? `Based on this article: "${processedContent.title || 'Untitled'}"
+THEMATIC ESSENCE (core to game design):
+${articleThemes}
 
-Article metadata: From publication "${processedContent.publicationName || 'Unknown'}" with ${processedContent.subscriberCount || 0} subscribers. Author: ${processedContent.author || 'Unknown'} (wallet: ${processedContent.authorWallet || 'N/A'}). Published: ${processedContent.publishedAt?.toISOString() || 'Unknown'}.
+FULL ARTICLE TEXT (preserve the original author's voice and ideas):
+${processedContent.text}
 
-Content summary (${processedContent.wordCount} words, ~${processedContent.estimatedReadTime || 0}min read):
-${processedContent.text}`
-    : `Based on the content from: ${validatedData.articleUrl}`
-}
+GENRE & DIFFICULTY FLAVOR (secondary to article themes):
+- Apply a ${validatedData.genre} aesthetic and tone to the game
+- Make it ${validatedData.difficulty === 'easy' ? 'accessible with straightforward choices' : 'challenging with complex choices'}
 
-The game should:
-1. Capture the theme and essence of the article
-2. Be ${validatedData.difficulty === 'easy' ? 'accessible with clear paths' : 'challenging with meaningful choices'}
-3. Have a ${validatedData.genre} tone and atmosphere
-4. Be engaging and interactive`
+DESIGN IMPERATIVE:
+Your game MUST authentically interpret this article's core themes. Players should play this game and think differently about the concepts ${processedContent.author || 'the author'} presents. The ${validatedData.genre} genre and ${validatedData.difficulty} difficulty enhance but never replace thematic authenticity.`
+      : `Create a ${validatedData.genre} game with ${validatedData.difficulty} difficulty based on the content from: ${validatedData.articleUrl}
+
+The game should be engaging and interactive with:
+- A ${validatedData.genre} tone and atmosphere
+- ${validatedData.difficulty === 'easy' ? 'Accessible gameplay with clear paths' : 'Challenging gameplay with meaningful consequences'}
+- Thematically relevant mechanics and narrative`
 
     // Generate game using AI service
     const gameData = await GameAIService.generateGame({
@@ -99,9 +100,9 @@ The game should:
         articleUrl: validatedData.articleUrl,
         writerCoinId: validatedData.writerCoinId,
         difficulty: validatedData.difficulty,
-        // Include article context for better game start narrative continuity
+        // Include comprehensive article context for authentic game start narrative continuity
         articleContext: processedContent 
-          ? `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nKey points: ${processedContent.text.substring(0, 500)}...`
+          ? `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nPublication: ${processedContent.publicationName || 'Unknown'}\n\nCore Themes:\n${articleThemes}\n\nKey excerpt:\n${processedContent.text.substring(0, 800)}...`
           : undefined,
       }
     )

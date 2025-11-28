@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { sessionId, gameId, message } = chatSchema.parse(body)
     
-    // Get session
+    // Get session and game with article context
     const session = await prisma.session.findFirst({
       where: { sessionId }
     })
@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+    
+    // Fetch game to get article context for thematic continuity
+    const game = await prisma.game.findFirst({
+      where: { id: gameId }
+    })
+    
+    const articleContext = game?.articleContext || undefined
     
     // Save user message
     const userMessage = await prisma.chat.create({
@@ -79,14 +86,15 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Get AI response with panel awareness
-          const chatStream = GameAIService.chatGame(
-            messages,
-            message,
-            'gpt-4o-mini', // TODO: Get from game or user preference
-            currentPanelNumber,
-            maxPanels
-          )
+          // Get AI response with panel awareness and article thematic continuity
+           const chatStream = GameAIService.chatGame(
+             messages,
+             message,
+             game?.promptModel || 'gpt-4o-mini', // Use model from game generation for consistency
+             currentPanelNumber,
+             maxPanels,
+             articleContext
+           )
           
           let assistantContent = ''
           

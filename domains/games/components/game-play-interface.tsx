@@ -407,19 +407,52 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const handleMintComic = async (panelData: ComicBookFinalePanelData[], metadata?: any) => {
     setIsMinting(true)
     try {
-      // Enhanced minting with rich metadata
-      console.log('Minting comic with enhanced data:', {
-        panels: panelData,
-        metadata,
-        choices: userChoices,
+      // Build NFT metadata with full attribution to original author
+      const nftMetadata = {
+        name: game.title,
+        description: game.description,
+        image: panelData[0]?.imageUrl || undefined,
+        attributes: [
+          { trait_type: 'Genre', value: game.genre },
+          { trait_type: 'Subgenre', value: game.subgenre },
+          { trait_type: 'Difficulty', value: game.difficulty || 'standard' },
+          { trait_type: 'Panels', value: String(panelData.length) },
+        ],
+        // SOURCE MATERIAL ATTRIBUTION (critical for Story Protocol IP rights)
+        sourceArticle: {
+          url: game.articleUrl || undefined,
+          author: game.authorParagraphUsername || 'Unknown Author',
+          authorWallet: game.authorWallet || undefined,
+          publication: game.publicationName || 'Unknown Publication',
+        },
+        // DERIVATIVE WORK ATTRIBUTION
+        creator: {
+          wallet: game.creatorWallet || undefined,
+          timestamp: new Date().toISOString(),
+        },
+        // GAME METADATA
         game: {
           title: game.title,
-          creator: game.creatorWallet,
-          author: game.authorParagraphUsername
-        }
+          tagline: game.tagline,
+          promptModel: game.promptModel,
+          promptName: game.promptName,
+        },
+      }
+
+      console.log('Minting comic with full author attribution:', {
+        nftMetadata,
+        panels: panelData.length,
+        sourceAuthor: game.authorParagraphUsername,
+        sourceAuthorWallet: game.authorWallet,
+        gameCreator: game.creatorWallet,
       })
-      
-      // TODO: Implement contract call with metadata URIs
+
+      // TODO: Implement contract call with metadata URIs via GameNFT contract
+      // Should include:
+      // 1. Register game as derivative IP asset via Story Protocol
+      // 2. Set parent IP (article) and link to original author
+      // 3. Attach royalty terms ensuring author receives share of future plays/mints
+      // 4. Mint NFT with comprehensive metadata
       alert('Minting with full attribution coming soon!')
     } catch (error) {
       console.error('Mint failed:', error)

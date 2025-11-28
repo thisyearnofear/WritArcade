@@ -31,10 +31,14 @@ export interface Game {
   writerCoinId?: string
   difficulty?: string
   
-  // Attribution data
+  // Attribution data - preserves source material author
   creatorWallet?: string
   authorWallet?: string
   authorParagraphUsername?: string
+  publicationName?: string
+  publicationSummary?: string
+  subscriberCount?: number
+  articlePublishedAt?: Date
   
   // Access control
   private: boolean
@@ -92,6 +96,7 @@ export interface GameGenerationResponse {
   promptModel: string
   promptName: string
   promptText?: string
+  creatorWallet?: string  // Game creator's wallet (for attribution in NFT)
 }
 
 export interface GameplayOption {

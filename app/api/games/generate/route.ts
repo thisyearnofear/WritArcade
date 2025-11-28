@@ -55,10 +55,25 @@ export async function POST(request: NextRequest) {
       try {
         processedContent = await ContentProcessorService.processUrl(validatedData.url)
         
+        // Extract article themes for thematic game design
+        const articleThemes = ContentProcessorService.extractArticleThemes(
+          processedContent.text,
+          processedContent.title
+        )
+        
         processedPrompt = `Create a game based on this article: "${processedContent.title || 'Untitled'}"
-\nArticle metadata: From publication "${processedContent.publicationName}" with ${processedContent.subscriberCount} subscribers. Author: ${processedContent.author || 'Unknown'} (wallet: ${processedContent.authorWallet || 'N/A'}). Published: ${processedContent.publishedAt?.toISOString() || 'Unknown'}.
-        \nContent summary (${processedContent.wordCount} words, ~${processedContent.estimatedReadTime}min read):
-${processedContent.text}\n\nMake the game capture the essence and themes of this article while being engaging and interactive.`
+
+ARTICLE SOURCE MATERIAL:
+Author: ${processedContent.author || 'Unknown'} | Publication: ${processedContent.publicationName || 'Unknown'} | ${processedContent.wordCount} words
+
+THEMATIC ESSENCE (use to inspire authentic game mechanics):
+${articleThemes}
+
+FULL ARTICLE TEXT (preserve the original author's voice and ideas):
+${processedContent.text}
+
+DESIGN IMPERATIVE:
+Your game MUST authentically interpret this article's core themes. Players should play this game and think differently about the concepts ${processedContent.author || 'the author'} presents. This game is a derivative work that honors the original author's ideas while offering a unique, interactive interpretation.`
       } catch (error) {
         console.error('Content processing failed:', error)
         // Re-throw with better message
@@ -92,8 +107,8 @@ ${processedContent.text}\n\nMake the game capture the essence and themes of this
       publicationSummary: processedContent.publicationSummary,
       subscriberCount: processedContent.subscriberCount,
       articlePublishedAt: processedContent.publishedAt,
-      // Include article context for narrative continuity
-      articleContext: `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nKey points: ${processedContent.text.substring(0, 500)}...`,
+      // Include comprehensive article context for authentic game narrative continuity
+      articleContext: `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nPublication: ${processedContent.publicationName || 'Unknown'}\n\nCore Themes:\n${ContentProcessorService.extractArticleThemes(processedContent.text, processedContent.title)}\n\nKey excerpt:\n${processedContent.text.substring(0, 800)}...`,
     } : undefined
     
     // Enhance game data with attribution

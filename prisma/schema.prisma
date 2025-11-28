@@ -61,14 +61,20 @@ model Game {
 
   // Mini App specific fields
   articleUrl         String?  // Original article URL (Paragraph)
-  authorWallet       String?
-  publicationName    String?
-  publicationSummary String?
-  subscriberCount    Int?
-  articlePublishedAt DateTime?
   articleContext     String?  @db.Text  // Article summary used for game start narrative continuity
   writerCoinId       String?  // Which writer coin was used (e.g., "avc")
   difficulty         String?  // Game difficulty: "easy" or "hard"
+  
+  // Source material attribution (preserves original author for Story Protocol & NFT metadata)
+  authorParagraphUsername String?  // Original author's Paragraph username (e.g., "fred" from Fred Wilson)
+  authorWallet            String?  // Original author's wallet address
+  publicationName         String?  // Original publication name
+  publicationSummary      String?  // Original publication summary
+  subscriberCount         Int?     // Original publication subscriber count
+  articlePublishedAt      DateTime?  // Original article publication date
+  
+  // Creator attribution (user who generated the game)
+  creatorWallet           String?  // Game creator's wallet address
 
   // NFT minting fields
   nftTokenId       String?  // ERC-721 token ID
