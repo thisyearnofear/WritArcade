@@ -313,8 +313,9 @@ model Asset {
   creatorId   String?
   
   // Relations
-  games       GameFromAsset[]
-  revenues    AssetRevenue[]
+  games                GameFromAsset[]
+  revenues             AssetRevenue[]
+  storyRegistration    AssetStoryRegistration?
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -363,4 +364,31 @@ model AssetRevenue {
   
   @@unique([assetId, gameId])
   @@map("asset_revenues")
+}
+
+// Story Protocol Asset Registration (Sprint 4)
+model AssetStoryRegistration {
+  id String @id @default(cuid())
+  
+  // Relations
+  assetId String @unique
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  // Story Protocol data
+  storyIpId       String @unique // IP Asset ID on Story Protocol
+  transactionHash String // Registration transaction hash
+  blockNumber     Int    // Block where registration was mined
+  metadataUri     String // IPFS URI for asset metadata
+  
+  // License configuration
+  licenseTerms Json? // { commercialUse, commercialAttribution, derivatives, derivativeRoyalty }
+  
+  // Status tracking
+  status        String @default("pending") // 'pending' | 'registered' | 'active'
+  registeredAt  DateTime @default(now())
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("asset_story_registrations")
 }

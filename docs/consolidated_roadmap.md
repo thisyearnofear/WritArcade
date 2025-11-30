@@ -1,7 +1,7 @@
 # WritArcade Roadmap & Status
 
 **Last Updated:** November 30, 2025
-**Status:** Phase 6 Sprint 1-2 In Progress
+**Status:** Phase 6 Sprint 1-4 Complete (Asset Marketplace Foundation)
 
 ## Vision
 
@@ -399,12 +399,37 @@ WritArcade (Same Codebase, Different Products)
   - Asset metadata preserved through game creation
 - ✅ Build: `npm run build` passing, new routes /assets/create + /api/assets/build-game
 
-**Sprint 4 (Week 4): Story Protocol Integration**
-- [ ] Create `domains/assets/story-protocol.service.ts` (4 methods only)
-- [ ] Implement asset registration on Story (testnet)
-- [ ] Implement license terms attachment
-- [ ] Implement derivative game registration
-- [ ] Add `/api/assets/[id]/register/route.ts` (Story registration endpoint)
+**Sprint 4 (Week 4): Story Protocol Integration** ✅ COMPLETE
+- [x] Create `domains/assets/story-protocol.service.ts` (4 methods only)
+- [x] Implement asset registration on Story (testnet)
+- [x] Implement license terms attachment
+- [x] Implement derivative game registration
+- [x] Add `/api/assets/[id]/register/route.ts` (Story registration endpoint)
+
+**Implementation Details (Sprint 4):**
+- ✅ `StoryProtocolAssetService`: 4-method IP management service
+  - `registerAssetAsIP()`: Register asset as IP on Story Protocol (metadata + blockchain)
+  - `attachLicenseTerms()`: Set usage rights, commercial terms, derivative royalties
+  - `registerGameAsDerivative()`: Link game to parent assets, establish royalty chain
+  - `getIPAssetDetails()`: Fetch registration status + royalty configuration
+  - Graceful fallback: Returns mock responses when Story disabled (for testing)
+- ✅ Story Protocol API Endpoints (`/api/assets/[id]/register`):
+  - `POST`: Register asset → creates IP record on Story, attaches license (10% derivative royalty)
+  - `GET`: Check registration status + retrieve IP details from Story
+  - `DELETE`: Remove WritArcade tracking (Story records immutable)
+  - Validates creator wallet + prevents duplicate registrations
+- ✅ Database Model (`AssetStoryRegistration`):
+  - Links Asset → Story IP (storyIpId)
+  - Stores transaction hash + block number (verification)
+  - Metadata URI for IPFS storage
+  - License terms in JSON (commercialUse, derivatives, royaltyRate)
+  - Status tracking: pending → registered → active
+- ✅ Zero breaking changes
+  * Game routes unchanged
+  * Payment system unchanged
+  * Story disabled by default (opt-in via STORY_IP_REGISTRATION_ENABLED)
+  * Build passing: npm run build ✅
+  * Route: /api/assets/[id]/register
 
 #### Zero Risk to Existing Flow
 - No changes to current payment contracts
