@@ -1,7 +1,7 @@
 # WritArcade Roadmap & Status
 
-**Last Updated:** November 27, 2025
-**Status:** Phase 5b Complete - UI/UX Polish & Visual Identity
+**Last Updated:** November 30, 2025
+**Status:** Phase 6 Sprint 1-2 In Progress
 
 ## Vision
 
@@ -280,33 +280,121 @@ WritArcade Unified Experience:
 
 ## Future Vision: Scaling the Collaboration Economy
 
-### Phase 6: Comic-Style Visual Immersion (Next Priority - 8 weeks)
-- **User Feedback Driver:** "Games too verbose, feel like chatbots"
-- **Solution:** Comic panel-style UI inspired by Comicify.ai
-- **Benefits:** 3x engagement, highly shareable, better NFT collectibility
-- **See:** [`docs/PHASE_2_COMIC_IMMERSION.md`](./PHASE_2_COMIC_IMMERSION.md)
+### Phase 6: Asset Marketplace (Next Priority - 4 sprints)
+**Parallel Product: Decoupled from Existing Game Flow**
 
-**Key Deliverables:**
-- Comic-style image generation (Venice AI with comic directives)
-- New `ComicPanelCard` component (speech bubble + image + options)
-- Enforce 2-3 sentence narrative (reduce verbosity)
-- Sequential panel display (like reading a graphic novel)
-- Mobile-optimized panel view + landscape support
-- Enhanced NFT metadata (comic panel sequence)
+WritArcade introduces a **second engagement model**: Instead of generating complete games, users can create reusable game **assets** (characters, mechanics, story beats) that others collaborate on to build games.
 
-**Core Principles Alignment:** ✅ Enhancement-first, consolidation, DRY, modular, organized
+#### Vision
+- **Article → Asset Decomposition**: AI extracts reusable components (characters, game mechanics, story structures) from articles
+- **Decentralized Authorship**: Multiple users can combine different asset packs to create unique games
+- **Story Protocol Integration**: Assets registered as IP; games that use them automatically share revenue
+- **Parallel Monetization**: Keep existing "instant game" flow intact, add optional "collaborative asset" flow
 
-**Revenue Impact:** 3x creator earnings, higher NFT demand, 25%+ share rate
+#### Key Differences from Current Flow
+| Aspect | Current Flow | Asset Flow |
+|--------|---|---|
+| **Input** | Article → Full game in 2 min | Article → Asset components |
+| **Creation** | AI generates everything | AI generates assets, users build games |
+| **Duration** | Quick (instant play) | Collaborative (days/weeks) |
+| **Revenue** | One-time per game | Ongoing per derivative |
+| **IP Layer** | Optional NFT | Essential (Story Protocol) |
+
+#### Architecture Separation ✅ CLEAN
+```
+WritArcade (Same Codebase, Different Products)
+│
+├─ PRODUCT 1: Quick Games (Article → Playable in 2 min) ✅ UNTOUCHED
+│  ├─ app/games/*
+│  ├─ domains/games/*
+│  ├─ GameNFT.sol on Base
+│  └─ WriterCoinPayment.sol (100 $AVC)
+│
+└─ PRODUCT 2: Asset Marketplace (Article → Components → Collaborative Games) 🆕
+   ├─ app/api/assets/*
+   ├─ app/assets/* (UI for marketplace)
+   ├─ domains/assets/
+   │  ├─ asset-generation.service.ts
+   │  ├─ asset-database.service.ts
+   │  ├─ story-protocol.service.ts (assets only)
+   │  └─ asset-marketplace.service.ts
+   ├─ prisma/schema.prisma (new Asset models)
+   └─ lib/story-protocol.service.ts (scoped to assets)
+```
+
+#### Implementation Timeline & Core Principles Checklist
+
+**Sprint 1 (Week 1): Asset Generation & Data Models** ✅ COMPLETE
+- [x] Add `AssetGenerationRequest` to `domains/games/types.ts` (ENHANCEMENT FIRST)
+- [x] Add `generateAssets()` method to `GameAIService` (reuse existing pattern)
+- [x] Create `domains/assets/services/asset-database.service.ts` (CRUD only)
+- [x] Add 3 Prisma models: Asset, GameFromAsset, AssetRevenue (PREVENT BLOAT)
+- [x] Run migrations: `npx prisma db push` ✅ Database synced
+
+**Implementation Details (Sprint 1):**
+- ✅ `AssetDatabaseService`: 200-line CRUD service with filtering, search, and stats
+  - `createAsset()`, `getAssetById()`, `getAssets()` with pagination
+  - `updateAsset()`, `deleteAsset()`, `getAssetStats()`
+  - Filtering by type, genre, creator, tags, search term
+- ✅ Prisma models:
+  - `Asset`: title, description, type, content, genre, tags, creator tracking
+  - `GameFromAsset`: links games to constituent assets (composition tracking)
+  - `AssetRevenue`: tracks earnings per asset per game (royalty distribution)
+- ✅ Database: 3 new tables created, all relations configured
+- ✅ Build: `npm run build` passing, 0 TypeScript errors, 0 breaking changes
+
+**Sprint 2 (Week 2): Marketplace UI & Discovery**
+- [ ] Create `AssetMarketplaceService` with caching (PERFORMANT)
+- [ ] Build `/app/assets/page.tsx` (discover/browse)
+- [ ] Build `/app/assets/[id]/page.tsx` (detail view)
+- [ ] Add `/api/assets/generate/route.ts` endpoint (article → assets)
+- [ ] Implement asset search/filtering (DRY: single query builder)
+
+**Sprint 3 (Week 3): Game Builder from Assets**
+- [ ] Create "Build Game" flow (select assets + customize)
+- [ ] Add `AssetMarketplaceService.composeGameFromAssets()` (CLEAN dependencies)
+- [ ] Add `/api/assets/build-game/route.ts` endpoint
+- [ ] Create `/app/assets/create/page.tsx` (generate from article)
+- [ ] Wire attribution tracking (asset creator → royalty)
+
+**Sprint 4 (Week 4): Story Protocol Integration**
+- [ ] Create `domains/assets/story-protocol.service.ts` (4 methods only)
+- [ ] Implement asset registration on Story (testnet)
+- [ ] Implement license terms attachment
+- [ ] Implement derivative game registration
+- [ ] Add `/api/assets/[id]/register/route.ts` (Story registration endpoint)
+
+#### Zero Risk to Existing Flow
+- No changes to current payment contracts
+- No changes to game generation
+- No changes to NFT minting
+- Separate API routes (`/api/assets/...` vs `/api/games/...`)
+- Separate Prisma models (Asset, GameFromAsset, vs Game)
+- If feature flops: Delete `domains/assets/` folder, one sprint of work lost
+
+#### Why This Matters
+- **Real Use Case for Story Protocol**: Assets are persistent, valuable, reusable IP
+- **Different User Personas**: Game players ≠ Asset creators ≠ Game builders
+- **Monetization Validation**: Proves users value collaborative creation
+- **Scaling Path**: Once validated, expand to cross-article asset composition
 
 ---
 
-### Phase 7: Story Protocol IP Layer (Post-Comic Priority)
-- **Complete SDK Integration**: Full Story Protocol implementation for IP asset registration
-- **Automated IP Management**: Every generated game registered as derivative of original article
-- **Revenue Automation**: Seamless royalty distribution to writers via Story Protocol
-- **Multi-Writer Support**: Framework for collaborative content and revenue sharing
-- **Writer Analytics**: Dashboard showing all games derived from their content + earnings
-- **IP Protection**: Prevent unauthorized commercial use while enabling creative derivatives
+### Phase 7: Story Protocol IP Layer (Post-Asset Marketplace)
+**Focus: Asset Monetization via Story Protocol**
+
+- **Asset Registration**: Asset packs registered as IP Assets on Story Protocol
+- **License Terms**: PILv2 terms for asset usage (commercial remix allowed)
+- **Revenue Sharing**: When game uses asset, asset creator earns %; automatic via story
+- **Derivative Tracking**: Games that use assets registered as derivatives
+- **Royalty Claims**: Asset creators claim accumulated royalties from game revenue
+- **Multi-Writer Support**: Multiple asset packs used in single game = multiple revenue streams
+
+**Critical Difference from Previous Plan:**
+- ✅ Story Protocol for **assets only** (not individual games)
+- ✅ Assets are persistent, reusable IP (matches Story's strengths)
+- ✅ Games remain on Base (payment infrastructure already works)
+- ✅ Cross-chain bridge optional (sync game revenue → Story royalty vault)
 
 ### Phase 8: Multi-Writer Ecosystem (Paragraph Partnership Expansion)
 - **10+ Newsletter Authors**: Automated onboarding for Paragraph writers with existing tokens

@@ -1,11 +1,16 @@
 # WritArcade Architecture
 
-**Last Updated:** November 24, 2025
-**Status:** Phase 5 Complete - True Feature Parity Achieved
+**Last Updated:** November 30, 2025
+**Status:** Phase 5 Complete - Phase 6 Sprint 1-2 Complete
 
 ## Overview
 
-WritArcade is a unified platform that transforms articles into playable games, supporting both web browsers and Farcaster mini-apps with true feature parity (95% code sharing).
+WritArcade is a **dual-product platform** that transforms articles into engaging content in two ways:
+
+1. **Quick Games** (MVP - Live): Article → AI-generated complete game → Play in 2 minutes
+2. **Asset Marketplace** (Phase 6): Article → Reusable game components → Collaborative game building
+
+Both share the same codebase while maintaining **complete architectural separation** to minimize risk and maximize flexibility.
 
 ## Unified Architecture
 
@@ -33,6 +38,605 @@ interface WalletProvider {
 // Runtime detection
 const wallet = detectWalletProvider() // Farcaster or Browser
 ```
+
+## Dual-Product System Design
+
+### Product Separation (Clean Boundaries)
+
+```
+WritArcade Codebase
+│
+├─ PRODUCT 1: Quick Games (100% Complete ✅)
+│  └─ Unified web + mini-app experience
+│     ├─ Article input
+│     ├─ Genre/difficulty customization
+│     ├─ AI game generation
+│     ├─ 5-panel interactive gameplay
+│     ├─ Base blockchain payments
+│     └─ NFT minting (optional)
+│
+├─ PRODUCT 2: Asset Marketplace (Phase 6 🆕)
+│  └─ Collaborative asset creation
+│     ├─ Article → component extraction
+│     ├─ Asset discovery & browsing
+│     ├─ Game builder (compose assets)
+│     ├─ Story Protocol IP registration
+│     └─ Revenue sharing (per derivative)
+│
+└─ Shared Infrastructure (Both Products)
+   ├─ Authentication & user management
+   ├─ Article processing (ContentProcessorService)
+   ├─ AI services (GameAIService patterns)
+   ├─ Image generation (ImageGenerationService)
+   └─ Database (Prisma, PostgreSQL)
+```
+
+### Why This Architecture?
+
+| Benefit | Why It Matters |
+|---------|---|
+| **Zero Risk** | Product 1 is completely untouched; Product 2 is isolated |
+| **Independent Validation** | Each product can fail without affecting the other |
+| **Flexible Story Integration** | Story Protocol only for assets (where it fits) |
+| **Code Reuse** | Shared AI, content processing, auth |
+| **User Clarity** | Two distinct value propositions, different UX |
+
+---
+
+## Building Asset Marketplace with Core Principles
+
+### Applying ENHANCEMENT FIRST (Reuse Existing Services)
+
+**❌ Wrong Approach:** Create new AI services, duplicate prompts, duplicate image generation
+**✅ Right Approach:** Extend existing services for asset generation
+
+```typescript
+// domains/games/services/game-ai.service.ts (ENHANCED)
+export class GameAIService {
+  // Existing methods
+  static async generateGame(request: GameGenerationRequest): Promise<GameGenerationResponse>
+  static async startGame(request: GameStartRequest): Promise<GameplayResponse>
+  static async chatGame(request: GameChatRequest): Promise<GameplayResponse>
+  
+  // NEW: Asset generation (same schema, different prompt)
+  static async generateAssets(request: AssetGenerationRequest): Promise<AssetGenerationResponse>
+}
+
+// Reuses:
+// - Same model provider logic (getModel function)
+// - Same error handling + retry logic
+// - Same prompt structure (with asset-specific directives)
+// - Same Zod schema validation pattern
+```
+
+**Implementation:**
+- Add `AssetGenerationRequest` type to `domains/games/types.ts`
+- Add `generateAssets()` method to existing `GameAIService`
+- No new AI service class needed
+
+---
+
+### Applying AGGRESSIVE CONSOLIDATION (No Code Duplication)
+
+**Asset-Specific Code (Only):**
+```typescript
+// domains/assets/services/ (MINIMAL)
+├─ asset-database.service.ts     // Asset CRUD only
+├─ asset-marketplace.service.ts  // Discovery/search logic
+└─ story-protocol.service.ts     // Story registration only (4 methods)
+```
+
+**Shared (Don't Duplicate):**
+```typescript
+// REUSE these services:
+domains/games/services/game-ai.service.ts          // generateAssets()
+domains/games/services/image-generation.service.ts // generateAssetImage()
+domains/content/services/content-processor.service.ts // extractArticleContent()
+lib/wallet/                                        // Wallet abstraction
+lib/database.ts                                    // Prisma client
+```
+
+**Prisma Models (Strategic Addition):**
+```prisma
+// Add to schema.prisma (only 3 models)
+model Asset {
+  id String @id @default(cuid())
+  // ... (minimal fields, reuse Game relationships)
+}
+
+model GameFromAsset {
+  id String @id @default(cuid())
+  // ... (extends Game, tracks asset origins)
+}
+
+model AssetRevenue {
+  id String @id @default(cuid())
+  // ... (tracks creator earnings)
+}
+```
+
+---
+
+### Applying PREVENT BLOAT (Shared Infrastructure)
+
+**Database:** Extend existing schema, don't create new tables unless essential
+```prisma
+// Add to existing Game model
+model Game {
+  id String @id
+  // ... existing fields ...
+  
+  // NEW: Link to source assets (if game built from assets)
+  sourceAssets Asset[] @relation("GameSourceAssets")
+  isFromAssets Boolean @default(false)
+}
+
+// Add these 3 new models only
+model Asset { ... }
+model GameFromAsset { ... }
+model AssetRevenue { ... }
+```
+
+**Authentication:** Reuse existing user context
+- No new auth needed; assets belong to users same as games
+- Use existing `userId` context from requests
+
+**Image Generation:** Reuse `ImageGenerationService`
+- Asset images use same Venice AI pipeline
+- Same caching strategy
+- Same rating system for model feedback
+
+---
+
+### Applying DRY (Single Source of Truth)
+
+**Asset Generation Prompt:**
+```typescript
+// domains/games/services/game-ai.service.ts
+static buildAssetGenerationPrompt(articleContent: string, genre?: string): string {
+  // Single prompt for all asset generation
+  // Genre parameter optional (asset generation is less genre-dependent)
+  // Outputs structured JSON with: characters, mechanics, storyBeats, visualGuidelines
+}
+
+// Reuses prompt building patterns from generateGame()
+// Same constraint validation as game generation
+```
+
+**Asset Composition:**
+```typescript
+// domains/assets/services/asset-marketplace.service.ts
+static async composeGameFromAssets(
+  assetIds: string[],
+  customization?: GameCustomization
+): Promise<Game> {
+  // Single method to turn multiple assets into a complete game
+  // Reuses existing GameAIService methods (startGame, chatGame)
+  // Single database transaction
+}
+```
+
+---
+
+### Applying CLEAN (Clear Dependencies)
+
+**Explicit Dependency Graph:**
+```
+Asset Marketplace
+├─ AssetDatabaseService (asset storage)
+│  └─ Prisma (database)
+├─ AssetMarketplaceService (discovery)
+│  ├─ AssetDatabaseService
+│  └─ GameAIService (to verify compatibility)
+├─ StoryProtocolService (assets only)
+│  └─ Asset IP registration
+└─ GameAIService (to generate assets)
+   ├─ ImageGenerationService (images)
+   └─ Anthropic/OpenAI (API)
+
+Game Builder
+├─ GameAIService (existing, unchanged)
+├─ AssetDatabaseService (read-only)
+└─ GameDatabaseService (write game)
+```
+
+**No Circular Dependencies:**
+- Assets don't know about games
+- Games reference assets but don't modify them
+- Story service is optional layer on top
+
+---
+
+### Applying MODULAR (Testable Pieces)
+
+**Each Service is Independently Testable:**
+
+```typescript
+// Test AssetDatabaseService without touching games
+describe('AssetDatabaseService', () => {
+  it('creates asset with proper fields')
+  it('retrieves asset by ID')
+  it('lists user assets')
+})
+
+// Test asset generation without hitting Story Protocol
+describe('GameAIService.generateAssets', () => {
+  it('generates valid asset structure')
+  it('includes all required components')
+  it('respects genre constraints')
+})
+
+// Test marketplace without touching blockchain
+describe('AssetMarketplaceService', () => {
+  it('discovers public assets')
+  it('filters by genre')
+  it('ranks by popularity')
+})
+
+// Test game builder without Story Protocol
+describe('GameBuilder', () => {
+  it('composes game from asset sources')
+  it('tracks derivative origin')
+  it('preserves asset creator attribution')
+})
+```
+
+---
+
+### Applying PERFORMANT (Smart Caching)
+
+**Asset Discovery (Cache Everything):**
+```typescript
+// AssetMarketplaceService with caching
+private static assetCache = new Map<string, Asset[]>()
+private static cacheExpiry = 5 * 60 * 1000 // 5 minutes
+
+static async getAssetsByGenre(genre: string): Promise<Asset[]> {
+  const cacheKey = `genre:${genre}`
+  
+  // Check cache first
+  if (this.assetCache.has(cacheKey)) {
+    return this.assetCache.get(cacheKey)!
+  }
+  
+  // Fetch from database
+  const assets = await prisma.asset.findMany({ where: { genre } })
+  
+  // Cache result
+  this.assetCache.set(cacheKey, assets)
+  
+  // Auto-expire
+  setTimeout(() => this.assetCache.delete(cacheKey), cacheExpiry)
+  
+  return assets
+}
+```
+
+**Asset Image Generation (Parallel + Progressive):**
+```typescript
+// Generate asset images in parallel with composition
+async function buildAssetImages(assetIds: string[]): Promise<string[]> {
+  // Don't wait for all—return as they complete
+  // Same pattern as GamePlayInterface image loading
+  return Promise.allSettled(
+    assetIds.map(id => ImageGenerationService.generateAssetImage(id))
+  )
+}
+```
+
+---
+
+### Applying ORGANIZED (Domain Structure)
+
+**File Structure (Minimal, Clear Hierarchy):**
+```
+domains/
+├─ games/                    (UNCHANGED)
+│  ├─ components/
+│  ├─ services/
+│  │  ├─ game-ai.service.ts         (ENHANCED: +generateAssets)
+│  │  ├─ game-database.service.ts   (unchanged)
+│  │  └─ image-generation.service.ts (unchanged)
+│  ├─ types.ts                       (ENHANCED: +Asset types)
+│  └─ utils/
+│
+├─ assets/                   (NEW DOMAIN - MINIMAL)
+│  ├─ services/
+│  │  ├─ asset-database.service.ts      (CRUD only)
+│  │  ├─ asset-marketplace.service.ts   (discovery)
+│  │  └─ story-protocol.service.ts      (IP registration)
+│  ├─ types.ts                          (Asset-specific types)
+│  └─ components/                       (UI only—not services!)
+│
+├─ content/                  (unchanged)
+├─ payments/                 (unchanged)
+└─ users/                    (unchanged)
+
+app/
+├─ api/
+│  ├─ games/                 (UNCHANGED)
+│  ├─ assets/                (NEW ENDPOINTS)
+│  │  ├─ generate/route.ts       (POST: article → assets)
+│  │  ├─ [id]/route.ts           (GET: asset details)
+│  │  └─ build-game/route.ts     (POST: assets → game)
+│  └─ payments/              (unchanged)
+│
+└─ assets/                   (NEW PAGES - UI ONLY)
+   ├─ page.tsx              (marketplace discover)
+   ├─ [id]/page.tsx         (asset detail)
+   └─ create/page.tsx       (generate from article)
+```
+
+**Why This Structure Works:**
+- ✅ Assets domain mirrors games domain (parallel, not nested)
+- ✅ Clear service boundaries (database, marketplace, blockchain)
+- ✅ UI lives in `app/`, never in `domains/`
+- ✅ Shared services are reused, not duplicated
+- ✅ Easy to delete entire `domains/assets/` if feature flops
+
+---
+
+## Summary: Asset Marketplace Implementation Rules
+
+| Principle | Action |
+|-----------|--------|
+| **ENHANCEMENT FIRST** | Add `generateAssets()` to `GameAIService`, don't create new class |
+| **AGGRESSIVE CONSOLIDATION** | Reuse `ImageGenerationService`, `ContentProcessor`, `GameAIService` |
+| **PREVENT BLOAT** | Only 3 new Prisma models, reuse Game model where possible |
+| **DRY** | Single asset composition method, single prompt builder |
+| **CLEAN** | Clear dependency graph, no circular refs, explicit imports |
+| **MODULAR** | Each service testable independently, UI separate from logic |
+| **PERFORMANT** | Cache asset discovery, parallel image generation |
+| **ORGANIZED** | Parallel domain structure, UI in `app/`, logic in `domains/` |
+
+---
+
+## Quick Start: Asset Marketplace Sprint 1
+
+**Goal:** Generate and store assets locally (no Story Protocol)
+
+### Step 1: Extend GameAIService (30 min)
+```typescript
+// domains/games/types.ts - ADD
+export interface AssetGenerationRequest {
+  url?: string
+  promptText?: string
+  genre?: 'horror' | 'comedy' | 'mystery'
+  model?: string
+}
+
+export interface AssetGenerationResponse {
+  characters: Character[]
+  storyBeats: StoryBeat[]
+  gameMechanics: GameMechanic[]
+  visualGuidelines: VisualGuideline
+}
+
+// domains/games/services/game-ai.service.ts - ADD METHOD
+static async generateAssets(
+  request: AssetGenerationRequest
+): Promise<AssetGenerationResponse> {
+  const model = getModel(request.model || 'gpt-4o-mini')
+  const prompt = this.buildAssetGenerationPrompt(request.promptText, request.genre)
+  
+  const { object: assets } = await generateObject({
+    model,
+    schema: assetGenerationSchema,
+    prompt,
+  })
+  
+  return assets
+}
+
+static buildAssetGenerationPrompt(content: string, genre?: string): string {
+  // Reuse buildGenerationPrompt pattern
+  // Output structured asset components
+}
+```
+
+### Step 2: Create Asset Database Service (45 min)
+```typescript
+// domains/assets/services/asset-database.service.ts
+export class AssetDatabaseService {
+  static async createAsset(
+    userId: string,
+    data: AssetCreateInput
+  ): Promise<Asset> {
+    return prisma.asset.create({
+      data: {
+        ...data,
+        creatorId: userId,
+      },
+    })
+  }
+  
+  static async getAsset(id: string): Promise<Asset | null> {
+    return prisma.asset.findUnique({ where: { id } })
+  }
+  
+  static async listUserAssets(userId: string): Promise<Asset[]> {
+    return prisma.asset.findMany({
+      where: { creatorId: userId },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+}
+```
+
+### Step 3: Add Prisma Models (30 min)
+```prisma
+// prisma/schema.prisma - ADD
+
+model Asset {
+  id            String   @id @default(cuid())
+  
+  // Source
+  articleUrl    String
+  creatorId     String
+  creator       User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  // Content
+  characters    Json     // Array of character objects
+  storyBeats    Json     // Array of story beat objects
+  gameMechanics Json     // Array of mechanic objects
+  visualGuidelines Json  // Visual direction object
+  
+  // Metadata
+  genre         String?
+  title         String
+  description   String?
+  thumbnail     String?  // Generated image of first character
+  
+  // Relations
+  games         GameFromAsset[] @relation("AssetToGameFromAsset")
+  revenues      AssetRevenue[]
+  
+  // Story Protocol (added in Sprint 4)
+  storyIPAssetId String?
+  licenseTermsId Int?
+  
+  isPublic      Boolean  @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model GameFromAsset {
+  id            String   @id @default(cuid())
+  
+  // Composition
+  assetIds      String[] // IDs of source assets
+  assets        Asset[]  @relation("AssetToGameFromAsset")
+  
+  // The actual game (extend Game)
+  game          Game?    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId        String?  @unique
+  
+  creatorId     String
+  creator       User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  // Story Protocol (added in Sprint 4)
+  storyIPAssetId String?
+  parentIPIds   String[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AssetRevenue {
+  id            String   @id @default(cuid())
+  
+  assetId       String
+  asset         Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  gameFromAssetId String
+  gameFromAsset GameFromAsset @relation(fields: [gameFromAssetId], references: [id], onDelete: Cascade)
+  
+  creatorWallet String
+  royaltyPercent Int     // Basis points (1500 = 15%)
+  totalEarned   BigInt  @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Extend existing Game model
+model Game {
+  // ... existing fields ...
+  
+  // NEW: Link to source assets
+  sourceAssets  GameFromAsset[]
+  isFromAssets  Boolean @default(false)
+}
+
+// Extend existing User model
+model User {
+  // ... existing fields ...
+  
+  // NEW: Assets and games from assets
+  assets        Asset[]
+  gamesFromAssets GameFromAsset[]
+  assetRevenues AssetRevenue[]
+}
+```
+
+### Step 4: Create API Route (30 min)
+```typescript
+// app/api/assets/generate/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { GameAIService } from '@/domains/games/services/game-ai.service'
+import { AssetDatabaseService } from '@/domains/assets/services/asset-database.service'
+
+export async function POST(request: NextRequest) {
+  try {
+    const { url, promptText, genre, model } = await request.json()
+    
+    // Get article content if URL provided
+    let content = promptText
+    if (url) {
+      // Use existing ContentProcessorService
+      content = await ContentProcessorService.extractContent(url)
+    }
+    
+    // Generate assets using ENHANCED GameAIService
+    const assets = await GameAIService.generateAssets({
+      promptText: content,
+      genre,
+      model,
+    })
+    
+    // Store in database
+    const asset = await AssetDatabaseService.createAsset(
+      userId, // from auth context
+      {
+        title: assets.title || 'Untitled Asset Pack',
+        description: assets.description,
+        characters: assets.characters,
+        storyBeats: assets.storyBeats,
+        gameMechanics: assets.gameMechanics,
+        visualGuidelines: assets.visualGuidelines,
+        genre,
+        articleUrl: url,
+      }
+    )
+    
+    return NextResponse.json({ success: true, asset })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+```
+
+### Step 5: Run & Test (15 min)
+```bash
+# Create migrations
+npx prisma migrate dev --name add_assets
+
+# Test locally
+npm run dev
+# POST http://localhost:3000/api/assets/generate
+# {
+#   "url": "https://avc.xyz/blog/...",
+#   "genre": "horror"
+# }
+```
+
+**Total Sprint 1 Time:** ~2 hours of actual coding
+**Result:** Assets can be generated from articles and stored in database
+
+### What NOT to Do
+- ❌ Don't create new image generation service (reuse ImageGenerationService)
+- ❌ Don't create new AI provider (reuse getModel function)
+- ❌ Don't duplicate error handling (reuse existing patterns)
+- ❌ Don't add fields to Asset model until needed
+
+### What To Do
+- ✅ Enhance existing GameAIService with one new method
+- ✅ Create minimal database service (just CRUD)
+- ✅ Add 3 Prisma models (no more)
+- ✅ Test locally before moving to Sprint 2
+
+---
 
 ## Unified System Architecture
 

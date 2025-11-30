@@ -297,3 +297,70 @@ model GameFromArticle {
   
   @@map("games_from_articles")
 }
+
+// Asset Marketplace Models (Phase 6)
+model Asset {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  type        String   // 'character' | 'mechanic' | 'plot' | 'world' | 'dialog'
+  content     String   @db.Text
+  genre       String
+  tags        String[] @default([])
+  
+  // Attribution
+  articleUrl  String?
+  creatorId   String?
+  
+  // Relations
+  games       GameFromAsset[]
+  revenues    AssetRevenue[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("assets")
+}
+
+model GameFromAsset {
+  id String @id @default(cuid())
+  
+  // Relations
+  gameId  String
+  
+  assetId String
+  asset   Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  // User who built game from assets
+  userId  String
+  
+  // Composition metadata
+  compositionPrompt String @db.Text
+  tokensSpent       Int
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([gameId, assetId])
+  @@map("games_from_assets")
+}
+
+model AssetRevenue {
+  id String @id @default(cuid())
+  
+  // Relations
+  assetId  String
+  asset    Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  gameId   String // Game that used this asset (not a foreign key - may be external)
+  
+  // Revenue tracking
+  creatorId       String // Asset creator's wallet
+  amount          BigInt // Revenue from this asset usage
+  status          String @default("pending") // 'pending' | 'claimed' | 'distributed'
+  
+  createdAt DateTime @default(now())
+  claimedAt DateTime?
+  
+  @@unique([assetId, gameId])
+  @@map("asset_revenues")
+}

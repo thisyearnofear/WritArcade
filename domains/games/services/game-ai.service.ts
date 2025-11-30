@@ -5,7 +5,9 @@ import { z } from 'zod'
 import type {
   GameGenerationRequest,
   GameGenerationResponse,
-  GameplayResponse
+  GameplayResponse,
+  AssetGenerationRequest,
+  AssetGenerationResponse
 } from '../types'
 
 // Consolidate AI model providers
@@ -26,6 +28,43 @@ const gameGenerationSchema = z.object({
   genre: z.string(),
   subgenre: z.string(),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+})
+
+// Asset generation schema for structured output (ENHANCEMENT FIRST: reuse validation pattern)
+const assetGenerationSchema = z.object({
+  title: z.string().describe('Asset pack title that captures its essence'),
+  description: z.string().describe('Description of what makes this asset pack unique'),
+  characters: z.array(
+    z.object({
+      name: z.string(),
+      role: z.string(),
+      personality: z.string().describe('2-3 sentence personality description'),
+      motivation: z.string().describe('What drives this character'),
+      appearance: z.string().describe('Visual description for game illustration'),
+    })
+  ).min(2).max(5).describe('2-5 character profiles for this asset pack'),
+  storyBeats: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      keyConflict: z.string(),
+      emotionalTone: z.string(),
+    })
+  ).min(3).max(5).describe('3-5 story beats or narrative structure elements'),
+  gameMechanics: z.array(
+    z.object({
+      name: z.string(),
+      description: z.string(),
+      mechanics: z.array(z.string()).describe('List of specific mechanics or rules'),
+      consequence: z.string().describe('What happens when this mechanic is used'),
+    })
+  ).min(2).max(4).describe('2-4 core game mechanics'),
+  visualGuidelines: z.object({
+    colorPalette: z.array(z.string().regex(/^#[0-9A-Fa-f]{6}$/)).min(3).max(6),
+    artStyle: z.string().describe('e.g., "noir comic", "cel animation", "watercolor"'),
+    atmosphere: z.string().describe('Overall mood and setting'),
+    symbolism: z.string().describe('Key visual symbols or motifs'),
+  }).describe('Visual direction for games using this asset pack'),
 })
 
 /**
@@ -113,6 +152,70 @@ export class GameAIService {
         retryCount > 0
           ? `Failed to generate game after ${retryCount + 1} attempts`
           : 'Failed to generate game'
+      )
+    }
+  }
+
+  /**
+   * Generate reusable game assets from article content
+   * Asset Marketplace feature (Sprint 1)
+   * 
+   * Extracts: Characters, Story Beats, Game Mechanics, Visual Guidelines
+   * Reuses: Same model provider, error handling, retry logic as generateGame()
+   * 
+   * ENHANCEMENT FIRST: Follows same pattern as generateGame for consistency
+   */
+  static async generateAssets(
+    request: AssetGenerationRequest,
+    retryCount = 0
+  ): Promise<AssetGenerationResponse> {
+    const model = getModel(request.model || 'gpt-4o-mini')
+    const maxRetries = 2
+
+    let promptText = request.promptText || ''
+
+    // If URL provided, content extraction handled separately
+    if (request.url && !promptText) {
+      promptText = `Generate game assets from content at: ${request.url}`
+    }
+
+    const prompt = this.buildAssetGenerationPrompt(promptText, request.genre)
+
+    try {
+      const { object: assets } = await generateObject({
+        model,
+        schema: assetGenerationSchema,
+        prompt,
+      })
+
+      // Type assertion safe: Zod schema enforces all required fields
+      return {
+        title: assets.title!,
+        description: assets.description!,
+        characters: assets.characters!,
+        storyBeats: assets.storyBeats!,
+        gameMechanics: assets.gameMechanics!,
+        visualGuidelines: assets.visualGuidelines!,
+      } as AssetGenerationResponse
+    } catch (error) {
+      console.error('Asset generation error:', error)
+
+      // If this is a validation error and we have retries left, retry with stricter prompt
+      if (retryCount < maxRetries && error instanceof Error) {
+        console.warn(`Asset generation validation failed. Retrying (${retryCount + 1}/${maxRetries})`)
+
+        // Add stricter instructions
+        const stricterRequest = {
+          ...request,
+          promptText: `You MUST provide ONLY valid JSON with these exact fields: title, description, characters, storyBeats, gameMechanics, visualGuidelines. No additional text.\n\n${promptText}`,
+        }
+        return this.generateAssets(stricterRequest, retryCount + 1)
+      }
+
+      throw new Error(
+        retryCount > 0
+          ? `Failed to generate assets after ${retryCount + 1} attempts`
+          : 'Failed to generate assets'
       )
     }
   }
@@ -444,10 +547,67 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
   - primaryColor: A hex color with high contrast against #000000`
 
     return basePrompt
-  }
+    }
 
-  /**
-    * Build start game prompt (enhanced from original)
+    /**
+    * Build asset generation prompt (NEW: Asset Marketplace)
+    * 
+    * ENHANCEMENT FIRST: Reuses buildGenerationPrompt pattern
+    * Extracts reusable game components instead of complete games
+    * Genre is optional for assets (less critical than for full games)
+    */
+    private static buildAssetGenerationPrompt(
+    promptText: string,
+    genre?: string
+    ): string {
+    let basePrompt = `You are AssetCreator-GPT, specialized in extracting reusable game components from source material.
+
+    Your task is to decompose an article into game asset components that others can use to create multiple different games.
+    These assets are the building blocks—characters, mechanics, story beats, visual style—not a complete game.`
+
+    // Detect if this is article-based generation
+    const isArticleContent = promptText?.includes('article:') || promptText?.includes('Article:')
+
+    if (isArticleContent) {
+      basePrompt += `
+
+    CRITICAL: EXTRACT AUTHENTIC ASSETS
+    ====================================
+    The following article defines your creative direction. Every asset MUST authentically capture its essence:
+    - Characters should embody the article's core ideas and conflicts
+    - Story beats should reflect the article's narrative arc and themes
+    - Game mechanics should model the article's systems and consequences
+    - Visual style should evoke the article's mood and tone
+
+    ${promptText}
+
+    After reading the above, you will extract assets that let others create games expressing these concepts.`
+    } else if (promptText) {
+      basePrompt += `\n\nExtract game assets from this concept: ${promptText}`
+    }
+
+    // Genre is secondary for assets (different games may use different genres)
+    if (genre) {
+      basePrompt += `\n\nGENRE SUGGESTION: Assets should work well in "${genre}" games, but are not limited to this genre.`
+    }
+
+    basePrompt += `
+
+    Please provide a JSON response with the following structure:
+    - title: Asset pack title (e.g., "Web3 Pioneers", "Climate Futures")
+    - description: What makes this asset pack unique and useful
+    - characters: 2-5 character profiles with name, role, personality, motivation, appearance
+    - storyBeats: 3-5 narrative beats or plot structures extracted from the material
+    - gameMechanics: 2-4 core game mechanics that model the article's systems
+    - visualGuidelines: Color palette, art style, atmosphere, and visual symbolism
+
+    Focus on extracting the ESSENCE of the material—components others can remix into different games.`
+
+    return basePrompt
+    }
+
+    /**
+     * Build start game prompt (enhanced from original)
     * ARTICLE CONTEXT INTEGRATION: When provided, article themes guide the narrative
     * so players engage with the source material's ideas, not a generic adventure
     * Enforces 2-3 sentences for opening panel

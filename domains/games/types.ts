@@ -111,3 +111,52 @@ export interface GameplayResponse {
   chatId?: string
   parentId?: string
 }
+
+// ============================================================================
+// Asset Generation Types (Sprint 1: Asset Marketplace)
+// ============================================================================
+
+export interface CharacterProfile {
+  name: string
+  role: string
+  personality: string
+  motivation: string
+  appearance: string
+}
+
+export interface StoryBeat {
+  title: string
+  description: string
+  keyConflict: string
+  emotionalTone: string
+}
+
+export interface GameMechanic {
+  name: string
+  description: string
+  mechanics: string[]
+  consequence: string
+}
+
+export interface VisualGuideline {
+  colorPalette: string[]
+  artStyle: string
+  atmosphere: string
+  symbolism: string
+}
+
+export interface AssetGenerationRequest {
+  url?: string
+  promptText?: string
+  genre?: 'horror' | 'comedy' | 'mystery'
+  model?: string
+}
+
+export interface AssetGenerationResponse {
+  title: string
+  description: string
+  characters: CharacterProfile[]
+  storyBeats: StoryBeat[]
+  gameMechanics: GameMechanic[]
+  visualGuidelines: VisualGuideline
+}

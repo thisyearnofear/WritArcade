@@ -1,11 +1,19 @@
-# Story Protocol Integration Status
+# Story Protocol Integration Plan
 
-**Updated:** November 26, 2025  
+**Updated:** November 27, 2025  
 **SDK Version:** @story-protocol/core-sdk@^1.4.2
+**Status:** Refined Scope - Asset-Only Integration (Phase 6+)
 
 ## Summary
 
-Story Protocol integration has been **properly scoped and prepared** with a complete framework ready for SDK implementation.
+Story Protocol integration is **scoped to the Asset Marketplace feature** (Phase 6), **not the existing game flow**. This separation provides maximum flexibility while keeping the proven Base payment infrastructure untouched.
+
+### Why Assets, Not Games?
+- **Games are ephemeral**: AI-generated fresh each time, remade from same articles daily
+- **Assets are persistent**: Reusable components (characters, mechanics, story beats) with long-term value
+- **Story fits assets**: IP registration + licensing + derivative tracking is perfect for asset collaboration
+- **Games stay on Base**: Payment infrastructure already works, proven in production
+- **Zero risk**: Asset feature is independent; if it flops, current business unaffected
 
 ### What's Done ✅
 
@@ -64,34 +72,96 @@ Each function has:
 - ✅ Environment validation
 - ✅ Placeholder implementation (returns mock data)
 
-## What's Next (Implementation Roadmap)
+## Integration Scope (Asset Marketplace Feature)
 
-### Phase 1: Core SDK Integration (High Priority)
-1. Replace `registerGameAsIP()` placeholder with actual SDK call
-   - Initialize StoryClient with viem wallet
-   - Generate IP metadata using SDK helper
-   - Hash metadata for verification
-   - Call `client.ipAsset.registerIpAsset()`
+Story Protocol is **only used for Asset IP registration and licensing**, not for game transactions.
 
-2. Implement database persistence
-   - Create `StoryIPAsset` Prisma model
-   - Store registration results
-   - Track transaction status
+### Asset Registration Flow
+```
+Article 
+  ↓
+Generate Asset Pack (characters, mechanics, story beats)
+  ↓
+Register as IP Asset on Story Protocol
+  ↓
+Attach License Terms (PIL: "Use my assets, pay me X% of game revenue")
+  ↓
+Asset lives in Marketplace with licensing info
+  ↓
+Other Users build games from assets
+  ↓
+Games registered as Derivatives of asset IPs
+  ↓
+Revenue from Base game → flows to Story royalty vault
+  ↓
+Asset creators claim royalties on Story
+```
 
-### Phase 2: License & Derivative Management
-3. Implement license term attachment (`attachLicenseTermsToIP()`)
-4. Implement license token minting (`mintLicenseTokens()`)
-5. Implement derivative registration (`registerDerivativeIP()`)
+### Implementation Timeline (Phase 6)
 
-### Phase 3: Royalty Management
-6. Implement royalty claiming (`claimRoyalties()`)
-7. Implement revenue checking (`getClaimableRevenue()`)
+**Sprint 1: Asset Generation & Data Models**
+- Create `domains/assets/asset-generation.service.ts` (AI asset decomposition)
+- Add Prisma models: `Asset`, `GameFromAsset`, `AssetRevenue`
+- Create asset database service (CRUD)
+- **No Story Protocol yet—just local testing**
 
-### Phase 4: Polish & Testing
-8. Add transaction retry logic
-9. Implement wallet funding checks
-10. Add UI for transaction status tracking
-11. Write integration tests
+**Sprint 2: Asset Marketplace UI**
+- Build `/app/assets/` pages (discover, browse, detail view)
+- Asset creation flow (upload article → generate assets)
+- Asset preview/management dashboard
+
+**Sprint 3: Game Builder from Assets**
+- "Build game from assets" UI (select + customize)
+- Compose multiple asset packs into single game
+- Game registration flow
+
+**Sprint 4: Story Protocol Integration**
+- Asset registration on Aeneid testnet
+- License terms attachment (PIL v2)
+- Derivative game registration
+- Royalty tracking
+- **Full SDK implementation in this sprint**
+
+### What Changes to Story Protocol Code
+
+**Before (Current State):**
+```
+lib/story-protocol.service.ts → Targets game registration (not used)
+app/api/ip/register/route.ts   → Targets games (not used)
+```
+
+**After (Phase 6+):**
+```
+lib/story-protocol.service.ts → Refactored for asset registration
+  ├─ registerAssetAsIP()        (replaces registerGameAsIP)
+  ├─ getAssetIPDetails()        (replaces getIPAssetDetails)
+  ├─ attachLicenseToAsset()     (replaces attachLicenseTermsToIP)
+  └─ ... (other functions refactored similarly)
+
+domains/assets/story-protocol.service.ts → New asset-specific service
+  ├─ Asset IP registration
+  ├─ License minting
+  ├─ Derivative game registration
+  └─ Royalty claim handling
+
+app/api/assets/register/route.ts → New endpoint (replaces /ip/register)
+  └─ Registers asset packs as IP on Story
+```
+
+### What Does NOT Change
+
+✅ **Completely Untouched:**
+- `app/games/*` (game generation flow)
+- `WriterCoinPayment.sol` (Base payment contract)
+- `GameNFT.sol` (Base NFT minting)
+- `/api/payments/` routes
+- Game AI generation
+- Existing payment infrastructure
+
+✅ **Story Protocol is Optional:**
+- Assets can exist without Story registration (local marketplace only)
+- Revenue tracking works on Base regardless
+- Can add Story IP layer later without breaking changes
 
 ## Key Resources
 
