@@ -78,11 +78,19 @@ export default function AssetsPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Asset Marketplace</h1>
-          <p className="text-slate-300">
-            Browse reusable game components. Mix and match to create unique games.
-          </p>
+        <div className="mb-12 flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-4">Asset Marketplace</h1>
+            <p className="text-slate-300">
+              Browse reusable game components. Mix and match to create unique games.
+            </p>
+          </div>
+          <Link
+            href="/assets/create"
+            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+          >
+            + Create Game
+          </Link>
         </div>
 
         {/* Search Bar */}

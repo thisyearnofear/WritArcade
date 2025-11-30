@@ -369,12 +369,35 @@ WritArcade (Same Codebase, Different Products)
 - ✅ Asset Transformation: Converts AssetGenerationResponse (characters, storyBeats, mechanics) into individual Asset records
 - ✅ Build: `npm run build` passing, routes registered (/assets, /assets/[id], /api/assets/*, /api/assets/[id]/*)
 
-**Sprint 3 (Week 3): Game Builder from Assets**
-- [ ] Create "Build Game" flow (select assets + customize)
-- [ ] Add `AssetMarketplaceService.composeGameFromAssets()` (CLEAN dependencies)
-- [ ] Add `/api/assets/build-game/route.ts` endpoint
-- [ ] Create `/app/assets/create/page.tsx` (generate from article)
-- [ ] Wire attribution tracking (asset creator → royalty)
+**Sprint 3 (Week 3): Game Builder from Assets** ✅ COMPLETE
+- [x] Create "Build Game" flow (select assets + customize)
+- [x] Add `AssetMarketplaceService.composeGameFromAssets()` (CLEAN dependencies)
+- [x] Add `/api/assets/build-game/route.ts` endpoint
+- [x] Create `/app/assets/create/page.tsx` (generate from article)
+- [x] Wire attribution tracking (asset creator → royalty)
+
+**Implementation Details (Sprint 3):**
+- ✅ Game Builder UI (`/app/assets/create/page.tsx`): 3-step wizard
+  - Step 1: Select Assets (multi-select grid with filtering by type/genre, full-text search)
+  - Step 2: Customize (title, genre, description)
+  - Step 3: Review & Confirm (summary before creation)
+  - Visual progress indicator + error handling
+- ✅ API Endpoint (`POST /api/assets/build-game`):
+  - Composes game from selected assets
+  - Saves game to database (generates unique slug)
+  - Creates GameFromAsset records (composition tracking)
+  - Initializes AssetRevenue records (royalty distribution)
+  - Returns full game + attribution metadata
+- ✅ Attribution & Revenue Tracking:
+  - GameFromAsset: Links each game to component assets
+  - AssetRevenue: Pre-allocates royalty tracking per asset per game
+  - Tracks asset creator ID for future royalty distribution
+  - Status field: 'pending' → 'claimed' → 'distributed'
+- ✅ Integration:
+  - "+ Create Game" button on asset browse page
+  - Multi-asset composition working end-to-end
+  - Asset metadata preserved through game creation
+- ✅ Build: `npm run build` passing, new routes /assets/create + /api/assets/build-game
 
 **Sprint 4 (Week 4): Story Protocol Integration**
 - [ ] Create `domains/assets/story-protocol.service.ts` (4 methods only)
