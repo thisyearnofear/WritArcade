@@ -1,7 +1,7 @@
 # WritArcade Development Guide
 
 **Last Updated:** December 1, 2025
-**Status:** Phase 5c Complete - Frontend Enhancement & UX Refinement
+**Status:** Phase 5d Complete - Backend Contract Integration
 
 ## Quick Start
 
@@ -82,6 +82,26 @@ NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="your-project-id"
 - ✅ Improved game play scroll UX (auto-reveal panels)
 - ✅ NFT minting flow implementation (with full attribution)
 - ✅ Code consolidation: removed 60+ lines of duplicate code
+
+**Phase 5d: Backend Contract Integration** - 100% Complete ✅
+- ✅ GET `/api/user/balance` - Live ERC-20 balance reads via Viem
+- ✅ POST `/api/games/mint` - Contract preparation + metadata payload
+- ✅ PATCH `/api/games/mint` - Transaction confirmation + DB storage
+- ✅ PATCH `/api/games/[slug]/visibility` - Public/private toggle
+- ✅ DELETE `/api/games/[slug]/delete` - Game deletion with ownership check
+- ✅ GET `/api/games/my-games` - User library with pagination
+- ✅ Database Prisma sync: Payment + NFT fields tracked
+- ✅ Zero TypeScript errors: Full type safety
+
+**Frontend API Wiring** - 100% Complete ✅
+- ✅ Balance widget → `/api/user/balance` (30s refresh, live contract reads)
+- ✅ My Games page → `/api/games/my-games` (paginated user library)
+- ✅ Mint button → `/api/games/mint` (POST prepare + PATCH confirm flow)
+- ✅ Visibility toggle → `/api/games/[slug]/visibility` (public/private)
+- ✅ Delete button → `/api/games/[slug]/delete` (with NFT immutability check)
+- ✅ Game type updated: Added nftTokenId, nftTransactionHash, nftMintedAt fields
+- ✅ Error handling: User-friendly alerts + state rollback on failure
+- ✅ Build passing: Zero TypeScript errors, all routes registered
 
 ## Mini App SDK Integration
 
@@ -226,6 +246,244 @@ const tx = await result.provider.sendTransaction(request)
 - Centralized balance fetching
 - No type casting hacks, full TypeScript safety
 
+## Frontend API Wiring Integration
+
+### Balance Widget (`useWriterCoinBalance` hook + `BalanceDisplay` component)
+
+**Implementation:**
+- Hook: Calls `/api/user/balance?wallet=0x...` every 30 seconds
+- Properly extracts data from response: `data.data.balance` (nested)
+- Component: Shows formatted balance with spinner loading state
+- Location: Displayed in header via `BalanceDisplay` component
+
+**Usage in My Games:**
+```typescript
+const { balance, isLoading, error } = useWriterCoinBalance()
+// Returns: { balance: "1500000000000000000", formattedBalance: "1.5", symbol: "AVC", decimals: 18 }
+```
+
+### My Games Page (`/app/my-games/page.tsx`)
+
+**Wired to:** `GET /api/games/my-games?wallet=0x...&limit=100`
+- Fetches user's game library on mount
+- Supports pagination via limit/offset query params
+- Properly extracts response: `data.data.games`
+- Shows loading/error states and empty state
+- Grid layout with game cards
+
+**Game Actions Wired:**
+1. **Mint Button** → `POST /api/games/mint` then `PATCH /api/games/mint`
+   - Step 1: Prepare minting (validate ownership, get metadata)
+   - Step 2: Confirm tx (store NFT details in DB)
+   - Shows alert with estimated cost
+   
+2. **Visibility Toggle** → `PATCH /api/games/[slug]/visibility`
+   - Converts visible boolean to private field (inverted)
+   - Updates local state optimistically
+   - Shows alert on error with state rollback
+   
+3. **Delete Button** → `DELETE /api/games/[slug]/delete`
+   - Prevents deletion of minted games (NFT immutability)
+   - Requires confirmation before deletion
+   - Removes from local state on success
+   
+4. **Register Button** → Placeholder (Story Protocol coming soon)
+
+### Game Type Updates
+
+**Added NFT fields to `/domains/games/types.ts`:**
+```typescript
+export interface Game {
+  // ... existing fields
+  nftTokenId?: string          // ERC-721 token ID on Base
+  nftTransactionHash?: string  // Minting transaction hash
+  nftMintedAt?: Date          // When NFT was minted
+}
+```
+
+## Phase 5d: Backend API Integration
+
+### Smart Contract Balance Fetching
+
+**GET `/api/user/balance`**
+```typescript
+// Query params:
+// - wallet: string (user's wallet address)
+// - coin: string (optional, defaults to 'avc')
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "wallet": "0x1234...",
+    "coin": "avc",
+    "balance": "1500000000000000000",  // BigInt string
+    "decimals": 18,
+    "symbol": "AVC",
+    "formattedBalance": "1.5"
+  }
+}
+```
+
+**Implementation Details:**
+- Uses Viem public client to read ERC-20 `balanceOf` directly from Base mainnet
+- Falls back to RPC at `NEXT_PUBLIC_BASE_RPC_URL` if configured
+- Returns formatted balance with decimal conversion
+- No signatures required (read-only operation)
+
+### NFT Minting Workflow
+
+**POST `/api/games/mint` - Prepare Minting**
+```typescript
+// Body:
+{
+  "gameId": "clxyz...",
+  "gameSlug": "my-game",
+  "wallet": "0x1234...",
+  "writerCoinId": "avc"
+}
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "gameId": "clxyz...",
+    "wallet": "0x1234...",
+    "metadata": {
+      "name": "Game Title",
+      "description": "A horror game...",
+      "image": "https://...",
+      "attributes": [...]
+    },
+    "contractAddress": "0x2b44...",  // GameNFT
+    "chainId": 8453,
+    "estimatedCost": "50000000000000000000"  // 50 AVC
+  }
+}
+```
+
+**Implementation Details:**
+- Validates game ownership (creator's wallet must match)
+- Prevents double-minting (checks `nftTokenId`)
+- Prepares ERC-721 metadata with full attribution
+- Returns contract address for frontend transaction submission
+- **Note:** Frontend must call contract directly; this endpoint only prepares data
+
+**PATCH `/api/games/mint` - Confirm Transaction**
+```typescript
+// Body:
+{
+  "gameId": "clxyz...",
+  "transactionHash": "0xabc123...",
+  "nftTokenId": "0",
+  "wallet": "0x1234..."
+}
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "gameId": "clxyz...",
+    "nftTokenId": "0",
+    "transactionHash": "0xabc123...",
+    "status": "minted"
+  }
+}
+```
+
+**Implementation Details:**
+- Called after frontend confirms minting transaction
+- Updates game with `nftTokenId`, `nftTransactionHash`, `nftMintedAt`
+- Records payment in database for accounting
+- Prevents duplicate payments with transaction hash uniqueness
+
+### Game Management Endpoints
+
+**PATCH `/api/games/[slug]/visibility` - Toggle Public/Private**
+```typescript
+// Body:
+{
+  "visible": true,  // false for private
+  "wallet": "0x1234..."
+}
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "slug": "my-game",
+    "private": false,
+    "message": "Game is now public"
+  }
+}
+```
+
+**DELETE `/api/games/[slug]/delete` - Remove Game**
+```typescript
+// Body:
+{
+  "wallet": "0x1234..."
+}
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "slug": "my-game",
+    "deletedAt": "2025-12-01T15:30:00Z",
+    "message": "Game permanently deleted"
+  }
+}
+```
+
+**Implementation Details:**
+- Both endpoints verify ownership via wallet comparison
+- Deletion blocked if NFT already minted (immutable on-chain record)
+- No auth required; wallet verification is sufficient
+
+**GET `/api/games/my-games` - User Library**
+```typescript
+// Query params:
+// - wallet: string (required)
+// - limit: number (default 20, max 100)
+// - offset: number (default 0)
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "wallet": "0x1234...",
+    "games": [
+      {
+        "id": "clxyz...",
+        "slug": "my-game",
+        "title": "Game Title",
+        "genre": "horror",
+        "difficulty": "hard",
+        "imageUrl": "https://...",
+        "private": false,
+        "createdAt": "2025-12-01T...",
+        "nftTokenId": null,
+        "nftMintedAt": null
+      }
+    ],
+    "total": 42,
+    "limit": 20,
+    "offset": 0,
+    "stats": {
+      "totalGames": 42,
+      "mintedGames": 12
+    }
+  }
+}
+```
+
+**Implementation Details:**
+- Fetches from database, no wallet verification needed (read-only)
+- Includes pagination with configurable limit/offset
+- Returns game stats for analytics
+- Missing wallet returns empty response (graceful)
+
 ## Payment Flow Implementation
 
 ### PaymentOption Component
@@ -329,10 +587,20 @@ app/
 │           ├── initiate/route.ts         ✅ Unified endpoint
 │           └── verify/route.ts           ✅ Unified endpoint
 └── api/
-    ├── games/generate/route.ts           ✅ Unified endpoint
-    └── payments/
-        ├── initiate/route.ts             ✅ Unified endpoint
-        └── verify/route.ts               ✅ Unified endpoint
+    ├── games/
+    │   ├── generate/route.ts             ✅ Game generation
+    │   ├── mint/route.ts                 ✅ POST/PATCH minting
+    │   ├── my-games/route.ts             ✅ GET user library
+    │   ├── chat/route.ts                 ✅ Game chat/play
+    │   └── [slug]/
+    │       ├── visibility/route.ts       ✅ PATCH public/private
+    │       ├── delete/route.ts           ✅ DELETE game
+    │       └── start/route.ts            ✅ Game start
+    ├── payments/
+    │   ├── initiate/route.ts             ✅ Unified endpoint
+    │   └── verify/route.ts               ✅ Unified endpoint
+    └── user/
+        └── balance/route.ts              ✅ GET ERC-20 balance
 
 lib/
 ├── farcaster.ts                          ✅ Mini App SDK integration

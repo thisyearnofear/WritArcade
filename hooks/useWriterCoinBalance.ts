@@ -48,11 +48,14 @@ export function useWriterCoinBalance() {
         }
 
         const data = await response.json()
+        if (!data.success || !data.data) {
+          throw new Error('Invalid response format')
+        }
         setBalance({
-          balance: data.balance,
-          decimals: data.decimals || 18,
-          symbol: data.symbol || 'AVC',
-          formattedBalance: data.formattedBalance || '0',
+          balance: data.data.balance,
+          decimals: data.data.decimals || 18,
+          symbol: data.data.symbol || 'AVC',
+          formattedBalance: data.data.formattedBalance || '0',
         })
       } catch (err) {
         console.error('Failed to fetch writer coin balance:', err)

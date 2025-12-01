@@ -40,6 +40,11 @@ export interface Game {
   subscriberCount?: number
   articlePublishedAt?: Date
   
+  // NFT minting
+  nftTokenId?: string
+  nftTransactionHash?: string
+  nftMintedAt?: Date
+  
   // Access control
   private: boolean
   userId?: string

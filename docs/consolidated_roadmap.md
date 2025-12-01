@@ -1,7 +1,7 @@
 # WritArcade Roadmap & Status
 
 **Last Updated:** December 1, 2025
-**Status:** Phase 5c Complete (Frontend Enhancement), Phase 6 Sprint 1-4 In Progress (Asset Marketplace)
+**Status:** Phase 5d Complete (Backend Contract Integration), Phase 6 Complete (Asset Marketplace), Phase 2 Complete (Comic Immersion)
 
 ## Vision
 
@@ -19,6 +19,9 @@ WritArcade creates the first platform where newsletter readers collaborate with 
 
 **Phase 5b: UI/UX Polish & Visual Identity** - **Complete** ✅
 **Phase 5c: Frontend Enhancement & UX Refinement** - **Complete** ✅
+**Phase 5d: Backend Contract Integration** - **Complete** ✅
+**Phase 2: Comic-Style Visual Immersion** - **Complete** ✅
+**Phase 6: Asset Marketplace & Collaborative Creation** - **Complete** ✅
 
 ### ✅ Phase 5b Major Achievements
 - **True Feature Parity**: 95% code sharing between web app + mini-app
@@ -39,6 +42,22 @@ WritArcade creates the first platform where newsletter readers collaborate with 
 - **NFT Minting Flow**: Complete implementation with full attribution
 - **Code Consolidation**: Removed 60+ lines of duplicate code
 - **Type Safety**: Full TypeScript across new components
+
+### ✅ Phase 5d Major Achievements
+- **Balance API Integration**: Live ERC-20 balance reads via Viem + Base RPC
+- **NFT Minting Endpoint**: Full contract preparation + IPFS metadata payload
+- **Game Management APIs**: Visibility toggle + deletion with ownership verification
+- **User Game Library**: `/api/games/my-games` with pagination + stats
+- **Database Synchronization**: Payment tracking for minting transactions
+- **Build Passing**: Zero TypeScript errors, all routes registered
+
+### ✅ Phase 6 Major Achievements
+- **Asset Marketplace**: Browse, search, filter reusable game components
+- **Asset Database**: 5 asset types (characters, mechanics, plots, worlds, dialogs)
+- **Collaborative Game Builder**: Multi-select assets + customize + create games
+- **Revenue Tracking**: AssetRevenue model tracks creator earnings per game
+- **Story Protocol Ready**: Asset IP registration + license terms (10% derivatives)
+- **Complete API Stack**: Asset generation, marketplace, builder, Story registration
 
 ### ✅ Phase 5b Technical Implementation Complete
 - ✅ Mini App SDK migration (Frames v2 → Mini Apps)

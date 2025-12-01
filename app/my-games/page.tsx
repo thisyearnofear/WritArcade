@@ -6,7 +6,6 @@ import { useAccount } from 'wagmi'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { GameCardEnhanced } from '@/domains/games/components/game-card-enhanced'
-import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { Game } from '@/domains/games/types'
 import { Loader2, Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -35,8 +34,22 @@ export default function MyGamesPage() {
       try {
         setLoading(true)
         setError(null)
-        const result = await GameDatabaseService.getUserGames(address as string, 100)
-        setGames((result.games || []) as Game[])
+        
+        // Call new /api/games/my-games endpoint
+        const response = await fetch(
+          `/api/games/my-games?wallet=${encodeURIComponent(address)}&limit=100`
+        )
+        
+        if (!response.ok) {
+          throw new Error('Failed to load games')
+        }
+        
+        const data = await response.json()
+        if (!data.success || !data.data) {
+          throw new Error('Invalid response format')
+        }
+        
+        setGames((data.data.games || []) as Game[])
       } catch (err) {
         console.error('Failed to load games:', err)
         setError('Failed to load your games. Please try again.')
@@ -49,48 +62,146 @@ export default function MyGamesPage() {
   }, [address])
 
   const handleMintClick = async (gameId: string) => {
+    if (!address) return
+    
     setActionInProgress(gameId)
     try {
-      // TODO: Implement NFT minting flow
-      console.log('Mint game:', gameId)
-      // Show success modal or redirect to minting page
+      const game = games.find(g => g.id === gameId)
+      if (!game) throw new Error('Game not found')
+      
+      // Step 1: Prepare minting (get metadata + contract details)
+      const prepareResponse = await fetch('/api/games/mint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId,
+          gameSlug: game.slug,
+          wallet: address,
+          writerCoinId: 'avc',
+        }),
+      })
+      
+      if (!prepareResponse.ok) {
+        throw new Error('Failed to prepare minting')
+      }
+      
+      const prepareData = await prepareResponse.json()
+      if (!prepareData.success) throw new Error(prepareData.error)
+      
+      // Step 2: Show minting modal or redirect (frontend would handle contract call)
+      console.log('Minting prepared:', prepareData.data)
+      alert(`Ready to mint! Transaction will cost ${prepareData.data.estimatedCost} AVC tokens.`)
+      
+      // TODO: Frontend would call contract here and then call PATCH endpoint to confirm
+      // For now, just log the data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Minting failed'
+      console.error('Mint error:', err)
+      alert(message)
     } finally {
       setActionInProgress(null)
     }
   }
 
   const handleRegisterClick = async (gameId: string) => {
+    if (!address) return
+    
     setActionInProgress(gameId)
     try {
-      // TODO: Implement Story Protocol registration flow
+      const game = games.find(g => g.id === gameId)
+      if (!game) throw new Error('Game not found')
+      
+      // Story Protocol registration is optional - this would be a future enhancement
+      // For now, show a placeholder message
       console.log('Register game as IP:', gameId)
-      // Show registration modal
+      alert('Story Protocol registration coming soon! This will allow you to set license terms and earn royalties from derivatives.')
+      
+      // TODO: Implement full Story Protocol flow when SDK is integrated
+      // Would call /api/assets/[id]/register endpoint
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Registration failed'
+      console.error('Registration error:', err)
+      alert(message)
     } finally {
       setActionInProgress(null)
     }
   }
 
   const handleToggleVisibility = async (gameId: string, isPrivate: boolean) => {
+    if (!address) return
+    
     setActionInProgress(gameId)
     try {
-      // TODO: Implement visibility toggle via API
-      console.log('Toggle visibility for game:', gameId, 'private:', isPrivate)
-      setGames(games.map(g => g.id === gameId ? { ...g, private: isPrivate } : g))
+      const game = games.find(g => g.id === gameId)
+      if (!game) throw new Error('Game not found')
+      
+      // Call visibility toggle endpoint
+      const response = await fetch(`/api/games/${game.slug}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visible: !isPrivate,
+          wallet: address,
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update visibility')
+      }
+      
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error)
+      
+      // Update local state
+      setGames(games.map(g => g.id === gameId ? { ...g, private: data.data.private } : g))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update visibility'
+      console.error('Visibility toggle error:', err)
+      alert(message)
     } finally {
       setActionInProgress(null)
     }
   }
 
   const handleDeleteClick = async (gameId: string) => {
+    if (!address) return
+    
     if (!window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
       return
     }
 
     setActionInProgress(gameId)
     try {
-      // TODO: Implement game deletion via API
-      console.log('Delete game:', gameId)
+      const game = games.find(g => g.id === gameId)
+      if (!game) throw new Error('Game not found')
+      
+      // Check if game is minted (prevent deletion)
+      if (game.nftTokenId) {
+        throw new Error('Cannot delete games that have been minted as NFTs. NFT records are permanent on-chain.')
+      }
+      
+      // Call delete endpoint
+      const response = await fetch(`/api/games/${game.slug}/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: address,
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete game')
+      }
+      
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error)
+      
+      // Remove from local state
       setGames(games.filter(g => g.id !== gameId))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete game'
+      console.error('Delete error:', err)
+      alert(message)
     } finally {
       setActionInProgress(null)
     }
