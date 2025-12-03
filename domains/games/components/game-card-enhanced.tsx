@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { Game } from '../types'
 import { Play, Zap, Crown, Trash2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,11 +30,53 @@ export function GameCardEnhanced({
   onDeleteClick,
   isLoading = false,
 }: GameCardEnhancedProps) {
+  const [isHovered, setIsHovered] = useState(false)
+
   return (
-    <div className="group bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-purple-500 transition-all hover:shadow-xl hover:shadow-purple-500/20">
+    <motion.div
+      className="group relative bg-gray-900 border border-gray-800 rounded-lg overflow-hidden"
+      whileHover={{ y: -4, border: 'border-purple-500' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      {/* Blend layer 1: Multiply blend for depth */}
+      <motion.div
+        className="absolute inset-0 rounded-lg"
+        animate={{
+          opacity: isHovered ? 0.1 : 0,
+        }}
+        transition={{ duration: 0.3 }}
+        style={{
+          background: `linear-gradient(135deg, ${game.primaryColor || '#8b5cf6'}40, ${game.primaryColor || '#8b5cf6'}10)`,
+          mixBlendMode: 'multiply',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Blend layer 2: Lighten for shimmer */}
+      <motion.div
+        className="absolute inset-0 rounded-lg"
+        animate={{
+          opacity: isHovered ? 0.05 : 0,
+        }}
+        transition={{ duration: 0.3 }}
+        style={{
+          background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)`,
+          mixBlendMode: 'lighten',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Header with gradient */}
-      <div
-        className="h-24 bg-gradient-to-br opacity-80 group-hover:opacity-100 transition-opacity"
+      <motion.div
+        className="relative h-24 bg-gradient-to-br"
+        animate={{
+          opacity: isHovered ? 1 : 0.8,
+        }}
+        transition={{ duration: 0.3 }}
         style={{
           background: `linear-gradient(135deg, ${game.primaryColor || '#8b5cf6'}40, ${game.primaryColor || '#8b5cf6'}10)`,
           borderBottom: `2px solid ${game.primaryColor || '#8b5cf6'}`,
@@ -40,7 +84,7 @@ export function GameCardEnhanced({
       />
 
       {/* Content */}
-      <div className="p-6 space-y-3">
+      <div className="relative p-6 space-y-3 z-10">
         {/* Genre & Status */}
         <div className="flex items-start justify-between">
           <span
@@ -88,13 +132,30 @@ export function GameCardEnhanced({
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-4">
-          <Link
-            href={`/games/${game.slug}`}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+          <motion.div
+            className="flex-1"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <Play className="w-4 h-4" />
-            Play
-          </Link>
+            <Link
+              href={`/games/${game.slug}`}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded font-medium transition-colors relative group/btn"
+            >
+              {/* Glow effect on button hover */}
+              <motion.span
+                className="absolute inset-0 rounded opacity-0 group-hover/btn:opacity-50 transition-opacity"
+                style={{
+                  background: `radial-gradient(circle, ${game.primaryColor || '#a855f7'}40, transparent)`,
+                  filter: 'blur(8px)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <span className="relative flex items-center gap-2">
+                <Play className="w-4 h-4" />
+                Play
+              </span>
+            </Link>
+          </motion.div>
 
           {isUserGame && (
             <>
@@ -151,6 +212,6 @@ export function GameCardEnhanced({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

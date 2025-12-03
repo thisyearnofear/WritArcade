@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { Game } from '../types'
 import { GameCardEnhanced } from './game-card-enhanced'
+import { animationConfig } from '@/lib/animations'
 
 interface GameGridProps {
   limit?: number
@@ -79,11 +81,22 @@ export function GameGrid({ limit = 25, search, genre }: GameGridProps) {
   }
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <motion.div
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={animationConfig.variants.staggerContainer}
+    >
       {games.map((game) => (
-        <GameCardEnhanced key={game.id} game={game} isUserGame={false} />
+        <motion.div
+          key={game.id}
+          variants={animationConfig.variants.staggerItem}
+        >
+          <GameCardEnhanced game={game} isUserGame={false} />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
 
