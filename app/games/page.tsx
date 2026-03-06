@@ -5,13 +5,13 @@ import { GameGrid } from '@/domains/games/components/game-grid'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
-import { Search, Filter, Gamepad2, Compass, Zap, Brain, Sword, Store, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Search, Filter, BookOpen, Compass, Zap, Brain, Sword, Store, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { GenreFilterList } from '@/domains/games/components/genre-filter-list'
 import type { GenreOption } from '@/domains/games/components/genre-filter-list'
 
 // Single source of truth — consumed by both sidebar and mobile drawer via GenreFilterList
 const genres: GenreOption[] = [
-  { id: 'all', label: 'All Games', icon: Gamepad2 },
+  { id: 'all', label: 'All', icon: BookOpen },
   { id: 'Simulation', label: 'Simulation', icon: Store },
   { id: 'Adventure', label: 'Adventure', icon: Compass },
   { id: 'Action', label: 'Action', icon: Sword },
@@ -46,15 +46,14 @@ export default function GamesPage() {
         <Header />
 
         <main className="flex-1">
-          {/* Arcade Header */}
-          <div className="relative py-12 px-4 border-b border-purple-900/30 bg-purple-950/10">
+          {/* Page Header */}
+          <div className="py-10 px-4 border-b border-gray-800">
             <div className="max-w-7xl mx-auto">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
-                The Arcade
+              <h1 className="text-3xl md:text-4xl font-semibold text-white mb-2">
+                Library
               </h1>
-              <p className="text-gray-400 text-lg max-w-2xl">
-                Discover unique games generated from your favorite articles.
-                Play, compete, and own the experience.
+              <p className="text-gray-400 max-w-2xl">
+                Interactive games generated from articles by supported writers. Play, collect, and own the experience.
               </p>
             </div>
           </div>

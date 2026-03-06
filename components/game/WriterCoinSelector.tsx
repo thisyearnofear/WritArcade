@@ -1,7 +1,7 @@
 'use client'
 
 import { WRITER_COINS, type WriterCoin } from '@/lib/writerCoins'
-import { motion } from 'framer-motion'
+import { ExternalLink } from 'lucide-react'
 
 interface WriterCoinSelectorProps {
     onSelect: (coin: WriterCoin) => void
@@ -11,90 +11,65 @@ export function WriterCoinSelector({ onSelect }: WriterCoinSelectorProps) {
     return (
         <div className="space-y-6">
             <div className="space-y-1">
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">Select Origin</h2>
-                <p className="text-sm text-purple-300/80">
-                    Choose which writer coin will power this generation
+                <h2 className="text-xl font-semibold text-white">Choose a writer</h2>
+                <p className="text-sm text-gray-400">
+                    Games are generated from articles by supported writers. Select one to begin.
                 </p>
             </div>
 
-            <div className="grid gap-4">
-                {WRITER_COINS.map((coin, index) => (
-                    <motion.button
+            <div className="grid gap-3">
+                {WRITER_COINS.map((coin) => (
+                    <button
                         key={coin.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        whileHover={{ scale: 1.02, x: 4 }}
-                        whileTap={{ scale: 0.98 }}
                         onClick={() => onSelect(coin)}
-                        className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition-all hover:border-purple-500/50 hover:bg-white/10"
+                        className="group w-full rounded-xl border border-gray-800 bg-gray-900/60 p-4 text-left transition-all hover:border-gray-600 hover:bg-gray-900"
                     >
-                        {/* Hover Gradient Effect */}
-                        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-purple-500/0 via-purple-500/0 to-purple-500/10 opacity-0 transition-opacity group-hover:opacity-100" />
-                        
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/20 text-2xl font-black text-purple-400 ring-1 ring-purple-500/30 group-hover:bg-purple-500/30 group-hover:text-purple-300 transition-colors">
-                                    {coin.symbol.slice(0, 1)}
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3 min-w-0">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-800 text-sm font-bold text-gray-300 group-hover:bg-gray-700 transition-colors">
+                                    {coin.symbol.replace('$', '').slice(0, 2)}
                                 </div>
-                                <div>
-                                    <div className="flex items-center space-x-2">
-                                        <h3 className="text-lg font-bold text-white group-hover:text-purple-200 transition-colors">{coin.name}</h3>
-                                        <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-300 ring-1 ring-purple-500/30">
-                                            {coin.symbol}
-                                        </span>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-semibold text-white text-sm">{coin.writer}</span>
+                                        <span className="text-xs text-gray-500">{coin.symbol}</span>
                                     </div>
-                                    <p className="text-sm text-purple-300/60">
-                                        by <span className="font-semibold text-purple-300/80">{coin.writer}</span>
-                                    </p>
+                                    <p className="mt-0.5 text-xs text-gray-400 leading-relaxed">{coin.bio}</p>
                                 </div>
                             </div>
-
-                            <div className="flex flex-col items-end space-y-1 text-right">
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400/60">Generate Cost</div>
-                                <div className="font-mono text-sm font-bold text-white">
+                            <a
+                                href={coin.paragraphUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="shrink-0 text-gray-600 hover:text-gray-300 transition-colors mt-0.5"
+                                aria-label={`Visit ${coin.writer}'s publication`}
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                        </div>
+                        <div className="mt-3 flex items-center gap-4 border-t border-gray-800 pt-3">
+                            <div>
+                                <span className="text-[10px] uppercase tracking-wider text-gray-600">Generate</span>
+                                <p className="text-xs font-medium text-gray-300">
                                     {(Number(coin.gameGenerationCost) / 10 ** coin.decimals).toFixed(0)} {coin.symbol}
-                                </div>
+                                </p>
                             </div>
-                        </div>
-
-                        {/* Stats Section */}
-                        <div className="mt-4 flex items-center space-x-4 border-t border-white/5 pt-4">
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400/40">Mint Price</span>
-                                <span className="text-xs font-medium text-purple-200/70">
+                            <div className="h-3 w-px bg-gray-800" />
+                            <div>
+                                <span className="text-[10px] uppercase tracking-wider text-gray-600">Mint</span>
+                                <p className="text-xs font-medium text-gray-300">
                                     {(Number(coin.mintCost) / 10 ** coin.decimals).toFixed(0)} {coin.symbol}
-                                </span>
-                            </div>
-                            <div className="h-4 w-px bg-white/5" />
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400/40">Status</span>
-                                <span className="flex items-center space-x-1 text-xs font-medium text-green-400/70">
-                                    <span className="h-1 w-1 rounded-full bg-green-500" />
-                                    <span>Verified</span>
-                                </span>
+                                </p>
                             </div>
                         </div>
-                    </motion.button>
+                    </button>
                 ))}
-
-                {WRITER_COINS.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
-                        <p className="text-sm text-purple-300/40 font-medium italic">No active coins detected...</p>
-                    </div>
-                )}
             </div>
 
-            <div className="rounded-2xl bg-purple-500/5 p-4 border border-purple-500/10">
-                <div className="flex items-start space-x-3">
-                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-[10px] font-bold text-purple-400 ring-1 ring-purple-500/30">
-                        !
-                    </div>
-                    <p className="text-xs leading-relaxed text-purple-300/70">
-                        <span className="font-bold text-purple-300">PROTOCOL NOTE:</span> Select a coin to authorize the generation process. Each writer coin ecosystem has unique rewards and features.
-                    </p>
-                </div>
-            </div>
+            <p className="text-xs text-gray-600">
+                Each game is attributed to the original article and writer on-chain via Story Protocol.
+            </p>
         </div>
     )
 }

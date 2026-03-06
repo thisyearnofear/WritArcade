@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, ChevronRight, Lightbulb, Check, Sparkles, Gamepad2, Gem, BookOpen } from 'lucide-react'
+import { X, ChevronRight, Lightbulb, Check, PenLine, BookOpen, Coins, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 
@@ -18,9 +18,9 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     {
       title: "Welcome to writersarcade",
       description: "Turn any article into an interactive, mintable game powered by AI",
-      visual: <Sparkles className="w-12 h-12 text-purple-400" />,
-      content: "Your creative playground for game creation",
-      tip: "Pro Tip: Start with short articles for best results"
+      visual: <PenLine className="w-12 h-12 text-slate-300" />,
+      content: "Interactive fiction, owned onchain. Writers earn from reader creativity.",
+      tip: "Start with short articles for the best results"
     },
     {
       title: "Step 1: Choose Your Content",
@@ -32,9 +32,9 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     {
       title: "Step 2: Customize (Optional)",
       description: "Pick your game style: Horror? Comedy? Mystery?",
-      visual: <Gamepad2 className="w-12 h-12 text-green-400" />,
-      content: "Customize difficulty and genre using Writer Coins for advanced features",
-      tip: "Higher difficulty = more complex gameplay"
+      visual: <Layers className="w-12 h-12 text-slate-300" />,
+      content: "Choose a genre and difficulty level to shape how the AI interprets the article.",
+      tip: "Higher difficulty produces more complex gameplay"
     },
     {
       title: "Step 3: Play Your Game",
@@ -46,9 +46,9 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     {
       title: "Step 4: Mint as NFT",
       description: "Own your creation and earn from future plays",
-      visual: <Gem className="w-12 h-12 text-purple-400" />,
-      content: "Mint your game as an NFT and share it with the world",
-      tip: "NFTs include full attribution to original authors"
+      visual: <Coins className="w-12 h-12 text-amber-400" />,
+      content: "Mint your game as an NFT. Revenue is split on-chain between you, the writer, and the platform.",
+      tip: "Every mint includes full attribution to the original article and author"
     },
     {
       title: "You're Ready!",
@@ -78,10 +78,10 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-900 to-black border border-purple-500/30 rounded-2xl max-w-md w-full shadow-2xl">
+      <div className="bg-gray-950 border border-gray-800 rounded-2xl max-w-md w-full shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-purple-500/20">
-          <h2 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+          <h2 className="text-lg font-semibold text-white">
             Getting Started
           </h2>
           <button
@@ -103,13 +103,13 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           </div>
 
           {/* Content Details */}
-          <div className="bg-purple-900/20 border border-purple-600/30 rounded-lg p-4 space-y-3">
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-3">
             <p className="text-gray-200 text-sm">{step.content}</p>
             
             {/* Pro Tip with micro-interaction */}
             {step.tip && (
               <motion.div
-                className="p-3 rounded-lg bg-purple-900/30 border border-purple-500/30 text-sm text-purple-200 flex items-start gap-2"
+                className="p-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-300 flex items-start gap-2"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.5 }}
@@ -129,7 +129,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-purple-500/20">
+        <div className="flex gap-3 p-6 border-t border-gray-800">
           <Button
             variant="outline"
             onClick={handleSkip}
@@ -139,7 +139,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 flex items-center justify-center gap-2"
+            className="flex-1 bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-2"
           >
             {currentStep === steps.length - 1 ? 'Start' : 'Next'}
             <ChevronRight className="w-4 h-4" />
@@ -153,7 +153,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
               key={idx}
               onClick={() => setCurrentStep(idx)}
               className={`w-2 h-2 rounded-full transition-all ${
-                idx === currentStep ? 'bg-purple-500 w-6' : 'bg-gray-600'
+                idx === currentStep ? 'bg-white w-6' : 'bg-gray-700'
               }`}
               aria-label={`Go to step ${idx + 1}`}
             />

@@ -14,6 +14,7 @@ export interface WriterCoin {
     writer: string
     paragraphAuthor: string // Used to validate article URLs
     paragraphUrl: string
+    bio: string // One-line description of the writer/publication
     gameGenerationCost: bigint // Cost in tokens to generate a game
     mintCost: bigint // Cost in tokens to mint game as NFT
     decimals: number
@@ -48,6 +49,7 @@ export const WRITER_COINS: WriterCoin[] = [
         writer: "Fred Wilson",
         paragraphAuthor: "fredwilson",
         paragraphUrl: "https://avc.xyz/",
+        bio: "Venture capitalist and blogger writing about technology, startups, and markets since 2003.",
         gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $AVC
         mintCost: BigInt(50 * 10 ** 18), // 50 $AVC
         decimals: 18,
@@ -68,6 +70,7 @@ export const WRITER_COINS: WriterCoin[] = [
         writer: "Debbie Soon",
         paragraphAuthor: "debbie",
         paragraphUrl: "https://paragraph.com/@debbie",
+        bio: "Writer and researcher exploring the intersection of technology, culture, and human behaviour.",
         gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $DEBBIE
         mintCost: BigInt(50 * 10 ** 18), // 50 $DEBBIE
         decimals: 18,
@@ -88,6 +91,7 @@ export const WRITER_COINS: WriterCoin[] = [
         writer: "Jake",
         paragraphAuthor: "jake",
         paragraphUrl: "https://paragraph.com/@jake",
+        bio: "Independent writer covering crypto, culture, and the open web.",
         gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $JAKE
         mintCost: BigInt(50 * 10 ** 18), // 50 $JAKE
         decimals: 18,
@@ -108,6 +112,7 @@ export const WRITER_COINS: WriterCoin[] = [
         writer: "Tso",
         paragraphAuthor: "cryptso",
         paragraphUrl: "https://paragraph.com/@cryptso",
+        bio: "Crypto-native thinker writing about onchain ecosystems, DeFi, and the future of money.",
         gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $TSO
         mintCost: BigInt(50 * 10 ** 18), // 50 $TSO
         decimals: 18,
@@ -128,6 +133,7 @@ export const WRITER_COINS: WriterCoin[] = [
         writer: "Papa Jams",
         paragraphAuthor: "papajams.eth",
         paragraphUrl: "https://paragraph.com/@papajams.eth",
+        bio: "Music, culture, and life — personal essays from the intersection of fatherhood and the creative life.",
         gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $PARAPAPA
         mintCost: BigInt(50 * 10 ** 18), // 50 $PARAPAPA
         decimals: 18,
