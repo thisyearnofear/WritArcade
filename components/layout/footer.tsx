@@ -6,6 +6,7 @@ import { useReducedMotion } from 'framer-motion'
 const NAV_LINKS = [
   { href: '/games', label: 'The Arcade' },
   { href: '/writers', label: 'Writers' },
+  { href: '/assets', label: 'Marketplace' },
   { href: '/generate', label: 'Generate' },
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/my-games', label: 'My Games' },

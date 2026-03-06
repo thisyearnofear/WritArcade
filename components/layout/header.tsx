@@ -59,6 +59,7 @@ function DarkModeToggle() {
 const NAV_LINKS = [
   { href: '/games',    label: 'The Arcade' },
   { href: '/writers',  label: 'Writers' },
+  { href: '/assets',   label: 'Marketplace' },
   { href: '/my-games', label: 'My Games' },
 ]
 

@@ -8,10 +8,16 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const type = searchParams.get('type') || undefined
         const search = searchParams.get('search') || undefined
+        const genre = searchParams.get('genre') || undefined
+        const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+        const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
 
         const result = await GameDatabaseService.getMarketplaceAssets({
             type,
-            search
+            genre,
+            search,
+            limit,
+            offset,
         })
 
         return NextResponse.json({ success: true, data: result })

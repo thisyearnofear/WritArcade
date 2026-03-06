@@ -3,8 +3,18 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AssetDatabaseService } from '@/domains/assets/services/asset-database.service'
-import type { Asset } from '@/domains/assets/services/asset-database.service'
+// Asset type mirrored here to avoid importing prisma-dependent service on client
+interface Asset {
+  id: string
+  title: string
+  description: string
+  type: string
+  genre: string
+  tags: string[]
+  content?: unknown
+  articleUrl?: string
+  createdAt?: string | Date
+}
 
 const GENRES = ['Horror', 'Comedy', 'Mystery', 'Sci-Fi', 'Fantasy', 'Adventure']
 const ASSET_TYPES = ['character', 'mechanic', 'plot', 'world', 'dialog']
@@ -36,22 +46,16 @@ export default function CreateGamePage() {
   const loadAssets = async () => {
     setLoading(true)
     try {
-      let result
-      
-      if (searchTerm) {
-        result = await AssetDatabaseService.getAssets({
-          search: searchTerm,
-          limit: 50,
-        })
-      } else if (selectedTypeFilter) {
-        result = await AssetDatabaseService.getAssetsByType(selectedTypeFilter, 50)
-      } else if (selectedGenreFilter) {
-        result = await AssetDatabaseService.getAssetsByGenre(selectedGenreFilter.toLowerCase(), 50)
-      } else {
-        result = await AssetDatabaseService.getAssets({ limit: 50 })
-      }
-      
-      setAvailableAssets(result.assets || [])
+      const params = new URLSearchParams()
+      params.set('limit', '50')
+      if (searchTerm) params.set('search', searchTerm)
+      if (selectedTypeFilter) params.set('type', selectedTypeFilter)
+      if (selectedGenreFilter) params.set('genre', selectedGenreFilter.toLowerCase())
+
+      const res = await fetch(`/api/assets/marketplace?${params}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setAvailableAssets(json.data?.assets || [])
     } catch (err) {
       console.error('Failed to load assets:', err)
       setAvailableAssets([])

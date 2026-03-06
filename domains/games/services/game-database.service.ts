@@ -502,14 +502,16 @@ export class GameDatabaseService {
     limit?: number
     offset?: number
     type?: string
+    genre?: string
     search?: string
   } = {}) {
-    const { limit = 20, offset = 0, type, search } = options
+    const { limit = 20, offset = 0, type, genre, search } = options
 
     try {
       const where: Prisma.AssetWhereInput = {
         // Filter out packs, only show individual components
         type: type ? { equals: type } : { not: 'pack' },
+        ...(genre ? { genre: { equals: genre, mode: 'insensitive' } } : {}),
         ...(search ? {
           OR: [
             { title: { contains: search, mode: 'insensitive' } },
