@@ -547,6 +547,62 @@ export class GameDatabaseService {
     }
   }
 
+  /**
+   * Extract reusable assets from a minted game and persist them.
+   * Creates one Asset record per extracted component (character, plot, world)
+   * derived from the game's title, description, genre, and article context.
+   * Returns the saved asset IDs for downstream Story Protocol wiring.
+   */
+  static async extractAndSaveGameAssets(gameId: string): Promise<string[]> {
+    try {
+      const game = await prisma.game.findUnique({ where: { id: gameId } })
+      if (!game) return []
+
+      const components: { type: string; title: string; description: string }[] = [
+        {
+          type: 'plot',
+          title: `${game.title} — Plot`,
+          description: game.description || game.tagline,
+        },
+        {
+          type: 'world',
+          title: `${game.title} — World`,
+          description: game.tagline || game.description,
+        },
+      ]
+
+      // Add a character asset if we have article context to draw from
+      if (game.articleContext) {
+        components.push({
+          type: 'character',
+          title: `${game.title} — Character`,
+          description: game.articleContext.slice(0, 500),
+        })
+      }
+
+      const savedIds: string[] = []
+      for (const component of components) {
+        const asset = await prisma.asset.create({
+          data: {
+            title: component.title,
+            description: component.description,
+            type: component.type,
+            content: JSON.stringify({ source: 'game-mint', gameId, ...component }),
+            genre: game.genre,
+            articleUrl: game.articleUrl || null,
+            creatorId: game.userId || null,
+          },
+        })
+        savedIds.push(asset.id)
+      }
+
+      return savedIds
+    } catch (error) {
+      console.error('Failed to extract game assets:', error)
+      return []
+    }
+  }
+
   private static safeJsonParse(text: string) {
     try {
       return JSON.parse(text)

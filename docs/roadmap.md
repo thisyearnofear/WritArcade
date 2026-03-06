@@ -1,7 +1,7 @@
 # writersarcade Roadmap & Status
 
 **Last Updated:** March 6, 2026
-**Status:** Phase 9 - Production Ready (Base Batches submission)
+**Status:** Phase 11 - Asset Derivation Complete
 
 ---
 
@@ -55,9 +55,18 @@ writersarcade delivers:
 9. **Empty states**: Context-aware CTAs on The Arcade when no games match filter
 10. **DRY cleanup**: Deleted unused `story-config.ts`; zero `@ts-expect-error` suppressions
 
+### ✅ Complete (Phase 10 - Asset Marketplace, March 2026)
+1. **Marketplace Discovery**: `/assets` now visible in main navigation (header + footer)
+2. **API Pagination + Filtering**: Added `limit`, `offset`, and `genre` query params to `/api/assets/marketplace`
+3. **Genre Filtering**: End-to-end genre filtering in `getMarketplaceAssets()` service
+4. **Create Page Fix**: Replaced direct Prisma service import with API fetch pattern (fixes client-side bug)
+
+### ✅ Complete (Phase 11 - Asset Derivation, March 2026)
+1. **Post-Mint Asset Extraction**: `extractAndSaveGameAssets()` in `GameDatabaseService` — creates plot, world, and character `Asset` records from a minted game's metadata
+2. **PATCH Handler Wiring**: `/api/games/mint` PATCH now calls extraction after mint confirmation; returns `extractedAssetIds` in response
+3. **Story Protocol Derivative Path**: Response includes `extractedAssetIds` for client-side `storyClient.ipAsset.registerDerivativeIp()` calls linking asset IPs to the parent game IP
+
 ### 🔒 Deferred (Future Phases)
-- Asset Marketplace discovery *(hidden from nav, exists at /assets)*
-- Asset derivation from completed comics
 - ElevenLabs audio/video integration
 - Multiplayer story contributions
 - Advanced game mechanics (stats, branching)
@@ -241,24 +250,24 @@ This ensures:
 
 ---
 
-## Future Roadmap (Post-Phase 9)
+## Future Roadmap (Post-Phase 10)
 
-### Phase 10: Asset Marketplace (Q2 2026)
-- Enable asset discovery at /assets
+### Phase 11: Asset Derivation (Q2 2026)
 - Derive assets from completed comics
-- Royalty chains via Story Protocol
+- Automatic asset extraction from minted games
+- Parent-child IP relationships via Story Protocol
 
-### Phase 11: Media Expansion (Q3 2026)
+### Phase 12: Media Expansion (Q3 2026)
 - ElevenLabs audio narration
 - Video export of comics
 - Social sharing integrations
 
-### Phase 12: Advanced Gameplay (Q4 2026)
+### Phase 13: Advanced Gameplay (Q4 2026)
 - Branching narratives with consequences
 - Character stats that affect outcomes
 - Multiplayer story contributions
 
-### Phase 13: Farcaster Notifications (Q4 2026)
+### Phase 14: Farcaster Notifications (Q4 2026)
 - Wire Farcaster webhook notification token storage
 - Push notifications for new games from followed writers
 - Requires `NotificationToken` model in Prisma schema
@@ -291,4 +300,4 @@ This ensures:
 
 ---
 
-*Last Updated: March 6, 2026 - Phase 9 Production Polish Complete*
+*Last Updated: March 6, 2026 - Phase 10 Asset Marketplace Complete*

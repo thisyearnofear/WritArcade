@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getWriterCoinById } from '@/lib/writerCoins'
 import { fetchCoinConfigOnChain } from '@/lib/contracts'
+import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 
 interface MintRequest {
   gameId: string
@@ -186,6 +187,10 @@ export async function PATCH(request: NextRequest) {
       })
     }
 
+    // Phase 11: Extract reusable assets from the minted game (non-blocking)
+    // Returns asset IDs so the client can register derivative IPs on Story Protocol
+    const extractedAssetIds = await GameDatabaseService.extractAndSaveGameAssets(gameId)
+
     return NextResponse.json({
       success: true,
       data: {
@@ -194,6 +199,9 @@ export async function PATCH(request: NextRequest) {
         transactionHash,
         status: 'minted',
         message: 'NFT minting complete!',
+        // Derivative IP wiring: client should call storyClient.ipAsset.registerDerivativeIp()
+        // using the game's Story Protocol IP ID (registered separately via IPRegistrationFlow)
+        extractedAssetIds,
       },
     })
   } catch (error) {
