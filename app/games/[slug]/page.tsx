@@ -5,6 +5,7 @@ import { WordleGameInterface } from '@/domains/games/components/wordle-game-inte
 import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { IPAttribution } from '@/domains/games/components/ip-attribution'
+import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 
 // ISR: revalidate game pages every 5 minutes from CDN — eliminates per-request DB hits
 // for read-only story game pages. Wordle answer is stable so this is safe.
@@ -79,7 +80,9 @@ export default async function GamePage({ params }: GamePageProps) {
           <IPAttribution assets={linkedAssets} compact />
         </div>
       )}
-      <GamePlayInterface game={game} />
+      <ErrorBoundary>
+        <GamePlayInterface game={game} />
+      </ErrorBoundary>
     </div>
   )
 }

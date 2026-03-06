@@ -4,6 +4,7 @@ import { GameGeneratorForm as GameGenerator } from '@/domains/games/components/g
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 
 export default function GeneratePage() {
   return (
@@ -19,7 +20,9 @@ export default function GeneratePage() {
             <p className="text-center text-gray-400 mb-8 text-sm">
               Paste a Paragraph.xyz article URL, choose your genre, and pay with Writer Coins to create.
             </p>
-            <GameGenerator />
+            <ErrorBoundary>
+              <GameGenerator />
+            </ErrorBoundary>
           </div>
         </main>
 

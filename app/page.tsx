@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
 import { GameGeneratorForm } from '@/domains/games/components/game-generator-form'
+import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
@@ -123,7 +124,9 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35, duration: 0.6, ease: 'easeOut' }}
               >
-                <GameGeneratorForm />
+                <ErrorBoundary>
+                  <GameGeneratorForm />
+                </ErrorBoundary>
               </motion.div>
             </div>
           </section>
