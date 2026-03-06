@@ -68,8 +68,9 @@ export default async function GamePage({ params }: GamePageProps) {
 
   // Extract and flatten assets for the attribution component
    
-  // @ts-expect-error - GameDatabaseService includes assets via include; type not reflected here
-  const linkedAssets = game.gamesFromAssets?.map((relation: { asset: unknown }) => relation.asset) || []
+  type LinkedAsset = { id: string; title: string; type: string; storyRegistration?: { storyIpId: string; status: string } | null }
+  const gameWithAssets = game as typeof game & { gamesFromAssets?: { asset: LinkedAsset }[] }
+  const linkedAssets = gameWithAssets.gamesFromAssets?.map((relation) => relation.asset) || []
 
   return (
     <div className="min-h-screen bg-black">

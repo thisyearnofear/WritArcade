@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { href: '/games', label: 'The Arcade' },
   { href: '/writers', label: 'Writers' },
   { href: '/generate', label: 'Generate' },
-  { href: '/workshop', label: 'Workshop' },
+  { href: '/#how-it-works', label: 'How it works' },
   { href: '/my-games', label: 'My Games' },
 ]
 

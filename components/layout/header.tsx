@@ -5,10 +5,26 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
-import { PenLine, Menu, X, Moon, Sun } from 'lucide-react'
+import { PenLine, Menu, X, Moon, Sun, LayoutDashboard } from 'lucide-react'
+import { useAccount } from 'wagmi'
+import { isWhitelistedWriterCoin } from '@/lib/writerCoins'
 import { Switch } from '@/components/ui/switch'
 import { useDarkMode } from '@/components/providers/DarkModeProvider'
 import { motion, useReducedMotion } from 'framer-motion'
+
+function CreatorDashboardLink() {
+  const { address, isConnected } = useAccount()
+  if (!isConnected || !address || !isWhitelistedWriterCoin(address)) return null
+  return (
+    <Link
+      href="/creators/dashboard"
+      className="flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+    >
+      <LayoutDashboard className="w-4 h-4" />
+      <span>Dashboard</span>
+    </Link>
+  )
+}
 
 function DarkModeToggle() {
   const { isDarkMode, toggleDarkMode } = useDarkMode()
@@ -127,6 +143,7 @@ export function Header() {
 
           <AnimatedCreateButton isActive={isActive('/generate')} />
 
+          <CreatorDashboardLink />
           <BalanceDisplay />
           <DarkModeToggle />
           <UserMenu />
