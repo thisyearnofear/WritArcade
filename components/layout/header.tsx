@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
-import { Sparkles, Menu, X, Moon, Sun } from 'lucide-react'
+import { PenLine, Menu, X, Moon, Sun } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { useDarkMode } from '@/components/providers/DarkModeProvider'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -56,9 +56,9 @@ function AnimatedNavLink({ href, label, isActive }: { href: string; label: strin
     >
       <Link
         href={href}
-        className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black rounded pb-0.5 ${
+        className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black rounded pb-0.5 ${
           isActive
-            ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-purple-500 after:rounded-full'
+            ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-white/60 after:rounded-full'
             : 'text-gray-400 hover:text-white'
         }`}
         aria-current={isActive ? 'page' : undefined}
@@ -79,14 +79,14 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
     >
       <Link
         href="/generate"
-        className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+        className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all text-sm focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black ${
           isActive
-            ? 'bg-purple-600/40 border-purple-500/70 text-purple-200'
-            : 'bg-purple-600/20 border-purple-500/30 hover:bg-purple-600/30 hover:border-purple-500/50 text-purple-300 hover:text-purple-200'
+            ? 'bg-white/10 border-white/20 text-white'
+            : 'bg-transparent border-gray-700 hover:bg-white/5 hover:border-gray-500 text-gray-300 hover:text-white'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
-        <Sparkles className="w-4 h-4" />
+        <PenLine className="w-4 h-4" />
         <span>Create</span>
       </Link>
     </motion.div>
@@ -135,7 +135,7 @@ export function Header() {
         {/* Mobile Menu Button */}
         <motion.button
           onClick={() => setIsMobileMenuOpen(v => !v)}
-          className="md:hidden p-3 rounded-md hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
+          className="md:hidden p-3 rounded-md hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black"
           aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMobileMenuOpen}
           whileTap={{ scale: 0.95 }}
@@ -174,9 +174,9 @@ export function Header() {
                 href={href}
                 onClick={closeMobileMenu}
                 aria-current={isActive(href) ? 'page' : undefined}
-                className={`block py-3 px-4 rounded-lg transition-colors text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+                className={`block py-3 px-4 rounded-lg transition-colors text-base focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black ${
                   isActive(href)
-                    ? 'bg-purple-900/40 text-white border border-purple-500/40'
+                    ? 'bg-white/10 text-white border border-white/10'
                     : 'text-gray-300 hover:bg-gray-800'
                 }`}
               >
@@ -188,13 +188,13 @@ export function Header() {
               href="/generate"
               onClick={closeMobileMenu}
               aria-current={isActive('/generate') ? 'page' : undefined}
-              className={`flex items-center space-x-2 py-3 px-4 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black ${
+              className={`flex items-center space-x-2 py-3 px-4 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black ${
                 isActive('/generate')
-                  ? 'bg-purple-600/40 border-purple-500/70 text-purple-200'
-                  : 'bg-purple-600/20 border-purple-500/30 hover:bg-purple-600/30 text-purple-300 hover:text-purple-200'
+                  ? 'bg-white/10 border-white/20 text-white'
+                  : 'bg-transparent border-gray-700 hover:bg-white/5 text-gray-300 hover:text-white'
               }`}
             >
-              <Sparkles className="w-4 h-4" />
+              <PenLine className="w-4 h-4" />
               <span>Create</span>
             </Link>
 

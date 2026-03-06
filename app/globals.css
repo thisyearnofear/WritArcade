@@ -22,10 +22,10 @@
 
 /* writersarcade Brand Theme Variables */
 :root {
-  /* Brand colors - will be overridden by ThemeWrapper for dynamic theming */
-  --writersarcade-primary: #6366f1;      /* Indigo - main brand color */
-  --writersarcade-secondary: #8b5cf6;    /* Purple - secondary brand color */
-  --writersarcade-accent: #ec4899;       /* Pink - accent color */
+  /* Brand colors — editorial ink palette */
+  --writersarcade-primary: #e2e8f0;      /* Slate-200 - primary text/action */
+  --writersarcade-secondary: #94a3b8;    /* Slate-400 - secondary */
+  --writersarcade-accent: #f59e0b;       /* Amber - accent/highlight */
   --writersarcade-success: #10b981;      /* Green - success states */
   --writersarcade-warning: #f59e0b;      /* Amber - warning states */
   --writersarcade-error: #ef4444;        /* Red - error states */
@@ -34,13 +34,13 @@
 
 .dark {
   /* Dark mode brand colors */
-  --writersarcade-primary: #818cf8;      /* Lighter indigo for visibility */
-  --writersarcade-secondary: #a78bfa;    /* Lighter purple */
-  --writersarcade-accent: #f472b6;       /* Lighter pink */
-  --writersarcade-success: #34d399;      /* Lighter green */
-  --writersarcade-warning: #fbbf24;      /* Lighter amber */
-  --writersarcade-error: #f87171;        /* Lighter red */
-  --writersarcade-info: #60a5fa;         /* Lighter blue */
+  --writersarcade-primary: #f1f5f9;      /* Slate-100 */
+  --writersarcade-secondary: #94a3b8;    /* Slate-400 */
+  --writersarcade-accent: #fbbf24;       /* Amber-400 */
+  --writersarcade-success: #34d399;
+  --writersarcade-warning: #fbbf24;
+  --writersarcade-error: #f87171;
+  --writersarcade-info: #60a5fa;
 }
 
 /* ─── CSS Variable Colour Tokens ───────────────────────────────────────────
@@ -324,7 +324,7 @@
   box-shadow: 0 6px 0 #004D4D;
 }
 
-/* Typewriter font for headings */
+/* Typewriter font — retained for game content areas only, not hero */
 .typewriter-font {
   font-family: 'Special Elite', 'Courier New', monospace;
   color: #3A2E1D;
