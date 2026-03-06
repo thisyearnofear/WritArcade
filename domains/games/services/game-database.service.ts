@@ -144,6 +144,7 @@ export class GameDatabaseService {
     search?: string
     genre?: string
     userId?: string
+    writerCoinId?: string
     includePrivate?: boolean
     featured?: boolean
   } = {}) {
@@ -153,6 +154,7 @@ export class GameDatabaseService {
       search,
       genre,
       userId,
+      writerCoinId,
       includePrivate = false,
       featured
     } = options
@@ -178,6 +180,8 @@ export class GameDatabaseService {
           } : {},
           // Genre filter
           genre ? { genre: { equals: genre, mode: 'insensitive' } } : {},
+          // Writer coin filter
+          writerCoinId ? { writerCoinId } : {},
         ]
       }
 

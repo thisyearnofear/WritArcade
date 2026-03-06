@@ -41,8 +41,8 @@ function DarkModeToggle() {
 
 // Nav link definitions — single source of truth for desktop + mobile
 const NAV_LINKS = [
-  { href: '/games',    label: 'Games' },
-  { href: '/workshop', label: 'Workshop' },
+  { href: '/games',    label: 'The Arcade' },
+  { href: '/writers',  label: 'Writers' },
   { href: '/my-games', label: 'My Games' },
 ]
 

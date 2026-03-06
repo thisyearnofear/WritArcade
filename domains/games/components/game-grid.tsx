@@ -12,12 +12,13 @@ interface GameGridProps {
   limit?: number
   search?: string
   genre?: string
+  writerCoinId?: string
   page?: number
   featured?: boolean
   onLoad?: (data: { total: number, count: number }) => void
 }
 
-export function GameGrid({ limit = 25, search, genre, page = 1, featured, onLoad }: GameGridProps) {
+export function GameGrid({ limit = 25, search, genre, writerCoinId, page = 1, featured, onLoad }: GameGridProps) {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,6 +37,7 @@ export function GameGrid({ limit = 25, search, genre, page = 1, featured, onLoad
         if (search) params.set('search', search)
         if (genre) params.set('genre', genre)
         if (featured) params.set('featured', 'true')
+        if (writerCoinId) params.set('writerCoinId', writerCoinId)
 
         // BUG FIX: was incorrectly calling /api/games/generate (POST creation endpoint)
         // via GET. The listing endpoint is /api/games.
@@ -59,7 +61,7 @@ export function GameGrid({ limit = 25, search, genre, page = 1, featured, onLoad
     fetchGames()
   // onLoad intentionally omitted — use onLoadRef.current inside instead
    
-  }, [limit, search, genre, page, featured])
+  }, [limit, search, genre, writerCoinId, page, featured])
 
   if (loading) {
     // Cap skeletons to avoid huge layout shift — never render more than 6
@@ -88,11 +90,19 @@ export function GameGrid({ limit = 25, search, genre, page = 1, featured, onLoad
   }
 
   if (games.length === 0) {
+    const emptyMessage = search
+      ? `No games matching "${search}".`
+      : genre
+      ? `No games in the ${genre} genre yet.`
+      : 'No games found yet.'
     return (
-      <div className="text-center text-gray-400 py-12">
-        <p>No games found.</p>
-        <Link href="/generate" className="mt-4 inline-block text-purple-400 hover:text-purple-300">
-          Create the first game
+      <div className="text-center py-16 border border-dashed border-gray-800 rounded-lg">
+        <p className="text-gray-500 mb-4">{emptyMessage}</p>
+        <Link
+          href="/generate"
+          className="inline-flex items-center gap-2 text-sm text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-md px-4 py-2 transition-colors"
+        >
+          Generate the first game
         </Link>
       </div>
     )

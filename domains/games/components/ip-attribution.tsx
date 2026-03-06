@@ -15,10 +15,37 @@ interface Asset {
 interface IPAttributionProps {
     assets: Asset[]
     explorerUrl?: string
+    compact?: boolean
 }
 
-export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-explorer.story.foundation/ip/" }: IPAttributionProps) {
+export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-explorer.story.foundation/ip/", compact = false }: IPAttributionProps) {
     if (!assets || assets.length === 0) return null
+
+    if (compact) {
+        return (
+            <div className="flex flex-wrap items-center gap-2 py-3 px-4 rounded-lg border border-gray-800 bg-gray-900/50 text-xs text-gray-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="text-gray-500">IP:</span>
+                {assets.map((asset) => {
+                    const isMinted = !!asset.storyRegistration?.storyIpId
+                    return isMinted ? (
+                        <a
+                            key={asset.id}
+                            href={`${explorerUrl}${asset.storyRegistration!.storyIpId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors"
+                        >
+                            {asset.title}
+                            <ExternalLink className="w-3 h-3" />
+                        </a>
+                    ) : (
+                        <span key={asset.id} className="text-gray-300">{asset.title}</span>
+                    )
+                })}
+            </div>
+        )
+    }
 
     return (
         <div className="mt-8 pt-8 border-t border-gray-800">

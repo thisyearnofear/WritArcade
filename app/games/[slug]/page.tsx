@@ -73,13 +73,12 @@ export default async function GamePage({ params }: GamePageProps) {
 
   return (
     <div className="min-h-screen bg-black">
-      <GamePlayInterface game={game} />
-
       {linkedAssets.length > 0 && (
-        <div className="max-w-4xl mx-auto px-4 pb-24">
-          <IPAttribution assets={linkedAssets} />
+        <div className="max-w-4xl mx-auto px-4 pt-6">
+          <IPAttribution assets={linkedAssets} compact />
         </div>
       )}
+      <GamePlayInterface game={game} />
     </div>
   )
 }

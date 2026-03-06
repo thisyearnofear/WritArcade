@@ -17,11 +17,12 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || undefined
     const genre = searchParams.get('genre') || undefined
     const featured = searchParams.get('featured') === 'true'
+    const writerCoinId = searchParams.get('writerCoinId') || undefined
 
     // Cache key is the full param set — skip cache for search queries
     const cacheKey = search
       ? null
-      : `games:${limit}:${offset}:${genre ?? ''}:${featured}`
+      : `games:${limit}:${offset}:${genre ?? ''}:${featured}:${writerCoinId ?? ''}`
 
     if (cacheKey) {
       const cached = cacheGet<unknown>(cacheKey, CACHE_TTL_MS)
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest) {
       search,
       genre,
       featured,
+      writerCoinId,
       includePrivate: false,
     })
 

@@ -4,10 +4,10 @@ import { motion } from 'framer-motion'
 import { useReducedMotion } from 'framer-motion'
 
 const NAV_LINKS = [
-  { href: '/games', label: 'Games' },
+  { href: '/games', label: 'The Arcade' },
+  { href: '/writers', label: 'Writers' },
   { href: '/generate', label: 'Generate' },
   { href: '/workshop', label: 'Workshop' },
-  { href: '/assets', label: 'Assets' },
   { href: '/my-games', label: 'My Games' },
 ]
 
