@@ -241,28 +241,27 @@ This ensures:
 
 ---
 
-## Future Roadmap (Post-Phase 8)
+## Future Roadmap (Post-Phase 9)
 
-### Phase 9: Quality Metrics Dashboard (Q4 2025)
-- Admin panel showing NPS trends per game
-- Fidelity score analysis + outlier detection
-- Feedback submission tracking
-- Approval workflow analytics
-
-### Phase 10: Asset Marketplace (Q1 2026)
+### Phase 10: Asset Marketplace (Q2 2026)
 - Enable asset discovery at /assets
 - Derive assets from completed comics
 - Royalty chains via Story Protocol
 
-### Phase 11: Media Expansion (Q2 2026)
+### Phase 11: Media Expansion (Q3 2026)
 - ElevenLabs audio narration
 - Video export of comics
 - Social sharing integrations
 
-### Phase 12: Advanced Gameplay (Q3 2026)
+### Phase 12: Advanced Gameplay (Q4 2026)
 - Branching narratives with consequences
 - Character stats that affect outcomes
 - Multiplayer story contributions
+
+### Phase 13: Farcaster Notifications (Q4 2026)
+- Wire Farcaster webhook notification token storage
+- Push notifications for new games from followed writers
+- Requires `NotificationToken` model in Prisma schema
 
 ---
 
@@ -292,4 +291,4 @@ This ensures:
 
 ---
 
-*Last Updated: December 25, 2025 - Phase 8 Quality & UX Complete*
+*Last Updated: March 6, 2026 - Phase 9 Production Polish Complete*
