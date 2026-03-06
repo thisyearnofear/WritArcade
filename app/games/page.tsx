@@ -50,7 +50,7 @@ export default function GamesPage() {
           <div className="py-10 px-4 border-b border-gray-800">
             <div className="max-w-7xl mx-auto">
               <h1 className="text-3xl md:text-4xl font-semibold text-white mb-2">
-                Library
+                The Arcade
               </h1>
               <p className="text-gray-400 max-w-2xl">
                 Interactive games generated from articles by supported writers. Play, collect, and own the experience.
