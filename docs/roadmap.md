@@ -1,7 +1,7 @@
 # writersarcade Roadmap & Status
 
-**Last Updated:** December 25, 2025
-**Status:** Phase 8 - Quality & UX Features (Complete)
+**Last Updated:** March 6, 2026
+**Status:** Phase 9 - Production Ready (Base Batches submission)
 
 ---
 
@@ -42,6 +42,18 @@ writersarcade delivers:
 6. **Flow Discovery**: Link to Workshop from generate page tips
 7. **Toast Notifications**: Success/error feedback for all editing and regeneration actions
 8. **Real-time Downloads**: Edited text correctly exported in PNG comic download
+
+### ✅ Complete (Phase 9 - Production Polish, March 2026)
+1. **5 Writer Coins**: Added Debbie Soon ($DEBBIE), Blog of Jake ($JAKE), Tso's Thoughts ($TSO), Papa ($PARAPAPA) alongside AVC
+2. **Writer Profile Pages**: `/writers/[coinId]` — bio, game count, games grid, empty state CTA
+3. **Editorial Redesign**: Removed neon/arcade aesthetic; typography-first UI for writers and developers
+4. **LicenseConfigurator**: Wired to real `registerPILTerms` on-chain call (no mock save)
+5. **ErrorBoundary**: Wraps `GamePlayInterface` and `GameGeneratorForm`
+6. **Creator Dashboard link**: Conditionally shown in header for whitelisted writer wallets
+7. **IPAttribution above fold**: Compact attribution bar shown before game on game pages
+8. **Homepage live stat**: Game count fetched from `/api/games/stats`
+9. **Empty states**: Context-aware CTAs on The Arcade when no games match filter
+10. **DRY cleanup**: Deleted unused `story-config.ts`; zero `@ts-expect-error` suppressions
 
 ### 🔒 Deferred (Future Phases)
 - Asset Marketplace discovery *(hidden from nav, exists at /assets)*

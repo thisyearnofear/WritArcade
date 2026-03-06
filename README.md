@@ -63,6 +63,18 @@ See docs for details:
 - Roadmap: ./docs/roadmap.md
 - Hackathon Details: ./docs/hackathon.md
 
+## Supported writer coins (Base mainnet)
+
+| Writer | Symbol | Contract |
+|---|---|---|
+| Fred Wilson (AVC) | $AVC | 0x06FC3D5D2369561e28F261148576520F5e49D6ea |
+| Debbie Soon | $DEBBIE | 0x4ea5d3ff9e8295a552903d4bd486ce8cf8291c60 |
+| Blog of Jake | $JAKE | 0xC2E3A4d07fdff60f3CdCb39FD94Fc11F254938B9 |
+| Tso's Thoughts | $TSO | 0x8072FC8Ee6Fd17B913833F2789bC9aa99D21AAeB |
+| Papa | $PARAPAPA | 0x300efb94e4a7fcf71184eeeb82cb2b7af4a6ea58 |
+
+Writer profiles: https://writersarcade.vercel.app/writers
+
 ## Smart contracts (Base mainnet)
 - GameNFT: 0x778C87dAA2b284982765688AE22832AADae7dccC
 - WriterCoinPayment: 0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75

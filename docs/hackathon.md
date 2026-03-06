@@ -252,15 +252,17 @@ curl http://localhost:3000/api/assets/{ASSET_ID}/register
 - ✅ API endpoints fully integrated
 - ✅ Error handling and logging
 
-## Future Enhancements
+## Current Status (March 2026)
 
-### Short Term
-- [ ] Implement license token minting flow
-- [ ] Add royalty claim UI
-- [ ] Build asset IP dashboard
+### ✅ Completed since hackathon
+- ✅ Royalty claim UI in Creator Dashboard
+- ✅ Asset IP dashboard in Creator Dashboard
+- ✅ `registerPILTerms` wired to real wallet signing via `LicenseConfigurator`
+- ✅ `mintAndRegisterIp` + `attachLicenseTerms` fully integrated (no stubs)
+- ✅ Live at https://writersarcade.vercel.app/
 
 ### Longer Term
-- [ ] Mainnet deployment
+- [ ] Story Protocol mainnet deployment (currently Aeneid testnet — Story Protocol is not yet on Base mainnet)
 - [ ] Multi-asset derivative games
 - [ ] Royalty payment automation
 
