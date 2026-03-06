@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getWriterCoinById } from '@/lib/writerCoins'
+import { fetchCoinConfigOnChain } from '@/lib/contracts'
 
 interface MintRequest {
   gameId: string
@@ -159,15 +160,27 @@ export async function PATCH(request: NextRequest) {
     })
 
     if (!existingPayment) {
+      // Fetch the actual mint cost from the contract rather than using a hardcoded value
+      const game = await prisma.game.findUnique({ where: { id: gameId }, select: { writerCoinId: true } })
+      const coin = game?.writerCoinId ? getWriterCoinById(game.writerCoinId) : null
+      let mintAmount = BigInt(50 * 10 ** 18) // fallback
+      if (coin) {
+        try {
+          const config = await fetchCoinConfigOnChain(coin.address)
+          mintAmount = config.mintCost
+        } catch {
+          mintAmount = coin.mintCost
+        }
+      }
       await prisma.payment.create({
         data: {
           id: crypto.randomUUID(),
           transactionHash,
           action: 'mint-nft',
-          amount: BigInt(50 * 10 ** 18), // 50 AVC (hardcoded for now)
+          amount: mintAmount,
           status: 'verified',
           userId: updatedGame.userId,
-          writerCoinId: 'avc',
+          writerCoinId: game?.writerCoinId ?? 'avc',
           verifiedAt: new Date(),
         },
       })

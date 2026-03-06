@@ -6,7 +6,7 @@ import { LicenseConfigurator } from './LicenseConfigurator'
 export const dynamic = 'force-dynamic'
 
 export default async function CreatorDashboard() {
-    // Hackathon: We simulate the dashboard for the first Writer Coin (Fred Wilson)
+    // Dashboard shows stats for the first configured Writer Coin (Fred Wilson / AVC)
     const writerCoin = WRITER_COINS[0]
     if (!writerCoin) {
         return <div className="p-10 text-white">No writer coins configured.</div>
@@ -37,8 +37,8 @@ export default async function CreatorDashboard() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    <StatCard label="Total Revenue" value={`${stats.totalRevenue} ${writerCoin.symbol}`} trend="+12.5%" />
-                    <StatCard label="Games Created" value={stats.totalGames.toString()} trend="+5 this week" />
+                    <StatCard label="Total Revenue" value={`${stats.totalRevenue} ${writerCoin.symbol}`} />
+                    <StatCard label="Games Created" value={stats.totalGames.toString()} />
                     <StatCard label="IP Assets" value={stats.registeredIpAssets.toString()} sub="Registered on Story Protocol" />
                     <StatCard label="Royalty Rate" value={`${writerCoin.revenueDistribution.writer}%`} sub="Current License Term" />
                 </div>
@@ -82,12 +82,22 @@ export default async function CreatorDashboard() {
                         {/* Actions */}
                         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
                             <h4 className="font-bold mb-4">Quick Actions</h4>
-                            <button className="w-full mb-3 bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                            <a
+                                href={`https://basescan.org/address/${writerCoin.paymentContractAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full mb-3 bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors text-center"
+                            >
                                 Claim Revenue
-                            </button>
-                            <button className="w-full bg-gray-800 text-gray-300 font-bold py-3 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
+                            </a>
+                            <a
+                                href={`https://explorer.story.foundation/address/${writerCoin.address}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full bg-gray-800 text-gray-300 font-bold py-3 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700 text-center"
+                            >
                                 View on Story Explorer
-                            </button>
+                            </a>
                         </div>
 
                         {/* Treasury Status */}

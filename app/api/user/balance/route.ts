@@ -5,7 +5,7 @@ import { getWriterCoinById } from '@/lib/writerCoins'
 
 /**
  * GET /api/user/balance
- * Fetch user's writer coin (AVC) balance
+ * Fetch user's writer coin balance
  * Query params: wallet (required), coin (optional, defaults to 'avc')
  */
 export async function GET(request: NextRequest) {

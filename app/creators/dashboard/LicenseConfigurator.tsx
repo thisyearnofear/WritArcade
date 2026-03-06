@@ -1,17 +1,89 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi';
+import { PILFlavor } from '@story-protocol/core-sdk';
 import type { WriterCoin } from '@/lib/writerCoins';
+import {
+    createStoryClientFromWallet,
+    isOnStoryNetwork,
+    STORY_CHAIN_ID,
+} from '@/lib/story-sdk-client';
+
+// WIP token on Story Aeneid testnet — standard currency for PIL terms
+const WIP_TOKEN = '0x1514000000000000000000000000000000000000' as const;
 
 export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) {
     const [royalty, setRoyalty] = useState(writerCoin.revenueDistribution.writer);
-    const [isSaved, setIsSaved] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [savedRoyalty, setSavedRoyalty] = useState(writerCoin.revenueDistribution.writer);
+    const [licenseTermsId, setLicenseTermsId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSave = () => {
-        // In V2, this calls an API to update the WriterCoin config or Story Protocol License
-        setIsSaved(true);
-        setTimeout(() => alert("License terms updated on Story Protocol!"), 100);
+    const { isConnected } = useAccount();
+    const chainId = useChainId();
+    const { switchChain, isPending: isSwitching } = useSwitchChain();
+    const { data: walletClient } = useWalletClient();
+
+    const onStoryNetwork = isOnStoryNetwork(chainId);
+    const isDirty = royalty !== savedRoyalty;
+
+    const handleSwitchChain = useCallback(async () => {
+        if (!switchChain) return;
+        setError(null);
+        try {
+            await switchChain({ chainId: STORY_CHAIN_ID });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to switch network');
+        }
+    }, [switchChain]);
+
+    const handleSave = useCallback(async () => {
+        if (!walletClient || !isConnected) {
+            setError('Connect your wallet first');
+            return;
+        }
+        if (!onStoryNetwork) {
+            await handleSwitchChain();
+            return;
+        }
+
+        setIsSaving(true);
+        setError(null);
+
+        try {
+            const storyClient = createStoryClientFromWallet(walletClient);
+            if (!storyClient) {
+                throw new Error('Failed to initialize Story Protocol client. Ensure wallet is on Story Aeneid network.');
+            }
+
+            const terms = PILFlavor.commercialRemix({
+                defaultMintingFee: 0n,
+                commercialRevShare: royalty,
+                currency: WIP_TOKEN,
+            });
+
+            const response = await storyClient.license.registerPILTerms(terms);
+
+            setSavedRoyalty(royalty);
+            setLicenseTermsId(response.licenseTermsId?.toString() ?? null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to register license terms');
+        } finally {
+            setIsSaving(false);
+        }
+    }, [walletClient, isConnected, onStoryNetwork, royalty, handleSwitchChain]);
+
+    const buttonLabel = () => {
+        if (isSaving) return 'Registering on Story…';
+        if (!isConnected) return 'Connect Wallet';
+        if (!onStoryNetwork) return 'Switch to Story Network';
+        if (!isDirty && licenseTermsId) return `Saved (Terms ID: ${licenseTermsId})`;
+        if (!isDirty) return 'No Changes';
+        return 'Register License Terms';
     };
+
+    const buttonDisabled = isSaving || isSwitching || (!isDirty && isConnected && onStoryNetwork);
 
     return (
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
@@ -41,7 +113,7 @@ export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) 
                             value={royalty}
                             onChange={(e) => {
                                 setRoyalty(Number(e.target.value));
-                                setIsSaved(false);
+                                setError(null);
                             }}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
                         />
@@ -55,19 +127,37 @@ export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) 
                 </div>
 
                 <div className="bg-gray-800/50 rounded p-4 text-sm text-gray-300">
-                    <p className="text-xs text-gray-400">Note: Actual revenue splits are configured on-chain per writer coin (generation and minting) and may change without redeploys. No on-chain burn is performed by the payment contract.</p>
+                    <p className="text-xs text-gray-400">
+                        Saving registers new PIL Commercial Remix terms on Story Protocol (Aeneid testnet) with your wallet.
+                        Actual on-chain revenue splits for generation and minting are configured separately per writer coin.
+                    </p>
                 </div>
+
+                {licenseTermsId && !isDirty && (
+                    <div className="bg-green-900/20 border border-green-500/30 rounded p-3 text-xs text-green-400">
+                        ✅ License terms registered — ID: <span className="font-mono">{licenseTermsId}</span>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="bg-red-900/20 border border-red-500/30 rounded p-3 text-xs text-red-400">
+                        {error}
+                    </div>
+                )}
 
                 <div className="pt-4 border-t border-gray-800 flex justify-end">
                     <button
                         onClick={handleSave}
-                        disabled={isSaved}
-                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${isSaved
-                                ? 'bg-green-600/20 text-green-400 cursor-default'
+                        disabled={buttonDisabled}
+                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                            buttonDisabled
+                                ? 'bg-gray-700 text-gray-500 cursor-default'
+                                : !isConnected || !onStoryNetwork
+                                ? 'bg-amber-500 hover:bg-amber-400 text-white'
                                 : 'bg-purple-600 hover:bg-purple-500 text-white'
-                            }`}
+                        }`}
                     >
-                        {isSaved ? 'Changes Saved' : 'Update License Terms'}
+                        {buttonLabel()}
                     </button>
                 </div>
             </div>

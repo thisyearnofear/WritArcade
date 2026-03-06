@@ -8,6 +8,7 @@ import { parseEther } from 'viem'
 
 import { Loader2, Play, BookOpen, Lightbulb } from 'lucide-react'
 import { Game, ChatMessage, GameplayOption } from '../types'
+import { getWriterCoinById } from '@/lib/writerCoins'
 import { type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'
 import { ComicPanelCard } from './comic-panel-card'
@@ -43,7 +44,6 @@ const WRITER_COIN_PAYMENT_ABI = [
 
 // WriterCoinPayment V2 Address (Needs update after redeployment)
 const PAYMENT_CONTRACT_ADDRESS = "0xa794b662E103790E44100E4A3240370a5C704209"
-const AVC_TOKEN_ADDRESS = "0xA8D70BFA7a0988da1A3ea8536A2d0724F13886E8" // Example
 
 interface GamePlayInterfaceProps {
   game: Game
@@ -242,7 +242,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         abi: WRITER_COIN_PAYMENT_ABI,
         functionName: 'payForGameplay',
         args: [
-          AVC_TOKEN_ADDRESS,     // The coin user is paying with
+          (getWriterCoinById(game.writerCoinId ?? 'avc')?.address ?? getWriterCoinById('avc')!.address) as `0x${string}`,
           gameCreator,           // The independent creator of this specific game
           parseEther(game.playFee) // The amount
         ]
@@ -796,7 +796,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         console.log('NFT minting initiated:', mintData)
 
         // Show success - NFT minting is in progress
-        alert(`🎉 NFT minting started! Transaction: ${mintData.transactionHash}`)
+        toast({ title: '🎉 NFT minting started!', description: mintData.transactionHash ? `Transaction: ${mintData.transactionHash}` : 'Your NFT is being minted on Base.' })
       } else {
         // Fallback to original minting logic
         console.log('Minting comic with basic metadata:', {
@@ -828,11 +828,11 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         console.log('NFT minting initiated:', mintData)
 
         // Show success - NFT minting is in progress
-        alert(`🎉 NFT minting started! Transaction: ${mintData.transactionHash}`)
+        toast({ title: '🎉 NFT minting started!', description: mintData.transactionHash ? `Transaction: ${mintData.transactionHash}` : 'Your NFT is being minted on Base.' })
       }
     } catch (error) {
       console.error('Mint failed:', error)
-      alert('Failed to mint comic')
+      toast({ title: 'Minting failed', description: error instanceof Error ? error.message : 'Failed to mint comic. Please try again.', variant: 'destructive' })
     } finally {
       setIsMinting(false)
     }

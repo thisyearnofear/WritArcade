@@ -12,10 +12,10 @@ interface BalanceData {
 }
 
 /**
- * Hook to fetch and cache user's writer coin balance (AVC)
- * Uses backend API to avoid exposing contract details to client
+ * Hook to fetch and cache user's writer coin balance.
+ * Uses backend API to avoid exposing contract details to client.
  */
-export function useWriterCoinBalance() {
+export function useWriterCoinBalance(coinId = 'avc') {
   const { address, isConnected } = useAccount()
   const [balance, setBalance] = useState<BalanceData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -33,9 +33,9 @@ export function useWriterCoinBalance() {
       setError(null)
 
       try {
-        const writerCoin = getWriterCoinById('avc')
+        const writerCoin = getWriterCoinById(coinId)
         if (!writerCoin) {
-          throw new Error('Writer coin not configured')
+          throw new Error(`Writer coin '${coinId}' not configured`)
         }
 
         // Call backend endpoint to get balance
@@ -54,7 +54,7 @@ export function useWriterCoinBalance() {
         setBalance({
           balance: data.data.balance,
           decimals: data.data.decimals || 18,
-          symbol: data.data.symbol || 'AVC',
+          symbol: data.data.symbol || writerCoin.symbol,
           formattedBalance: data.data.formattedBalance || '0',
         })
       } catch (err) {

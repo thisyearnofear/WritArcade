@@ -34,8 +34,10 @@ export interface WriterCoin {
  * 
  * Launch partners:
  * 1. AVC by Fred Wilson ($AVC)
- * 2. TBD - Writer Coin #2
- * 3. TBD - Writer Coin #3
+ * 2. Debbie Soon ($DEBBIE)
+ * 3. Blog of Jake ($JAKE)
+ * 4. Tso's Thoughts ($TSO)
+ * 5. Papa ($PARAPAPA)
  */
 export const WRITER_COINS: WriterCoin[] = [
     {
@@ -52,10 +54,90 @@ export const WRITER_COINS: WriterCoin[] = [
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
         revenueDistribution: {
-            writer: 60, // 60% to writer treasury (on-chain configurable)
-            creator: 20, // 20% to creator pool (on-chain configurable)
-            burn: 0, // 0% burn (no on-chain burn in WriterCoinPayment)
-            platform: 20, // 20% to writersarcade (on-chain configurable)
+            writer: 60,
+            creator: 20,
+            burn: 0,
+            platform: 20,
+        },
+    },
+    {
+        id: "debbie",
+        name: "Debbie Soon",
+        symbol: "$DEBBIE",
+        address: "0x4ea5d3ff9e8295a552903d4bd486ce8cf8291c60", // Base mainnet
+        writer: "Debbie Soon",
+        paragraphAuthor: "debbie",
+        paragraphUrl: "https://paragraph.com/@debbie",
+        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $DEBBIE
+        mintCost: BigInt(50 * 10 ** 18), // 50 $DEBBIE
+        decimals: 18,
+        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
+        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        revenueDistribution: {
+            writer: 60,
+            creator: 20,
+            burn: 0,
+            platform: 20,
+        },
+    },
+    {
+        id: "jake",
+        name: "Blog of Jake",
+        symbol: "$JAKE",
+        address: "0xC2E3A4d07fdff60f3CdCb39FD94Fc11F254938B9", // Base mainnet
+        writer: "Jake",
+        paragraphAuthor: "jake",
+        paragraphUrl: "https://paragraph.com/@jake",
+        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $JAKE
+        mintCost: BigInt(50 * 10 ** 18), // 50 $JAKE
+        decimals: 18,
+        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
+        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        revenueDistribution: {
+            writer: 60,
+            creator: 20,
+            burn: 0,
+            platform: 20,
+        },
+    },
+    {
+        id: "tso",
+        name: "Tso's Thoughts",
+        symbol: "$TSO",
+        address: "0x8072FC8Ee6Fd17B913833F2789bC9aa99D21AAeB", // Base mainnet
+        writer: "Tso",
+        paragraphAuthor: "cryptso",
+        paragraphUrl: "https://paragraph.com/@cryptso",
+        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $TSO
+        mintCost: BigInt(50 * 10 ** 18), // 50 $TSO
+        decimals: 18,
+        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
+        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        revenueDistribution: {
+            writer: 60,
+            creator: 20,
+            burn: 0,
+            platform: 20,
+        },
+    },
+    {
+        id: "papa",
+        name: "Papa",
+        symbol: "$PARAPAPA",
+        address: "0x300efb94e4a7fcf71184eeeb82cb2b7af4a6ea58", // Base mainnet
+        writer: "Papa Jams",
+        paragraphAuthor: "papajams.eth",
+        paragraphUrl: "https://paragraph.com/@papajams.eth",
+        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $PARAPAPA
+        mintCost: BigInt(50 * 10 ** 18), // 50 $PARAPAPA
+        decimals: 18,
+        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
+        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        revenueDistribution: {
+            writer: 60,
+            creator: 20,
+            burn: 0,
+            platform: 20,
         },
     },
 ]
@@ -87,6 +169,7 @@ export function getWriterCoinByAuthor(author: string): WriterCoin | undefined {
 
 /**
  * Validate if an article URL matches a writer coin's Paragraph
+ * For paragraph.com coins, also checks the author path prefix.
  */
 export function validateArticleUrl(url: string, writerCoinId: string): boolean {
     const coin = getWriterCoinById(writerCoinId)
@@ -95,7 +178,13 @@ export function validateArticleUrl(url: string, writerCoinId: string): boolean {
     try {
         const articleUrl = new URL(url)
         const coinUrl = new URL(coin.paragraphUrl)
-        return articleUrl.hostname === coinUrl.hostname
+        if (articleUrl.hostname !== coinUrl.hostname) return false
+        // For shared-domain hosts (e.g. paragraph.com), ensure the article
+        // belongs to the correct author by checking the path prefix.
+        if (coinUrl.pathname && coinUrl.pathname !== "/") {
+            return articleUrl.pathname.toLowerCase().startsWith(coinUrl.pathname.toLowerCase())
+        }
+        return true
     } catch {
         return false
     }

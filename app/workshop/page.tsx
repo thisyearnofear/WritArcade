@@ -363,7 +363,7 @@ export default function WorkshopPage() {
                             <input
                                 value={url}
                                 onChange={e => setUrl(e.target.value)}
-                                placeholder="https://avc.xyz/..."
+                                placeholder="https://paragraph.xyz/@author/article-title"
                                 className="flex-1 bg-black/50 border border-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
                             />
                             <button

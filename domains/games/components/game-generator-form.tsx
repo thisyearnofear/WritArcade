@@ -14,7 +14,8 @@ import { ErrorCard } from '@/components/error/ErrorCard'
 import { SuccessModal } from '@/components/success/SuccessModal'
 import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
 import { ArticleFidelityReview } from '@/components/game/article-fidelity-review'
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { type WriterCoin } from '@/lib/writerCoins'
+import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { retryWithBackoff } from '@/lib/error-handler'
 
 interface GameGeneratorFormProps {
@@ -106,11 +107,10 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
     save: 'pending',
   })
 
-  const writerCoin = getWriterCoinById('avc') // Default to AVC for web app
+  const [selectedCoin, setSelectedCoin] = useState<WriterCoin | null>(null)
+  // writerCoin is guaranteed non-null after the coin-selection gate below
+  const writerCoin = selectedCoin as WriterCoin
   const isStoryMode = mode === 'story'
-  if (!writerCoin) {
-    return <div className="text-red-500">Error: Writer coin not configured</div>
-  }
 
   const handlePaymentSuccess = async (_transactionHash: string) => {
     setPaymentApproved(true)
@@ -260,6 +260,15 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
     await generateGame()
   }
 
+  // Coin selection gate — must pick a writer coin before proceeding
+  if (!selectedCoin) {
+    return (
+      <div className="w-full max-w-2xl mx-auto px-4">
+        <WriterCoinSelector onSelect={setSelectedCoin} />
+      </div>
+    )
+  }
+
   // Wallet requirement gate
   if (!isConnected) {
     return (
@@ -283,6 +292,25 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
+      {/* Selected coin badge */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/20 text-sm font-black text-purple-400 ring-1 ring-purple-500/30">
+            {writerCoin.symbol.slice(0, 1)}
+          </div>
+          <div>
+            <span className="text-sm font-bold text-white">{writerCoin.name}</span>
+            <span className="ml-2 text-xs text-purple-400">{writerCoin.symbol}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => { setSelectedCoin(null); setUrl(''); setPaymentApproved(false); setShowPayment(false); setError(null) }}
+          className="text-xs text-purple-400 hover:text-purple-300 underline decoration-dotted"
+        >
+          Change coin
+        </button>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           {/* Game Type Toggle with Arcade Styling */}
@@ -361,7 +389,7 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
             <Input
               id="url"
               type="url"
-              placeholder="https://paragraph.xyz/@author/article-title"
+              placeholder={`${writerCoin.paragraphUrl}article-title`}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="mt-1 typewriter-input focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"

@@ -118,7 +118,7 @@ export default function MyGamesPage() {
           gameId,
           gameSlug: game.slug,
           wallet: address,
-          writerCoinId: 'avc',
+          writerCoinId: game.writerCoinId ?? 'avc',
         }),
       })
 
@@ -131,7 +131,8 @@ export default function MyGamesPage() {
 
       // Minting prepared - user can now proceed with wallet signature
       console.log('Minting prepared:', prepareData.data)
-      toast({ title: 'Ready to mint', description: `Estimated cost: ${prepareData.data.estimatedCost} AVC`, variant: 'default' })
+      const coinSymbol = prepareData.data.symbol ?? (game.writerCoinId?.toUpperCase() ?? 'AVC')
+      toast({ title: 'Ready to mint', description: `Estimated cost: ${prepareData.data.estimatedCost} ${coinSymbol}`, variant: 'default' })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Minting failed'
       console.error('Mint error:', err)

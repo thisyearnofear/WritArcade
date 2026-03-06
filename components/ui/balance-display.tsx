@@ -9,8 +9,8 @@ interface BalanceDisplayProps {
 }
 
 /**
- * Header balance display showing user's AVC token balance
- * Only visible when wallet is connected
+ * Header balance display showing user's writer coin balance.
+ * Only visible when wallet is connected.
  */
 export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const { isConnected } = useAccount()
@@ -40,7 +40,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       ) : (
         <>
           <Coins className={`text-gray-500 ${mobileLayout ? 'w-6 h-6' : 'w-4 h-4'}`} />
-          <span className={`text-gray-400 ${textClasses}`}>0 AVC</span>
+          <span className={`text-gray-400 ${textClasses}`}>—</span>
         </>
       )}
     </div>

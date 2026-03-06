@@ -72,18 +72,16 @@ Revenue model is enforced on-chain and configurable per writer coin by the owner
 - NFT minting: creator/writer/platform in basis points (can be <100%; remainder returns to payer)
 
 
-## Current defaults in code (can differ from on-chain)
-- Static coin config lives in lib/writerCoins.ts (used for UX copy and cost formatting)
-- Generation split in UI defaults to writer/creator/platform numbers from that file
-- Minting split in code is 30% creator, 15% writer, 5% platform, 50% returned to payer (matches contract example)
-
-Recommendation: fetch on-chain splits (getRevenueDistribution and mintDistributions) and render those values in UI to avoid drift.
+## Revenue split accuracy
+- Static coin config in lib/writerCoins.ts is used for UX copy and cost formatting
+- Generation and mint splits are fetched live from the contract via `fetchGenerationDistributionOnChain` / `fetchMintDistributionOnChain` with a local-config fallback
+- Mint payment records use the on-chain `getCoinConfig` cost rather than a hardcoded value
 
 ## Quick start
 1) Install and run
    - npm install --legacy-peer-deps
    - npm run dev
-   - Open http://localhost:3000/mini-app
+   - Open http://localhost:3000 (or /mini-app for the Farcaster mini-app)
 2) Configure env (see .env.example)
    - DATABASE_URL (PostgreSQL)
    - WalletConnect project ID (NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID)
@@ -110,8 +108,9 @@ Recommendation: fetch on-chain splits (getRevenueDistribution and mintDistributi
 - Images: next/image allows any https host (see next.config.js)
 
 ## Status
-- Dev: ready
+- Live: https://writersarcade.vercel.app/
 - Base mainnet: contracts live and verified (see addresses above)
+- Story Protocol: Aeneid testnet (IP registration; Story Protocol is not yet deployed on Base mainnet)
 
 —
 writersarcade: Turn articles into playable, ownable games.
