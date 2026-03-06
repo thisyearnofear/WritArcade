@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { useAccount, useWriteContract } from 'wagmi'
+import { useAccount, useWriteContract, useWalletClient, useChainId, useSwitchChain } from 'wagmi'
 import { parseEther } from 'viem'
 
-import { Loader2, Play, BookOpen, Lightbulb } from 'lucide-react'
+import { Loader2, Play, BookOpen, Lightbulb, ArrowRightLeft } from 'lucide-react'
+import { createStoryClientFromWallet, STORY_CHAIN_ID, isOnStoryNetwork } from '@/lib/story-sdk-client'
 import { Game, ChatMessage, GameplayOption } from '../types'
 import { getWriterCoinById } from '@/lib/writerCoins'
 import { type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
@@ -81,6 +82,12 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null) // Track which panel is regenerating
   const [showPreview, setShowPreview] = useState(false) // NEW: Preview modal state
   const [editedPanels, _setEditedPanels] = useState<Record<string, string>>({}) // Track edited panel text
+  const [extractedAssetIds, setExtractedAssetIds] = useState<string[]>([]) // Asset IDs returned after mint confirm
+  const [isRegisteringDerivative, setIsRegisteringDerivative] = useState(false)
+  const [derivativeRegistered, setDerivativeRegistered] = useState(false)
+  const { data: walletClient } = useWalletClient()
+  const chainId = useChainId()
+  const { switchChain, isPending: isSwitchingChain } = useSwitchChain()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const assistantMessageCount = messages.filter(m => m.role === 'assistant').length
@@ -795,6 +802,22 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         const mintData = await mintResponse.json()
         console.log('NFT minting initiated:', mintData)
 
+        // Confirm mint server-side: extracts assets + returns extractedAssetIds
+        const confirmResponse = await fetch('/api/games/mint', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: game.id,
+            transactionHash: mintData.transactionHash || mintData.data?.transactionHash || 'pending',
+            tokenId: mintData.tokenId || mintData.data?.tokenId,
+          }),
+        })
+        if (confirmResponse.ok) {
+          const confirmData = await confirmResponse.json()
+          if (confirmData.data?.extractedAssetIds?.length) {
+            setExtractedAssetIds(confirmData.data.extractedAssetIds)
+          }
+        }
         // Show success - NFT minting is in progress
         toast({ title: '🎉 NFT minting started!', description: mintData.transactionHash ? `Transaction: ${mintData.transactionHash}` : 'Your NFT is being minted on Base.' })
       } else {
@@ -827,6 +850,22 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         const mintData = await mintResponse.json()
         console.log('NFT minting initiated:', mintData)
 
+        // Confirm mint server-side: extracts assets + returns extractedAssetIds
+        const confirmResponse2 = await fetch('/api/games/mint', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: game.id,
+            transactionHash: mintData.transactionHash || mintData.data?.transactionHash || 'pending',
+            tokenId: mintData.tokenId || mintData.data?.tokenId,
+          }),
+        })
+        if (confirmResponse2.ok) {
+          const confirmData2 = await confirmResponse2.json()
+          if (confirmData2.data?.extractedAssetIds?.length) {
+            setExtractedAssetIds(confirmData2.data.extractedAssetIds)
+          }
+        }
         // Show success - NFT minting is in progress
         toast({ title: '🎉 NFT minting started!', description: mintData.transactionHash ? `Transaction: ${mintData.transactionHash}` : 'Your NFT is being minted on Base.' })
       }
@@ -1042,25 +1081,93 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     )
   }
 
+  const handleRegisterDerivativeIp = async () => {
+    if (!walletClient || !extractedAssetIds.length) return
+    if (!isOnStoryNetwork(chainId)) {
+      switchChain({ chainId: STORY_CHAIN_ID })
+      return
+    }
+    setIsRegisteringDerivative(true)
+    try {
+      const storyClient = createStoryClientFromWallet(walletClient)
+      if (!storyClient) throw new Error('Failed to initialize Story Protocol client')
+      // Register each extracted asset as a derivative of the parent game IP
+      const parentIpId = game.storyIpId as `0x${string}` | undefined
+      if (!parentIpId) throw new Error('Parent game has no Story Protocol IP ID — register the game as IP first')
+      for (const assetId of extractedAssetIds) {
+        await storyClient.ipAsset.registerDerivativeIp({
+          nftContract: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+          tokenId: BigInt(0),
+          derivData: {
+            parentIpIds: [parentIpId],
+            licenseTermsIds: [BigInt(1)],
+          },
+        })
+        console.log('Registered derivative IP for asset:', assetId)
+      }
+      setDerivativeRegistered(true)
+      toast({ title: '✅ Derivative IP registered', description: `${extractedAssetIds.length} asset(s) linked to parent IP on Story Protocol.` })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Registration failed'
+      toast({ title: 'Derivative IP registration failed', description: msg, variant: 'destructive' })
+    } finally {
+      setIsRegisteringDerivative(false)
+    }
+  }
+
   // COMIC FINALE SCREEN - Story completion view
   if (showComicFinale) {
+    const onStoryNetwork = isOnStoryNetwork(chainId)
     return (
-      <ComicBookFinale
-        gameTitle={game.title}
-        genre={game.genre}
-        primaryColor={game.primaryColor || '#8b5cf6'}
-        panels={buildComicPanels()}
-        onBack={() => setShowComicFinale(false)}
-        onMint={handleMintComic}
-        isMinting={isMinting}
-        creatorWallet={game.creatorWallet || 'Unknown Creator'}
-        articleUrl={game.articleUrl || ''}
-        authorParagraphUsername={game.authorParagraphUsername || 'Unknown Author'}
-        authorWallet={game.authorWallet}
-        difficulty={game.difficulty || 'medium'}
-        userChoices={userChoices}
-        onPanelTextChange={handlePanelTextChange}
-      />
+      <div>
+        <ComicBookFinale
+          gameTitle={game.title}
+          genre={game.genre}
+          primaryColor={game.primaryColor || '#8b5cf6'}
+          panels={buildComicPanels()}
+          onBack={() => setShowComicFinale(false)}
+          onMint={handleMintComic}
+          isMinting={isMinting}
+          creatorWallet={game.creatorWallet || 'Unknown Creator'}
+          articleUrl={game.articleUrl || ''}
+          authorParagraphUsername={game.authorParagraphUsername || 'Unknown Author'}
+          authorWallet={game.authorWallet}
+          difficulty={game.difficulty || 'medium'}
+          userChoices={userChoices}
+          onPanelTextChange={handlePanelTextChange}
+        />
+        {extractedAssetIds.length > 0 && !derivativeRegistered && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-gray-700 rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">
+            <p className="text-sm text-gray-300 text-center">
+              <span className="font-semibold text-white">{extractedAssetIds.length} asset{extractedAssetIds.length > 1 ? 's' : ''} extracted</span> — register as derivative IP on Story Protocol to establish royalty chains.
+            </p>
+            {!onStoryNetwork ? (
+              <Button
+                onClick={() => switchChain({ chainId: STORY_CHAIN_ID })}
+                disabled={isSwitchingChain}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-white"
+              >
+                {isSwitchingChain ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArrowRightLeft className="w-4 h-4 mr-2" />}
+                Switch to Story Network
+              </Button>
+            ) : (
+              <Button
+                onClick={handleRegisterDerivativeIp}
+                disabled={isRegisteringDerivative}
+                className="w-full bg-white text-black hover:bg-gray-100"
+              >
+                {isRegisteringDerivative ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {isRegisteringDerivative ? 'Registering…' : 'Register Derivative IP on Story'}
+              </Button>
+            )}
+          </div>
+        )}
+        {derivativeRegistered && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-green-700 rounded-xl px-6 py-3 text-green-400 text-sm text-center shadow-2xl">
+            ✅ Derivative IP registered on Story Protocol
+          </div>
+        )}
+      </div>
     )
   }
 

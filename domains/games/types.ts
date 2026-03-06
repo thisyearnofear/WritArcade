@@ -51,6 +51,9 @@ export interface Game {
   nftTransactionHash?: string
   nftMintedAt?: Date
 
+  // Story Protocol IP registration (set after registerGameAsIP)
+  storyIpId?: string
+
   // Access control
   private: boolean
   userId?: string
