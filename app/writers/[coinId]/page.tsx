@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { ExternalLink, ArrowLeft } from 'lucide-react'
 import { getWriterCoinById, WRITER_COINS } from '@/lib/writerCoins'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
-import { GameGrid } from '@/domains/games/components/game-grid'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
+import { GameGridClient } from './game-grid-client'
 
 export const revalidate = 300
 
@@ -126,7 +126,7 @@ export default async function WriterPage({ params }: WriterPageProps) {
                   </Link>
                 </div>
               ) : (
-                <GameGrid writerCoinId={coinId} limit={12} />
+                <GameGridClient writerCoinId={coinId} limit={12} />
               )}
             </div>
           </section>
