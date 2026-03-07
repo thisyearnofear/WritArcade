@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { WRITER_COINS } from '@/lib/writerCoins'
@@ -5,10 +7,6 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 
-export const metadata = {
-  title: 'Writers — writersarcade',
-  description: 'Supported writers whose articles power the arcade. Play games from their work, mint NFTs, and earn them revenue on-chain.',
-}
 
 export default function WritersPage() {
   return (
