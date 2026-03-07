@@ -1101,10 +1101,11 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           spgNftContract: STORY_SPG_CONTRACT,
           derivData: {
             parentIpIds: [parentIpId],
-            licenseTermsIds: [BigInt(1)], // default PIL on Aeneid
+            licenseTermsIds: [BigInt(1)], // default PIL on Aeneid testnet
           },
           ipMetadata: {
-            ipMetadataURI: `https://writersarcade.vercel.app/api/assets/${assetId}`,
+            // ?ipMetadata=true returns Story Protocol-compatible flat JSON
+            ipMetadataURI: `https://writersarcade.vercel.app/api/assets/${assetId}?ipMetadata=true`,
           },
         })
         console.log('Registered derivative IP for asset:', assetId)
@@ -1145,7 +1146,11 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
             <p className="text-sm text-gray-300 text-center">
               <span className="font-semibold text-white">{extractedAssetIds.length} asset{extractedAssetIds.length > 1 ? 's' : ''} extracted</span> — register as derivative IP on Story Protocol to establish royalty chains.
             </p>
-            {!onStoryNetwork ? (
+            {!game.storyIpId ? (
+              <p className="text-xs text-amber-400 text-center">
+                Register this game as IP first using the IP Registration button above, then return here to link derivative assets.
+              </p>
+            ) : !onStoryNetwork ? (
               <Button
                 onClick={() => switchChain({ chainId: STORY_CHAIN_ID })}
                 disabled={isSwitchingChain}
