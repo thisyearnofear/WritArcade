@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
 import { GameGeneratorForm } from '@/domains/games/components/game-generator-form'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
@@ -10,6 +10,7 @@ import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal'
 import { useOnboarding } from '@/hooks/useOnboarding'
+import { WRITER_COINS } from '@/lib/writerCoins'
 
 const steps = [
   {
@@ -74,6 +75,37 @@ function useGameCount() {
   return count
 }
 
+function WriterTicker() {
+  const [index, setIndex] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % WRITER_COINS.length), 2800)
+    return () => clearInterval(id)
+  }, [])
+  const coin = WRITER_COINS[index]
+  return (
+    <span className="inline-flex items-center gap-1.5 align-middle">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={coin.id}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.35, ease: 'easeInOut' }}
+          className="inline-flex items-center gap-1.5"
+        >
+          <a
+            href={`/writers/${coin.id}`}
+            className="font-semibold text-gray-900 dark:text-white underline underline-offset-4 decoration-gray-300 dark:decoration-gray-600 hover:decoration-gray-600 dark:hover:decoration-gray-300 transition-all"
+          >
+            {coin.writer}
+          </a>
+          <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{coin.symbol}</span>
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  )
+}
+
 export default function HomePage() {
   const { showOnboarding, dismissOnboarding } = useOnboarding()
   const gameCount = useGameCount()
@@ -85,30 +117,30 @@ export default function HomePage() {
 
         <main className="flex-1">
           {/* Hero */}
-          <section className="py-24 px-4">
+          <section className="py-14 px-4">
             <div className="max-w-3xl mx-auto">
               <motion.h1
-                className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6 leading-tight"
+                className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 leading-tight"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
               >
                 Interactive fiction<br />
-                <span className="text-gray-500 dark:text-gray-400">from the writers you follow.</span>
+                <span className="text-gray-500 dark:text-gray-400">from </span><WriterTicker />
               </motion.h1>
 
               <motion.p
-                className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-6 max-w-xl leading-relaxed"
+                className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6 max-w-xl leading-relaxed"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
               >
-                Paste an article. Generate a playable game. Mint it as an NFT with on-chain revenue splits — the writer earns every time someone plays or mints.
+                Paste an article URL, generate a playable game, and mint it as an NFT — the writer earns every time someone plays or mints.
               </motion.p>
 
               {gameCount !== null && gameCount > 0 && (
                 <motion.p
-                  className="text-sm text-gray-400 dark:text-gray-600 mb-10"
+                  className="text-sm text-gray-400 dark:text-gray-600 mb-6"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
@@ -116,7 +148,7 @@ export default function HomePage() {
                   {gameCount} {gameCount === 1 ? 'game' : 'games'} generated so far.
                 </motion.p>
               )}
-              {gameCount === null && <div className="mb-10" />}
+              {gameCount === null && <div className="mb-6" />}
 
               <motion.div
                 className="max-w-2xl"

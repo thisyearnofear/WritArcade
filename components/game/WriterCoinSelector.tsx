@@ -1,75 +1,76 @@
 'use client'
 
-import { WRITER_COINS, type WriterCoin } from '@/lib/writerCoins'
+import { useState } from 'react'
 import { ExternalLink } from 'lucide-react'
+import { WRITER_COINS, type WriterCoin } from '@/lib/writerCoins'
 
 interface WriterCoinSelectorProps {
     onSelect: (coin: WriterCoin) => void
 }
 
 export function WriterCoinSelector({ onSelect }: WriterCoinSelectorProps) {
+    const [hoveredId, setHoveredId] = useState<string | null>(null)
+    const hovered = hoveredId ? WRITER_COINS.find((c) => c.id === hoveredId) ?? null : null
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div className="space-y-1">
-                <h2 className="text-xl font-semibold text-white">Choose a writer</h2>
-                <p className="text-sm text-gray-400">
-                    Games are generated from articles by supported writers. Select one to begin.
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white">Choose a writer</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Games are generated from articles by supported writers.
                 </p>
             </div>
 
-            <div className="grid gap-3">
+            {/* Compact pill row */}
+            <div className="flex flex-wrap gap-2">
                 {WRITER_COINS.map((coin) => (
                     <button
                         key={coin.id}
                         onClick={() => onSelect(coin)}
-                        className="group w-full rounded-xl border border-gray-800 bg-gray-900/60 p-4 text-left transition-all hover:border-gray-600 hover:bg-gray-900"
+                        onMouseEnter={() => setHoveredId(coin.id)}
+                        onMouseLeave={() => setHoveredId(null)}
+                        onFocus={() => setHoveredId(coin.id)}
+                        onBlur={() => setHoveredId(null)}
+                        className="group flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-left transition-all hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     >
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3 min-w-0">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-800 text-sm font-bold text-gray-300 group-hover:bg-gray-700 transition-colors">
-                                    {coin.symbol.replace('$', '').slice(0, 2)}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-semibold text-white text-sm">{coin.writer}</span>
-                                        <span className="text-xs text-gray-500">{coin.symbol}</span>
-                                    </div>
-                                    <p className="mt-0.5 text-xs text-gray-400 leading-relaxed">{coin.bio}</p>
-                                </div>
-                            </div>
-                            <a
-                                href={coin.paragraphUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="shrink-0 text-gray-600 hover:text-gray-300 transition-colors mt-0.5"
-                                aria-label={`Visit ${coin.writer}'s publication`}
-                            >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                        </div>
-                        <div className="mt-3 flex items-center gap-4 border-t border-gray-800 pt-3">
-                            <div>
-                                <span className="text-[10px] uppercase tracking-wider text-gray-600">Generate</span>
-                                <p className="text-xs font-medium text-gray-300">
-                                    {(Number(coin.gameGenerationCost) / 10 ** coin.decimals).toFixed(0)} {coin.symbol}
-                                </p>
-                            </div>
-                            <div className="h-3 w-px bg-gray-800" />
-                            <div>
-                                <span className="text-[10px] uppercase tracking-wider text-gray-600">Mint</span>
-                                <p className="text-xs font-medium text-gray-300">
-                                    {(Number(coin.mintCost) / 10 ** coin.decimals).toFixed(0)} {coin.symbol}
-                                </p>
-                            </div>
-                        </div>
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-600 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
+                            {coin.symbol.replace('$', '').slice(0, 2)}
+                        </span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{coin.writer}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{coin.symbol}</span>
                     </button>
                 ))}
             </div>
 
-            <p className="text-xs text-gray-600">
-                Each game is attributed to the original article and writer on-chain via Story Protocol.
-            </p>
+            {/* Progressive disclosure: bio + costs on hover/focus */}
+            <div className="min-h-[3.5rem]">
+                {hovered ? (
+                    <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 px-3 py-2.5 text-sm transition-all">
+                        <div className="min-w-0">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{hovered.bio}</p>
+                            <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-600">
+                                Generate {(Number(hovered.gameGenerationCost) / 10 ** hovered.decimals).toFixed(0)} {hovered.symbol}
+                                {' · '}
+                                Mint {(Number(hovered.mintCost) / 10 ** hovered.decimals).toFixed(0)} {hovered.symbol}
+                            </p>
+                        </div>
+                        <a
+                            href={hovered.paragraphUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors mt-0.5"
+                            aria-label={`Visit ${hovered.writer}'s publication`}
+                        >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                    </div>
+                ) : (
+                    <p className="text-[10px] text-gray-400 dark:text-gray-600 px-1">
+                        Hover a writer to see details. Each game is attributed on-chain via Story Protocol.
+                    </p>
+                )}
+            </div>
         </div>
     )
 }
