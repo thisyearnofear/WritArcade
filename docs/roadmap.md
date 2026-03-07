@@ -250,12 +250,7 @@ This ensures:
 
 ---
 
-## Future Roadmap (Post-Phase 10)
-
-### Phase 11: Asset Derivation (Q2 2026)
-- Derive assets from completed comics
-- Automatic asset extraction from minted games
-- Parent-child IP relationships via Story Protocol
+## Future Roadmap (Post-Phase 11)
 
 ### Phase 12: Media Expansion (Q3 2026)
 - ElevenLabs audio narration
@@ -300,4 +295,4 @@ This ensures:
 
 ---
 
-*Last Updated: March 6, 2026 - Phase 10 Asset Marketplace Complete*
+*Last Updated: March 6, 2026 - Phase 11 Asset Derivation Complete*
