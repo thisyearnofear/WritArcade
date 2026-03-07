@@ -7,7 +7,7 @@ import { useAccount, useWriteContract, useWalletClient, useChainId, useSwitchCha
 import { parseEther } from 'viem'
 
 import { Loader2, Play, BookOpen, Lightbulb, ArrowRightLeft } from 'lucide-react'
-import { createStoryClientFromWallet, STORY_CHAIN_ID, isOnStoryNetwork } from '@/lib/story-sdk-client'
+import { createStoryClientFromWallet, STORY_CHAIN_ID, STORY_SPG_CONTRACT, isOnStoryNetwork } from '@/lib/story-sdk-client'
 import { Game, ChatMessage, GameplayOption } from '../types'
 import { getWriterCoinById } from '@/lib/writerCoins'
 import { type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
@@ -1091,22 +1091,26 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     try {
       const storyClient = createStoryClientFromWallet(walletClient)
       if (!storyClient) throw new Error('Failed to initialize Story Protocol client')
-      // Register each extracted asset as a derivative of the parent game IP
       const parentIpId = game.storyIpId as `0x${string}` | undefined
-      if (!parentIpId) throw new Error('Parent game has no Story Protocol IP ID — register the game as IP first')
+      if (!parentIpId) throw new Error('Parent game has no Story Protocol IP ID — register the game as IP first via the IP Registration button')
+      // mintAndRegisterIpAndMakeDerivative: mints a new NFT on Story's SPG,
+      // registers it as an IP Asset, and links it as a derivative of the parent
+      // game IP — all in one transaction. No pre-existing child IP needed.
       for (const assetId of extractedAssetIds) {
-        await storyClient.ipAsset.registerDerivativeIp({
-          nftContract: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-          tokenId: BigInt(0),
+        await storyClient.ipAsset.mintAndRegisterIpAndMakeDerivative({
+          spgNftContract: STORY_SPG_CONTRACT,
           derivData: {
             parentIpIds: [parentIpId],
-            licenseTermsIds: [BigInt(1)],
+            licenseTermsIds: [BigInt(1)], // default PIL on Aeneid
+          },
+          ipMetadata: {
+            ipMetadataURI: `https://writersarcade.vercel.app/api/assets/${assetId}`,
           },
         })
         console.log('Registered derivative IP for asset:', assetId)
       }
       setDerivativeRegistered(true)
-      toast({ title: '✅ Derivative IP registered', description: `${extractedAssetIds.length} asset(s) linked to parent IP on Story Protocol.` })
+      toast({ title: '✅ Derivative IP registered', description: `${extractedAssetIds.length} asset(s) minted and linked to parent IP on Story Protocol.` })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Registration failed'
       toast({ title: 'Derivative IP registration failed', description: msg, variant: 'destructive' })
