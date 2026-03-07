@@ -31,10 +31,10 @@ const steps = [
 
 function HowItWorksSection() {
   return (
-    <section className="py-20 px-4 border-t border-gray-800">
+    <section id="how-it-works" className="py-20 px-4 border-t border-gray-200 dark:border-gray-800">
       <div className="max-w-4xl mx-auto">
         <motion.h2
-          className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-12 text-center"
+          className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-12 text-center"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -52,9 +52,9 @@ function HowItWorksSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <p className="text-3xl font-light text-gray-700 mb-4 tabular-nums">{step.number}</p>
-              <h3 className="text-base font-semibold text-white mb-2">{step.title}</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
+              <p className="text-3xl font-light text-gray-300 dark:text-gray-700 mb-4 tabular-nums">{step.number}</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">{step.title}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{step.description}</p>
             </motion.div>
           ))}
         </div>
@@ -88,17 +88,17 @@ export default function HomePage() {
           <section className="py-24 px-4">
             <div className="max-w-3xl mx-auto">
               <motion.h1
-                className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight"
+                className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6 leading-tight"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
               >
                 Interactive fiction<br />
-                <span className="text-gray-400">from the writers you follow.</span>
+                <span className="text-gray-500 dark:text-gray-400">from the writers you follow.</span>
               </motion.h1>
 
               <motion.p
-                className="text-base sm:text-lg text-gray-400 mb-6 max-w-xl leading-relaxed"
+                className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-6 max-w-xl leading-relaxed"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
@@ -108,7 +108,7 @@ export default function HomePage() {
 
               {gameCount !== null && gameCount > 0 && (
                 <motion.p
-                  className="text-sm text-gray-600 mb-10"
+                  className="text-sm text-gray-400 dark:text-gray-600 mb-10"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
@@ -132,34 +132,34 @@ export default function HomePage() {
           </section>
 
           {/* Featured Works */}
-          <section className="py-16 px-4 border-t border-gray-800">
+          <section className="py-16 px-4 border-t border-gray-200 dark:border-gray-800">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500">
                   Featured works
                 </h2>
-                <a href="/games" className="text-sm text-gray-400 hover:text-white transition-colors">
+                <a href="/games" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                   View all →
                 </a>
               </div>
-              <Suspense fallback={<div className="h-64 bg-gray-900/50 rounded-lg animate-pulse" />}>
+              <Suspense fallback={<div className="h-64 bg-gray-100 dark:bg-gray-900/50 rounded-lg animate-pulse" />}>
                 <GameGrid limit={3} featured={true} />
               </Suspense>
             </div>
           </section>
 
           {/* Recent */}
-          <section className="py-16 px-4 border-t border-gray-800">
+          <section className="py-16 px-4 border-t border-gray-200 dark:border-gray-800">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500">
                   Recent
                 </h2>
-                <a href="/games" className="text-sm text-gray-400 hover:text-white transition-colors">
+                <a href="/games" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                   View all →
                 </a>
               </div>
-              <Suspense fallback={<div className="h-64 bg-gray-900/50 rounded-lg animate-pulse" />}>
+              <Suspense fallback={<div className="h-64 bg-gray-100 dark:bg-gray-900/50 rounded-lg animate-pulse" />}>
                 <GameGrid limit={4} />
               </Suspense>
             </div>

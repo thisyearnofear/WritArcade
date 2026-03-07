@@ -35,7 +35,7 @@ function AnimatedFooterLink({ href, children }: { href: string; children: React.
   
   return (
     <motion.div whileHover={prefersReducedMotion ? {} : { x: 4 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-      <Link href={href} className="text-gray-400 hover:text-white text-sm transition-colors">
+      <Link href={href} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">
         {children}
       </Link>
     </motion.div>
@@ -50,7 +50,7 @@ function AnimatedContractLink({ href, label }: { href: string; label: string }) 
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-gray-400 hover:text-purple-400 text-xs font-mono flex items-center gap-1 transition-colors"
+      className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 text-xs font-mono flex items-center gap-1 transition-colors"
       whileHover={prefersReducedMotion ? {} : { scale: 1.02, x: 2 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
@@ -68,7 +68,7 @@ function AnimatedExternalLink({ href, children }: { href: string; children: Reac
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition-colors"
+      className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm flex items-center gap-1 transition-colors"
       whileHover={prefersReducedMotion ? {} : { x: 4 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
@@ -79,25 +79,25 @@ function AnimatedExternalLink({ href, children }: { href: string; children: Reac
 
 export function Footer() {
   return (
-    <footer className="border-t border-gray-800 bg-black/80 py-10">
+    <footer className="border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 py-10">
       <div className="max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>
             <motion.p 
-              className="text-white font-semibold mb-2"
+              className="text-gray-900 dark:text-white font-semibold mb-2"
               whileHover={{ scale: 1.02 }}
             >
               writersarcade
             </motion.p>
-            <p className="text-gray-400 text-sm leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
               Turn articles into playable, mintable games with on-chain IP and revenue splits.
             </p>
           </div>
 
           {/* Navigation */}
           <div>
-            <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-3">Explore</p>
+            <p className="text-gray-700 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider mb-3">Explore</p>
             <ul className="space-y-2">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
@@ -109,14 +109,14 @@ export function Footer() {
 
           {/* Contracts */}
           <div>
-            <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-3">
+            <p className="text-gray-700 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider mb-3">
               Contracts · Base Mainnet
             </p>
             <ul className="space-y-2">
               {CONTRACT_LINKS.map((c) => (
                 <li key={c.label}>
                   <AnimatedContractLink href={c.href} label={c.label} />
-                  <span className="text-gray-600 text-xs font-mono">
+                  <span className="text-gray-400 dark:text-gray-600 text-xs font-mono">
                     {c.address.slice(0, 6)}…{c.address.slice(-4)}
                   </span>
                 </li>
@@ -126,7 +126,7 @@ export function Footer() {
 
           {/* Community */}
           <div>
-            <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-3">Community</p>
+            <p className="text-gray-700 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider mb-3">Community</p>
             <ul className="space-y-2">
               {SOCIAL_LINKS.map((link) => (
                 <li key={link.label}>
@@ -141,7 +141,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+        <div className="border-t border-gray-200 dark:border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-500">
           <span>© {new Date().getFullYear()} writersarcade. Built on Base · Story Protocol.</span>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">

@@ -48,7 +48,7 @@ function DarkModeToggle() {
         onCheckedChange={toggleDarkMode}
         className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-zinc-700"
       />
-      <label htmlFor="dark-mode-toggle" className="text-sm text-gray-300">
+      <label htmlFor="dark-mode-toggle" className="text-sm text-gray-600 dark:text-gray-300">
         {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
       </label>
     </div>
@@ -73,10 +73,10 @@ function AnimatedNavLink({ href, label, isActive }: { href: string; label: strin
     >
       <Link
         href={href}
-        className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black rounded pb-0.5 ${
+        className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black rounded pb-0.5 ${
           isActive
-            ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-white/60 after:rounded-full'
-            : 'text-gray-400 hover:text-white'
+            ? 'text-gray-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900/60 dark:after:bg-white/60 after:rounded-full'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
@@ -96,10 +96,10 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
     >
       <Link
         href="/generate"
-        className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all text-sm focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black ${
+        className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black ${
           isActive
-            ? 'bg-white/10 border-white/20 text-white'
-            : 'bg-transparent border-gray-700 hover:bg-white/5 hover:border-gray-500 text-gray-300 hover:text-white'
+            ? 'bg-gray-900/10 dark:bg-white/10 border-gray-900/20 dark:border-white/20 text-gray-900 dark:text-white'
+            : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-500 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
@@ -123,7 +123,7 @@ export function Header() {
       : pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <header className="border-b border-gray-800 bg-black/50 backdrop-blur relative z-50">
+    <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/50 backdrop-blur relative z-50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo — use /logo.png (exists in /public); /images/logo-white.png does not exist */}
         <Link href="/" className="flex items-center space-x-2" onClick={closeMobileMenu}>
@@ -153,15 +153,15 @@ export function Header() {
         {/* Mobile Menu Button */}
         <motion.button
           onClick={() => setIsMobileMenuOpen(v => !v)}
-          className="md:hidden p-3 rounded-md hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black"
+          className="md:hidden p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black"
           aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMobileMenuOpen}
           whileTap={{ scale: 0.95 }}
         >
           {isMobileMenuOpen ? (
-            <X className="w-6 h-6 text-white" />
+            <X className="w-6 h-6 text-gray-900 dark:text-white" />
           ) : (
-            <Menu className="w-6 h-6 text-white" />
+            <Menu className="w-6 h-6 text-gray-900 dark:text-white" />
           )}
         </motion.button>
       </div>
@@ -178,7 +178,7 @@ export function Header() {
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
         <div
-          className="md:hidden relative z-50 bg-black/95 backdrop-blur-lg border-t border-gray-800"
+          className="md:hidden relative z-50 bg-white/95 dark:bg-black/95 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800"
           role="dialog"
           aria-modal="true"
           aria-labelledby="mobile-menu-title"
@@ -192,10 +192,10 @@ export function Header() {
                 href={href}
                 onClick={closeMobileMenu}
                 aria-current={isActive(href) ? 'page' : undefined}
-                className={`block py-3 px-4 rounded-lg transition-colors text-base focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black ${
+                className={`block py-3 px-4 rounded-lg transition-colors text-base focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black ${
                   isActive(href)
-                    ? 'bg-white/10 text-white border border-white/10'
-                    : 'text-gray-300 hover:bg-gray-800'
+                    ? 'bg-gray-900/10 dark:bg-white/10 text-gray-900 dark:text-white border border-gray-900/10 dark:border-white/10'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 {label}
@@ -206,10 +206,10 @@ export function Header() {
               href="/generate"
               onClick={closeMobileMenu}
               aria-current={isActive('/generate') ? 'page' : undefined}
-              className={`flex items-center space-x-2 py-3 px-4 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black ${
+              className={`flex items-center space-x-2 py-3 px-4 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black ${
                 isActive('/generate')
-                  ? 'bg-white/10 border-white/20 text-white'
-                  : 'bg-transparent border-gray-700 hover:bg-white/5 text-gray-300 hover:text-white'
+                  ? 'bg-gray-900/10 dark:bg-white/10 border-gray-900/20 dark:border-white/20 text-gray-900 dark:text-white'
+                  : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <PenLine className="w-4 h-4" />
