@@ -6,25 +6,10 @@ import { GameDatabaseService } from '@/domains/games/services/game-database.serv
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
-import dynamic from 'next/dynamic'
+import { GameGridClient } from './game-grid-client'
 import { Suspense } from 'react'
 
 export const revalidate = 300
-
-// Dynamically import GameGrid with SSR disabled to avoid Framer Motion SSR errors
-const GameGridClient = dynamic(
-  () => import('./game-grid-client').then((mod) => mod.GameGridClient),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className="aspect-[3/4] bg-gray-800 rounded-lg animate-pulse" />
-        ))}
-      </div>
-    )
-  }
-)
 
 interface WriterPageProps {
   params: Promise<{ coinId: string }>
