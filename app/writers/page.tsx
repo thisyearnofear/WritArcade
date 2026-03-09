@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { WRITER_COINS } from '@/lib/writerCoins'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -26,9 +27,18 @@ export default function WritersPage() {
               Every game is generated from a real article. When you play or mint, the writer earns — automatically, on-chain.
             </p>
 
-            <ul className="divide-y divide-gray-200 dark:divide-gray-800">
+            <motion.ul
+              className="divide-y divide-gray-200 dark:divide-gray-800"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.1 }}
+              variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+            >
               {WRITER_COINS.map((coin) => (
-                <li key={coin.id}>
+                <motion.li
+                  key={coin.id}
+                  variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } } }}
+                >
                   <Link
                     href={`/writers/${coin.id}`}
                     className="flex items-start justify-between gap-6 py-6 group"
@@ -58,9 +68,9 @@ export default function WritersPage() {
                       </span>
                     </div>
                   </Link>
-                </li>
+                </motion.li>
               ))}
-            </ul>
+            </motion.ul>
           </div>
         </main>
 

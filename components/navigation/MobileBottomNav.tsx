@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Gamepad2, Library, Sparkles, User } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // Mobile bottom nav focuses on the primary user journey:
 // Discover → Create → Own (My Games) → Profile
@@ -29,15 +30,20 @@ export function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors ${
-                isActive 
-                  ? 'text-purple-400 bg-purple-900/30 border border-purple-500/50' 
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+              className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors ${
+                isActive ? 'text-purple-400' : 'text-gray-400 hover:text-white'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
-              <Icon className="w-6 h-6" aria-hidden="true" />
-              <span className="text-xs mt-1">{item.label}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="nav-active-pill"
+                  className="absolute inset-0 rounded-lg bg-purple-900/30 border border-purple-500/50"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon className="relative w-6 h-6" aria-hidden="true" />
+              <span className="relative text-xs mt-1">{item.label}</span>
             </Link>
           );
         })}

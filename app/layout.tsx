@@ -8,6 +8,7 @@ import { WalletSync } from '@/components/providers/WalletSync'
 import { ToastProvider } from '@/components/ui/use-toast'
 import { DarkModeProvider } from '@/components/providers/DarkModeProvider'
 import { MobileBottomNav } from '@/components/navigation/MobileBottomNav'
+import { PageTransition } from '@/components/providers/PageTransition'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -58,7 +59,9 @@ export default function RootLayout({
             <WalletSync />
             <DarkModeProvider>
               <AuthProvider>
-                {children}
+                <PageTransition>
+                  {children}
+                </PageTransition>
                 <Toaster />
               </AuthProvider>
             </DarkModeProvider>

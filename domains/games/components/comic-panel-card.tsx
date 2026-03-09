@@ -194,11 +194,18 @@ export function ComicPanelCard({
             <div className="w-full h-48 sm:h-64 md:h-80 lg:h-96 overflow-hidden cursor-pointer relative" onClick={handleImageExpand}>
               {imageHistory.length > 0 && imageHistory[currentImageIndex]?.url ? (
                 <>
-                  <img
-                    src={imageHistory[currentImageIndex].url}
-                    alt="Story panel"
-                    className={`w-full h-full object-cover transition-all duration-300 ${isRegenerating ? 'opacity-60' : 'group-hover:scale-105'}`}
-                  />
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={imageHistory[currentImageIndex].url}
+                      src={imageHistory[currentImageIndex].url}
+                      alt="Story panel"
+                      className={`w-full h-full object-cover transition-opacity duration-300 ${isRegenerating ? 'opacity-60' : 'group-hover:scale-105'}`}
+                      initial={{ clipPath: 'inset(0 100% 0 0)' }}
+                      animate={{ clipPath: 'inset(0 0% 0 0)' }}
+                      exit={{ clipPath: 'inset(0 0 0 100%)' }}
+                      transition={{ duration: 0.6, ease: [0.76, 0, 0.24, 1] }}
+                    />
+                  </AnimatePresence>
                   {/* Subtle vignette overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/20 pointer-events-none" />
 
