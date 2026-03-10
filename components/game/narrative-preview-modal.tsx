@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Play, Image as ImageIcon, LayoutPanelTop } from 'lucide-react'
+import { X, Play, Image as ImageIcon, LayoutPanelTop, Loader2 } from 'lucide-react'
 import { Game } from '@/domains/games/types'
 
 interface StoryboardPanel {
@@ -208,10 +208,22 @@ export function NarrativePreviewModal({
                 <button
                   onClick={onStart}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-all flex items-center justify-center gap-2"
+                  className={`flex-1 px-4 py-3 rounded-lg text-white font-semibold transition-all flex items-center justify-center gap-2 ${isLoading 
+                    ? 'bg-purple-700 cursor-wait animate-pulse' 
+                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] active:scale-[0.98]'
+                  } disabled:opacity-70`}
                 >
-                  <Play className="w-4 h-4" />
-                  {isLoading ? 'Starting...' : 'Start Playing'}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Crafting your story...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      <span>Start Playing</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
