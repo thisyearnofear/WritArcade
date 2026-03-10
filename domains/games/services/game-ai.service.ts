@@ -8,7 +8,7 @@ import type {
   AssetGenerationResponse
 } from '../types'
 import type { UserAIPreferences } from '@/lib/user-ai-preferences.service'
-import { getModel, hasVeniceConfiguration } from '@/lib/ai-model-compatibility'
+import { getModel, hasGeminiConfiguration, hasVeniceConfiguration } from '@/lib/ai-model-compatibility'
 
 
 // Game generation schema for structured output
@@ -104,7 +104,7 @@ export class GameAIService {
     })
 
     try {
-      const model = getModel(request.model || 'gpt-4o-mini', userPreferences)
+      const model = getModel(request.model || '', userPreferences)
       console.log('Calling generateObject with model...')
       const { object: game } = await generateObject({
         model,
@@ -142,7 +142,7 @@ export class GameAIService {
         genre: game.genre,
         subgenre: game.subgenre,
         primaryColor: game.primaryColor,
-        promptModel: request.model || 'gpt-4o-mini',
+        promptModel: request.model || (hasVeniceConfiguration() ? 'venice-uncensored' : hasGeminiConfiguration(userPreferences) ? 'gemini-3.1-flash-preview' : 'gpt-4o-mini'),
         promptName: request.promptName || `GenerateGame-v2${retryCount > 0 ? `-retry${retryCount}` : ''}`,
         promptText: request.promptText,
       }
@@ -160,6 +160,34 @@ export class GameAIService {
           promptText: `You MUST provide ONLY valid JSON with these exact fields: title, description, tagline, genre, subgenre, primaryColor. No additional text.\n\n${promptText}`,
         }
         return this.generateGame(stricterRequest, retryCount + 1)
+      }
+
+      if (
+        retryCount < maxRetries &&
+        error instanceof Error &&
+        request.model?.startsWith('venice') &&
+        hasGeminiConfiguration(userPreferences)
+      ) {
+        console.warn(`Venice failed. Retrying with Gemini fallback (${retryCount + 1}/${maxRetries})`)
+        return this.generateGame({ ...request, model: 'gemini-3.1-flash-preview' }, retryCount + 1, {
+          geminiEnabled: true,
+          googleApiKey: userPreferences?.googleApiKey,
+          preferGemini: true,
+        })
+      }
+
+      if (
+        retryCount < maxRetries &&
+        error instanceof Error &&
+        request.model?.startsWith('gemini') &&
+        !request.model?.startsWith('venice')
+      ) {
+        console.warn(`Gemini failed. Retrying with OpenAI fallback (${retryCount + 1}/${maxRetries})`)
+        return this.generateGame({ ...request, model: 'gpt-4o-mini' }, retryCount + 1, {
+          geminiEnabled: userPreferences?.geminiEnabled ?? false,
+          googleApiKey: userPreferences?.googleApiKey,
+          preferGemini: false,
+        })
       }
 
       if (

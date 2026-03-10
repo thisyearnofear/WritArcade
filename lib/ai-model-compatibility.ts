@@ -40,6 +40,13 @@ export function hasVeniceConfiguration(): boolean {
   return !!process.env.VENICE_API_KEY;
 }
 
+export function hasGeminiConfiguration(userPreferences?: UserAIPreferences): boolean {
+  return !!(
+    userPreferences?.geminiEnabled &&
+    (process.env.GOOGLE_API_KEY || userPreferences?.googleApiKey)
+  );
+}
+
 export function getCompatibleVeniceModel(modelName: string): CompatibleLanguageModel {
   const veniceApiKey = process.env.VENICE_API_KEY;
 
@@ -64,14 +71,27 @@ export function getCompatibleAnthropicModel(modelName: string): CompatibleLangua
 export function getModel(modelName: string, userPreferences?: UserAIPreferences): CompatibleLanguageModel {
   const normalizedModelName = modelName || 'gpt-4o-mini';
 
+  if (!modelName) {
+    if (hasVeniceConfiguration()) {
+      return getCompatibleVeniceModel('venice-uncensored');
+    }
+
+    if (hasGeminiConfiguration(userPreferences)) {
+      const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
+      if (apiKey) {
+        return getCompatibleGoogleModel('gemini-3.1-flash-preview', apiKey);
+      }
+    }
+  }
+
   // Check if user has Gemini enabled and provided API key
-  if (userPreferences?.geminiEnabled && (process.env.GOOGLE_API_KEY || userPreferences?.googleApiKey)) {
+  if (hasGeminiConfiguration(userPreferences)) {
     if (normalizedModelName.startsWith('gemini') || userPreferences?.preferGemini) {
       const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
       if (apiKey) {
         const geminiModelName = normalizedModelName.startsWith('gemini')
           ? normalizedModelName
-          : 'gemini-2.0-flash';
+          : 'gemini-3.1-flash-preview';
         return getCompatibleGoogleModel(geminiModelName, apiKey);
       }
     }
