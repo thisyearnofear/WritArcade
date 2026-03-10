@@ -125,7 +125,9 @@ export function GameplayScreen({
                       isWaiting={isWaitingForResponse}
                       onImageRating={(rating) => onImageRating(message.id, rating)}
                       onImagesReady={onImagesReady}
-                      onImageRegenerate={onImageRegenerate}
+                      onImageRegenerate={(narrativeText, customPrompt) =>
+                        onImageRegenerate(message.id, narrativeText, customPrompt)
+                      }
                       isRegenerating={isRegenerating === message.id}
                       pendingOptionId={pendingOptionId}
                       responseReady={responseReady}

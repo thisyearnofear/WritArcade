@@ -39,7 +39,7 @@ export interface GameSessionActions {
   sendMessage: (message: string) => Promise<void>
   handleOptionClick: (optionId: number, optionText: string) => void
   handleImageGenerated: (messageId: string, result: ImageGenerationResult) => void
-  handleImageRegenerate: (messageId: string) => Promise<void>
+  handleImageRegenerate: (messageId: string, narrativeText: string, customPrompt?: string) => Promise<void>
   handleImagesReady: () => void
   handlePanelTextChange: (messageId: string, newText: string) => void
   handleImageRating: (messageId: string, rating: number) => void
@@ -362,7 +362,19 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       }
     } catch (error) {
       console.error('Failed to send message:', error)
+
+      // Check if this is a game completion error (expected behavior)
+      if (error instanceof Error && (
+        error.message?.includes('complete') ||
+        error.message?.includes('maximum panels') ||
+        error.message?.includes('400')
+      )) {
+        console.log('Game completed - this is expected behavior')
+        setMessages(prev => prev.filter(m => m.id !== userMessage.id))
+      }
+    } finally {
       setIsWaitingForResponse(false)
+      setPendingOptionId(null)
     }
   }, [sessionId, game, handleImageGenerated])
 
@@ -382,22 +394,25 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   /**
    * Regenerate image for a specific panel
    */
-  const handleImageRegenerate = useCallback(async (messageId: string) => {
+  const handleImageRegenerate = useCallback(async (messageId: string, narrativeText: string, customPrompt?: string) => {
     setRegeneratingMessageId(messageId)
 
-    const message = messages.find(m => m.id === messageId)
-    if (!message) return
-
     try {
-      const { narrative } = parsePanel(message.content)
+      const promptToUse = customPrompt || narrativeText
+
       const result = await ImageGenerationService.generateImage({
-        prompt: narrative,
+        prompt: promptToUse,
         genre: game.genre,
         style: 'comic_book',
         aspectRatio: 'landscape',
         force: true
       })
       handleImageGenerated(messageId, result)
+
+      toast({
+        title: '✨ Image regenerated',
+        description: customPrompt ? 'New image created with your custom prompt' : 'New image generated successfully',
+      })
     } catch (error) {
       console.error('Image regeneration failed:', error)
       toast({
@@ -408,7 +423,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
     } finally {
       setRegeneratingMessageId(null)
     }
-  }, [messages, game, handleImageGenerated, toast])
+  }, [game, handleImageGenerated, toast])
 
   // Transition to game screen when initial content is ready
   useEffect(() => {
@@ -448,6 +463,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
     handleImageRegenerate,
     handleImagesReady,
     handlePanelTextChange,
+    handleImageRating,
     setMessages,
     setIsPlaying,
   }

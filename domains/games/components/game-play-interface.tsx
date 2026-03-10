@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useRef } from 'react'
 import { BookOpen } from 'lucide-react'
 import { useAccount } from 'wagmi'
 
@@ -162,15 +161,17 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       pendingOptionId={session.pendingOptionId}
       assistantMessageCount={session.assistantMessageCount}
       canAddMorePanels={session.canAddMorePanels}
-      userInput="" // Simplified for now as it uses options
+      userInput="" // No longer used
       onUserInputChange={() => { }}
-      onOptionClick={(option) => session.handleOptionClick(option.id, option.text)}
+      onOptionClick={(option) => {
+        session.handleOptionClick(option.id, option.text)
+      }}
       onImagesReady={session.handleImagesReady}
       onImageRegenerate={session.handleImageRegenerate}
       onImageRating={session.handleImageRating}
-      messagesEndRef={messagesEndRef}
+      messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
       responseReady={session.responseReady}
-      isRegenerating={null} // Track in session if needed
+      isRegenerating={session.regeneratingMessageId}
       setShowComicFinale={setShowComicFinale}
       availableThemes={availableThemes}
       handleThemeSelect={handleThemeSelect}
