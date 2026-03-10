@@ -10,7 +10,7 @@ export interface ChatEntry extends ChatMessage {
   imagePromptText?: string
   imageRating?: number
   narrativeImage?: string | null
-  imageHistory?: Array<{ url: string | null; model: string; timestamp: number }>
+  imageHistory?: Array<{ imageUrl: string | null; model: string; timestamp: number }>
 }
 
 export interface UserChoice {
@@ -31,6 +31,7 @@ export interface GameSessionState {
   userChoices: UserChoice[]
   assistantMessageCount: number
   canAddMorePanels: boolean
+  regeneratingMessageId: string | null
 }
 
 export interface GameSessionActions {
@@ -41,6 +42,7 @@ export interface GameSessionActions {
   handleImageRegenerate: (messageId: string) => Promise<void>
   handleImagesReady: () => void
   handlePanelTextChange: (messageId: string, newText: string) => void
+  handleImageRating: (messageId: string, rating: number) => void
   setMessages: React.Dispatch<React.SetStateAction<ChatEntry[]>>
   setIsPlaying: (value: boolean) => void
 }
@@ -49,7 +51,7 @@ const MAX_COMIC_PANELS = 5
 
 export function useGameSession(game: Game): GameSessionState & GameSessionActions {
   const { toast } = useToast()
-  
+
   // Core session state
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatEntry[]>([])
@@ -95,9 +97,24 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
    * Handle panel text editing
    */
   const handlePanelTextChange = useCallback((messageId: string, newText: string) => {
-    setMessages(prev => prev.map(msg => 
+    setMessages(prev => prev.map(msg =>
       msg.id === messageId ? { ...msg, content: newText } : msg
     ))
+  }, [])
+
+  /**
+   * Handle image rating
+   */
+  const handleImageRating = useCallback((messageId: string, rating: number) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        if (msg.imageModel) {
+          ImageGenerationService.recordModelFeedback(msg.imageModel, rating)
+        }
+        return { ...msg, imageRating: rating }
+      }
+      return msg
+    }))
   }, [])
 
   /**
@@ -367,7 +384,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
    */
   const handleImageRegenerate = useCallback(async (messageId: string) => {
     setRegeneratingMessageId(messageId)
-    
+
     const message = messages.find(m => m.id === messageId)
     if (!message) return
 
@@ -422,6 +439,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
     userChoices,
     assistantMessageCount,
     canAddMorePanels,
+    regeneratingMessageId,
     // Actions
     startGame,
     sendMessage,
