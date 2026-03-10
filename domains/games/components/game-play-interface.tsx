@@ -321,7 +321,17 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
             try {
               const data = JSON.parse(line.slice(6))
 
-              if (data.type === 'content') {
+              if (data.type === 'error') {
+                // AI generation failed - show error and reset
+                console.error('Game start error from server:', data.error)
+                toast({
+                  title: "Failed to start game",
+                  description: data.error || "AI generation failed. Please try again.",
+                  variant: "destructive"
+                })
+                setIsStarting(false)
+                return
+              } else if (data.type === 'content') {
                 currentMessage += data.content
                 // Don't update UI yet - keep user on hero screen
               } else if (data.type === 'options') {
