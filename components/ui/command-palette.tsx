@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, Sparkles, Gamepad2, Wallet, Settings } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 interface CommandItem {
   id: string
@@ -19,7 +20,7 @@ interface CommandPaletteProps {
 }
 
 /**
- * Keyboard-accessible command palette (⌘K)
+ * CONSOLIDATION: Command palette using CSS variables
  */
 export function CommandPalette({ items }: CommandPaletteProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -124,11 +125,11 @@ export function CommandPalette({ items }: CommandPaletteProps) {
       {/* Keyboard hint badge */}
       <button
         onClick={() => setIsOpen(true)}
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 bg-gray-800/50 hover:bg-gray-800 rounded-md border border-gray-700 transition-colors"
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-muted/50 hover:bg-muted rounded-md border border-border transition-colors"
       >
         <Search className="w-4 h-4" />
         <span>Search</span>
-        <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-gray-700 rounded">⌘K</kbd>
+        <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-muted-foreground/20 rounded">⌘K</kbd>
       </button>
 
       {/* Palette Modal */}
@@ -153,30 +154,30 @@ export function CommandPalette({ items }: CommandPaletteProps) {
               className="fixed left-1/2 top-[20%] -translate-x-1/2 z-50 w-full max-w-xl"
               onKeyDown={handleKeyDown}
             >
-              <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl overflow-hidden">
+              <div className="bg-popover border border-border rounded-xl shadow-2xl overflow-hidden">
                 {/* Search Input */}
-                <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
-                  <Search className="w-5 h-5 text-gray-400" />
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+                  <Search className="w-5 h-5 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Search commands..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="flex-1 bg-transparent text-white placeholder:text-gray-500 focus:outline-none"
+                    className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
                     autoFocus
                   />
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-1 hover:bg-gray-800 rounded transition-colors"
+                    className="p-1 hover:bg-muted rounded transition-colors"
                   >
-                    <X className="w-4 h-4 text-gray-400" />
+                    <X className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
 
                 {/* Commands List */}
                 <div className="max-h-80 overflow-y-auto py-2">
                   {filteredCommands.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-500">
+                    <div className="px-4 py-8 text-center text-muted-foreground">
                       No commands found
                     </div>
                   ) : (
@@ -184,23 +185,24 @@ export function CommandPalette({ items }: CommandPaletteProps) {
                       <button
                         key={cmd.id}
                         onClick={cmd.action}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
                           index === selectedIndex
-                            ? 'bg-purple-600/20 text-purple-200'
-                            : 'text-gray-300 hover:bg-gray-800'
-                        }`}
+                            ? 'bg-primary/20 text-primary-foreground'
+                            : 'text-foreground hover:bg-muted'
+                        )}
                       >
                         {cmd.icon && (
-                          <span className="text-gray-400">{cmd.icon}</span>
+                          <span className="text-muted-foreground">{cmd.icon}</span>
                         )}
                         <div className="flex-1">
                           <div className="font-medium">{cmd.title}</div>
                           {cmd.description && (
-                            <div className="text-sm text-gray-500">{cmd.description}</div>
+                            <div className="text-sm text-muted-foreground">{cmd.description}</div>
                           )}
                         </div>
                         {cmd.shortcut && (
-                          <kbd className="px-2 py-1 text-xs bg-gray-800 rounded text-gray-400">
+                          <kbd className="px-2 py-1 text-xs bg-muted rounded text-muted-foreground">
                             {cmd.shortcut}
                           </kbd>
                         )}
@@ -210,7 +212,7 @@ export function CommandPalette({ items }: CommandPaletteProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="px-4 py-2 border-t border-gray-800 flex items-center justify-between text-xs text-gray-500">
+                <div className="px-4 py-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-4">
                     <span>↑↓ Navigate</span>
                     <span>↵ Select</span>

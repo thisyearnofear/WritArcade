@@ -3,12 +3,16 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { Toast } from '@/hooks/use-toast-notification'
+import { cn } from '@/lib/utils'
 
 interface ToastContainerProps {
   toasts: Toast[]
   onDismiss: (id: string) => void
 }
 
+/**
+ * CONSOLIDATION: Toast container using CSS variables
+ */
 const iconMap = {
   success: <CheckCircle className="w-5 h-5 text-green-400" />,
   error: <AlertCircle className="w-5 h-5 text-red-400" />,
@@ -17,10 +21,10 @@ const iconMap = {
 }
 
 const bgMap = {
-  success: 'from-green-900/20 to-green-900/5 border-green-700/30',
-  error: 'from-red-900/20 to-red-900/5 border-red-700/30',
-  info: 'from-blue-900/20 to-blue-900/5 border-blue-700/30',
-  warning: 'from-yellow-900/20 to-yellow-900/5 border-yellow-700/30'
+  success: 'bg-green-900/20 border-green-700/30',
+  error: 'bg-red-900/20 border-red-700/30',
+  info: 'bg-blue-900/20 border-blue-700/30',
+  warning: 'bg-yellow-900/20 border-yellow-700/30'
 }
 
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
@@ -34,11 +38,14 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 400 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className={`p-4 rounded-lg border bg-gradient-to-br ${bgMap[toast.type]} backdrop-blur-sm pointer-events-auto flex gap-3 items-start max-w-sm`}
+            className={cn(
+              "p-4 rounded-lg border bg-gradient-to-br backdrop-blur-sm pointer-events-auto flex gap-3 items-start max-w-sm",
+              bgMap[toast.type]
+            )}
           >
             <div className="flex-shrink-0 mt-0.5">{iconMap[toast.type]}</div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-200">{toast.message}</p>
+              <p className="text-sm text-foreground">{toast.message}</p>
               {toast.action && (
                 <button
                   onClick={() => {
@@ -53,7 +60,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
             </div>
             <button
               onClick={() => onDismiss(toast.id)}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-200 transition-colors"
+              className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Dismiss"
             >
               <X className="w-4 h-4" />

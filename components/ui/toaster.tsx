@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useToast as useToastPrimitive, type Toast } from './use-toast'
+import { cn } from '@/lib/utils'
 
 export function Toaster() {
   const { toasts } = useToastPrimitive()
@@ -11,10 +12,12 @@ export function Toaster() {
       {toasts.map(({ id, title, description, variant, ...props }: Toast) => (
         <div
           key={id}
-          className={`group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all ${variant === 'destructive'
-            ? 'border-red-500 bg-red-900/90 text-white'
-            : 'border-gray-700 bg-gray-900/90 text-white'
-            }`}
+          className={cn(
+            "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all",
+            variant === 'destructive'
+              ? 'border-destructive bg-destructive text-destructive-foreground'
+              : 'border-border bg-popover text-popover-foreground'
+          )}
           {...props}
         >
           <div className="grid gap-1">

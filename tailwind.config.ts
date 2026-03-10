@@ -24,9 +24,15 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'scale(0.95)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
+        // CONSOLIDATION: Glow animation using CSS variables
         'glow': {
-          '0%, 100%': { boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)' },
-          '50%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 10px hsl(var(--primary) / 0.3)' },
+          '50%': { boxShadow: '0 0 20px hsl(var(--primary) / 0.6)' },
+        },
+        // Shimmer effect for skeleton loading
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
         },
       },
       animation: {
@@ -34,6 +40,7 @@ const config: Config = {
         'slide-up': 'slide-up 0.6s ease-out',
         'scale-in': 'scale-in 0.4s ease-out',
         'glow': 'glow 3s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
       },
       transitionDelay: {
         '100': '100ms',
@@ -79,6 +86,34 @@ const config: Config = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      // CONSOLIDATION: Standard spacing tokens for consistent padding
+      spacing: {
+        'section-sm': 'py-10',
+        'section-md': 'py-16',
+        'section-lg': 'py-20',
+        'card': 'p-6',
+        'card-sm': 'p-4',
+        '18': '4.5rem',
+        '22': '5.5rem',
+      },
+      maxWidth: {
+        'content': '64rem',
+        'wide': '80rem',
+      },
+      // CONSOLIDATION: Consistent transition timing
+      transitionDuration: {
+        DEFAULT: '200ms',
+        '150': '150ms',
+        '250': '250ms',
+        '400': '400ms',
+      },
+      // CONSOLIDATION: Consistent sizing for touch targets
+      minHeight: {
+        'touch': '48px',
+      },
+      minWidth: {
+        'touch': '48px',
       },
     },
   },

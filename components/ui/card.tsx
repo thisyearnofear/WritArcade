@@ -1,43 +1,31 @@
 import * as React from "react"
-import { useMobileOptimizations } from '@/hooks/useMobileOptimizations'
+import { cn } from "@/lib/utils"
 
+/**
+ * CONSOLIDATION: Simplified Card component using CSS variables
+ * - Removed typewriter/arcade/enhanced/mobile modes (used CSS variables instead)
+ * - Single source of truth for card styling
+ */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { 
-    typewriter?: boolean;
-    enhanced?: boolean;
-    arcade?: boolean;
-    mobile?: boolean
+    variant?: "default" | "elevated" | "outline"
   }
->(({ className, typewriter = false, enhanced = false, arcade = false, mobile = false, ...props }, ref) => {
-  
-  const { isMobile } = useMobileOptimizations()
-  const isMobileCard = mobile || isMobile
-  
-  // Determine card classes based on props
-  const cardClasses = [];
-  
-  if (typewriter) {
-    cardClasses.push('border-gray-700', 'bg-gray-900/50', 'text-white', 'shadow-sm', 'writersarcade-paper');
-  } else if (enhanced) {
-    cardClasses.push('card-enhanced');
-  } else if (arcade) {
-    cardClasses.push('bg-writersarcade-primary', 'text-white', 'border-writersarcade-primary', 'shadow-lg');
-  } else {
-    cardClasses.push('border-gray-700', 'bg-gray-900/50', 'text-white', 'shadow-sm');
-  }
-  
-  // Add mobile optimizations
-  if (isMobileCard) {
-    cardClasses.push('p-4', 'sm:p-6');
-  } else {
-    cardClasses.push('p-6');
+>(({ className, variant = "default", ...props }, ref) => {
+  const variantStyles = {
+    default: "border-border bg-card text-card-foreground",
+    elevated: "border-border bg-card shadow-lg",
+    outline: "border-2 border-input bg-transparent",
   }
   
   return (
     <div
       ref={ref}
-      className={`rounded-lg border ${cardClasses.join(' ')} ${className || ""}`}
+      className={cn(
+        "rounded-lg border p-6", // CONSOLIDATION: Always use consistent padding
+        variantStyles[variant],
+        className
+      )}
       {...props}
     />
   )
@@ -50,7 +38,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`flex flex-col space-y-1.5 p-6 ${className || ""}`}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
     {...props}
   />
 ))
@@ -62,7 +50,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h2
     ref={ref}
-    className={`text-2xl font-semibold leading-none tracking-tight ${className || ""}`}
+    className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
     {...props}
   />
 ))
@@ -74,7 +62,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={`text-sm text-gray-400 ${className || ""}`}
+    className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
 ))
@@ -84,7 +72,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={`p-6 pt-0 ${className || ""}`} {...props} />
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
@@ -94,7 +82,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`flex items-center p-6 pt-0 ${className || ""}`}
+    className={cn("flex items-center p-6 pt-0", className)}
     {...props}
   />
 ))

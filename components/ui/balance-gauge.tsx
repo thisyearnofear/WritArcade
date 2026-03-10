@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { CharacterProfile, GameMechanic, StoryBeat } from '@/domains/games/types'
+import { cn } from '@/lib/utils'
 
 interface BalanceGaugeProps {
   characters: CharacterProfile[]
@@ -11,8 +12,7 @@ interface BalanceGaugeProps {
 }
 
 /**
- * Animated balance gauge showing composition score
- * Combines character/mechanic/story balance into a 0-100 score
+ * CONSOLIDATION: Balance gauge using CSS variables
  */
 export function BalanceGauge({
   characters,
@@ -63,7 +63,7 @@ export function BalanceGauge({
   const offset = circumference - (score / 100) * circumference
 
   const statusColor =
-    score >= 80 ? 'text-green-400' : score >= 60 ? 'text-yellow-400' : 'text-red-400'
+    score >= 80 ? 'text-green-500' : score >= 60 ? 'text-yellow-500' : 'text-red-500'
   const ringColor =
     score >= 80 ? 'stroke-green-500' : score >= 60 ? 'stroke-yellow-500' : 'stroke-red-500'
 
@@ -80,7 +80,7 @@ export function BalanceGauge({
             fill="none"
             stroke="currentColor"
             strokeWidth="3"
-            className="text-gray-700"
+            className="text-muted"
           />
           {/* Progress circle */}
           <motion.circle
@@ -90,7 +90,7 @@ export function BalanceGauge({
             fill="none"
             strokeWidth="3"
             strokeLinecap="round"
-            className={`${ringColor} transition-colors`}
+            className={cn(ringColor, "transition-colors")}
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: offset }}
@@ -104,24 +104,24 @@ export function BalanceGauge({
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className={`text-2xl font-bold ${statusColor}`}
+            className={cn("text-2xl font-bold", statusColor)}
           >
             {score}
           </motion.div>
-          <div className="text-xs text-gray-400">Balance</div>
+          <div className="text-xs text-muted-foreground">Balance</div>
         </div>
       </div>
 
       {/* Status text */}
       <div className="flex-1">
-        <p className={`text-sm font-bold ${statusColor}`}>
+        <p className={cn("text-sm font-bold", statusColor)}>
           {score >= 80
             ? 'Well Balanced'
             : score >= 60
               ? 'Good Progress'
               : 'Needs Work'}
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {score >= 80
             ? 'Your composition is ready for deployment'
             : score >= 60

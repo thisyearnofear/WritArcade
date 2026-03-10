@@ -53,7 +53,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-black text-white min-h-screen pb-16 md:pb-0`}>
+      {/* CONSOLIDATION: Use CSS variables for consistent theming */}
+      <body className={`${inter.className} bg-background text-foreground min-h-screen pb-16 md:pb-0`}>
         <Web3Provider>
           <ToastProvider>
             <WalletSync />
