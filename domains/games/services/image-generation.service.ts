@@ -219,8 +219,8 @@ export class ImageGenerationService {
           body: JSON.stringify({
             prompt,
             model: selectedModel,
-            width: 1440,    // Landscape for comic panels
-            height: 810,    // 16:9 aspect ratio
+            width: 1280,    // Landscape for comic panels (Venice max)
+            height: 720,    // 16:9 aspect ratio
             format: 'png',
           }),
         })
