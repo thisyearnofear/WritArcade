@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI, openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import type { UserAIPreferences } from '@/lib/user-ai-preferences.service';
 import type { LanguageModelV1 } from 'ai';
@@ -36,6 +36,26 @@ export function getCompatibleOpenAIModel(modelName: string): CompatibleLanguageM
   return openai(modelName) as unknown as CompatibleLanguageModel;
 }
 
+export function hasVeniceConfiguration(): boolean {
+  return !!process.env.VENICE_API_KEY;
+}
+
+export function getCompatibleVeniceModel(modelName: string): CompatibleLanguageModel {
+  const veniceApiKey = process.env.VENICE_API_KEY;
+
+  if (!veniceApiKey) {
+    throw new Error('Venice API key is required');
+  }
+
+  const veniceProvider = createOpenAI({
+    apiKey: veniceApiKey,
+    baseURL: 'https://api.venice.ai/api/v1',
+  });
+
+  // Venice docs recommend .chat() for compatibility with chat completions.
+  return veniceProvider.chat(modelName) as unknown as CompatibleLanguageModel;
+}
+
 export function getCompatibleAnthropicModel(modelName: string): CompatibleLanguageModel {
   return anthropic(modelName) as unknown as CompatibleLanguageModel;
 }
@@ -61,6 +81,8 @@ export function getModel(modelName: string, userPreferences?: UserAIPreferences)
     return getCompatibleOpenAIModel(normalizedModelName);
   } else if (normalizedModelName.startsWith('claude')) {
     return getCompatibleAnthropicModel(normalizedModelName);
+  } else if (normalizedModelName.startsWith('venice')) {
+    return getCompatibleVeniceModel(normalizedModelName);
   }
 
   // Default fallback

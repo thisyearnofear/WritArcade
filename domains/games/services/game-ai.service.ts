@@ -8,7 +8,7 @@ import type {
   AssetGenerationResponse
 } from '../types'
 import type { UserAIPreferences } from '@/lib/user-ai-preferences.service'
-import { getModel } from '@/lib/ai-model-compatibility'
+import { getModel, hasVeniceConfiguration } from '@/lib/ai-model-compatibility'
 
 
 // Game generation schema for structured output
@@ -18,7 +18,7 @@ const gameGenerationSchema = z.object({
   tagline: z.string(),
   genre: z.string(),
   subgenre: z.string(),
-  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  primaryColor: z.string().regex(/^#([0-9A-Fa-f]{3}){1,2}$/),
 })
 
 // Asset generation schema for structured output (ENHANCEMENT FIRST: reuse validation pattern)
@@ -63,6 +63,19 @@ const assetGenerationSchema = z.object({
  * Merges GenerateGame.js, StartGame.js, and ChatGame.js functionality
  */
 export class GameAIService {
+
+  private static isLikelyProviderFailure(errorMessage: string): boolean {
+    const normalized = errorMessage.toLowerCase()
+    return (
+      normalized.includes('insufficient_quota') ||
+      normalized.includes('quota') ||
+      normalized.includes('rate limit') ||
+      normalized.includes('429') ||
+      normalized.includes('api') ||
+      normalized.includes('provider') ||
+      normalized.includes('failed after')
+    )
+  }
 
   /**
    * Generate a new game from prompt text or URL content
@@ -149,12 +162,29 @@ export class GameAIService {
         return this.generateGame(stricterRequest, retryCount + 1)
       }
 
-      if (retryCount < maxRetries && error instanceof Error && userPreferences?.preferGemini) {
-        console.warn(`Provider/model mismatch suspected. Retrying with OpenAI fallback (${retryCount + 1}/${maxRetries})`)
-        return this.generateGame({ ...request, model: 'gpt-4o-mini' }, retryCount + 1, {
+      if (
+        retryCount < maxRetries &&
+        error instanceof Error &&
+        userPreferences?.preferGemini &&
+        hasVeniceConfiguration() &&
+        !request.model?.startsWith('venice')
+      ) {
+        console.warn(`Gemini failed/refused. Retrying with Venice fallback (${retryCount + 1}/${maxRetries})`)
+        return this.generateGame({ ...request, model: 'venice-uncensored' }, retryCount + 1, {
           ...userPreferences,
           preferGemini: false,
         })
+      }
+
+      if (
+        retryCount < maxRetries &&
+        error instanceof Error &&
+        hasVeniceConfiguration() &&
+        !request.model?.startsWith('venice') &&
+        this.isLikelyProviderFailure(error.message)
+      ) {
+        console.warn(`Provider request failed. Retrying with Venice (${retryCount + 1}/${maxRetries})`)
+        return this.generateGame({ ...request, model: 'venice-uncensored' }, retryCount + 1, userPreferences)
       }
 
       throw new Error(
@@ -522,16 +552,6 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
     if (isArticleContent) {
       basePrompt += `
 
-  The following article content defines your creative direction. Every game element MUST connect to its themes:
-  - Title, description, and tagline should reference or evoke the article's core ideas
-  - Game mechanics should reflect the article's arguments or narrative arc
-  - The subgenre should authentically represent the article's tone and subject matter
-  - Avoid generic "adventure" framing—this game must be specifically about this article's concepts
-
-  ${promptText}
-
-  After reading the above, you will design a game that makes readers think differently about these concepts.
-=======
   CRITICAL: ARTICLE THEMATIC INTEGRATION (ENHANCED)
   ==================================================
   The following article content defines your creative direction. Every game element MUST connect to its themes AND particulars:
@@ -546,16 +566,7 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
   After reading the above, you will design a game that:
   1. Makes readers think differently about these concepts
   2. Includes 3-5 specific references to article content (quotes, examples, data points)
-  3. Feels like it could only be about this specific article, not a generic version========================================
-  The following article content defines your creative direction. Every game element MUST connect to its themes:
-  - Title, description, and tagline should reference or evoke the article's core ideas
-  - Game mechanics should reflect the article's arguments or narrative arc
-  - The subgenre should authentically represent the article's tone and subject matter
-  - Avoid generic "adventure" framing—this game must be specifically about this article's concepts
-
-  ${promptText}
-
-  After reading the above, you will design a game that makes readers think differently about these concepts.`
+  3. Feels like it could only be about this specific article, not a generic version`
     } else if (promptText) {
       basePrompt += `\n\nCreate a game based on this concept: ${promptText}`
     }

@@ -254,10 +254,13 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     }
 
     const message = error instanceof Error ? error.message : 'Unknown error'
+    const lowerMessage = message.toLowerCase()
     const errorCode = message.startsWith('URL processing failed:')
       ? 'CONTENT_PROCESSING_FAILED'
       : message.startsWith('AI generation failed')
-        ? 'AI_GENERATION_FAILED'
+        ? (lowerMessage.includes('insufficient_quota') || lowerMessage.includes('quota') || lowerMessage.includes('429')
+          ? 'AI_QUOTA_EXCEEDED'
+          : 'AI_GENERATION_FAILED')
         : message.startsWith('DB_SAVE_FAILED:') || message.includes('Failed to save game to database')
           ? 'DB_SAVE_FAILED'
           : 'GAME_GENERATION_FAILED'
@@ -265,7 +268,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate game. Please try again.',
+        error: error instanceof Error ? error.message : 'Failed to generate game. Please try again.',
         code: errorCode,
       },
       { status: 500 }
