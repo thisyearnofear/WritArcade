@@ -133,11 +133,12 @@ export interface GameplayOption {
 }
 
 export interface GameplayResponse {
-  type: 'content' | 'options' | 'end'
+  type: 'content' | 'options' | 'end' | 'error'
   content?: string
   options?: GameplayOption[]
   chatId?: string
   parentId?: string
+  error?: string
 }
 
 // ============================================================================

@@ -336,7 +336,12 @@ export class GameAIService {
 
     } catch (error) {
       console.error('Game start error:', error)
-      throw new Error('Failed to start game')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Yield error event so client can display it
+      yield {
+        type: 'error' as const,
+        error: `Failed to start game: ${errorMessage}`,
+      }
     }
   }
 
@@ -423,7 +428,11 @@ export class GameAIService {
 
     } catch (error) {
       console.error('Game chat error:', error)
-      throw new Error('Failed to process game input')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      yield {
+        type: 'error' as const,
+        error: `Failed to process game input: ${errorMessage}`,
+      }
     }
   }
 
