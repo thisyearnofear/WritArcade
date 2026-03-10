@@ -256,5 +256,17 @@ export class IPFSMetadataService {
   }
 }
 
-// Export singleton instance
-export const ipfsMetadataService = IPFSMetadataService.getInstance()
+// Export lazy singleton getter to avoid client-side instantiation warnings
+// The service uses server-only env vars (PINATA_JWT, etc.) so should only be instantiated server-side
+export const ipfsMetadataService = {
+  get instance() {
+    return IPFSMetadataService.getInstance()
+  },
+  // Proxy common methods to the singleton
+  createNFTMetadata(...args: Parameters<IPFSMetadataService['createNFTMetadata']>) {
+    return IPFSMetadataService.getInstance().createNFTMetadata(...args)
+  },
+  uploadGamePackage(...args: Parameters<IPFSMetadataService['uploadGamePackage']>) {
+    return IPFSMetadataService.getInstance().uploadGamePackage(...args)
+  },
+}
