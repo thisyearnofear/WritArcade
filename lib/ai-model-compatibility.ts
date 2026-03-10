@@ -47,7 +47,10 @@ export function hasGeminiConfiguration(userPreferences?: UserAIPreferences): boo
   );
 }
 
-export function getCompatibleVeniceModel(modelName: string): CompatibleLanguageModel {
+// Venice model that supports function calling / tools for generateObject
+export const VENICE_DEFAULT_MODEL = 'llama-3.3-70b';
+
+export function getCompatibleVeniceModel(modelName?: string): CompatibleLanguageModel {
   const veniceApiKey = process.env.VENICE_API_KEY;
 
   if (!veniceApiKey) {
@@ -59,8 +62,9 @@ export function getCompatibleVeniceModel(modelName: string): CompatibleLanguageM
     baseURL: 'https://api.venice.ai/api/v1',
   });
 
-  // Venice docs recommend .chat() for compatibility with chat completions.
-  return veniceProvider.chat(modelName) as unknown as CompatibleLanguageModel;
+  // Use a model that supports tools/function calling (required for generateObject)
+  const effectiveModel = modelName || VENICE_DEFAULT_MODEL;
+  return veniceProvider.chat(effectiveModel) as unknown as CompatibleLanguageModel;
 }
 
 export function getCompatibleAnthropicModel(modelName: string): CompatibleLanguageModel {
@@ -78,7 +82,7 @@ export function getModel(modelName: string, userPreferences?: UserAIPreferences)
       if (apiKey) {
         const geminiModelName = normalizedModelName.startsWith('gemini')
           ? normalizedModelName
-          : 'gemini-3.1-flash-preview';
+          : 'gemini-2.0-flash';
         return getCompatibleGoogleModel(geminiModelName, apiKey);
       }
     }
