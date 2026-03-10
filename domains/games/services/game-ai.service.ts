@@ -142,7 +142,7 @@ export class GameAIService {
         genre: game.genre,
         subgenre: game.subgenre,
         primaryColor: game.primaryColor,
-        promptModel: request.model || (hasVeniceConfiguration() ? 'venice-uncensored' : hasGeminiConfiguration(userPreferences) ? 'gemini-3.1-flash-preview' : 'gpt-4o-mini'),
+        promptModel: request.model || (hasVeniceConfiguration() ? 'llama-3.3-70b' : hasGeminiConfiguration(userPreferences) ? 'gemini-2.0-flash' : 'gpt-4o-mini'),
         promptName: request.promptName || `GenerateGame-v2${retryCount > 0 ? `-retry${retryCount}` : ''}`,
         promptText: request.promptText,
       }
@@ -198,7 +198,7 @@ export class GameAIService {
         !request.model?.startsWith('venice')
       ) {
         console.warn(`Gemini failed/refused. Retrying with Venice fallback (${retryCount + 1}/${maxRetries})`)
-        return this.generateGame({ ...request, model: 'venice-uncensored' }, retryCount + 1, {
+        return this.generateGame({ ...request, model: 'llama-3.3-70b' }, retryCount + 1, {
           ...userPreferences,
           preferGemini: false,
         })
@@ -209,10 +209,11 @@ export class GameAIService {
         error instanceof Error &&
         hasVeniceConfiguration() &&
         !request.model?.startsWith('venice') &&
+        !request.model?.startsWith('llama') &&
         this.isLikelyProviderFailure(error.message)
       ) {
         console.warn(`Provider request failed. Retrying with Venice (${retryCount + 1}/${maxRetries})`)
-        return this.generateGame({ ...request, model: 'venice-uncensored' }, retryCount + 1, userPreferences)
+        return this.generateGame({ ...request, model: 'llama-3.3-70b' }, retryCount + 1, userPreferences)
       }
 
       throw new Error(
