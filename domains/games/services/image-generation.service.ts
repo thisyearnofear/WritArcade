@@ -210,32 +210,56 @@ export class ImageGenerationService {
           }
         }
 
-        const veniceResponse = await fetch('https://api.venice.ai/api/v1/image/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${veniceApiKey}`,
-          },
-          body: JSON.stringify({
-            prompt,
-            model: selectedModel,
-            width: 1280,    // Landscape for comic panels (Venice max)
-            height: 720,    // 16:9 aspect ratio
-            format: 'png',
-          }),
-        })
+        // Retry logic for transient network failures
+        const maxRetries = 3
+        let lastError: Error | null = null
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const veniceResponse = await fetch('https://api.venice.ai/api/v1/image/generate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${veniceApiKey}`,
+              },
+              body: JSON.stringify({
+                prompt,
+                model: selectedModel,
+                width: 1280,    // Landscape for comic panels (Venice max)
+                height: 720,    // 16:9 aspect ratio
+                format: 'png',
+              }),
+            })
 
-        if (!veniceResponse.ok) {
-          const errorText = await veniceResponse.text()
-          console.error('Venice API error:', veniceResponse.status, errorText)
+            if (!veniceResponse.ok) {
+              const errorText = await veniceResponse.text()
+              console.error('Venice API error:', veniceResponse.status, errorText)
+              return {
+                imageUrl: null,
+                model: selectedModel,
+                timestamp: Date.now(),
+              }
+            }
+
+            data = await veniceResponse.json()
+            break // Success, exit retry loop
+          } catch (fetchError) {
+            lastError = fetchError as Error
+            console.warn(`Venice image fetch attempt ${attempt}/${maxRetries} failed:`, fetchError)
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt)) // Exponential backoff
+            }
+          }
+        }
+        
+        if (!data && lastError) {
+          console.error('Venice image fetch failed after retries:', lastError)
           return {
             imageUrl: null,
             model: selectedModel,
             timestamp: Date.now(),
           }
         }
-
-        data = await veniceResponse.json()
       } else {
         // Client-side: use local API endpoint
         const response = await fetch(this.getApiEndpoint(), {
