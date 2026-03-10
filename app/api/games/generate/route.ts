@@ -158,7 +158,27 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       }
     }
 
-    // Save to database using enhanced database service  
+    // Normalize optional metadata to avoid persistence failures from malformed upstream values
+    const normalizePublishedAt = (value: unknown): Date | undefined => {
+      if (!value) return undefined
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value
+      if (typeof value === 'string' || typeof value === 'number') {
+        const parsed = new Date(value)
+        return Number.isNaN(parsed.getTime()) ? undefined : parsed
+      }
+      return undefined
+    }
+
+    const normalizeSubscriberCount = (value: unknown): number | undefined => {
+      if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, Math.floor(value))
+      if (typeof value === 'string') {
+        const parsed = Number(value)
+        if (Number.isFinite(parsed)) return Math.max(0, Math.floor(parsed))
+      }
+      return undefined
+    }
+
+    // Save to database using enhanced database service
     const miniAppData = processedContent ? {
       articleUrl: validatedData.url,
       difficulty: validatedData.customization?.difficulty,
@@ -168,8 +188,8 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       authorParagraphUsername: processedContent.author, // Extract from URL parsing
       publicationName: processedContent.publicationName,
       publicationSummary: processedContent.publicationSummary,
-      subscriberCount: processedContent.subscriberCount,
-      articlePublishedAt: processedContent.publishedAt,
+      subscriberCount: normalizeSubscriberCount(processedContent.subscriberCount),
+      articlePublishedAt: normalizePublishedAt(processedContent.publishedAt),
       // Include comprehensive article context for authentic game narrative continuity
       articleContext: `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nPublication: ${processedContent.publicationName || 'Unknown'}\n\nCore Themes:\n${ContentProcessorService.extractArticleThemes(processedContent.text, processedContent.title)}\n\nKey excerpt:\n${processedContent.text.substring(0, 800)}...`,
     } : undefined
@@ -186,7 +206,16 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       hasMiniAppData: !!miniAppData,
       creatorWallet: enhancedGameData.creatorWallet,
     })
-    const savedGame = await GameDatabaseService.createGame(enhancedGameData, user?.id, miniAppData, validatedData.assetIds)
+    let savedGame
+    try {
+      savedGame = await GameDatabaseService.createGame(enhancedGameData, user?.id, miniAppData, validatedData.assetIds)
+    } catch (dbError) {
+      // Fallback: preserve core game generation even if optional article metadata is malformed
+      console.warn('Primary game save failed, retrying without optional article metadata:', {
+        message: dbError instanceof Error ? dbError.message : 'Unknown error',
+      })
+      savedGame = await GameDatabaseService.createGame(enhancedGameData, user?.id, undefined, validatedData.assetIds)
+    }
     console.log('Game saved successfully:', { id: savedGame.id, slug: savedGame.slug })
 
     return NextResponse.json({

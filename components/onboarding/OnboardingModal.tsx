@@ -139,7 +139,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-2"
+            className="flex-1 bg-blue-600 text-white hover:bg-blue-500 border border-blue-500 flex items-center justify-center gap-2"
           >
             {currentStep === steps.length - 1 ? 'Start' : 'Next'}
             <ChevronRight className="w-4 h-4" />

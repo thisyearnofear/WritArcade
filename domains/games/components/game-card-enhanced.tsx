@@ -1,9 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useRef } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Game } from '../types'
 import { Play, Zap, Crown, Trash2, Eye, EyeOff, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,7 +20,7 @@ interface GameCardEnhancedProps {
 }
 
 /**
- * Enhanced game card with 3D tilt effect and micro-interactions
+ * Enhanced game card with consistent, lightweight micro-interactions
  * Single source of truth for game card display across the app
  */
 export function GameCardEnhanced({
@@ -35,51 +33,11 @@ export function GameCardEnhanced({
   onDeleteClick,
   isLoading = false,
 }: GameCardEnhancedProps) {
-  const [isHovered, setIsHovered] = useState(false)
   const { address } = useAccount()
   const userIsAdmin = isAdmin(address)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const prefersReducedMotion = useReducedMotion()
 
   // Settings visible if owner OR admin
   const showSettings = isUserGame || userIsAdmin
-
-  // 3D Tilt effect
-  const x = useMotionValue(0.5)
-  const y = useMotionValue(0.5)
-
-  const rotateX = useSpring(useTransform(y, [0, 1], [8, -8]), {
-    stiffness: 300,
-    damping: 30,
-  })
-  const rotateY = useSpring(useTransform(x, [0, 1], [-8, 8]), {
-    stiffness: 300,
-    damping: 30,
-  })
-
-  const glareX = useTransform(x, [0, 1], ['0%', '100%'])
-  const glareY = useTransform(y, [0, 1], ['0%', '100%'])
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current || prefersReducedMotion) return
-    
-    const rect = cardRef.current.getBoundingClientRect()
-    const xPos = (e.clientX - rect.left) / rect.width
-    const yPos = (e.clientY - rect.top) / rect.height
-    
-    x.set(xPos)
-    y.set(yPos)
-  }
-
-  const handleMouseLeave = () => {
-    setIsHovered(false)
-    x.set(0.5)
-    y.set(0.5)
-  }
-
-  const handleMouseEnter = () => {
-    setIsHovered(true)
-  }
 
   // Card animation variants
   const cardVariants = {
@@ -97,104 +55,28 @@ export function GameCardEnhanced({
 
   return (
     <motion.div
-      ref={cardRef}
       className="group relative"
-      style={{
-        rotateX: prefersReducedMotion ? 0 : rotateX,
-        rotateY: prefersReducedMotion ? 0 : rotateY,
-        transformStyle: 'preserve-3d',
-        perspective: 1000,
-      }}
       variants={cardVariants}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
-      whileHover={prefersReducedMotion ? {} : { scale: 1.02, z: 50 }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onMouseEnter={handleMouseEnter}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
     >
-      <div className="relative bg-gray-900 border border-gray-800 rounded-lg overflow-hidden transition-colors duration-300 group-hover:border-purple-500/50">
-        {/* Glare effect */}
-        {!prefersReducedMotion && (
-          <motion.div
-            className="absolute inset-0 pointer-events-none z-20 rounded-lg"
-            style={{
-              background: useTransform(
-                [glareX, glareY],
-                ([latestX, latestY]) => {
-                  return `radial-gradient(circle at ${latestX} ${latestY}, rgba(255,255,255,0.1) 0%, transparent 50%)`
-                }
-              ),
-            }}
-          />
-        )}
-
-        {/* Blend layer 1: Multiply blend for depth with enhanced animation */}
-        <motion.div
-          className="absolute inset-0 rounded-lg pointer-events-none"
-          animate={{
-            opacity: isHovered ? 0.15 : 0,
-            scale: isHovered ? 1.02 : 1,
-          }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 group-hover:border-gray-300 group-hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:group-hover:border-gray-700">
+        <div
+          className="h-1 w-full"
           style={{
-            background: `linear-gradient(135deg, ${game.primaryColor || '#8b5cf6'}40, ${game.primaryColor || '#8b5cf6'}10)`,
-            mixBlendMode: 'multiply',
+            background: `linear-gradient(90deg, ${game.primaryColor || '#8b5cf6'}, ${game.primaryColor || '#8b5cf6'}55)`,
           }}
         />
-
-        {/* Blend layer 2: Lighten for shimmer with enhanced animation */}
-        <motion.div
-          className="absolute inset-0 rounded-lg pointer-events-none"
-          animate={{
-            opacity: isHovered ? 0.1 : 0,
-            x: isHovered ? [0, 100, 0] : 0,
-          }}
-          transition={{
-            opacity: { duration: 0.4 },
-            x: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-          }}
-          style={{
-            background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)`,
-            mixBlendMode: 'lighten',
-          }}
-        />
-
-        {/* Header with gradient and animated border */}
-        <motion.div
-          className="relative h-24 bg-gradient-to-br overflow-hidden"
-          animate={{
-            opacity: isHovered ? 1 : 0.85,
-          }}
-          transition={{ duration: 0.3 }}
-          style={{
-            background: `linear-gradient(135deg, ${game.primaryColor || '#8b5cf6'}40, ${game.primaryColor || '#8b5cf6'}10)`,
-            borderBottom: `2px solid ${game.primaryColor || '#8b5cf6'}`,
-          }}
-        >
-          {/* Animated gradient overlay on hover */}
-          <motion.div
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(45deg, transparent, ${game.primaryColor || '#8b5cf6'}20, transparent)`,
-            }}
-            animate={{
-              x: isHovered ? ['-100%', '100%'] : '-100%',
-            }}
-            transition={{
-              duration: 1.5,
-              ease: 'easeInOut',
-            }}
-          />
-        </motion.div>
 
         {/* Content */}
-        <div className="relative p-6 space-y-3 z-10">
+        <div className="relative space-y-3 p-5 sm:p-6">
           {/* Genre & Status */}
           <div className="flex items-start justify-between">
             <motion.span
-              className="inline-block px-2 py-1 text-xs rounded-full border"
+              className="inline-block rounded-full border px-2 py-1 text-xs font-medium"
               style={{
                 borderColor: game.primaryColor || '#8b5cf6',
                 color: game.primaryColor || '#8b5cf6',
@@ -208,7 +90,7 @@ export function GameCardEnhanced({
             {isUserGame && (
               <div className="flex items-center gap-2">
                 <motion.span 
-                  className={`text-xs px-2 py-1 rounded ${game.private ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}
+                  className={`rounded px-2 py-1 text-xs ${game.private ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 15 }}
@@ -232,64 +114,45 @@ export function GameCardEnhanced({
           {/* Title & Tagline with responsive sizing */}
           <div>
             <motion.h3 
-              className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-purple-400 transition-colors line-clamp-2"
+              className="mb-1 line-clamp-2 text-base font-bold text-gray-900 transition-colors group-hover:text-gray-700 dark:text-white dark:group-hover:text-gray-200 sm:text-lg"
               layout
             >
               {game.title}
             </motion.h3>
-            <p className="text-xs sm:text-sm text-gray-400 line-clamp-2 italic uppercase">
+            <p className="line-clamp-2 text-xs uppercase italic text-gray-500 dark:text-gray-400 sm:text-sm">
               {game.tagline}
             </p>
           </div>
 
           {/* Description with responsive sizing */}
-          <p className="text-xs sm:text-sm text-gray-400 line-clamp-3">
+          <p className="line-clamp-3 text-xs text-gray-600 dark:text-gray-400 sm:text-sm">
             {game.description}
           </p>
 
           {/* Meta */}
-          <div className="text-xs text-gray-500 space-y-1 pt-2 border-t border-gray-800">
+          <div className="space-y-1 border-t border-gray-200 pt-3 text-xs text-gray-500 dark:border-gray-800">
             <div className="flex justify-between">
               <span>Created {new Date(game.createdAt).toLocaleDateString()}</span>
-              <span className="text-gray-600">{game.subgenre}</span>
+              <span className="text-gray-500 dark:text-gray-600">{game.subgenre}</span>
             </div>
-            <div className="text-gray-600">
+            <div className="text-gray-500 dark:text-gray-600">
               Model: {game.promptModel}
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4">
-            <motion.div
-              className="flex-1"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
+            <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
               <Link
                 href={`/games/${game.slug}`}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded font-medium transition-all relative group/btn overflow-hidden"
+                className="flex h-9 items-center justify-center gap-2 rounded-md border border-gray-900 bg-gray-900 px-3 text-sm font-medium text-white transition-all duration-200 hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] dark:border-white/15 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 dark:focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900"
               >
-                {/* Animated glow effect on button hover */}
-                <motion.span
-                  className="absolute inset-0 rounded opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background: `radial-gradient(circle at center, ${game.primaryColor || '#a855f7'}60, transparent 70%)`,
-                    filter: 'blur(8px)',
-                  }}
-                />
-                {/* Shine effect */}
-                <motion.span
-                  className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                  }}
-                />
-                <span className="relative flex items-center gap-2">
+                <span className="flex items-center gap-2">
                   <Play className="w-4 h-4" />
                   {game.playFee ? (
                     <span className="flex items-center gap-1">
                       Play
-                      <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs font-bold">
+                      <span className="rounded bg-white/20 px-1.5 py-0.5 text-xs font-bold dark:bg-gray-900/15">
                         {game.playFee} $DONUT
                       </span>
                     </span>
@@ -370,10 +233,10 @@ interface ActionButtonProps {
 }
 
 function ActionButton({ onClick, disabled, icon, label, title, ariaLabel, variant = 'default' }: ActionButtonProps) {
-  const baseClasses = "flex items-center gap-2 transition-all duration-200"
+  const baseClasses = "flex items-center gap-2 border-gray-300 text-gray-700 transition-all duration-200 hover:border-gray-400 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-900"
   const variantClasses = variant === 'danger' 
-    ? "text-red-400 hover:text-red-300 hover:border-red-400 hover:bg-red-500/10"
-    : "hover:bg-gray-800"
+    ? "text-red-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-700/70 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+    : ""
 
   return (
     <motion.div
