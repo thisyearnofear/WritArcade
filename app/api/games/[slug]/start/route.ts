@@ -76,7 +76,7 @@ export async function POST(
             game.articleContext, // Pass article context for narrative continuity
             userPreferences
           )
-          
+
           let assistantContent = ''
           
           for await (const response of gameStream) {

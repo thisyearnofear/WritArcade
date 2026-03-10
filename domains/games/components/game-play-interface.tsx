@@ -221,8 +221,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const [isPaying, setIsPaying] = useState(false)
 
   const handleStartClick = () => {
-    // NEW: Show preview modal first (before payment/gameplay)
-    // Enhanced with brand theme and animations
+    // Show preview modal first (before payment/gameplay)
     setShowPreview(true)
   }
 
@@ -897,6 +896,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   // HERO SCREEN - Before game starts
   if (!isPlaying) {
     return (
+      <>
       <div className="fixed inset-0 w-full h-full overflow-hidden bg-black">
         {/* Background Image */}
         {game.imageUrl && (
@@ -1088,6 +1088,19 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           </div>
         )}
       </div>
+
+      {/* Narrative Preview Modal - must be inside hero screen return */}
+      <NarrativePreviewModal
+        isOpen={showPreview}
+        game={game}
+        firstPanelNarrative={messages.length > 0 ? messages[0]?.content : undefined}
+        firstPanelOptions={messages.length > 0 ? (messages[0]?.options || []) : []}
+        storyboardPanels={generateStoryboardPreview()}
+        onClose={() => setShowPreview(false)}
+        onStart={handlePreviewApproved}
+        isLoading={isStarting}
+      />
+      </>
     )
   }
 
@@ -1365,18 +1378,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           )}
         </div>
       </div>
-
-      {/* NEW: Narrative Preview Modal - Enhanced with Visual Storyboard */}
-      <NarrativePreviewModal
-        isOpen={showPreview}
-        game={game}
-        firstPanelNarrative={messages.length > 0 ? messages[0]?.content : undefined}
-        firstPanelOptions={messages.length > 0 ? (messages[0]?.options || []) : []}
-        storyboardPanels={generateStoryboardPreview()}
-        onClose={() => setShowPreview(false)}
-        onStart={handlePreviewApproved}
-        isLoading={isStarting}
-      />
     </div>
   )
 }
