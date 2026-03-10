@@ -71,8 +71,14 @@ export function getCompatibleAnthropicModel(modelName: string): CompatibleLangua
   return anthropic(modelName) as unknown as CompatibleLanguageModel;
 }
 
+// Check if OpenAI is likely to work (has API key configured)
+export function hasOpenAIConfiguration(): boolean {
+  return !!process.env.OPENAI_API_KEY;
+}
+
 // Consolidate AI model providers with compatibility
 // Priority: Venice (if configured) -> Gemini (if enabled) -> OpenAI
+// IMPORTANT: Always prefer Venice when available to avoid OpenAI quota issues
 export function getModel(modelName: string, userPreferences?: UserAIPreferences): CompatibleLanguageModel {
   // If no model specified, use default priority: Venice -> Gemini -> OpenAI
   if (!modelName) {
@@ -88,25 +94,38 @@ export function getModel(modelName: string, userPreferences?: UserAIPreferences)
     return getCompatibleOpenAIModel('gpt-4o-mini');
   }
 
+  // Route Venice/Llama models to Venice
+  if (modelName.startsWith('venice') || modelName.startsWith('llama')) {
+    return getCompatibleVeniceModel(modelName);
+  }
+
   // Check if user has Gemini enabled and provided API key
-  if (hasGeminiConfiguration(userPreferences)) {
-    if (modelName.startsWith('gemini') || userPreferences?.preferGemini) {
+  if (modelName.startsWith('gemini')) {
+    if (hasGeminiConfiguration(userPreferences)) {
       const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
       if (apiKey) {
-        const geminiModelName = modelName.startsWith('gemini')
-          ? modelName
-          : 'gemini-2.0-flash';
-        return getCompatibleGoogleModel(geminiModelName, apiKey);
+        return getCompatibleGoogleModel(modelName, apiKey);
       }
+    }
+    // Gemini requested but not configured - fall back to Venice if available
+    if (hasVeniceConfiguration()) {
+      console.log(`Gemini not configured, falling back to Venice for model: ${modelName}`);
+      return getCompatibleVeniceModel(VENICE_DEFAULT_MODEL);
     }
   }
 
+  // GPT models - but prefer Venice if configured to avoid quota issues
   if (modelName.startsWith('gpt')) {
+    // If Venice is available, use it instead of OpenAI to avoid quota issues
+    if (hasVeniceConfiguration()) {
+      console.log(`Using Venice instead of OpenAI (${modelName}) to avoid quota issues`);
+      return getCompatibleVeniceModel(VENICE_DEFAULT_MODEL);
+    }
     return getCompatibleOpenAIModel(modelName);
-  } else if (modelName.startsWith('claude')) {
+  }
+
+  if (modelName.startsWith('claude')) {
     return getCompatibleAnthropicModel(modelName);
-  } else if (modelName.startsWith('venice') || modelName.startsWith('llama')) {
-    return getCompatibleVeniceModel(modelName);
   }
 
   // Default fallback - try Venice first if configured
