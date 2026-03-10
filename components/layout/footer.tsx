@@ -116,7 +116,7 @@ export function Footer() {
               {CONTRACT_LINKS.map((c) => (
                 <li key={c.label}>
                   <AnimatedContractLink href={c.href} label={c.label} />
-                  <span className="text-gray-400 dark:text-gray-600 text-xs font-mono">
+                  <span className="text-gray-600 dark:text-gray-400 text-xs font-mono">
                     {c.address.slice(0, 6)}…{c.address.slice(-4)}
                   </span>
                 </li>

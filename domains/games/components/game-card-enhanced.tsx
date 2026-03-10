@@ -90,7 +90,7 @@ export function GameCardEnhanced({
             {isUserGame && (
               <div className="flex items-center gap-2">
                 <motion.span 
-                  className={`rounded px-2 py-1 text-xs ${game.private ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}
+                  className={`rounded px-2 py-1 text-xs ${game.private ? 'bg-red-500/20 text-red-700 dark:text-red-400' : 'bg-green-500/20 text-green-700 dark:text-green-400'}`}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 15 }}
@@ -99,7 +99,7 @@ export function GameCardEnhanced({
                 </motion.span>
                 {game.nftTokenId && (
                   <motion.span 
-                    className="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                    className="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.1 }}
@@ -133,9 +133,9 @@ export function GameCardEnhanced({
           <div className="space-y-1 border-t border-gray-200 pt-3 text-xs text-gray-500 dark:border-gray-800">
             <div className="flex justify-between">
               <span>Created {new Date(game.createdAt).toLocaleDateString()}</span>
-              <span className="text-gray-500 dark:text-gray-600">{game.subgenre}</span>
+              <span className="text-gray-600 dark:text-gray-400">{game.subgenre}</span>
             </div>
-            <div className="text-gray-500 dark:text-gray-600">
+            <div className="text-gray-600 dark:text-gray-400">
               Model: {game.promptModel}
             </div>
           </div>

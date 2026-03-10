@@ -53,7 +53,7 @@ function HowItWorksSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <p className="text-3xl font-light text-gray-300 dark:text-gray-700 mb-4 tabular-nums">{step.number}</p>
+              <p className="text-3xl font-light text-gray-400 dark:text-gray-500 mb-4 tabular-nums">{step.number}</p>
               <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">{step.title}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{step.description}</p>
             </motion.div>
@@ -140,7 +140,7 @@ export default function HomePage() {
 
               {gameCount !== null && gameCount > 0 && (
                 <motion.p
-                  className="text-sm text-gray-400 dark:text-gray-600 mb-6"
+                  className="text-sm text-gray-600 dark:text-gray-400 mb-6"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
