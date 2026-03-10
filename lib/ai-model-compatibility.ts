@@ -72,30 +72,46 @@ export function getCompatibleAnthropicModel(modelName: string): CompatibleLangua
 }
 
 // Consolidate AI model providers with compatibility
+// Priority: Venice (if configured) -> Gemini (if enabled) -> OpenAI
 export function getModel(modelName: string, userPreferences?: UserAIPreferences): CompatibleLanguageModel {
-  const normalizedModelName = modelName || 'gpt-4o-mini';
+  // If no model specified, use default priority: Venice -> Gemini -> OpenAI
+  if (!modelName) {
+    if (hasVeniceConfiguration()) {
+      return getCompatibleVeniceModel(VENICE_DEFAULT_MODEL);
+    }
+    if (hasGeminiConfiguration(userPreferences)) {
+      const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
+      if (apiKey) {
+        return getCompatibleGoogleModel('gemini-2.0-flash', apiKey);
+      }
+    }
+    return getCompatibleOpenAIModel('gpt-4o-mini');
+  }
 
   // Check if user has Gemini enabled and provided API key
   if (hasGeminiConfiguration(userPreferences)) {
-    if (normalizedModelName.startsWith('gemini') || userPreferences?.preferGemini) {
+    if (modelName.startsWith('gemini') || userPreferences?.preferGemini) {
       const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
       if (apiKey) {
-        const geminiModelName = normalizedModelName.startsWith('gemini')
-          ? normalizedModelName
+        const geminiModelName = modelName.startsWith('gemini')
+          ? modelName
           : 'gemini-2.0-flash';
         return getCompatibleGoogleModel(geminiModelName, apiKey);
       }
     }
   }
 
-  if (normalizedModelName.startsWith('gpt')) {
-    return getCompatibleOpenAIModel(normalizedModelName);
-  } else if (normalizedModelName.startsWith('claude')) {
-    return getCompatibleAnthropicModel(normalizedModelName);
-  } else if (normalizedModelName.startsWith('venice')) {
-    return getCompatibleVeniceModel(normalizedModelName);
+  if (modelName.startsWith('gpt')) {
+    return getCompatibleOpenAIModel(modelName);
+  } else if (modelName.startsWith('claude')) {
+    return getCompatibleAnthropicModel(modelName);
+  } else if (modelName.startsWith('venice') || modelName.startsWith('llama')) {
+    return getCompatibleVeniceModel(modelName);
   }
 
-  // Default fallback
+  // Default fallback - try Venice first if configured
+  if (hasVeniceConfiguration()) {
+    return getCompatibleVeniceModel(VENICE_DEFAULT_MODEL);
+  }
   return getCompatibleOpenAIModel('gpt-4o-mini');
 }
