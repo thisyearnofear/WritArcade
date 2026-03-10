@@ -22,6 +22,19 @@ interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
 }
 
+function getGenerationErrorMessage(errorData: { error?: string; code?: string }, status: number, statusText: string): string {
+  switch (errorData.code) {
+    case 'CONTENT_PROCESSING_FAILED':
+      return 'We could not read that article URL. Please ensure it is public and try another Paragraph link.'
+    case 'AI_GENERATION_FAILED':
+      return 'Game generation model failed this time. Please retry in a moment.'
+    case 'DB_SAVE_FAILED':
+      return 'Your game was generated but failed to save. Please retry to persist it.'
+    default:
+      return errorData.error || `Generation failed (${status}): ${statusText}`
+  }
+}
+
 function previewStyleFor(genre: GameGenre, difficulty: GameDifficulty) {
   const genreMap: Record<GameGenre, { gradient: string; blurb: string }> = {
     horror: { gradient: 'from-indigo-900 via-red-900 to-black', blurb: 'Dark, tense pacing with dramatic contrasts.' },
@@ -172,10 +185,10 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
 
           // Handle network errors
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}))
-            const errorMsg =
-              errorData.error ||
-              `Generation failed (${response.status}): ${response.statusText}`
+            const errorData = await response
+              .json()
+              .catch(() => ({} as { error?: string; code?: string }))
+            const errorMsg = getGenerationErrorMessage(errorData, response.status, response.statusText)
 
             lastError = new Error(errorMsg)
 

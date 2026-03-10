@@ -42,20 +42,25 @@ export function getCompatibleAnthropicModel(modelName: string): CompatibleLangua
 
 // Consolidate AI model providers with compatibility
 export function getModel(modelName: string, userPreferences?: UserAIPreferences): CompatibleLanguageModel {
+  const normalizedModelName = modelName || 'gpt-4o-mini';
+
   // Check if user has Gemini enabled and provided API key
   if (userPreferences?.geminiEnabled && (process.env.GOOGLE_API_KEY || userPreferences?.googleApiKey)) {
-    if (modelName?.startsWith('gemini') || userPreferences?.preferGemini) {
+    if (normalizedModelName.startsWith('gemini') || userPreferences?.preferGemini) {
       const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
       if (apiKey) {
-        return getCompatibleGoogleModel(modelName || 'gemini-3-pro', apiKey);
+        const geminiModelName = normalizedModelName.startsWith('gemini')
+          ? normalizedModelName
+          : 'gemini-2.0-flash';
+        return getCompatibleGoogleModel(geminiModelName, apiKey);
       }
     }
   }
 
-  if (modelName.startsWith('gpt')) {
-    return getCompatibleOpenAIModel(modelName);
-  } else if (modelName.startsWith('claude')) {
-    return getCompatibleAnthropicModel(modelName);
+  if (normalizedModelName.startsWith('gpt')) {
+    return getCompatibleOpenAIModel(normalizedModelName);
+  } else if (normalizedModelName.startsWith('claude')) {
+    return getCompatibleAnthropicModel(normalizedModelName);
   }
 
   // Default fallback

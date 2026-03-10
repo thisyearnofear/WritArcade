@@ -16,6 +16,19 @@ interface GameCustomizerProps {
   onGameGenerated?: (game: unknown) => void
 }
 
+function getGenerationErrorMessage(errorData: { error?: string; code?: string }, status: number, statusText: string): string {
+  switch (errorData.code) {
+    case 'CONTENT_PROCESSING_FAILED':
+      return 'We could not read that article URL. Please ensure it is public and try another Paragraph link.'
+    case 'AI_GENERATION_FAILED':
+      return 'Game generation model failed this time. Please retry in a moment.'
+    case 'DB_SAVE_FAILED':
+      return 'Your game was generated but failed to save. Please retry to persist it.'
+    default:
+      return errorData.error || `Generation failed (${status}): ${statusText}`
+  }
+}
+
 export function GameCustomizer({ writerCoin, articleUrl, onBack, onGameGenerated }: GameCustomizerProps) {
   const [genre, setGenre] = useState<GameGenre>('horror')
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy')
@@ -64,8 +77,10 @@ export function GameCustomizer({ writerCoin, articleUrl, onBack, onGameGenerated
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate game')
+        const errorData = await response
+          .json()
+          .catch(() => ({} as { error?: string; code?: string }))
+        throw new Error(getGenerationErrorMessage(errorData, response.status, response.statusText))
       }
 
       const game = await response.json()

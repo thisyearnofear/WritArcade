@@ -214,7 +214,12 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       console.warn('Primary game save failed, retrying without optional article metadata:', {
         message: dbError instanceof Error ? dbError.message : 'Unknown error',
       })
-      savedGame = await GameDatabaseService.createGame(enhancedGameData, user?.id, undefined, validatedData.assetIds)
+      try {
+        savedGame = await GameDatabaseService.createGame(enhancedGameData, user?.id, undefined, validatedData.assetIds)
+      } catch (fallbackDbError) {
+        const fallbackMessage = fallbackDbError instanceof Error ? fallbackDbError.message : 'Unknown DB save error'
+        throw new Error(`DB_SAVE_FAILED: ${fallbackMessage}`)
+      }
     }
     console.log('Game saved successfully:', { id: savedGame.id, slug: savedGame.slug })
 
@@ -248,10 +253,20 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       )
     }
 
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    const errorCode = message.startsWith('URL processing failed:')
+      ? 'CONTENT_PROCESSING_FAILED'
+      : message.startsWith('AI generation failed')
+        ? 'AI_GENERATION_FAILED'
+        : message.startsWith('DB_SAVE_FAILED:') || message.includes('Failed to save game to database')
+          ? 'DB_SAVE_FAILED'
+          : 'GAME_GENERATION_FAILED'
+
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate game. Please try again.'
+        error: 'Failed to generate game. Please try again.',
+        code: errorCode,
       },
       { status: 500 }
     )

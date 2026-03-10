@@ -72,7 +72,6 @@ export class GameAIService {
    * Includes validation and retry logic for customization constraints
    */
   static async generateGame(request: GameGenerationRequest, retryCount = 0, userPreferences?: UserAIPreferences): Promise<GameGenerationResponse> {
-    const model = getModel(request.model || 'gpt-4o-mini', userPreferences)
     const maxRetries = 2
 
     let promptText = request.promptText || ''
@@ -92,6 +91,7 @@ export class GameAIService {
     })
 
     try {
+      const model = getModel(request.model || 'gpt-4o-mini', userPreferences)
       console.log('Calling generateObject with model...')
       const { object: game } = await generateObject({
         model,
@@ -135,6 +135,7 @@ export class GameAIService {
       }
     } catch (error) {
       console.error('Game generation error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown AI generation error'
 
       // If this is a validation/schema error and we have retries left, retry
       if (retryCount < maxRetries && error instanceof Error && error.message.includes('schema')) {
@@ -148,10 +149,18 @@ export class GameAIService {
         return this.generateGame(stricterRequest, retryCount + 1)
       }
 
+      if (retryCount < maxRetries && error instanceof Error && userPreferences?.preferGemini) {
+        console.warn(`Provider/model mismatch suspected. Retrying with OpenAI fallback (${retryCount + 1}/${maxRetries})`)
+        return this.generateGame({ ...request, model: 'gpt-4o-mini' }, retryCount + 1, {
+          ...userPreferences,
+          preferGemini: false,
+        })
+      }
+
       throw new Error(
         retryCount > 0
-          ? `Failed to generate game after ${retryCount + 1} attempts`
-          : 'Failed to generate game'
+          ? `AI generation failed after ${retryCount + 1} attempts: ${errorMessage}`
+          : `AI generation failed: ${errorMessage}`
       )
     }
   }
