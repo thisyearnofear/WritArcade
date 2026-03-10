@@ -68,16 +68,19 @@ export interface GameMetadata {
 
 export class IPFSMetadataService {
   private static instance: IPFSMetadataService
+  private readonly pinataJwt: string
   private readonly pinataApiKey: string
   private readonly pinataSecretKey: string
   private readonly pinataGateway: string
 
   constructor() {
+    // Prefer JWT (modern), fallback to API key + secret (legacy)
+    this.pinataJwt = process.env.PINATA_JWT || ''
     this.pinataApiKey = process.env.PINATA_API_KEY || ''
     this.pinataSecretKey = process.env.PINATA_SECRET_API_KEY || ''
     this.pinataGateway = process.env.IPFS_GATEWAY || 'https://gateway.pinata.cloud'
     
-    if (!this.pinataApiKey || !this.pinataSecretKey) {
+    if (!this.pinataJwt && (!this.pinataApiKey || !this.pinataSecretKey)) {
       console.warn('IPFS service initialized without Pinata credentials')
     }
   }
@@ -160,17 +163,24 @@ export class IPFSMetadataService {
    */
   public async uploadToIPFS(data: Record<string, unknown>, filename: string): Promise<string> {
     try {
-      if (!this.pinataApiKey || !this.pinataSecretKey) {
+      if (!this.pinataJwt && (!this.pinataApiKey || !this.pinataSecretKey)) {
         throw new Error('Pinata credentials not configured')
+      }
+
+      // Use JWT auth if available, otherwise fall back to API key + secret
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      if (this.pinataJwt) {
+        headers['Authorization'] = `Bearer ${this.pinataJwt}`
+      } else {
+        headers['pinata_api_key'] = this.pinataApiKey
+        headers['pinata_secret_api_key'] = this.pinataSecretKey
       }
 
       const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'pinata_api_key': this.pinataApiKey,
-          'pinata_secret_api_key': this.pinataSecretKey,
-        },
+        headers,
         body: JSON.stringify({
           pinataContent: data,
           pinataMetadata: {
