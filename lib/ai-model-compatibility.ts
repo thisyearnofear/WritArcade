@@ -71,19 +71,6 @@ export function getCompatibleAnthropicModel(modelName: string): CompatibleLangua
 export function getModel(modelName: string, userPreferences?: UserAIPreferences): CompatibleLanguageModel {
   const normalizedModelName = modelName || 'gpt-4o-mini';
 
-  if (!modelName) {
-    if (hasVeniceConfiguration()) {
-      return getCompatibleVeniceModel('venice-uncensored');
-    }
-
-    if (hasGeminiConfiguration(userPreferences)) {
-      const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
-      if (apiKey) {
-        return getCompatibleGoogleModel('gemini-3.1-flash-preview', apiKey);
-      }
-    }
-  }
-
   // Check if user has Gemini enabled and provided API key
   if (hasGeminiConfiguration(userPreferences)) {
     if (normalizedModelName.startsWith('gemini') || userPreferences?.preferGemini) {
