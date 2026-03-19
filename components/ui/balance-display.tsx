@@ -38,6 +38,11 @@ function useAllWriterCoinBalances(): CoinBalanceRow[] {
   ]
 }
 
+/** Truncate a formatted balance string to a whole number */
+function toWholeNumber(formatted: string): string {
+  return formatted.split('.')[0] ?? formatted
+}
+
 /** Pick the "primary" balance to show on the badge — first non-zero, else AVC */
 function getPrimaryBalance(rows: CoinBalanceRow[]) {
   const nonZero = rows.find(r => r.balance && r.balance.formattedBalance !== '0')
@@ -78,7 +83,7 @@ function BalanceRow({ row, mobileLayout }: { row: CoinBalanceRow; mobileLayout: 
           <Loader2 className="w-3.5 h-3.5 text-gray-500 animate-spin" />
         ) : (
           <span className={`text-sm tabular-nums ${isZero ? 'text-gray-600' : 'text-white font-medium'}`}>
-            {row.balance?.formattedBalance ?? '—'}
+            {row.balance ? toWholeNumber(row.balance.formattedBalance) : '—'}
           </span>
         )}
       </div>
@@ -138,7 +143,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       ) : hasPrimaryBalance ? (
         <>
           <Coins className={`text-purple-400 ${mobileLayout ? 'w-5 h-5' : 'w-4 h-4'}`} />
-          <span className={`text-white font-medium ${textClasses}`}>{primary.balance!.formattedBalance}</span>
+          <span className={`text-white font-medium ${textClasses}`}>{toWholeNumber(primary.balance!.formattedBalance)}</span>
           <span className={`text-gray-300 ${textClasses}`}>{primary.balance!.symbol}</span>
           {nonZeroCount > 1 && (
             <span className={`text-purple-400 ${textClasses}`}>+{nonZeroCount - 1}</span>
