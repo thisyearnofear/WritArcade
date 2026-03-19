@@ -76,7 +76,7 @@ function AnimatedNavLink({ href, label, isActive }: { href: string; label: strin
         className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black rounded pb-0.5 ${
           isActive
             ? 'text-gray-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900/60 dark:after:bg-white/60 after:rounded-full'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            : 'text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
