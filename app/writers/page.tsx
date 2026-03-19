@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
+import { CopyAddressButton } from '@/components/ui/copy-address-button'
 import { motion } from 'framer-motion'
 import { WRITER_COINS } from '@/lib/writerCoins'
 import { Header } from '@/components/layout/header'
@@ -53,6 +54,10 @@ export default function WritersPage() {
                       <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{coin.bio}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 pt-1">
+                      <CopyAddressButton
+                        address={coin.address}
+                        labelPrefix={`Copy ${coin.symbol}`}
+                      />
                       <a
                         href={coin.paragraphUrl}
                         target="_blank"

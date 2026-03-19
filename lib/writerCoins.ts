@@ -37,7 +37,7 @@ export interface WriterCoin {
  * 1. AVC by Fred Wilson ($AVC)
  * 2. Debbie Soon ($DEBBIE)
  * 3. Blog of Jake ($JAKE)
- * 4. Tso's Thoughts ($TSO)
+ * 4. Tso Thoughts ($THOUGHTS)
  * 5. Papa ($PARAPAPA)
  */
 export const WRITER_COINS: WriterCoin[] = [
@@ -106,15 +106,15 @@ export const WRITER_COINS: WriterCoin[] = [
     },
     {
         id: "tso",
-        name: "Tso's Thoughts",
-        symbol: "$TSO",
-        address: "0x8072FC8Ee6Fd17B913833F2789bC9aa99D21AAeB", // Base mainnet
+        name: "Tso Thoughts",
+        symbol: "$THOUGHTS",
+        address: "0x98cacf94eb68ea4c5bdc4d70a1a04c2c2cffde39", // Base mainnet
         writer: "Tso",
         paragraphAuthor: "cryptso",
         paragraphUrl: "https://paragraph.com/@cryptso",
         bio: "Crypto-native thinker writing about onchain ecosystems, DeFi, and the future of money.",
-        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $TSO
-        mintCost: BigInt(50 * 10 ** 18), // 50 $TSO
+        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $THOUGHTS
+        mintCost: BigInt(50 * 10 ** 18), // 50 $THOUGHTS
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment

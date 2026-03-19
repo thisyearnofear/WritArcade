@@ -5,6 +5,7 @@ import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { useAccount } from 'wagmi'
 import { Coins, Loader2, ChevronDown } from 'lucide-react'
 import { WRITER_COINS } from '@/lib/writerCoins'
+import { CopyAddressButton } from '@/components/ui/copy-address-button'
 
 interface BalanceDisplayProps {
   mobileLayout?: boolean
@@ -60,12 +61,17 @@ function BalanceRow({ row, mobileLayout }: { row: CoinBalanceRow; mobileLayout: 
   const isZero = !row.balance || row.balance.formattedBalance === '0'
 
   return (
-    <div className={`flex items-center justify-between gap-4 ${mobileLayout ? 'py-2.5 px-4' : 'py-2 px-3'}`}>
+    <div className={`flex items-center justify-between gap-3 ${mobileLayout ? 'py-2.5 px-4' : 'py-2 px-3'}`}>
       <div className="flex items-center gap-2.5 min-w-0">
         <Coins className={`w-4 h-4 shrink-0 ${isZero ? 'text-gray-500' : 'text-purple-400'}`} />
         <span className={`text-sm font-medium truncate ${isZero ? 'text-gray-500' : 'text-gray-100'}`}>
           {row.coin.symbol}
         </span>
+        <CopyAddressButton
+          address={row.coin.address}
+          sizeClass="w-3 h-3"
+          labelPrefix={`Copy ${row.coin.symbol}`}
+        />
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {row.isLoading ? (

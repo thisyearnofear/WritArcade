@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ExternalLink, ArrowLeft } from 'lucide-react'
+import { CopyAddressButton } from '@/components/ui/copy-address-button'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
@@ -79,6 +80,10 @@ export function WriterPageClient({
                       ${symbol}
                       <ExternalLink className="w-3 h-3" />
                     </a>
+                    <CopyAddressButton
+                      address={address}
+                      labelPrefix={`Copy $${symbol}`}
+                    />
                   </div>
                 </div>
 
