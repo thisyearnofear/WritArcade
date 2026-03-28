@@ -812,5 +812,65 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
     return options.sort((a, b) => a.id - b.id)
   }
 
+  /**
+   * Generate a secret panel (6th panel epilogue) for NFT-gated content.
+   * This panel is encrypted with Lit Protocol and only accessible to NFT holders.
+   *
+   * ENHANCEMENT FIRST: Reuses existing model provider and error handling patterns
+   */
+  static async generateSecretPanel(
+    game: { title: string; description: string; genre: string; tagline: string },
+    articleContext?: string,
+    userPreferences?: import('@/lib/user-ai-preferences.service').UserAIPreferences
+  ): Promise<{ narrative: string; imagePrompt: string }> {
+    const model = getModel('', userPreferences)
+
+    const prompt = `You are a narrative designer creating a SECRET EPILOGUE for an interactive comic game.
+
+GAME: "${game.title}" (${game.genre})
+TAGLINE: "${game.tagline}"
+DESCRIPTION: "${game.description}"
+${articleContext ? `\nSOURCE ARTICLE CONTEXT:\n${articleContext}\n` : ''}
+
+Your task: Write a SECRET PANEL — a 2-3 sentence epilogue that reveals something hidden. This panel is only accessible to owners of the game's NFT.
+
+The secret panel should:
+1. Reveal a hidden truth, alternate perspective, or surprising consequence not shown in panels 1-5
+2. Feel like a "director's cut" or "post-credits scene" — rewarding for the dedicated player
+3. Match the game's tone and genre
+4. End with intrigue or a twist that makes the reader reconsider the entire game
+
+Also provide a detailed image generation prompt for a comic panel illustration that matches this secret scene.
+
+Respond in JSON:
+{
+  "narrative": "The 2-3 sentence secret epilogue text",
+  "imagePrompt": "A detailed image generation prompt for a comic panel illustrating this secret scene"
+}`
+
+    try {
+      const { object: result } = await generateObject({
+        model,
+        schema: z.object({
+          narrative: z.string().min(20).max(500),
+          imagePrompt: z.string().min(10).max(300),
+        }),
+        prompt,
+      })
+
+      return {
+        narrative: result.narrative,
+        imagePrompt: result.imagePrompt,
+      }
+    } catch (error) {
+      console.error('Secret panel generation failed:', error)
+      // Graceful fallback — game still works without the secret panel
+      return {
+        narrative: `The story continues beyond what you've seen... Some truths reveal themselves only to those who truly own the experience.`,
+        imagePrompt: `A mysterious comic panel with dramatic shadows, ${game.genre} style, showing a hidden doorway or concealed truth`,
+      }
+    }
+  }
+
 
 }

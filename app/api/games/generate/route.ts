@@ -7,6 +7,8 @@ import type { GameGenerationResponse } from '@/domains/games/types'
 import { optionalAuth } from '@/lib/auth'
 import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
+import { config, logger } from '@/lib/config'
+import { prisma } from '@/lib/prisma'
 
 // Request validation schema
 const generateGameSchema = z.object({
@@ -223,6 +225,11 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     }
     console.log('Game saved successfully:', { id: savedGame.id, slug: savedGame.slug })
 
+    // Background enrichment: secret panel + hypercert (non-blocking)
+    enrichGameInBackground(savedGame.id, savedGame.slug, gameData, processedContent?.text).catch(
+      (err) => logger.error('Background enrichment failed', err, { gameId: savedGame.id })
+    )
+
     return NextResponse.json({
       success: true,
       data: {
@@ -279,3 +286,94 @@ Your game MUST authentically interpret this article's core themes. Players shoul
 // GET /api/games/generate is POST-only.
 // Game listing lives at GET /api/games (app/api/games/route.ts) with caching.
 // Keeping this comment so future contributors don't re-add the duplicate.
+
+/**
+ * Background enrichment: generate secret panel + hypercert after game creation.
+ * Non-blocking — failures do not affect the game generation response.
+ *
+ * ENHANCEMENT FIRST: Wraps both integrations in a single function to avoid
+ * duplicating error handling and DB update logic.
+ */
+async function enrichGameInBackground(
+  gameId: string,
+  gameSlug: string,
+  gameData: GameGenerationResponse,
+  articleText?: string
+): Promise<void> {
+  // Generate secret panel + encrypt with Lit Protocol
+  try {
+    if (config.litProtocol.enabled || config.isDevelopment) {
+      const { encryptSecretPanel } = await import('@/lib/lit-protocol.service')
+
+      const secretPanel = await GameAIService.generateSecretPanel(
+        {
+          title: gameData.title,
+          description: gameData.description,
+          genre: gameData.genre,
+          tagline: gameData.tagline,
+        },
+        articleText?.substring(0, 800)
+      )
+
+      const encrypted = await encryptSecretPanel(secretPanel)
+
+      await prisma.game.update({
+        where: { id: gameId },
+        data: {
+          secretPanelCiphertext: encrypted.ciphertext,
+          secretPanelDataHash: encrypted.dataToEncryptHash,
+          secretPanelImagePrompt: secretPanel.imagePrompt,
+          secretPanelGenerated: true,
+        },
+      })
+
+      logger.litProtocol('Secret panel generated and encrypted', {
+        gameId,
+        slug: gameSlug,
+      })
+    }
+  } catch (err) {
+    logger.error('Secret panel generation failed (non-blocking)', err, {
+      gameId,
+    })
+  }
+
+  // Create hypercert impact certificate
+  try {
+    if (config.hypercerts.enabled) {
+      const {
+        createGameHypercert,
+        buildGameHypercertInput,
+      } = await import('@/lib/hypercerts.service')
+
+      const hypercertInput = buildGameHypercertInput({
+        gameTitle: gameData.title,
+        gameDescription: gameData.description,
+        genre: gameData.genre,
+        articleTitle: articleText ? 'Source Article' : undefined,
+      })
+
+      const result = await createGameHypercert(hypercertInput)
+
+      if (result) {
+        await prisma.game.update({
+          where: { id: gameId },
+          data: {
+            hypercertUri: result.uri,
+            hypercertCid: result.cid,
+          },
+        })
+
+        logger.hypercerts('Hypercert created and linked', {
+          gameId,
+          slug: gameSlug,
+          uri: result.uri,
+        })
+      }
+    }
+  } catch (err) {
+    logger.error('Hypercert creation failed (non-blocking)', err, {
+      gameId,
+    })
+  }
+}

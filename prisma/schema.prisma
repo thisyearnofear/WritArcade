@@ -109,6 +109,16 @@ model Game {
   approvedAt DateTime?
   rejectionReason String? @db.Text
 
+  // Lit Protocol: NFT-gated secret panel (encrypted epilogue)
+  secretPanelCiphertext    String? @db.Text // Encrypted panel content
+  secretPanelDataHash      String? // Hash for Lit Protocol decryption verification
+  secretPanelImagePrompt   String? @db.Text // Image generation prompt for the secret panel
+  secretPanelGenerated     Boolean @default(false) // Whether secret panel was generated
+
+  // Hypercerts: Impact certificate for creative contribution
+  hypercertUri String? // AT Protocol URI (at://did:plc:xxx/org.hypercerts.claim.activity/yyy)
+  hypercertCid String? // Content hash for tamper-evidence
+
   // Relations
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)

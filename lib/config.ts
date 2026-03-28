@@ -48,6 +48,25 @@ export const config = {
   },
 
   /**
+   * Lit Protocol Configuration
+   * NFT-gated encryption for secret game panels
+   */
+  litProtocol: {
+    enabled: process.env.LIT_PROTOCOL_ENABLED !== 'false',
+    rpcUrl: process.env.LIT_RPC_URL || 'https://lit-protocol-datil-dev.rpc.litgateway.com',
+    network: process.env.LIT_NETWORK || 'datil-dev',
+  },
+
+  /**
+   * Hypercerts Configuration (AT Protocol)
+   * Impact certificates for creative contributions
+   */
+  hypercerts: {
+    enabled: process.env.HYPERCERTS_ENABLED !== 'false',
+    pdsUrl: process.env.HYPERCERTS_PDS_URL || 'https://certified.app',
+  },
+
+  /**
    * API Rate Limiting & Security
    */
   api: {
@@ -158,5 +177,23 @@ export const logger = {
    */
   ipfs: (action: string, context: LogContext) => {
     logger.info(`[IPFS] ${action}`, context)
+  },
+
+  /**
+   * Lit Protocol-specific logging
+   */
+  litProtocol: (action: string, context: LogContext) => {
+    if (config.litProtocol.enabled) {
+      logger.info(`[Lit Protocol] ${action}`, context)
+    }
+  },
+
+  /**
+   * Hypercerts-specific logging
+   */
+  hypercerts: (action: string, context: LogContext) => {
+    if (config.hypercerts.enabled) {
+      logger.info(`[Hypercerts] ${action}`, context)
+    }
   },
 }

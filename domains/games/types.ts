@@ -68,6 +68,16 @@ export interface Game {
   approvedAt?: Date
   rejectionReason?: string
 
+  // Lit Protocol: NFT-gated secret panel
+  secretPanelCiphertext?: string
+  secretPanelDataHash?: string
+  secretPanelImagePrompt?: string
+  secretPanelGenerated?: boolean
+
+  // Hypercerts: Impact certificate
+  hypercertUri?: string
+  hypercertCid?: string
+
   // Timestamps
   createdAt: Date
   updatedAt: Date
