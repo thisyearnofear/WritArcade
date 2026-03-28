@@ -1,4 +1,66 @@
-# writersarcade - Story Protocol Hackathon 2025
+# writersarcade - Hackathon History
+
+---
+
+## PL Genesis: Frontiers of Collaboration (March 2026)
+
+**Event**: PL_Genesis: Frontiers of Collaboration
+**Host**: Protocol Labs
+**Deadline**: March 31, 2026
+**Prize Pool**: $150K+ across tracks + sponsor bounties
+**Track**: Existing Code ($50K) + Lit Protocol + Hypercerts bounties
+
+### Core Narrative
+WritersArcade turns articles into on-chain, playable, ownable games. With **Lit Protocol**, we gate exclusive content behind NFT ownership. With **Hypercerts**, we certify every creative collaboration as measurable public good impact. With **Story Protocol**, we ensure every derivative game traces back to its source.
+
+### Implementation
+
+#### Lit Protocol: NFT-Gated Secret Panels
+- **What**: Every generated game gets a 6th "secret panel" — an AI-generated epilogue encrypted with Lit Protocol
+- **Access Control**: ERC721 ownership check on Base mainnet (GameNFT contract)
+- **Flow**: Server encrypts after game generation → NFT holder decrypts client-side → reveals hidden epilogue
+- **Files**: `lib/lit-protocol.service.ts`, `domains/games/components/secret-panel.tsx`, `app/api/games/[slug]/secret-panel/route.ts`
+- **Fallback**: Base64 encoding when Lit nodes unavailable (graceful degradation)
+
+#### Hypercerts: Impact Certificates
+- **What**: Auto-creates an impact certificate on AT Protocol for each game created
+- **Contributors**: Article writer (50%), Game creator (40%), AI/Platform (10%)
+- **Measurements**: Panel count, article fidelity score
+- **Files**: `lib/hypercerts.service.ts`, `domains/games/components/hypercert-badge.tsx`
+- **Fallback**: Mock URIs when AT Protocol credentials not configured
+
+#### Integration Architecture
+```
+Game Generation → Save to DB → Return Response
+                      │
+                      ▼ (async, non-blocking)
+            enrichGameInBackground()
+              │                    │
+              ▼                    ▼
+    generateSecretPanel()   createGameHypercert()
+              │                    │
+              ▼                    ▼
+    encryptSecretPanel()    saveHypercertUri()
+              │                    │
+              ▼                    ▼
+    lit-protocol.service    hypercerts.service
+```
+
+### Environment Variables
+```env
+# Lit Protocol
+LIT_PROTOCOL_ENABLED=true
+LIT_NETWORK=datil-dev
+
+# Hypercerts
+HYPERCERTS_ENABLED=true
+HYPERCERTS_HANDLE=your-handle.certified.app
+HYPERCERTS_APP_PASSWORD=your-app-password
+```
+
+---
+
+## Story Protocol Hackathon (November-December 2025)
 
 **Event**: Surreal World Assets Hackathon
 **Host**: Story Protocol (L1 blockchain for IP)

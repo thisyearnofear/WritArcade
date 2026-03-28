@@ -1,11 +1,11 @@
 # writersarcade Architecture
 
-**Last Updated:** March 6, 2026
-**Status:** Phase 9 - Production Ready (Base Batches submission)
+**Last Updated:** March 28, 2026
+**Status:** Phase 12 - PL Genesis Hackathon (Lit Protocol + Hypercerts)
 
 ## Overview
 
-writersarcade is a **dual-loop platform** designed to maximize the value of content:
+writersarcade is a **triple-loop platform** designed to maximize the value of content:
 
 1.  **The Attention Loop (Base Chain)**:
     *   **User Action**: "I like this article. Generate a game."
@@ -19,7 +19,13 @@ writersarcade is a **dual-loop platform** designed to maximize the value of cont
     *   **Tech**: Asset Workshop + Story Protocol IP Registry.
     *   **Status**: Live (Hackathon Beta).
 
-Both loops share the same codebase but serve different user needs: *Consumption* vs. *Creation*.
+3.  **The Impact Loop (Hypercerts + Lit Protocol)**:
+    *   **User Action**: "I created something meaningful. Certify it. Gate exclusive content."
+    *   **Value**: Creative impact certification, NFT-gated secret content, public goods recognition.
+    *   **Tech**: Hypercerts (AT Protocol) + Lit Protocol (decentralized encryption).
+    *   **Status**: Live (PL Genesis Hackathon).
+
+All three loops share the same codebase but serve different user needs: *Consumption*, *Creation*, and *Certification*.
 
 ## Unified Architecture
 
@@ -92,6 +98,18 @@ Game Compilation
   - GameNFT.sol (game NFTs)
   - StoryIPAuthor.sol (IP registration)
 - **Wallet**: Farcaster Wallet (built-in) + Browser wallets (MetaMask, etc.)
+
+### Privacy & Access Control
+- **Lit Protocol**: Decentralized encryption for NFT-gated content
+  - `@lit-protocol/lit-node-client`, `@lit-protocol/encryption`, `@lit-protocol/access-control-conditions`
+  - ERC721 ownership check on Base via access control conditions
+  - Server-side encryption (no auth), client-side decryption (wallet auth)
+
+### Impact Certification
+- **Hypercerts**: Impact certificates via AT Protocol
+  - `@atproto/api` (AtpAgent) for PDS record creation
+  - Activity claims with contributors, measurements, attachments
+  - Stored on creator's AT Protocol PDS (certified.app)
 
 ## Dual-Chain Architecture (Base + Story)
 
@@ -174,6 +192,11 @@ Game
 ├─ difficulty (enum)
 ├─ gameState (JSON)
 ├─ nftId (string, optional)
+├─ secretPanelCiphertext (text, optional) — Lit Protocol encrypted epilogue
+├─ secretPanelDataHash (string, optional) — Hash for decryption verification
+├─ secretPanelGenerated (boolean) — Whether secret panel was created
+├─ hypercertUri (string, optional) — AT Protocol URI for impact certificate
+├─ hypercertCid (string, optional) — Content hash for tamper-evidence
 └─ createdAt (timestamp)
 
 WriterCoin
@@ -324,7 +347,7 @@ All dashboards and stats query real data:
 Centralized logger (`lib/config.ts`) with:
 - **Development**: Emoji indicators (ℹ️ info, ⚠️ warn, ❌ error, 🔍 debug)
 - **Production**: Structured JSON output (ready for Sentry/DataDog)
-- **Domain-specific**: `logger.payment()`, `logger.ipfs()`, `logger.storyProtocol()`
+- **Domain-specific**: `logger.payment()`, `logger.ipfs()`, `logger.storyProtocol()`, `logger.litProtocol()`, `logger.hypercerts()`
 
 Example:
 ```typescript

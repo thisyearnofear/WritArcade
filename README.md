@@ -9,6 +9,8 @@ Turn Paragraph.xyz articles into interactive, mintable games. Players pay with w
 - Mint games as NFTs on Base; browse and play recent games
 - Pay with writer coins (ERC-20 on Base) using RainbowKit/WC
 - **Story Protocol Integration**: Register games and assets as IP with configurable licenses
+- **Lit Protocol Integration**: NFT-gated "Secret Panels" — encrypted epilogues only NFT holders can decrypt
+- **Hypercerts Integration**: Auto-created impact certificates certifying creative collaboration as public goods
 - Configurable, on-chain revenue splits for generation and minting
 
 ## Core flow
@@ -56,6 +58,8 @@ writersarcade integrates deeply with Story Protocol (L1 blockchain for IP) to en
 - Backend: Next.js API routes + Prisma + PostgreSQL
 - AI: OpenAI/Anthropic via ai-sdk; image generation via Venice API
 - IP: Story Protocol (testnet/mainnet configurable) + IPFS (Pinata)
+- Access Control: Lit Protocol (decentralized NFT-gated encryption)
+- Impact: Hypercerts (AT Protocol impact certificates)
 
 See docs for details:
 - Architecture: ./docs/architecture.md
@@ -101,9 +105,12 @@ Revenue model is enforced on-chain and configurable per writer coin by the owner
    - Story Protocol (STORY_RPC_URL, STORY_WALLET_KEY, STORY_NETWORK)
    - Pinata JWT + IPFS gateway
    - Base contract addresses (NEXT_PUBLIC_* in .env)
+   - Lit Protocol (LIT_PROTOCOL_ENABLED, LIT_NETWORK)
+   - Hypercerts (HYPERCERTS_HANDLE, HYPERCERTS_APP_PASSWORD)
 
 ## Minimal API map (key routes)
-- POST /api/games/generate → AI game generation
+- POST /api/games/generate → AI game generation (+ background enrichment)
+- POST /api/games/[slug]/secret-panel → NFT ownership check + decrypt secret panel
 - POST /api/games/mint → mint via WriterCoinPayment + GameNFT
 - GET /api/games/my-games → list user games
 - POST /api/payments/initiate → prepare client payment flow

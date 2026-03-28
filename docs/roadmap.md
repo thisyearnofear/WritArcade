@@ -1,11 +1,29 @@
 # writersarcade Roadmap & Status
 
-**Last Updated:** March 6, 2026
-**Status:** Phase 11 - Asset Derivation Complete
+**Last Updated:** March 28, 2026
+**Status:** Phase 12 - PL Genesis Hackathon (Lit Protocol + Hypercerts)
 
 ---
 
-## 🎯 Current Focus: Customization MVP
+## 🎯 Current Focus: PL Genesis Hackathon
+
+**Event**: PL_Genesis: Frontiers of Collaboration
+**Host**: Protocol Labs
+**Deadline**: March 31, 2026
+**Prize Pool**: $150K+ across Fresh Code, Existing Code, and Sponsor Bounties
+**Track**: Existing Code ($50K pool) + Lit Protocol + Hypercerts bounties
+
+### What We Built
+- **Lit Protocol**: NFT-gated "Secret Panel" — encrypted 6th game epilogue only NFT holders can decrypt
+- **Hypercerts**: Auto-created impact certificates certifying creative collaboration as public goods
+- Both run non-blocking as post-creation enrichment via `enrichGameInBackground()`
+
+### Narrative
+> WritersArcade turns articles into on-chain, playable, ownable games. With Lit Protocol, we gate exclusive content behind NFT ownership — proving decentralized access control powers new creator economics. With Hypercerts, we certify every creative collaboration as measurable public good impact — because turning readers into co-creators IS public goods work. With Story Protocol, we ensure every derivative game traces back to its source with programmable licensing. The result: a complete provenance chain from article → game → impact, secured by three decentralized protocols.
+
+---
+
+## 🎯 Previous Focus: Customization MVP
 
 ### Vision Statement
 > "Turn any article into a personalized visual comic story you own as IP."
@@ -65,6 +83,16 @@ writersarcade delivers:
 1. **Post-Mint Asset Extraction**: `extractAndSaveGameAssets()` in `GameDatabaseService` — creates plot, world, and character `Asset` records from a minted game's metadata
 2. **PATCH Handler Wiring**: `/api/games/mint` PATCH now calls extraction after mint confirmation; returns `extractedAssetIds` in response
 3. **Story Protocol Derivative Path**: Response includes `extractedAssetIds` for client-side `storyClient.ipAsset.registerDerivativeIp()` calls linking asset IPs to the parent game IP
+
+### ✅ Complete (Phase 12 - PL Genesis Hackathon, March 2026)
+1. **Lit Protocol Service**: `lib/lit-protocol.service.ts` — encrypt/decrypt with ERC721 ownership ACCs on Base, base64 fallback for dev
+2. **Secret Panel Component**: `domains/games/components/secret-panel.tsx` — locked/unlocked UI with blur-to-reveal animation
+3. **Secret Panel API**: `app/api/games/[slug]/secret-panel/route.ts` — on-chain NFT ownership verification → decrypt
+4. **Hypercerts Service**: `lib/hypercerts.service.ts` — AT Protocol (AtpAgent) hypercert creation with contributors, measurements, attachments
+5. **Hypercert Badge Component**: `domains/games/components/hypercert-badge.tsx` — compact/full badge linking to Hyperscan
+6. **Game Enrichment Wrapper**: `domains/games/components/game-enrichment.tsx` — composes both features for game detail pages
+7. **Background Enrichment**: `enrichGameInBackground()` in game generate route — fire-and-forget, non-blocking
+8. **Config & Schema**: `lib/config.ts` + `prisma/schema.prisma` — new fields, env vars, loggers
 
 ### 🔒 Deferred (Future Phases)
 - ElevenLabs audio/video integration
@@ -166,11 +194,16 @@ Article URL
 |-----------|---------|--------|
 | `GameAIService.generateAssets()` | Extract assets from article | ✅ Live |
 | `GameAIService.generateGame()` | Compile assets into game | ✅ Live |
+| `GameAIService.generateSecretPanel()` | Generate encrypted epilogue | ✅ New |
 | `ImageGenerationService` | Generate panel images | ✅ Live |
 | `StoryProtocolAssetService` | Register IP | ✅ Live |
+| `LitProtocolService` | Encrypt/decrypt secret panels | ✅ New |
+| `HypercertsService` | Create impact certificates | ✅ New |
 | `ComicPanelCard` | Render panels + regenerate | ✅ Enhanced |
 | `ComicBookFinale` | Final comic + text editing | ✅ Enhanced |
-| `AssetCard` | Asset display + inline edit | ✅ Enhanced |
+| `SecretPanel` | NFT-gated secret epilogue | ✅ New |
+| `HypercertBadge` | Impact certificate badge | ✅ New |
+| `GameEnrichment` | Compose both hackathon features | ✅ New |
 | `GamePlayInterface` | Wire regeneration + editing | ✅ Enhanced |
 | Asset Preview UI (Workshop) | Show/edit assets before compilation | ✅ Live |
 
@@ -290,8 +323,9 @@ This ensures:
 ### Tech Stack
 - Frontend: Next.js 16 + TypeScript + TailwindCSS
 - AI: OpenAI/Anthropic via ai-sdk, Venice AI for images
-- Blockchain: Base (payments/NFT), Story Protocol (IP)
-- Storage: IPFS via Pinata
+- Blockchain: Base (payments/NFT), Story Protocol (IP), Lit Protocol (encryption)
+- Storage: IPFS via Pinata, AT Protocol (Hypercerts)
+- Access Control: Lit Protocol (ERC721 ownership gating on Base)
 
 ---
 
