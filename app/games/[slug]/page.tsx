@@ -6,6 +6,7 @@ import { ImageGenerationService } from '@/domains/games/services/image-generatio
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { IPAttribution } from '@/domains/games/components/ip-attribution'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
+import { GameEnrichment } from '@/domains/games/components/game-enrichment'
 
 // ISR: revalidate game pages every 5 minutes from CDN — eliminates per-request DB hits
 // for read-only story game pages. Wordle answer is stable so this is safe.
@@ -83,6 +84,16 @@ export default async function GamePage({ params }: GamePageProps) {
       <ErrorBoundary>
         <GamePlayInterface game={game} />
       </ErrorBoundary>
+
+      <GameEnrichment
+        gameId={game.id}
+        gameSlug={game.slug}
+        primaryColor={game.primaryColor || '#6366f1'}
+        nftTokenId={game.nftTokenId}
+        secretPanelGenerated={game.secretPanelGenerated}
+        hypercertUri={game.hypercertUri}
+        hypercertCid={game.hypercertCid}
+      />
     </div>
   )
 }

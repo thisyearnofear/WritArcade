@@ -7,6 +7,7 @@ import { Play, Zap, Crown, Trash2, Eye, EyeOff, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAccount } from 'wagmi'
 import { isAdmin } from '@/lib/constants'
+import { HypercertBadge } from './hypercert-badge'
 
 interface GameCardEnhancedProps {
   game: Game
@@ -138,6 +139,9 @@ export function GameCardEnhanced({
             <div className="text-gray-600 dark:text-gray-400">
               Model: {game.promptModel}
             </div>
+            {game.hypercertUri && (
+              <HypercertBadge hypercertUri={game.hypercertUri} compact />
+            )}
           </div>
 
           {/* Action Buttons */}
