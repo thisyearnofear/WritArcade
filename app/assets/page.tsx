@@ -93,7 +93,7 @@ export default function AssetsPage() {
         {/* Page Header */}
         <div className="mb-12 flex items-start justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2 typewriter-font">Asset Marketplace</h1>
+            <h1 className="font-serif text-4xl font-bold text-gray-900 dark:text-white mb-2">Asset Marketplace</h1>
             <p className="text-sm text-purple-200">Remixable primitives for your games</p>
             <p className="text-slate-300">
               Browse reusable game components. Mix and match to create unique games.

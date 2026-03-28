@@ -81,186 +81,16 @@
   }
 }
 
-/* Game-specific styles from original */
-.game-container {
-  @apply max-w-4xl mx-auto p-4;
-}
-
-.game-text {
-  @apply prose prose-invert max-w-none;
-}
-
-.game-options {
-  @apply space-y-2 mt-4;
-}
-
-.game-option {
-  @apply bg-gray-800 hover:bg-gray-700 transition-colors p-3 rounded cursor-pointer border border-gray-600;
-}
-
-.chat-message {
-  @apply mb-4 p-4 rounded-lg;
-}
-
-.chat-user {
-  @apply bg-blue-900/50 border-l-4 border-blue-500;
-}
-
-.chat-assistant {
-  @apply bg-gray-800/50 border-l-4 border-purple-500;
-}
-
-/* writersarcade Thematic Enhancements - Typewriter + Arcade Hybrid */
+/* writersarcade theme wrapper */
 .writersarcade-theme {
-  /* Vintage paper texture background */
-  background: #F5F5DC url('/images/textures/paper-texture.png') repeat;
-  /* Typewriter paper lines */
-  background-size: auto, 100% 25px;
-}
-
-/* Dark mode version of writersarcade theme */
-.dark .writersarcade-theme {
-  background: #1a1a1a url('/images/textures/paper-texture-dark.png') repeat;
-  color: #e0e0e0;
-}
-
-/* Dark mode paper styling */
-.dark .writersarcade-paper {
-  background: #2a2a2a;
-  border: 1px solid #5a5a5a;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-}
-
-/* Dark mode paper lines */
-.dark .writersarcade-paper::before {
-  background: repeating-linear-gradient(to bottom,
-      transparent,
-      transparent 24px,
-      #5a5a5a 25px,
-      #5a5a5a 26px,
-      transparent 27px);
-  opacity: 0.15;
-}
-
-/* Dark mode typewriter font - improved contrast */
-.dark .typewriter-font {
-  color: #ffffff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-/* Dark mode text colors for better readability */
-.dark .text-black {
-  color: #ffffff !important;
-}
-
-.dark .text-gray-600 {
-  color: #c0c0c0 !important;
-}
-
-.dark .text-gray-700 {
-  color: #e0e0e0 !important;
-}
-
-/* Dark mode comic bubbles */
-.dark .comic-bubble li {
-  background: #2a2a2a;
-  border: 2px solid #5a5a5a;
-  color: #e0e0e0;
-}
-
-/* Dark mode typewriter input */
-.dark .typewriter-input {
-  background: #3a3a3a;
-  border: 2px solid #5a5a5a;
-  color: #e0e0e0;
-}
-
-/* Dark mode arcade marquee */
-.dark .arcade-marquee {
-  background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
-  border: 3px double #5a5a5a;
-}
-
-/* Dark mode game type options */
-.dark .game-type-option {
-  background: #3a3a3a;
-  border: 2px solid #5a5a5a;
-  color: #e0e0e0;
-}
-
-.dark .game-type-option:hover {
-  background: #4a4a4a;
-}
-
-.dark .game-type-option.active {
-  background: #008080;
-  color: white;
-  border-color: #00FFFF;
-}
-
-/* Dark mode genre selector specific styling */
-.dark .game-type-option:not(.active) {
-  background: #2a2a2a;
-  border-color: #4a4a4a;
-  color: #e0e0e0;
-}
-
-.dark .game-type-option:not(.active):hover {
-  background: #3a3a3a;
-  border-color: #6a6a6a;
-}
-
-/* Dark mode text colors for genre labels */
-.dark .text-purple-200 {
-  color: #c0c0c0 !important;
-}
-
-.dark .text-purple-500\/50 {
-  border-color: #4a4a4a !important;
-}
-
-.dark .bg-purple-900\/20 {
-  background: #2a2a2a !important;
-}
-
-.dark .hover\:border-purple-400:hover {
-  border-color: #6a6a6a !important;
-}
-
-.dark .hover\:bg-purple-900\/40:hover {
-  background: #3a3a3a !important;
-}
-
-.writersarcade-paper {
-  background: white;
-  border: 1px solid #3A2E1D;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  position: relative;
-}
-
-/* Typewriter paper lines effect */
-.writersarcade-paper::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(to bottom,
-      transparent,
-      transparent 24px,
-      #3A2E1D 25px,
-      #3A2E1D 26px,
-      transparent 27px);
-  opacity: 0.1;
-  pointer-events: none;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 /* Arcade button styling */
 .arcade-button {
-  background: #008080;
-  color: white;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   border: none;
   padding: 1rem 2rem;
   font-size: 1.2rem;
@@ -270,60 +100,20 @@
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 0 #004D4D;
+  box-shadow: 0 4px 0 hsl(var(--primary) / 0.6);
 }
 
 .arcade-button:hover {
-  background: #00FFFF;
+  background: hsl(var(--primary) / 0.8);
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 #004D4D;
-}
-
-/* Typewriter font — retained for game content areas only, not hero */
-.typewriter-font {
-  font-family: 'Special Elite', 'Courier New', monospace;
-  color: #3A2E1D;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Comic book speech bubble styling */
-.comic-bubble {
-  list-style: none;
-  padding: 0;
-}
-
-.comic-bubble li {
-  background: white;
-  border: 2px solid #3A2E1D;
-  border-radius: 20px;
-  padding: 0.8rem 1.5rem;
-  margin: 0.5rem 0;
-  position: relative;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-  color: #3A2E1D;
-}
-
-.comic-bubble li::before {
-  content: "•";
-  position: absolute;
-  left: -10px;
-  top: 10px;
-  background: #FFD700;
-  color: #3A2E1D;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
+  box-shadow: 0 6px 0 hsl(var(--primary) / 0.6);
 }
 
 /* Genre icon styling */
 .genre-icon {
   width: 24px;
   height: 24px;
-  fill: #3A2E1D;
+  fill: hsl(var(--foreground));
   transition: all 0.2s ease;
 }
 
@@ -332,55 +122,7 @@
   transform: scale(1.1);
 }
 
-/* Dark mode genre icons - improved contrast */
-.dark .genre-icon {
-  fill: #e0e0e0;
-}
-
-.dark .genre-icon:hover {
-  fill: #FFD700;
-}
-
-/* Typewriter input styling */
-.typewriter-input {
-  background: #F5F5DC;
-  border: 2px solid #3A2E1D;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  font-family: 'Courier New', monospace;
-  color: #3A2E1D;
-}
-
-.typewriter-input:focus {
-  outline: none;
-  border-color: #FFD700;
-  box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-}
-
-/* Arcade marquee header effect */
-.arcade-marquee {
-  background: linear-gradient(135deg, #FFD700 0%, #F5F5DC 100%);
-  border: 3px double #3A2E1D;
-  border-radius: 8px;
-  padding: 1rem;
-  position: relative;
-}
-
-.arcade-marquee::after {
-  content: "";
-  position: absolute;
-  bottom: -10px;
-  left: 10px;
-  right: 10px;
-  height: 10px;
-  background: repeating-linear-gradient(90deg,
-      #3A2E1D,
-      #3A2E1D 5px,
-      transparent 5px,
-      transparent 10px);
-}
-
-/* Game type selector with arcade styling */
+/* Game type selector */
 .game-type-selector {
   display: flex;
   gap: 1rem;
@@ -390,37 +132,24 @@
 .game-type-option {
   flex: 1;
   padding: 1rem;
-  background: #F5F5DC;
-  border: 2px solid #3A2E1D;
+  background: hsl(var(--secondary));
+  border: 2px solid hsl(var(--border));
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  color: #3A2E1D;
+  color: hsl(var(--foreground));
 }
 
 .game-type-option:hover {
-  background: #FFD700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  background: hsl(var(--accent));
+  box-shadow: 0 0 10px hsl(var(--primary) / 0.3);
 }
 
 .game-type-option.active {
-  background: #008080;
-  color: white;
-  border-color: #00FFFF;
-}
-
-/* Typewriter key effect for buttons */
-.game-type-option::before {
-  content: "";
-  position: absolute;
-  top: -5px;
-  left: -5px;
-  right: -5px;
-  bottom: -5px;
-  border: 2px solid #3A2E1D;
-  border-radius: 6px;
-  z-index: -1;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary) / 0.8);
 }
 
 /* Mobile-specific optimizations - ENHANCED */
@@ -516,10 +245,6 @@
     transform: none !important;
   }
 
-  /* Specific touch device styles */
-  .no-hover-effect {
-    transition: none !important;
-  }
 }
 
 /* Reduced motion support for accessibility */
@@ -656,47 +381,4 @@ a:focus-visible {
     to { transform: rotate(360deg); }
   }
 
-  /* Success checkmark animation - CONSOLIDATED */
-  .success-checkmark {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: hsl(142 71% 45%); /* success green */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: bounce 0.5s ease;
-  }
-
-  @keyframes bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-  }
-
-  /* Error state - CONSOLIDATED */
-  .error-state {
-    color: hsl(var(--destructive));
-    background: hsl(var(--destructive) / 0.1);
-    border: 1px solid hsl(var(--destructive) / 0.2);
-    border-radius: var(--radius);
-    padding: 0.75rem;
-  }
-
-  /* Warning state - CONSOLIDATED */
-  .warning-state {
-    color: hsl(38 92% 50%); /* amber-500 */
-    background: hsl(38 92% 50% / 0.1);
-    border: 1px solid hsl(38 92% 50% / 0.2);
-    border-radius: var(--radius);
-    padding: 0.75rem;
-  }
-  
-  /* Info state - CONSOLIDATED */
-  .info-state {
-    color: hsl(217 91% 60%); /* blue-500 */
-    background: hsl(217 91% 60% / 0.1);
-    border: 1px solid hsl(217 91% 60% / 0.2);
-    border-radius: var(--radius);
-    padding: 0.75rem;
-  }
 }

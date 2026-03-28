@@ -39,12 +39,6 @@ const nextConfig = {
       loader: 'ignore-loader',
     });
 
-    // Ignore ox files with TypeScript type exports that webpack can't parse
-    config.module.rules.push({
-      test: /node_modules\/ox\/_esm\/.*\.js$/,
-      loader: 'ignore-loader',
-    });
-
     // Stub out the problematic baseAccount connector since we're not using it
     // This avoids the ox import compatibility issue
     config.plugins.push(

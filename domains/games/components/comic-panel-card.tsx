@@ -467,7 +467,7 @@ export function ComicPanelCard({
               </div>
 
               {/* Main narrative - with typewriter reveal */}
-              <p className="text-base lg:text-lg leading-relaxed text-gray-100 font-medium">
+              <p className="font-serif text-base lg:text-lg leading-relaxed text-gray-100">
                 <TypewriterEffect
                   text={narrative}
                   isVisible={revealAnimation}

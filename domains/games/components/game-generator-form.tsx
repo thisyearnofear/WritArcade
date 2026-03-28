@@ -354,7 +354,7 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                <span className="text-black font-semibold">Story (5-panel)</span>
+                <span className="font-semibold">Story (5-panel)</span>
               </motion.button>
               <motion.button
                 type="button"
@@ -370,7 +370,7 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                <span className="text-black font-semibold">Wordle (beta)</span>
+                <span className="font-semibold">Wordle (beta)</span>
               </motion.button>
             </div>
             <p className="text-xs text-gray-400">
@@ -405,7 +405,7 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
               placeholder={`${writerCoin.paragraphUrl}article-title`}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="mt-1 typewriter-input focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
+              className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               typewriter
             />
             <p className="text-xs text-gray-400 mt-1 px-1">Tap to enter the full Paragraph.xyz URL</p>
@@ -665,15 +665,12 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
         )}
       </form>
 
-      {/* Tips with Comic Book Styling */}
-      <div className="mt-8 p-4 bg-white rounded-lg border border-gray-300">
-        <h3 className="font-medium mb-2 text-gray-900">💡 Tips for better games:</h3>
-        <ul className="comic-bubble text-sm space-y-1">
-          <li>• Paste URLs from Paragraph.xyz articles by supported authors</li>
-          <li>• Choose genre and difficulty settings that match the article's tone</li>
-          <li>• The AI will create unique game interpretations based on the article content</li>
-          <li>• Different genres will influence how the story is gamified</li>
-          <li>• <a href="/workshop" className="text-purple-600 hover:text-purple-700 underline font-medium">Use the Workshop</a> for deeper personalization — edit characters, mechanics, and story beats before generating</li>
+      <div className="mt-8 p-4 rounded-lg border border-border bg-card text-card-foreground">
+        <h3 className="font-medium mb-2 text-sm">💡 Tips for better games</h3>
+        <ul className="list-disc pl-4 text-sm text-muted-foreground space-y-1.5">
+          <li>Paste URLs from Paragraph.xyz articles by supported authors</li>
+          <li>Genre and difficulty shape how the AI interprets the article</li>
+          <li><a href="/workshop" className="text-primary hover:underline font-medium">Use the Workshop</a> for deeper personalization</li>
         </ul>
       </div>
 

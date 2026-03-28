@@ -14,7 +14,7 @@ export default function GeneratePage() {
 
         <main className="flex-1 py-12">
           <div className="max-w-4xl mx-auto px-4">
-            <h1 className="text-4xl font-bold text-center mb-2 typewriter-font text-white">
+            <h1 className="font-serif text-4xl font-bold text-center mb-2 text-gray-900 dark:text-white">
               Generate Your Game
             </h1>
             <p className="text-center text-gray-400 mb-8 text-sm">

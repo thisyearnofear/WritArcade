@@ -21,7 +21,7 @@ export default function WritersPage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-4">
               Supported writers
             </p>
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               The writers behind the arcade
             </h1>
             <p className="text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed mb-12">

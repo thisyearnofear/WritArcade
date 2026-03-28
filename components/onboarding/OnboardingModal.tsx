@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, ChevronRight, Lightbulb, Check, PenLine, BookOpen, Coins, Layers } from 'lucide-react'
+import { X, ChevronRight, Lightbulb, BookOpen, Coins, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 
@@ -16,47 +16,26 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
   
   const steps = [
     {
-      title: "Welcome to writersarcade",
-      description: "Turn any article into an interactive, mintable game powered by AI",
-      visual: <PenLine className="w-12 h-12 text-slate-300" />,
-      content: "Interactive fiction, owned onchain. Writers earn from reader creativity.",
+      title: "Turn articles into games",
+      description: "Paste a Paragraph.xyz article URL — AI transforms it into an interactive comic you can play.",
+      visual: <BookOpen className="w-12 h-12 text-blue-400" />,
+      content: "Works with supported writers. Choose genre and difficulty to shape the narrative.",
       tip: "Start with short articles for the best results"
     },
     {
-      title: "Step 1: Choose Your Content",
-      description: "Paste a Paragraph.xyz article URL or describe your game idea",
-      visual: <BookOpen className="w-12 h-12 text-blue-400" />,
-      content: "Works exclusively with Paragraph.xyz articles from supported authors",
-      tip: "Check the supported authors list in the FAQ"
+      title: "Play, customize, and own",
+      description: "Experience your unique 5-panel comic story. Regenerate images, edit text, and personalize every detail.",
+      visual: <Layers className="w-12 h-12 text-purple-400" />,
+      content: "Every game is unique. Your choices shape the story — play it multiple times for different outcomes.",
+      tip: "Use the Workshop for deeper customization before generating"
     },
     {
-      title: "Step 2: Customize (Optional)",
-      description: "Pick your game style: Horror? Comedy? Mystery?",
-      visual: <Layers className="w-12 h-12 text-slate-300" />,
-      content: "Choose a genre and difficulty level to shape how the AI interprets the article.",
-      tip: "Higher difficulty produces more complex gameplay"
-    },
-    {
-      title: "Step 3: Play Your Game",
-      description: "Experience your unique AI-generated game interpretation",
-      visual: <Lightbulb className="w-12 h-12 text-yellow-400" />,
-      content: "Every game is unique based on your input and customization",
-      tip: "Your choices shape the story - play multiple times!"
-    },
-    {
-      title: "Step 4: Mint as NFT",
-      description: "Own your creation and earn from future plays",
+      title: "Mint as on-chain IP",
+      description: "Mint your game as an NFT on Base. Revenue splits are enforced on-chain — writers earn every time.",
       visual: <Coins className="w-12 h-12 text-amber-400" />,
-      content: "Mint your game as an NFT. Revenue is split on-chain between you, the writer, and the platform.",
-      tip: "Every mint includes full attribution to the original article and author"
+      content: "Register your creation as IP on Story Protocol. Derivatives earn royalties for the original creator.",
+      tip: null
     },
-    {
-      title: "You're Ready!",
-      description: "Start creating your first game now",
-      visual: <Check className="w-12 h-12 text-green-400" />,
-      content: "Click 'Create Game' to begin your journey",
-      tip: "Need help? Click the ? icon anytime"
-    }
   ]
 
   const handleNext = () => {

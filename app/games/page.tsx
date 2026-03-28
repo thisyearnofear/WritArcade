@@ -49,7 +49,7 @@ export default function GamesPage() {
           {/* Page Header */}
           <div className="py-10 px-4 border-b border-gray-200 dark:border-gray-800">
             <div className="max-w-7xl mx-auto">
-              <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-2">
+              <h1 className="font-serif text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-2">
                 The Arcade
               </h1>
               <p className="text-gray-600 dark:text-gray-400 max-w-2xl">

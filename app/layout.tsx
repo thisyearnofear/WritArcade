@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Source_Serif_4 } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/domains/users/components/auth-provider'
@@ -10,7 +10,8 @@ import { DarkModeProvider } from '@/components/providers/DarkModeProvider'
 import { MobileBottomNav } from '@/components/navigation/MobileBottomNav'
 import { PageTransition } from '@/components/providers/PageTransition'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const sourceSerif = Source_Serif_4({ subsets: ['latin'], variable: '--font-serif' })
 
 // Viewport must be exported separately in Next.js 14+ (not nested inside metadata)
 // Allow user scaling up to 5x for accessibility (WCAG 1.4.4 Resize Text)
@@ -54,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       {/* CONSOLIDATION: Use CSS variables for consistent theming */}
-      <body className={`${inter.className} bg-background text-foreground min-h-screen pb-16 md:pb-0`}>
+      <body className={`${inter.variable} ${sourceSerif.variable} font-sans bg-background text-foreground min-h-screen pb-16 md:pb-0`}>
         <Web3Provider>
           <ToastProvider>
             <WalletSync />

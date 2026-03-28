@@ -10,6 +10,7 @@ import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal'
 import { useOnboarding } from '@/hooks/useOnboarding'
+import { GridSkeleton } from '@/components/effects'
 import { WRITER_COINS } from '@/lib/writerCoins'
 
 const steps = [
@@ -120,7 +121,7 @@ export default function HomePage() {
           <section className="py-14 px-4">
             <div className="max-w-3xl mx-auto">
               <motion.h1
-                className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 leading-tight"
+                className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 leading-tight"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -174,7 +175,7 @@ export default function HomePage() {
                   View all →
                 </a>
               </div>
-              <Suspense fallback={<div className="h-64 bg-gray-100 dark:bg-gray-900/50 rounded-lg animate-pulse" />}>
+              <Suspense fallback={<GridSkeleton count={3} columns={3} />}>
                 <GameGrid limit={3} featured={true} />
               </Suspense>
             </div>
@@ -191,7 +192,7 @@ export default function HomePage() {
                   View all →
                 </a>
               </div>
-              <Suspense fallback={<div className="h-64 bg-gray-100 dark:bg-gray-900/50 rounded-lg animate-pulse" />}>
+              <Suspense fallback={<GridSkeleton count={4} columns={3} />}>
                 <GameGrid limit={4} />
               </Suspense>
             </div>
