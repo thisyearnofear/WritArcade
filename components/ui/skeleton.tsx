@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Visual variant - line for text, circle for avatars, square for cards */
@@ -8,6 +9,10 @@ export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   width?: React.CSSProperties["width"]
   /** Height of the skeleton - adapts based on variant if not specified */
   height?: React.CSSProperties["height"]
+  /** P3: layoutId for skeleton-to-content morphing with Framer Motion */
+  layoutId?: string
+  /** Enable motion animations */
+  animate?: boolean
 }
 
 /**
@@ -15,12 +20,15 @@ export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
  * - Uses CSS variables for theming
  * - Supports multiple variants for different content types
  * - Respects reduced motion preferences
+ * - P3: Supports layoutId for skeleton-to-content morphing
  */
 function Skeleton({
   className,
   variant = "line",
   width,
   height,
+  layoutId,
+  animate = true,
   ...props
 }: SkeletonProps) {
   const baseStyles: React.CSSProperties = {
@@ -47,16 +55,21 @@ function Skeleton({
     },
   }
 
+  // P3: Use motion.div for morphing, regular div for static
+  const ShimmerWrapper = animate ? motion.div : 'div'
+  const shimmerClass = animate 
+    ? "animate-shimmer bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%]"
+    : "bg-muted"
+
   return (
-    <div
-      className={cn(
-        "animate-shimmer bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%]",
-        className
-      )}
+    <ShimmerWrapper
+      className={cn(shimmerClass, className)}
       style={{
         ...baseStyles,
         ...variantStyles[variant],
       }}
+      layoutId={layoutId}
+      {...(animate ? { transition: { duration: 0.3 } } : {})}
       {...props}
     />
   )

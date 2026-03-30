@@ -108,29 +108,41 @@ export default function WorkshopPage() {
     const handleIPRegistrationSuccess = async (_result: unknown) => {
         if (!assets) return
         
-        // Log success to console and show toast
-        // showToast(`✓ IP Registered! IP ID: ${_result.ipId.slice(0, 10)}...`, {
-        //     type: 'success',
-        //     duration: 5000,
-        // })
+        // Type-safe result handling
+        const result = _result as { ipId?: string; txHash?: string; registeredAt?: number; blockNumber?: number }
+        const ipId = result.ipId
+        const txHash = result.txHash
+        
+        if (!ipId || !txHash) {
+            console.error('Invalid registration result:', _result)
+            return
+        }
+        
+        // Log success and show toast
+        showToast(`✓ IP Registered! IP ID: ${ipId.slice(0, 10)}...`, {
+            type: 'success',
+            duration: 5000,
+        })
 
-        // Optionally: Save the registration result to database
+        // Save the registration result to database
         try {
-            await fetch('/api/assets/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    assetData: {
-                        ...assets,
-                        title: assets.title || 'Untitled Asset Pack',
-                        description: assets.description || 'Generated from ' + url,
-                        articleUrl: url,
-                        type: 'pack'
-                    },
-                    // ipId: _result.ipId,
-                    // txHash: _result.txHash
+            // First save the asset to get an ID
+            const assetId = await handleSave(true)
+            
+            if (assetId) {
+                await fetch('/api/story/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        assetId,
+                        storyIpId: ipId,
+                        transactionHash: txHash,
+                        metadataUri: result.registeredAt ? `ipfs://registered/${ipId}` : '',
+                        blockNumber: result.blockNumber || 0,
+                    })
                 })
-            })
+                console.log('✅ IP registration saved to database')
+            }
         } catch (_e) {
             console.error('Failed to save registration metadata:', _e)
         }

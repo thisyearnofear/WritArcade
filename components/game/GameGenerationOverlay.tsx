@@ -1,12 +1,33 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
-import { Loader2, Sparkles, Gamepad2, X } from 'lucide-react'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { Loader2, Sparkles, Gamepad2, X, Lightbulb, BookOpen, Quote } from 'lucide-react'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 
 type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
 type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
+
+// P2: Progressive content - contextual writing tips during wait
+const WRITING_TIPS = [
+  { tip: "The best stories start with a compelling opening that hooks the reader immediately.", category: "craft" },
+  { tip: "Character motivation drives meaningful choices — make your players care about outcomes.", category: "gameplay" },
+  { tip: "Mystery genres thrive on strategic information reveals — don't give everything away at once.", category: "genre" },
+  { tip: "Interactive narratives work best when every choice feels meaningful, even if there's no 'wrong' answer.", category: "gameplay" },
+  { tip: "Use sensory details: what does the scene smell like? What sounds can your character hear?", category: "craft" },
+  { tip: "Pacing is everything — alternate between action beats and quieter moments of reflection.", category: "craft" },
+  { tip: "The best game narratives let players express themselves through their choices, not just watch a story unfold.", category: "gameplay" },
+  { tip: "Horror works best when it lets the player's imagination fill in the gaps — imply rather than show.", category: "genre" },
+  { tip: "Comedy is about timing — the same line delivered differently can be funnier or fall completely flat.", category: "genre" },
+  { tip: "Your article's unique angle becomes the game's unique hook — lean into what makes it special.", category: "tips" },
+]
+
+const AUTHOR_TRIVIA = [
+  "The first interactive fiction was created in 1976 by Will Crowther.", 
+  "Choose Your Own Adventure books inspired an entire generation of game designers.",
+  "The average attention span during loading screens is 30 seconds — make them count!",
+  "Studies show that revealed text is remembered 40% better than instantly displayed text.",
+]
 
 interface GameGenerationOverlayProps {
   isOpen: boolean
@@ -45,6 +66,29 @@ const stepConfig = {
   },
 } as const
 
+const CONTEXTUAL_TIPS = [
+  {
+    icon: <Lightbulb className="w-5 h-5 text-yellow-400" />,
+    title: 'Did you know?',
+    text: 'WritersArcade uses specialized AI models to maintain consistency across characters and styles in your story.',
+  },
+  {
+    icon: <BookOpen className="w-5 h-5 text-blue-400" />,
+    title: 'Author Trivia',
+    text: 'Paragraph.xyz authors can earn rewards when users play games inspired by their articles.',
+  },
+  {
+    icon: <Quote className="w-5 h-5 text-purple-400" />,
+    title: 'Writing Tip',
+    text: 'Great interactive stories often give users 3 distinct choices: one safe, one risky, and one mysterious.',
+  },
+  {
+    icon: <Sparkles className="w-5 h-5 text-pink-400" />,
+    title: 'Pro Tip',
+    text: 'You can mint your finished comic as an NFT to preserve your unique playthrough forever.',
+  },
+]
+
 export function GameGenerationOverlay({
   isOpen,
   currentStep,
@@ -58,8 +102,19 @@ export function GameGenerationOverlay({
   const progress = currentStep ? ((currentStepIndex + 1) / steps.length) * 100 : 0
 
   const [showSlowHint, setShowSlowHint] = useState(false)
+  const [tipIndex, setTipIndex] = useState(0)
   const warnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Rotate tips every 8 seconds
+  useEffect(() => {
+    if (isOpen) {
+      const interval = setInterval(() => {
+        setTipIndex((prev) => (prev + 1) % CONTEXTUAL_TIPS.length)
+      }, 8000)
+      return () => clearInterval(interval)
+    }
+  }, [isOpen])
 
   // Start timers when overlay opens, clear them when it closes
   useEffect(() => {
@@ -284,24 +339,31 @@ export function GameGenerationOverlay({
                 })}
               </div>
 
-              {/* Fun messages */}
-              <motion.div
-                className="p-4 rounded-xl bg-purple-900/30 border border-purple-500/30"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-purple-100 space-y-1">
-                    <p className="font-semibold">✨ Your game is being crafted...</p>
-                    <p className="text-purple-200/80">
-                      Our AI is analyzing your article, building characters, creating plot
-                      twists, and generating unique artwork.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
+              {/* Fun messages & Contextual Tips */}
+              <div className="relative h-24 overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={tipIndex}
+                    className="absolute inset-0 p-4 rounded-xl bg-purple-900/30 border border-purple-500/30"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {CONTEXTUAL_TIPS[tipIndex].icon}
+                      </div>
+                      <div className="text-sm text-purple-100 space-y-1">
+                        <p className="font-semibold">{CONTEXTUAL_TIPS[tipIndex].title}</p>
+                        <p className="text-purple-200/80 leading-relaxed">
+                          {CONTEXTUAL_TIPS[tipIndex].text}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
 
               {/* Slow hint + cancel */}
               {showSlowHint && (

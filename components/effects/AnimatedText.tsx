@@ -300,4 +300,71 @@ function Counter({ from, to, duration }: { from: number; to: number; duration: n
   return <span ref={nodeRef}>{from.toLocaleString()}</span>
 }
 
-import { useEffect, useRef } from 'react'
+export function StreamingTypewriter({
+  text,
+  className = '',
+  speed = 30, // characters per second
+  onComplete,
+}: {
+  text: string
+  className?: string
+  speed?: number
+  onComplete?: () => void
+}) {
+  const [displayedText, setDisplayedText] = useState('')
+  const indexRef = useRef(0)
+  const lastTimeRef = useRef(0)
+  const prefersReducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setDisplayedText(text)
+      onComplete?.()
+      return
+    }
+
+    setDisplayedText('')
+    indexRef.current = 0
+    lastTimeRef.current = performance.now()
+
+    let rafId: number
+
+    const animate = (time: number) => {
+      const deltaTime = time - lastTimeRef.current
+      const charIncrement = (deltaTime / 1000) * speed
+
+      if (charIncrement >= 1) {
+        const nextIndex = Math.min(text.length, indexRef.current + Math.floor(charIncrement))
+        if (nextIndex !== indexRef.current) {
+          indexRef.current = nextIndex
+          setDisplayedText(text.slice(0, nextIndex))
+          lastTimeRef.current = time
+        }
+      }
+
+      if (indexRef.current < text.length) {
+        rafId = requestAnimationFrame(animate)
+      } else {
+        onComplete?.()
+      }
+    }
+
+    rafId = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(rafId)
+  }, [text, speed, prefersReducedMotion, onComplete])
+
+  return (
+    <span className={className}>
+      {displayedText}
+      {indexRef.current < text.length && (
+        <motion.span
+          className="inline-block w-[2px] h-[1em] bg-current ml-1 align-middle"
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
+        />
+      )}
+    </span>
+  )
+}
+
+import { useEffect, useRef, useState } from 'react'

@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ZoomIn, Loader2, RefreshCw, ChevronDown, ChevronUp, Sparkles, Lightbulb } from 'lucide-react'
+import { ZoomIn, Loader2, RefreshCw, ChevronDown, ChevronUp, Sparkles, Lightbulb, Pencil, X, Check } from 'lucide-react'
 import { GameplayOption } from '../types'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationResult } from '../services/image-generation.service'
 import { ImageLightbox } from './image-lightbox'
 import { TypewriterEffect } from './typewriter-effect'
 import { AnimatedOptionButton } from './animated-option-button'
+import { StreamingTypewriter } from '@/components/effects'
+import { Button } from '@/components/ui/Button'
 
 interface ImageVersion {
   url: string | null
@@ -90,6 +92,23 @@ export function ComicPanelCard({
   const [showImageComparison, setShowImageComparison] = useState(false)
   const [regenerationCount, setRegenerationCount] = useState(0)
   const messageIdRef = useRef(messageId)
+
+  const [fontsLoaded, setFontsLoaded] = useState(false)
+  const [isEditingNarrative, setIsEditingNarrative] = useState(false)
+  const [editedNarrative, setEditedNarrative] = useState(narrative)
+
+  // Font loading gate
+  useEffect(() => {
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(() => setFontsLoaded(true))
+    } else {
+      setFontsLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    setEditedNarrative(narrative)
+  }, [narrative])
 
   // Reset rating and trigger reveal animation when messageId changes
   useEffect(() => {
@@ -191,7 +210,16 @@ export function ComicPanelCard({
             />
 
             {/* Image container - responsive height with better mobile scaling */}
-            <div className="w-full h-48 sm:h-64 md:h-80 lg:h-96 overflow-hidden cursor-pointer relative" onClick={handleImageExpand}>
+            {/* P0: Optimistic space reservation - use aspect-ratio + min-height to prevent CLS */}
+            <div 
+              className="w-full min-h-[192px] md:min-h-[256px] lg:min-h-[384px] overflow-hidden cursor-pointer relative"
+              style={{ aspectRatio: '16/9' }}
+              onClick={handleImageExpand}
+            >
+              {/* P0: Show skeleton until image is confirmed loaded */}
+              {(!narrativeImage || isRegenerating) && (
+                <div className="absolute inset-0 bg-gray-900 animate-pulse" />
+              )}
               {imageHistory.length > 0 && imageHistory[currentImageIndex]?.url ? (
                 <>
                   <AnimatePresence mode="wait">
@@ -466,14 +494,65 @@ export function ComicPanelCard({
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Scene</span>
               </div>
 
-              {/* Main narrative - with typewriter reveal */}
-              <p className="font-serif text-base lg:text-lg leading-relaxed text-gray-100">
-                <TypewriterEffect
-                  text={narrative}
-                  isVisible={revealAnimation}
-                  duration={400}
-                />
-              </p>
+            {/* Main narrative - with typewriter reveal */}
+            <div className="group/narrative relative min-h-[4rem]">
+              {isEditingNarrative ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editedNarrative}
+                    onChange={(e) => setEditedNarrative(e.target.value)}
+                    className="w-full bg-gray-900/80 border border-purple-500/50 rounded-lg p-3 text-sm lg:text-base text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px] resize-y"
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingNarrative(false)
+                        setEditedNarrative(narrative)
+                      }}
+                      className="h-8 text-xs border-white/20"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        // In a real app we'd trigger an update, here we just show the change
+                        setIsEditingNarrative(false)
+                      }}
+                      className="h-8 text-xs bg-green-600 hover:bg-green-500"
+                    >
+                      <Check className="w-3 h-3 mr-1" />
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-4">
+                  <div className="flex-1 font-serif text-base lg:text-lg leading-relaxed text-gray-100">
+                    {fontsLoaded ? (
+                      <StreamingTypewriter 
+                        key={`${messageId}-${narrative}`}
+                        text={editedNarrative} 
+                        speed={40}
+                      />
+                    ) : (
+                      <span className="opacity-0">{editedNarrative}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setIsEditingNarrative(true)}
+                    className="p-2 opacity-0 group-hover/narrative:opacity-100 hover:bg-white/10 rounded-full transition-opacity flex-shrink-0"
+                    title="Edit narrative"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+              )}
+            </div>
             </div>
 
             {/* Choice Options - Spanning Full Width Below */}

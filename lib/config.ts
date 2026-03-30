@@ -28,7 +28,9 @@ export const config = {
   storyProtocol: {
     enabled: process.env.STORY_PROTOCOL_ENABLED !== 'false',
     rpcUrl: process.env.STORY_RPC_URL || 'https://aeneid.storyrpc.io',
-    chainId: process.env.STORY_CHAIN_ID ? parseInt(process.env.STORY_CHAIN_ID) : 1516,
+    // Aeneid Testnet: 1514 (deprecated) → 1315 (current)
+    // Using SDK's chain ID (1315) for consistency
+    chainId: process.env.STORY_CHAIN_ID ? parseInt(process.env.STORY_CHAIN_ID) : 1315,
   },
 
   /**
@@ -79,20 +81,29 @@ export const config = {
  * Validate critical configuration at startup
  */
 export function validateConfig(): void {
+  const errors: string[] = []
+
   if (config.isProduction) {
     // Production requires IPFS
     if (!config.ipfs.pinataJwt) {
-      throw new Error(
-        'PINATA_JWT environment variable is required in production for IPFS uploads'
-      )
+      errors.push('PINATA_JWT environment variable is required in production for IPFS uploads')
     }
 
     // Production requires database
     if (!config.database.url) {
-      throw new Error(
-        'DATABASE_URL environment variable is required in production'
-      )
+      errors.push('DATABASE_URL environment variable is required in production')
     }
+
+    // Production requires Story Protocol SPG contract
+    const spgContract = process.env.NEXT_PUBLIC_STORY_SPG_CONTRACT
+    if (!spgContract) {
+      errors.push('NEXT_PUBLIC_STORY_SPG_CONTRACT environment variable is required in production for IP registration')
+    }
+  }
+
+  // Fail fast if any critical config is missing
+  if (errors.length > 0) {
+    throw new Error(`[Config] Configuration validation failed:\n${errors.join('\n')}`)
   }
 
   console.log('[Config] Environment:', {

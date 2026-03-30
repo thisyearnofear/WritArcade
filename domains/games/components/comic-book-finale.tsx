@@ -88,6 +88,17 @@ export function ComicBookFinale({
   const [audioError, setAudioError] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   
+  const [fontsLoaded, setFontsLoaded] = useState(false)
+  
+  // Font loading gate
+  useEffect(() => {
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(() => setFontsLoaded(true))
+    } else {
+      setFontsLoaded(true)
+    }
+  }, [])
+
   const currentPanel = panels[currentPanelIndex]
   const totalPanels = panels.length
   const currentAudioUrl = panelAudioUrls.get(currentPanel?.id || '') || currentPanel?.audioUrl
@@ -268,6 +279,27 @@ export function ComicBookFinale({
     setCurrentPanelIndex(0)
     setIsAutoPlayMode(true)
   }, [panels, panelAudioUrls.size, generateAllNarration])
+
+  // Prefetch next panel assets
+  useEffect(() => {
+    if (currentPanelIndex < totalPanels - 1) {
+      const nextPanel = panels[currentPanelIndex + 1]
+      
+      // Prefetch image
+      if (nextPanel.imageUrl) {
+        const img = new Image()
+        img.src = nextPanel.imageUrl
+      }
+      
+      // Prefetch audio
+      const nextAudioUrl = panelAudioUrls.get(nextPanel.id) || nextPanel.audioUrl
+      if (nextAudioUrl) {
+        const audio = new Audio()
+        audio.src = nextAudioUrl
+        audio.preload = 'auto'
+      }
+    }
+  }, [currentPanelIndex, panels, panelAudioUrls])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -677,7 +709,7 @@ export function ComicBookFinale({
               >
                 {/* Image */}
                 <div
-                  className="w-full h-96 md:h-[28rem] overflow-hidden bg-black relative group cursor-pointer"
+                  className="w-full aspect-video overflow-hidden bg-black relative group cursor-pointer"
                   onClick={() => currentPanel.imageUrl && setIsImageExpanded(true)}
                 >
                   {currentPanel.imageUrl ? (
@@ -772,9 +804,17 @@ export function ComicBookFinale({
                       </div>
                     ) : (
                       <div className="flex items-start gap-2">
-                        <p className="flex-1 text-gray-100 text-base md:text-lg leading-relaxed font-medium">
-                          {currentPanel.narrativeText}
-                        </p>
+                        <div className="flex-1 text-gray-100 text-base md:text-lg leading-relaxed font-medium min-h-[1.5em]">
+                          {fontsLoaded ? (
+                            <StreamingTypewriter 
+                              key={`${currentPanel.id}-${currentPanel.narrativeText}`}
+                              text={currentPanel.narrativeText} 
+                              speed={40}
+                            />
+                          ) : (
+                            <span className="opacity-0">{currentPanel.narrativeText}</span>
+                          )}
+                        </div>
                         {onPanelTextChange && (
                           <button
                             onClick={handleStartEdit}

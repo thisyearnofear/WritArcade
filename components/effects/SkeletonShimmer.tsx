@@ -7,15 +7,20 @@ interface SkeletonShimmerProps {
   className?: string
   lines?: number
   showAvatar?: boolean
+  layoutId?: string
 }
 
 export function SkeletonShimmer({
   className = '',
   lines = 3,
   showAvatar = true,
+  layoutId,
 }: SkeletonShimmerProps) {
   return (
-    <div className={`space-y-3 ${className}`}>
+    <motion.div 
+      className={`space-y-3 ${className}`}
+      layoutId={layoutId}
+    >
       {showAvatar && (
         <div className="flex items-center space-x-4">
           <ShimmerBox className="h-12 w-12 rounded-full" />
@@ -34,7 +39,7 @@ export function SkeletonShimmer({
           />
         ))}
       </div>
-    </div>
+    </motion.div>
   )
 }
 
