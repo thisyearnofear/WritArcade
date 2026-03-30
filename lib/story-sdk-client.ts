@@ -11,14 +11,14 @@ import { StoryClient } from "@story-protocol/core-sdk";
 import { http } from "viem";
 import type { WalletClient, Transport, Chain, Account } from "viem";
 
-// Story Protocol Aeneid Testnet chain ID
-export const STORY_CHAIN_ID = 1516; // Updated to 1516 for mainnet
+// Story Protocol Aeneid Testnet
+export const STORY_CHAIN_ID = 1315;
 
 // Story Protocol RPC URL
-export const STORY_RPC_URL = "https://mainnet.storyrpc.io";
+export const STORY_RPC_URL = "https://aeneid.storyrpc.io";
 
 // Story Protocol Explorer
-export const STORY_EXPLORER_URL = "https://storyscan.xyz";
+export const STORY_EXPLORER_URL = "https://aeneid.storyscan.xyz";
 
 // SPG (Story Protocol Gateway) contract for fast minting
 export const STORY_SPG_CONTRACT =

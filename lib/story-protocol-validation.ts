@@ -98,7 +98,7 @@ export function logStoryProtocolValidation(): void {
 export function getStoryProtocolConfig(): StoryProtocolConfig {
   return {
     rpcUrl: process.env.NEXT_PUBLIC_STORY_RPC_URL || '',
-    chainId: parseInt(process.env.NEXT_PUBLIC_STORY_CHAIN_ID || '1516', 10),
+    chainId: parseInt(process.env.NEXT_PUBLIC_STORY_CHAIN_ID || '1315', 10),
     ipfs: {
       gatewayUrl: process.env.NEXT_PUBLIC_STORY_IPFS_GATEWAY || '',
       uploadEndpoint: process.env.NEXT_PUBLIC_STORY_IPFS_UPLOAD_ENDPOINT || '',

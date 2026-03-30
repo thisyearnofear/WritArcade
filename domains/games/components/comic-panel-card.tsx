@@ -7,10 +7,9 @@ import { GameplayOption } from '../types'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationResult } from '../services/image-generation.service'
 import { ImageLightbox } from './image-lightbox'
-import { TypewriterEffect } from './typewriter-effect'
 import { AnimatedOptionButton } from './animated-option-button'
 import { StreamingTypewriter } from '@/components/effects'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 interface ImageVersion {
   url: string | null

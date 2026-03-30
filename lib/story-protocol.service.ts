@@ -215,7 +215,7 @@ function findCommercialRemixTermsId(availableTerms: { id: bigint; terms: any }[]
  * Register a game as an IP Asset on Story Protocol
  * 
  * USER FLOW:
- * 1. User is on Story Aeneid network (via chain switch)
+ * 1. User is on Story Aeneid Testnet (via chain switch)
  * 2. User clicks "Register IP"
  * 3. Wallet prompts for signature
  * 4. Transaction sent from USER'S wallet

@@ -1,14 +1,13 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Loader2, Sparkles, Gamepad2, X, Lightbulb, BookOpen, Quote } from 'lucide-react'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 
 type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
 type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
 
-// P2: Progressive content - contextual writing tips during wait
 interface GameGenerationOverlayProps {
   isOpen: boolean
   currentStep: LoadingStep | null
