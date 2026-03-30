@@ -74,56 +74,6 @@ export function AnimatedText({
   )
 }
 
-interface TypewriterTextProps {
-  children: string
-  className?: string
-  delay?: number
-  speed?: number
-  cursor?: boolean
-}
-
-export function TypewriterText({
-  children,
-  className = '',
-  delay = 0,
-  speed = 0.05,
-  cursor = true,
-}: TypewriterTextProps) {
-  const prefersReducedMotion = useReducedMotion()
-
-  if (prefersReducedMotion) {
-    return <span className={className}>{children}</span>
-  }
-
-  const characters = children.split('')
-
-  return (
-    <motion.span className={className}>
-      {characters.map((char, index) => (
-        <motion.span
-          key={index}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{
-            duration: 0.1,
-            delay: delay + index * speed,
-            ease: 'easeOut',
-          }}
-        >
-          {char}
-        </motion.span>
-      ))}
-      {cursor && (
-        <motion.span
-          className="inline-block w-[2px] h-[1em] bg-current ml-1 align-middle"
-          animate={{ opacity: [1, 0] }}
-          transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-        />
-      )}
-    </motion.span>
-  )
-}
-
 interface GradientTextProps {
   children: ReactNode
   className?: string

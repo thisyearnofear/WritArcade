@@ -11,7 +11,7 @@ import { ipfsMetadataService, type GameCreator, type GameAuthor } from '@/lib/se
 import { userIdentityService } from '@/lib/services/user-identity.service'
 import { PostGameFeedback } from '@/components/game/post-game-feedback'
 import { VoiceNarrationService } from '../services/voice-narration.service'
-import { StreamingTypewriter } from '@/components/effects'
+import { StreamingTypewriter, PretextContainer } from '@/components/effects'
 
 export interface ComicBookFinalePanelData {
   id: string
@@ -805,17 +805,28 @@ export function ComicBookFinale({
                       </div>
                     ) : (
                       <div className="flex items-start gap-2">
-                        <div className="flex-1 text-gray-100 text-base md:text-lg leading-relaxed font-medium min-h-[1.5em]">
-                          {fontsLoaded ? (
-                            <StreamingTypewriter 
-                              key={`${currentPanel.id}-${currentPanel.narrativeText}`}
-                              text={currentPanel.narrativeText} 
-                              speed={40}
-                            />
-                          ) : (
-                            <span className="opacity-0">{currentPanel.narrativeText}</span>
+                        {/* Pretext-powered text container ensures zero-CLS and high-performance layout */}
+                        <PretextContainer
+                          text={currentPanel.narrativeText}
+                          maxWidth={800} // Approximate max width for the narrative area
+                          font="18px Inter, system-ui, sans-serif"
+                          lineHeight={1.625}
+                          className="flex-1"
+                        >
+                          {() => (
+                            <div className="text-gray-100 text-base md:text-lg leading-relaxed font-medium min-h-[1.5em]">
+                              {fontsLoaded ? (
+                                <StreamingTypewriter 
+                                  key={`${currentPanel.id}-${currentPanel.narrativeText}`}
+                                  text={currentPanel.narrativeText} 
+                                  speed={40}
+                                />
+                              ) : (
+                                <span className="opacity-0">{currentPanel.narrativeText}</span>
+                              )}
+                            </div>
                           )}
-                        </div>
+                        </PretextContainer>
                         {onPanelTextChange && (
                           <button
                             onClick={handleStartEdit}

@@ -406,7 +406,6 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-              typewriter
             />
             <p className="text-xs text-gray-400 mt-1 px-1">Tap to enter the full Paragraph.xyz URL</p>
           </div>

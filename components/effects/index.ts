@@ -8,7 +8,8 @@ export { FloatingElement, FloatingIcon, GlowEffect, PulseRing, Sparkle } from '.
 export { InteractiveCard, MagneticButton, RippleButton } from './InteractiveCard'
 
 // Animated Text
-export { AnimatedText, TypewriterText, StreamingTypewriter, GradientText, RevealText, CountUp } from './AnimatedText'
+export { AnimatedText, StreamingTypewriter, GradientText, RevealText, CountUp } from './AnimatedText'
+export { PretextContainer, useTextLayout } from './PretextLayout'
 
 // Skeleton Loaders
 export { SkeletonShimmer, CardSkeleton, GridSkeleton } from './SkeletonShimmer'

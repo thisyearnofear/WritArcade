@@ -3,8 +3,6 @@ import { cn } from "@/lib/utils"
 import { motion, useReducedMotion } from "framer-motion"
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
-  /** @deprecated Use CSS variables for styling instead */
-  typewriter?: boolean
   animated?: boolean
 }
 
