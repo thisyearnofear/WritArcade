@@ -11,6 +11,7 @@ import { ipfsMetadataService, type GameCreator, type GameAuthor } from '@/lib/se
 import { userIdentityService } from '@/lib/services/user-identity.service'
 import { PostGameFeedback } from '@/components/game/post-game-feedback'
 import { VoiceNarrationService } from '../services/voice-narration.service'
+import { StreamingTypewriter } from '@/components/effects'
 
 export interface ComicBookFinalePanelData {
   id: string

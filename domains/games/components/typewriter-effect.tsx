@@ -57,17 +57,23 @@ export function TypewriterEffect({
       const currentLength = prev.length
       const targetLength = textRef.current.length
       
-      if (currentLength >= targetLength) {
-        isCompleteRef.current = true
-        runningRef.current = false
-        onCompleteRef.current?.()
-        return prev
-      }
+      if (currentLength >= targetLength) return prev
       
       // Batch multiple chars per frame (Pretext-style optimization)
       const nextLength = Math.min(currentLength + charsPerFrame, targetLength)
+      
+      if (nextLength >= targetLength) {
+        isCompleteRef.current = true
+        runningRef.current = false
+      }
+      
       return textRef.current.slice(0, nextLength)
     })
+
+    if (isCompleteRef.current) {
+      onCompleteRef.current?.()
+      return
+    }
 
     // Continue animation - use ref to check
     if (!isCompleteRef.current && runningRef.current) {
@@ -127,7 +133,6 @@ export function useTypewriter(text: string, isVisible: boolean, options = {}) {
 
   const startAnimation = useCallback(() => {
     let frame = 0
-    const chars = text.split('')
     isCompleteRef.current = false
     runningRef.current = true
     
@@ -138,6 +143,8 @@ export function useTypewriter(text: string, isVisible: boolean, options = {}) {
       }
       lastFrameTime.current = timestamp
 
+      const currentText = textRef.current
+      const chars = currentText.split('')
       frame++
       const endIndex = Math.min(frame * charsPerFrame, chars.length)
       setDisplayText(chars.slice(0, endIndex).join(''))

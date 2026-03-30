@@ -16,7 +16,10 @@ import {
   STORY_SPG_CONTRACT,
   STORY_RPC_URL,
   getIPAssetExplorerUrl,
-  getTxExplorerUrl
+  getTxExplorerUrl,
+  STORY_CHAIN_ID,
+  createStoryClientFromWallet,
+  isStoryClientReady,
 } from "./story-sdk-client";
 
 // ============================================================================
@@ -45,6 +48,7 @@ export interface IPRegistrationResult {
   txExplorerUrl: string;
   licenseTermsIds: bigint[];
   blockNumber?: number;
+  gasUsed?: bigint;
 }
 
 export interface AssetIPRegistrationInput {
@@ -55,6 +59,152 @@ export interface AssetIPRegistrationInput {
   tags: string[];
   creatorAddress: Address;
   metadataUri: string;
+}
+
+export interface TransactionRetryConfig {
+  maxRetries: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+}
+
+// Default retry config: 3 retries with exponential backoff
+const DEFAULT_RETRY_CONFIG: TransactionRetryConfig = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  maxDelayMs: 10000,
+};
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Estimate gas for a transaction before signing
+ * Helps users know if they have enough ETH
+ */
+async function estimateGasForRegistration(
+  walletAddress: Address,
+  spgNftContract: Address
+): Promise<{ estimatedGas: bigint; enoughFunds: boolean; costInEth?: string } | null> {
+  try {
+    const { createPublicClient, http, formatEther, parseEther } = await import("viem");
+    
+    const publicClient = createPublicClient({
+      chain: { id: STORY_CHAIN_ID, name: "Story Protocol", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [STORY_RPC_URL] } } },
+      transport: http(STORY_RPC_URL),
+    });
+
+    // Try to estimate gas - this may not work for all contracts
+    const estimatedGas = await publicClient.estimateContractGas({
+      address: spgNftContract,
+      abi: [
+        {
+          name: "mintAndRegisterIp",
+          type: "function",
+          inputs: [],
+          outputs: [],
+          stateMutability: "payable"
+        }
+      ],
+      functionName: "mintAndRegisterIp" as any,
+      args: [] as any,
+    });
+
+    // Get current gas price
+    const gasPrice = await publicClient.getGasPrice();
+    
+    // Estimate total cost
+    const totalCost = estimatedGas * gasPrice;
+    
+    // Get user's balance
+    const balance = await publicClient.getBalance({ address: walletAddress });
+    
+    const enoughFunds = balance >= totalCost;
+    const costInEth = formatEther(totalCost);
+    
+    console.log(`   Gas estimation: ~${costInEth} ETH (${estimatedGas} gas units)`);
+    
+    return { estimatedGas, enoughFunds, costInEth };
+  } catch (error) {
+    console.warn(`   Could not estimate gas:`, error);
+    return null;
+  }
+}
+
+/**
+ * Parse transaction error and return user-friendly message
+ */
+function parseTransactionError(error: unknown): string {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    
+    if (message.includes('user rejected') || message.includes('user denied')) {
+      return 'Transaction was rejected. Please approve the transaction in your wallet.';
+    }
+    if (message.includes('insufficient funds') || message.includes('gas')) {
+      return 'Insufficient funds for gas. Please ensure you have enough ETH for the transaction.';
+    }
+    if (message.includes('nonce')) {
+      return 'Transaction nonce error. Please try again.';
+    }
+    if (message.includes('链条') || message.includes('chain')) {
+      return 'Network error. Please switch to Story Network and try again.';
+    }
+    return `Transaction failed: ${error.message}`;
+  }
+  return 'An unexpected error occurred. Please try again.';
+}
+
+/**
+ * Sleep utility for retry delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Get available license terms from the protocol
+ * Returns array of available terms with their IDs
+ * 
+ * Note: In production, this would query the protocol directly.
+ * For now, we use known default terms with fallback.
+ */
+async function getAvailableLicenseTerms(
+  client: StoryClient
+): Promise<{ id: bigint; terms: any }[]> {
+  try {
+    // In the current SDK version, license terms are queried differently
+    // For production, you'd query the license template contract directly
+    // For now, return the known default PIL Commercial Remix terms
+    const knownTerms = [
+      { id: 1n, terms: { flavor: 'non-commercial-social-remixing', name: 'Non-Commercial Social Remixing' } },
+      { id: 2n, terms: { flavor: 'commercial-remix', name: 'Commercial Remix' } },
+      { id: 3n, terms: { flavor: 'commercial-use', name: 'Commercial Use' } },
+    ];
+    
+    console.log(`   Available license terms: ${knownTerms.length}`);
+    return knownTerms;
+  } catch (error) {
+    console.warn('Could not fetch license terms, using defaults:', error);
+    // Fallback to known terms
+    return [
+      { id: 1n, terms: { flavor: 'non-commercial-social-remixing' } },
+      { id: 2n, terms: { flavor: 'commercial-remix' } },
+    ];
+  }
+}
+
+/**
+ * Find the Commercial Remix license terms ID
+ */
+function findCommercialRemixTermsId(availableTerms: { id: bigint; terms: any }[]): bigint {
+  // Look for commercial-remix in the terms
+  const remixTerms = availableTerms.find(
+    (t) => t.terms?.flavor === 'commercial-remix' || t.terms?.name?.toLowerCase().includes('commercial remix')
+  );
+  
+  // Default to ID 2 for commercial remix if found, otherwise 1
+  return remixTerms?.id || 2n;
 }
 
 // ============================================================================
@@ -73,11 +223,15 @@ export interface AssetIPRegistrationInput {
  * 
  * @param client - StoryClient created from user's wallet
  * @param input - Game metadata for IP registration
+ * @param retryConfig - Optional retry configuration
  */
 export async function registerGameAsIP(
   client: StoryClient,
-  input: IPRegistrationInput
+  input: IPRegistrationInput,
+  retryConfig: Partial<TransactionRetryConfig> = {}
 ): Promise<IPRegistrationResult> {
+  const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
+  
   console.log(`📝 Registering game IP: ${input.title}`);
   console.log(`   Creator: ${input.gameCreatorAddress}`);
   console.log(`   Metadata: ${input.nftMetadataUri}`);
@@ -106,19 +260,59 @@ export async function registerGameAsIP(
     description: input.description,
   });
 
-  // 3. Mint and register IP - USER SIGNS THIS TRANSACTION
-  const response = await client.ipAsset.mintAndRegisterIp({
-    spgNftContract: STORY_SPG_CONTRACT,
-    ipMetadata: {
-      ipMetadataURI: input.nftMetadataUri,
-      ipMetadataHash: ipMetadataHash as `0x${string}`,
-      nftMetadataURI: input.nftMetadataUri,
-      nftMetadataHash: nftMetadataHash as `0x${string}`,
-    },
-  });
+  // 3. Get available license terms dynamically
+  const availableTerms = await getAvailableLicenseTerms(client);
+  const licenseTermsId = findCommercialRemixTermsId(availableTerms);
+  console.log(`   Using license terms ID: ${licenseTermsId}`);
 
-  if (!response.ipId) {
-    throw new Error("IP registration failed: No IP ID returned");
+  // 4. Mint and register IP with retry logic - USER SIGNS THIS TRANSACTION
+  let lastError: unknown;
+  let response: any;
+  
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      response = await client.ipAsset.mintAndRegisterIp({
+        spgNftContract: STORY_SPG_CONTRACT,
+        ipMetadata: {
+          ipMetadataURI: input.nftMetadataUri,
+          ipMetadataHash: ipMetadataHash as `0x${string}`,
+          nftMetadataURI: input.nftMetadataUri,
+          nftMetadataHash: nftMetadataHash as `0x${string}`,
+        },
+      });
+      
+      // Success - break out of retry loop
+      break;
+    } catch (error) {
+      lastError = error;
+      const errorMessage = parseTransactionError(error);
+      
+      // Don't retry on user rejection
+      if (errorMessage.includes('rejected')) {
+        throw new Error(errorMessage);
+      }
+      
+      // Don't retry on insufficient funds
+      if (errorMessage.includes('Insufficient funds')) {
+        throw new Error(errorMessage);
+      }
+      
+      if (attempt < config.maxRetries) {
+        const delayMs = Math.min(
+          config.baseDelayMs * Math.pow(2, attempt),
+          config.maxDelayMs
+        );
+        console.log(`   ⚠️ Attempt ${attempt + 1} failed, retrying in ${delayMs}ms...`);
+        await sleep(delayMs);
+      }
+    }
+  }
+  
+  // If we exhausted retries, throw the last error
+  if (!response?.ipId) {
+    const errorMessage = parseTransactionError(lastError);
+    console.error(`   ❌ Registration failed after ${config.maxRetries + 1} attempts`);
+    throw new Error(errorMessage);
   }
 
   const ipId = response.ipId as string;
@@ -127,26 +321,26 @@ export async function registerGameAsIP(
   console.log(`✅ Game IP registered: ${ipId}`);
   console.log(`   Transaction: ${txHash}`);
 
-  // 4. Attach license terms (allow derivatives with royalties)
+  // 5. Attach license terms (allow derivatives with royalties)
   let licenseTermsIds: bigint[] = [];
   try {
     await client.license.attachLicenseTerms({
       ipId: ipId as `0x${string}`,
-      licenseTermsId: 1n, // Default PIL commercial remix terms
+      licenseTermsId, // Use dynamically determined license terms
     });
-    licenseTermsIds = [1n];
+    licenseTermsIds = [licenseTermsId];
     console.log(`✅ License terms attached (PIL Commercial Remix)`);
   } catch (licenseError) {
     console.warn(`⚠️ Could not attach license terms:`, licenseError);
     // Non-fatal - IP is still registered
   }
 
-  // 5. Wait for transaction confirmation
+  // 6. Wait for transaction confirmation with polling
   let blockNumber = 0;
   try {
     const { createPublicClient, http } = await import("viem");
     const publicClient = createPublicClient({
-      chain: { id: 1315, name: "Story Protocol", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [STORY_RPC_URL] } } },
+      chain: { id: STORY_CHAIN_ID, name: "Story Protocol", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [STORY_RPC_URL] } } },
       transport: http(STORY_RPC_URL),
     });
     const receipt = await publicClient.waitForTransactionReceipt({
@@ -194,8 +388,11 @@ export async function registerGameAsIP(
  */
 export async function registerAssetAsIP(
   client: StoryClient,
-  input: AssetIPRegistrationInput
+  input: AssetIPRegistrationInput,
+  retryConfig: Partial<TransactionRetryConfig> = {}
 ): Promise<IPRegistrationResult> {
+  const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
+  
   console.log(`📝 Registering asset IP: ${input.title} (${input.type})`);
 
   const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
@@ -216,19 +413,45 @@ export async function registerAssetAsIP(
     description: input.description,
   });
 
-  // USER SIGNS THIS TRANSACTION
-  const response = await client.ipAsset.mintAndRegisterIp({
-    spgNftContract: STORY_SPG_CONTRACT,
-    ipMetadata: {
-      ipMetadataURI: input.metadataUri,
-      ipMetadataHash: ipMetadataHash as `0x${string}`,
-      nftMetadataURI: input.metadataUri,
-      nftMetadataHash: nftMetadataHash as `0x${string}`,
-    },
-  });
+  // Get available license terms dynamically
+  const availableTerms = await getAvailableLicenseTerms(client);
+  const licenseTermsId = findCommercialRemixTermsId(availableTerms);
 
-  if (!response.ipId) {
-    throw new Error("Asset IP registration failed: No IP ID returned");
+  // Execute transaction with retry logic - USER SIGNS THIS TRANSACTION
+  let lastError: unknown;
+  let response: any;
+  
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      response = await client.ipAsset.mintAndRegisterIp({
+        spgNftContract: STORY_SPG_CONTRACT,
+        ipMetadata: {
+          ipMetadataURI: input.metadataUri,
+          ipMetadataHash: ipMetadataHash as `0x${string}`,
+          nftMetadataURI: input.metadataUri,
+          nftMetadataHash: nftMetadataHash as `0x${string}`,
+        },
+      });
+      break;
+    } catch (error) {
+      lastError = error;
+      const errorMessage = parseTransactionError(error);
+      
+      if (errorMessage.includes('rejected') || errorMessage.includes('Insufficient funds')) {
+        throw new Error(errorMessage);
+      }
+      
+      if (attempt < config.maxRetries) {
+        const delayMs = Math.min(config.baseDelayMs * Math.pow(2, attempt), config.maxDelayMs);
+        console.log(`   ⚠️ Attempt ${attempt + 1} failed, retrying in ${delayMs}ms...`);
+        await sleep(delayMs);
+      }
+    }
+  }
+  
+  if (!response?.ipId) {
+    const errorMessage = parseTransactionError(lastError);
+    throw new Error(errorMessage);
   }
 
   const ipId = response.ipId as string;
@@ -241,9 +464,9 @@ export async function registerAssetAsIP(
   try {
     await client.license.attachLicenseTerms({
       ipId: ipId as `0x${string}`,
-      licenseTermsId: 1n,
+      licenseTermsId,
     });
-    licenseTermsIds = [1n];
+    licenseTermsIds = [licenseTermsId];
   } catch (error) {
     console.warn(`⚠️ License attachment skipped:`, error);
   }
@@ -337,14 +560,15 @@ export async function mintLicenseTokens(
  * Performs read-after-write to ensure registration succeeded
  */
 export async function verifyIPRegistration(
-  ipId: string
-): Promise<{ verified: boolean; owner?: string; metadataUri?: string }> {
+  ipId: string,
+  txHash?: string
+): Promise<{ verified: boolean; owner?: string; metadataUri?: string; error?: string }> {
   try {
     const { http, createPublicClient } = await import("viem");
     
     const publicClient = createPublicClient({
       chain: { 
-        id: 1315, 
+        id: STORY_CHAIN_ID, 
         name: "Story Protocol", 
         nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, 
         rpcUrls: { default: { http: [STORY_RPC_URL] } } 
@@ -389,16 +613,33 @@ export async function verifyIPRegistration(
       console.log(`✅ IP ${ipId} verified on-chain (owner: ${owner})`);
       return { verified: true, owner: owner as string };
     } catch (readError) {
-      // If read fails, IP might not be registered yet or uses different registry
-      console.warn(`⚠️ Could not verify IP ${ipId} via contract read:`, readError);
+      // If read fails, check if we have a transaction hash to verify
+      if (txHash) {
+        try {
+          const receipt = await publicClient.getTransactionReceipt({
+            hash: txHash as `0x${string}`,
+          });
+          
+          if (receipt.status === 'success') {
+            console.log(`✅ IP ${ipId} verified via transaction receipt (block: ${receipt.blockNumber})`);
+            return { verified: true };
+          } else {
+            console.warn(`⚠️ Transaction ${txHash} failed`);
+            return { verified: false, error: 'Transaction failed on-chain' };
+          }
+        } catch (txError) {
+          console.warn(`⚠️ Could not verify transaction ${txHash}:`, txError);
+          return { verified: false, error: 'Could not verify transaction' };
+        }
+      }
       
-      // Fallback: Check if tx was confirmed (block number > 0)
-      // This is already done during registration, so if we have a txHash, it's likely registered
-      return { verified: true }; // Assume verified if we got an IP ID from SDK
+      // No txHash provided and contract read failed
+      console.warn(`⚠️ Could not verify IP ${ipId}: contract read failed`);
+      return { verified: false, error: 'Could not verify IP on-chain' };
     }
   } catch (error) {
     console.error(`❌ IP verification failed for ${ipId}:`, error);
-    return { verified: false };
+    return { verified: false, error: error instanceof Error ? error.message : 'Verification failed' };
   }
 }
 

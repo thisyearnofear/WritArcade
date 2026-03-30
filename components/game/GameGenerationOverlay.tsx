@@ -9,26 +9,6 @@ type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
 type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
 
 // P2: Progressive content - contextual writing tips during wait
-const WRITING_TIPS = [
-  { tip: "The best stories start with a compelling opening that hooks the reader immediately.", category: "craft" },
-  { tip: "Character motivation drives meaningful choices — make your players care about outcomes.", category: "gameplay" },
-  { tip: "Mystery genres thrive on strategic information reveals — don't give everything away at once.", category: "genre" },
-  { tip: "Interactive narratives work best when every choice feels meaningful, even if there's no 'wrong' answer.", category: "gameplay" },
-  { tip: "Use sensory details: what does the scene smell like? What sounds can your character hear?", category: "craft" },
-  { tip: "Pacing is everything — alternate between action beats and quieter moments of reflection.", category: "craft" },
-  { tip: "The best game narratives let players express themselves through their choices, not just watch a story unfold.", category: "gameplay" },
-  { tip: "Horror works best when it lets the player's imagination fill in the gaps — imply rather than show.", category: "genre" },
-  { tip: "Comedy is about timing — the same line delivered differently can be funnier or fall completely flat.", category: "genre" },
-  { tip: "Your article's unique angle becomes the game's unique hook — lean into what makes it special.", category: "tips" },
-]
-
-const AUTHOR_TRIVIA = [
-  "The first interactive fiction was created in 1976 by Will Crowther.", 
-  "Choose Your Own Adventure books inspired an entire generation of game designers.",
-  "The average attention span during loading screens is 30 seconds — make them count!",
-  "Studies show that revealed text is remembered 40% better than instantly displayed text.",
-]
-
 interface GameGenerationOverlayProps {
   isOpen: boolean
   currentStep: LoadingStep | null

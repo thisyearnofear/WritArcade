@@ -132,9 +132,18 @@ export function useStoryProtocolFlow(context: RegistrationFlowContext) {
       setFlowState('confirming');
       setProgress({ current: '', details: '' });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Network switch failed';
-      setError(message);
-      setFlowState('error');
+      // User rejected the chain switch - this is NOT an error, just return to idle
+      const message = err instanceof Error ? err.message : '';
+      
+      if (message.includes('rejected') || message.includes('User rejected')) {
+        console.log('User rejected chain switch');
+        setFlowState('idle');
+        setProgress({ current: '', details: '' });
+        setError('Please switch to Story Network to continue');
+      } else {
+        setError(message || 'Network switch failed');
+        setFlowState('error');
+      }
     }
   }, [switchChain]);
 

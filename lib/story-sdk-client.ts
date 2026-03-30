@@ -12,18 +12,75 @@ import { http } from "viem";
 import type { WalletClient, Transport, Chain, Account } from "viem";
 
 // Story Protocol Aeneid Testnet chain ID
-export const STORY_CHAIN_ID = 1315;
+export const STORY_CHAIN_ID = 1516; // Updated to 1516 for mainnet
 
 // Story Protocol RPC URL
-export const STORY_RPC_URL = "https://aeneid.storyrpc.io";
+export const STORY_RPC_URL = "https://mainnet.storyrpc.io";
 
 // Story Protocol Explorer
-export const STORY_EXPLORER_URL = "https://aeneid.storyscan.xyz";
+export const STORY_EXPLORER_URL = "https://storyscan.xyz";
 
 // SPG (Story Protocol Gateway) contract for fast minting
 export const STORY_SPG_CONTRACT =
   (process.env.NEXT_PUBLIC_STORY_SPG_CONTRACT ||
     "0xc32A8a0FF3beDDDa58393d022aF433e78739FAbc") as `0x${string}`;
+
+/**
+ * Circuit breaker state for RPC failures
+ */
+interface CircuitBreakerState {
+  failures: number;
+  lastFailure: number;
+  isOpen: boolean;
+}
+
+const circuitBreaker: CircuitBreakerState = {
+  failures: 0,
+  lastFailure: 0,
+  isOpen: false,
+};
+
+const CIRCUIT_BREAKER_THRESHOLD = 5; // Open after 5 failures
+const CIRCUIT_BREAKER_TIMEOUT = 30000; // Try again after 30 seconds
+
+/**
+ * Check if circuit breaker is open
+ */
+export function isStoryClientReady(): boolean {
+  if (!circuitBreaker.isOpen) return true;
+  
+  // Check if timeout has passed
+  if (Date.now() - circuitBreaker.lastFailure > CIRCUIT_BREAKER_TIMEOUT) {
+    console.log('[Story SDK] Circuit breaker resetting, attempting connection...');
+    circuitBreaker.isOpen = false;
+    circuitBreaker.failures = 0;
+    return true;
+  }
+  
+  console.warn('[Story SDK] Circuit breaker is open, RPC unavailable');
+  return false;
+}
+
+/**
+ * Record a failure for circuit breaker
+ */
+export function recordStoryClientFailure(): void {
+  circuitBreaker.failures++;
+  circuitBreaker.lastFailure = Date.now();
+  
+  if (circuitBreaker.failures >= CIRCUIT_BREAKER_THRESHOLD) {
+    console.error('[Story SDK] Circuit breaker opened due to repeated failures');
+    circuitBreaker.isOpen = true;
+  }
+}
+
+/**
+ * Record a success for circuit breaker
+ */
+export function recordStoryClientSuccess(): void {
+  circuitBreaker.failures = 0;
+  circuitBreaker.isOpen = false;
+}
 
 /**
  * Create a Story Protocol client from user's wallet
@@ -42,10 +99,16 @@ export function createStoryClientFromWallet(
     return null;
   }
 
+  // Check circuit breaker first
+  if (!isStoryClientReady()) {
+    console.warn("[Story SDK] Circuit breaker is open, RPC unavailable");
+    return null;
+  }
+
   // Verify user is on Story chain
   if (walletClient.chain?.id !== STORY_CHAIN_ID) {
     console.warn(
-      `[Story SDK] Wallet on chain ${walletClient.chain?.id}, need ${STORY_CHAIN_ID} (Story Aeneid)`
+      `[Story SDK] Wallet on chain ${walletClient.chain?.id}, need ${STORY_CHAIN_ID} (Story)`
     );
     return null;
   }
@@ -59,9 +122,11 @@ export function createStoryClientFromWallet(
     });
 
     console.log(`✓ Story SDK initialized for user wallet: ${walletClient.account.address}`);
+    recordStoryClientSuccess();
     return client;
   } catch (error) {
     console.error("[Story SDK] Failed to initialize:", error);
+    recordStoryClientFailure();
     return null;
   }
 }
