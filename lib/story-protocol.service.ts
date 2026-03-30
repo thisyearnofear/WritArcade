@@ -650,3 +650,14 @@ export {
 } from "./story-sdk-client";
 
 export { PILFlavor } from "@story-protocol/core-sdk";
+
+/**
+ * Estimate gas for IP registration
+ * Useful for pre-flight checks before user confirms
+ */
+export async function estimateGas(
+  walletAddress: Address,
+  spgNftContract: Address = STORY_SPG_CONTRACT
+): Promise<{ estimatedGas: bigint; enoughFunds: boolean; costInEth?: string } | null> {
+  return estimateGasForRegistration(walletAddress, spgNftContract);
+}

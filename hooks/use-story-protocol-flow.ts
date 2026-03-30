@@ -20,8 +20,9 @@ import {
   createStoryClientFromWallet,
   isOnStoryNetwork,
   STORY_CHAIN_ID,
+  STORY_SPG_CONTRACT,
 } from '@/lib/story-sdk-client';
-import { registerGameAsIP, IPRegistrationResult } from '@/lib/story-protocol.service';
+import { registerGameAsIP, estimateGas, IPRegistrationResult } from '@/lib/story-protocol.service';
 import { uploadToIPFS } from '@/lib/ipfs-utils';
 
 // ============================================================================
@@ -93,6 +94,7 @@ export function useStoryProtocolFlow(context: RegistrationFlowContext) {
 
   /**
    * Step 1: Validate prerequisites and show confirmation modal
+   * Includes gas estimation to warn users about insufficient funds
    */
   const startFlow = useCallback(async () => {
     setError(null);
@@ -109,9 +111,21 @@ export function useStoryProtocolFlow(context: RegistrationFlowContext) {
       return;
     }
 
+    // Check gas estimate to warn user if they might not have enough funds
+    if (address) {
+      setProgress({ current: 'Checking gas requirements...', details: '' });
+      const gasEstimate = await estimateGas(address, STORY_SPG_CONTRACT);
+      
+      if (gasEstimate && !gasEstimate.enoughFunds) {
+        console.warn(`⚠️ User may have insufficient funds: ${gasEstimate.costInEth} ETH estimated`);
+        // Note: We continue anyway - this is just a warning
+        // The actual transaction will fail with proper error message
+      }
+    }
+
     // All prereqs met, show confirmation
     setFlowState('confirming');
-  }, [isConnected, onStoryNetwork]);
+  }, [isConnected, onStoryNetwork, address]);
 
   /**
    * Step 2: Switch to Story network

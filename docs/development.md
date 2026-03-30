@@ -375,6 +375,80 @@ New tables/fields:
 
 **Estimated time**: 2-3 hours
 
+## Story Protocol Integration
+
+### Overview
+The app integrates with Story Protocol for IP registration. All transactions are signed by the user's wallet - there is no server-side signing.
+
+### Architecture
+```
+User Wallet (MetaMask/Rainbow) 
+    ↓ signs transactions
+Story Protocol Network (Aeneid Testnet / Mainnet)
+    ↓ registers IP
+IPFS (metadata storage)
+```
+
+### Key Files
+- `lib/story-sdk-client.ts` - Client initialization, network validation
+- `lib/story-protocol.service.ts` - IP registration, licensing, revenue claims
+- `hooks/use-story-protocol-flow.ts` - User flow orchestration
+- `components/story/` - UI components for registration flow
+
+### Configuration
+```bash
+# Network
+STORY_CHAIN_ID=1516          # Mainnet (1315 for testnet)
+STORY_RPC_URL="https://mainnet.storyrpc.io"
+STORY_SPG_CONTRACT="0x..."   # SPG NFT contract address
+
+# Feature flag
+STORY_IP_REGISTRATION_ENABLED="true"
+```
+
+### IP Registration Flow
+1. User connects wallet
+2. User clicks "Register IP"
+3. App validates wallet + network (switch to Story if needed)
+4. App estimates gas, warns if insufficient funds
+5. User confirms in modal
+6. Metadata uploaded to IPFS
+7. User signs transaction in wallet
+8. IP registered on chain
+9. Verification: Read IP Asset to confirm registration
+
+### License Types
+- **Non-Commercial Social Remixing** (ID: 1) - Free, derivatives allowed
+- **Commercial Remix** (ID: 2) - Derivatives allowed with revenue share
+- **Commercial Use** (ID: 3) - No derivatives allowed
+
+### Production Features Implemented
+- ✅ Transaction error handling with user-friendly messages
+- ✅ Retry mechanism with exponential backoff (3 attempts)
+- ✅ Dynamic license terms lookup
+- ✅ IP verification after registration (read-after-write)
+- ✅ Circuit breaker for RPC failures
+- ✅ Chain switch rejection handling
+- ✅ Gas estimation pre-flight check
+
+### Testing IP Registration
+```bash
+# 1. Connect wallet (MetaMask/Rainbow)
+# 2. Switch to Story Aeneid network
+# 3. Ensure wallet has ETH for gas
+# 4. Navigate to game with IP registration
+# 5. Click "Register as IP"
+# 6. Confirm in modal
+# 7. Sign transaction in wallet
+# 8. View on Explorer: https://aeneid.storyscan.xyz/
+```
+
+### Troubleshooting
+- **"Insufficient funds"**: User needs ETH on Story network for gas
+- **"User rejected"**: User denied wallet signature - retry from idle state
+- **"Network error"**: Chain switch failed - ensure Story network is in wallet
+- **Verification fails**: Transaction confirmed but IP not found - rare, retry registration
+
 ## Troubleshooting
 
 ### Common Issues
