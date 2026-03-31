@@ -8,13 +8,18 @@ import {
   Settings,
   GamepadIcon,
   Wallet,
-  MoreVertical
+  MoreVertical,
+  Circle,
+  Moon,
+  Sun
 } from 'lucide-react'
 import { useAccount, useDisconnect } from 'wagmi'
 import { useAccountModal } from '@rainbow-me/rainbowkit'
 import { WalletConnect } from '@/components/ui/wallet-connect'
 import { getFarcasterProfile } from '@/lib/farcaster'
 import type { FarcasterProfile } from '@/lib/farcaster'
+import { useDarkMode } from '@/components/providers/DarkModeProvider'
+import { NetworkIndicatorCompact } from '@/components/layout/NetworkIndicator'
 
 interface UserMenuProps {
   mobileLayout?: boolean
@@ -24,12 +29,16 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
   const { openAccountModal } = useAccountModal()
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const kebabRef = useRef<HTMLButtonElement | null>(null)
   const [profile, setProfile] = useState<FarcasterProfile | null>(null)
   const [_isLoadingProfile, setIsLoadingProfile] = useState(false)
   const router = useRouter()
+
+  useEffect(() => { setMounted(true) }, [])
 
   // Fetch Farcaster profile when wallet connects
   useEffect(() => {
@@ -105,16 +114,21 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
             </div>
           </div>
         )}
-        <div className={mobileLayout ? 'flex flex-col items-start min-w-0' : 'hidden md:flex flex-col items-start min-w-0'}>
-          <span className={`text-xs font-medium ${mobileLayout ? 'text-purple-300' : 'text-purple-300'}`}>Connected</span>
-          <span className={`group-hover:underline group-focus:underline cursor-pointer ${
-            mobileLayout ? 'text-white text-base' : 'text-sm'
-          } ${profile?.username ? 'text-white' : 'font-mono text-gray-300'} truncate`}
-            onClick={(e) => { e.preventDefault(); openAccountModal?.() }}
-          >
-            {displayName}
-          </span>
-        </div>
+        {mobileLayout ? (
+          <div className="flex flex-col items-start min-w-0">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-purple-300">
+              <Circle className="w-2 h-2 fill-green-400 text-green-400" />
+              Connected
+            </span>
+            <span className="group-hover:underline group-focus:underline cursor-pointer text-white text-base truncate"
+              onClick={(e) => { e.preventDefault(); openAccountModal?.() }}
+            >
+              {displayName}
+            </span>
+          </div>
+        ) : (
+          <Circle className="w-2.5 h-2.5 fill-green-400 text-green-400 shrink-0" />
+        )}
       </button>
 
       {/* Kebab button -> open app menu */}
@@ -153,7 +167,7 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
           />
 
           {/* Menu */}
-          <div ref={menuRef} className="absolute right-0 mt-4 w-72 bg-gray-900 border border-purple-500/30 rounded-lg shadow-xl shadow-purple-500/10 z-[70] max-h-[80vh] overflow-auto">
+          <div ref={menuRef} className="absolute right-0 mt-4 w-72 max-w-[calc(100vw-2rem)] bg-gray-900 border border-purple-500/30 rounded-lg shadow-xl shadow-purple-500/10 z-[70] max-h-[80vh] overflow-auto">
             <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/20 to-pink-900/20">
               <div className="flex items-center space-x-3">
                 {profile?.pfpUrl ? (
@@ -171,6 +185,11 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                   <div className="font-medium text-white">{displayName}</div>
                 </div>
               </div>
+              {isConnected && (
+                <div className="mt-2">
+                  <NetworkIndicatorCompact />
+                </div>
+              )}
             </div>
 
             <div className="p-2 space-y-1">
@@ -192,6 +211,26 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                 <span className="text-gray-300 group-hover:text-white">My Games</span>
               </Link>
 
+              {mounted && (
+                <>
+                  <div className="my-1 border-t border-gray-700/50" />
+                  <button
+                    onClick={toggleDarkMode}
+                    className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-purple-600/10 transition-colors group text-left"
+                  >
+                    {isDarkMode ? (
+                      <Moon className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+                    ) : (
+                      <Sun className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+                    )}
+                    <span className="text-gray-300 group-hover:text-white">
+                      {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+                    </span>
+                  </button>
+                </>
+              )}
+
+              <div className="my-1 border-t border-gray-700/50" />
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-red-600/10 transition-colors group text-left"

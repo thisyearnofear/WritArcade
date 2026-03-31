@@ -1,17 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
-import { PenLine, Menu, X, Moon, Sun, LayoutDashboard } from 'lucide-react'
+import { PenLine, LayoutDashboard } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { isWhitelistedWriterCoin } from '@/lib/writerCoins'
-import { Switch } from '@/components/ui/switch'
-import { useDarkMode } from '@/components/providers/DarkModeProvider'
 import { motion, useReducedMotion } from 'framer-motion'
-import { NetworkIndicator, NetworkIndicatorCompact } from '@/components/layout/NetworkIndicator'
 
 function CreatorDashboardLink() {
   const { address, isConnected } = useAccount()
@@ -27,40 +23,11 @@ function CreatorDashboardLink() {
   )
 }
 
-function DarkModeToggle() {
-  const { isDarkMode, toggleDarkMode } = useDarkMode()
-  const [mounted, setMounted] = useState(false)
-
-  // Avoid hydration mismatch by only rendering the toggle on the client
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    // Render a placeholder to avoid layout shift (approximate width/height of toggle)
-    return <div className="w-[70px] h-[24px]" aria-hidden="true" />
-  }
-
-  return (
-    <div className="flex items-center space-x-2">
-      <Switch
-        id="dark-mode-toggle"
-        checked={isDarkMode}
-        onCheckedChange={toggleDarkMode}
-        className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-zinc-700"
-      />
-      <label htmlFor="dark-mode-toggle" className="text-sm text-gray-700 dark:text-gray-200">
-        {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-      </label>
-    </div>
-  )
-}
-
 // Nav link definitions — single source of truth for desktop + mobile
 const NAV_LINKS = [
-  { href: '/games',    label: 'The Arcade' },
+  { href: '/games',    label: 'Arcade' },
   { href: '/writers',  label: 'Writers' },
-  { href: '/assets',   label: 'Marketplace' },
+  { href: '/assets',   label: 'Market' },
   { href: '/my-games', label: 'My Games' },
 ]
 
@@ -112,10 +79,7 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
 }
 
 export function Header() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-
-  const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
   // Helper: is this link the current page?
   const isActive = (href: string) =>
@@ -126,8 +90,8 @@ export function Header() {
   return (
     <header className="border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-black/80 backdrop-blur-md relative z-50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo — use /logo.png (exists in /public); /images/logo-white.png does not exist */}
-        <Link href="/" className="flex items-center space-x-2" onClick={closeMobileMenu}>
+        {/* Logo */}
+        <Link href="/" className="flex items-center space-x-2">
           <motion.img 
             src="/logo.png" 
             alt="writersarcade" 
@@ -147,14 +111,11 @@ export function Header() {
 
           <CreatorDashboardLink />
           <BalanceDisplay />
-          <NetworkIndicator />
-          <DarkModeToggle />
           <UserMenu />
         </nav>
 
-        {/* Mobile Actions — ENHANCEMENT: Show balance, network, and user menu directly on mobile */}
+        {/* Mobile Actions */}
         <div className="flex md:hidden items-center space-x-3">
-          <NetworkIndicatorCompact />
           <BalanceDisplay />
           <UserMenu />
         </div>

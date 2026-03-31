@@ -43,6 +43,23 @@ function toWholeNumber(formatted: string): string {
   return formatted.split('.')[0] ?? formatted
 }
 
+/** Abbreviate large numbers: 3.1k, 30k, 300k, 3.1m, etc. */
+function abbreviateBalance(formatted: string): string {
+  const num = parseFloat(formatted)
+  if (isNaN(num)) return formatted
+  if (num < 1000) return toWholeNumber(formatted)
+  if (num < 1_000_000) {
+    const k = num / 1000
+    return k >= 100 ? `${Math.round(k)}k` : `${parseFloat(k.toFixed(1))}k`
+  }
+  if (num < 1_000_000_000) {
+    const m = num / 1_000_000
+    return m >= 100 ? `${Math.round(m)}m` : `${parseFloat(m.toFixed(1))}m`
+  }
+  const b = num / 1_000_000_000
+  return b >= 100 ? `${Math.round(b)}b` : `${parseFloat(b.toFixed(1))}b`
+}
+
 /** Pick the "primary" balance to show on the badge — first non-zero, else AVC */
 function getPrimaryBalance(rows: CoinBalanceRow[]) {
   const nonZero = rows.find(r => r.balance && r.balance.formattedBalance !== '0')
@@ -143,7 +160,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       ) : hasPrimaryBalance ? (
         <>
           <Coins className={`text-purple-400 ${mobileLayout ? 'w-5 h-5' : 'w-4 h-4'}`} />
-          <span className={`text-white font-medium ${textClasses}`}>{toWholeNumber(primary.balance!.formattedBalance)}</span>
+          <span className={`text-white font-medium ${textClasses}`}>{abbreviateBalance(primary.balance!.formattedBalance)}</span>
           <span className={`text-gray-300 ${textClasses}`}>{primary.balance!.symbol}</span>
           {nonZeroCount > 1 && (
             <span className={`text-purple-400 ${textClasses}`}>+{nonZeroCount - 1}</span>
@@ -189,7 +206,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       {toggleButton}
       {isOpen && (
         <div
-          className="absolute right-0 top-full mt-1.5 w-56 z-50 animate-fade-in"
+          className="absolute right-0 top-full mt-1.5 w-56 max-w-[calc(100vw-2rem)] z-50 animate-fade-in"
         >
           {balanceList}
         </div>
