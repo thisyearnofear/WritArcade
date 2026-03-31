@@ -56,22 +56,31 @@ function Skeleton({
   }
 
   // P3: Use motion.div for morphing, regular div for static
-  const ShimmerWrapper = animate ? motion.div : 'div'
   const shimmerClass = animate 
     ? "animate-shimmer bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%]"
     : "bg-muted"
 
   return (
-    <ShimmerWrapper
-      className={cn(shimmerClass, className)}
-      style={{
-        ...baseStyles,
-        ...variantStyles[variant],
-      }}
-      layoutId={layoutId}
-      {...(animate ? { transition: { duration: 0.3 } } : {})}
-      {...props}
-    />
+    animate ? (
+      <motion.div
+        className={cn(shimmerClass, className)}
+        style={{
+          ...baseStyles,
+          ...variantStyles[variant],
+        }}
+        layoutId={layoutId}
+        transition={{ duration: 0.3 }}
+      />
+    ) : (
+      <div
+        className={cn(shimmerClass, className)}
+        style={{
+          ...baseStyles,
+          ...variantStyles[variant],
+        }}
+        {...props}
+      />
+    )
   )
 }
 
