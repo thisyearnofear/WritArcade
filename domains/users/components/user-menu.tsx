@@ -224,7 +224,7 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                       <Sun className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
                     )}
                     <span className="text-gray-300 group-hover:text-white">
-                      {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+                      {isDarkMode ? 'Switch to Light' : 'Switch to Dark'}
                     </span>
                   </button>
                 </>

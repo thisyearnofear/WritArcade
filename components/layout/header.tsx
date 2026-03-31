@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
 import { PenLine, LayoutDashboard } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { isWhitelistedWriterCoin } from '@/lib/writerCoins'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useIsActive } from '@/hooks/useIsActive'
 
 function CreatorDashboardLink() {
   const { address, isConnected } = useAccount()
@@ -79,13 +79,7 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
 }
 
 export function Header() {
-  const pathname = usePathname()
-
-  // Helper: is this link the current page?
-  const isActive = (href: string) =>
-    href === '/'
-      ? pathname === '/'
-      : pathname === href || pathname.startsWith(href + '/')
+  const isActive = useIsActive()
 
   return (
     <header className="border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-black/80 backdrop-blur-md relative z-50">
@@ -117,7 +111,7 @@ export function Header() {
         {/* Mobile Actions */}
         <div className="flex md:hidden items-center space-x-3">
           <BalanceDisplay />
-          <UserMenu />
+          <UserMenu mobileLayout />
         </div>
       </div>
     </header>
