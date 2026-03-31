@@ -78,6 +78,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
   const [result, setResult] = useState<IPRegistrationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [selectedLicenseId, setSelectedLicenseId] = useState<bigint>(2n); // Default to Commercial Remix
 
   // Derived state
   const onStoryNetwork = isOnStoryNetwork(chainId);
@@ -139,6 +140,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
       // 3. Register IP - THIS PROMPTS WALLET SIGNATURE
       console.log("🔏 Requesting wallet signature for IP registration...");
+      console.log(`📄 Using license terms ID: ${selectedLicenseId}`);
       const registrationResult = await registerGameAsIP(storyClient, {
         title: game.title,
         description: game.description,
@@ -150,6 +152,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
         difficulty: game.difficulty,
         gameMetadataUri: metadataUri,
         nftMetadataUri: metadataUri,
+        licenseTermsId: selectedLicenseId,
       });
 
       setResult(registrationResult);
@@ -261,6 +264,54 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                   <div className="w-2 h-2 rounded-full bg-gray-400" />
                   Platform 10%
                 </span>
+              </div>
+            </div>
+
+            {/* License Selection */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                License Type
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { id: 2, name: 'Commercial Remix', description: 'Others can build on your work and sell derivatives', recommended: true },
+                  { id: 3, name: 'Commercial Use', description: 'Others can use your work commercially', recommended: false },
+                  { id: 1, name: 'Non-Commercial', description: 'Free to use but no commercial derivatives', recommended: false }
+                ].map((license) => (
+                  <div
+                    key={license.id}
+                    className={`relative flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                      license.recommended
+                        ? 'border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-center h-5">
+                      <input
+                        type="radio"
+                        name="license"
+                        value={license.id}
+                        defaultChecked={license.recommended}
+                        className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                          {license.name}
+                        </span>
+                        {license.recommended && (
+                          <Badge className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                            Recommended
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {license.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

@@ -8,7 +8,8 @@ import { Footer } from '@/components/layout/footer'
 import { GameCardEnhanced } from '@/domains/games/components/game-card-enhanced'
 import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
-import { Plus } from 'lucide-react'
+import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
+import { Plus, Gamepad2, Shield } from 'lucide-react'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
@@ -28,6 +29,7 @@ export default function MyGamesPage() {
   const [settingsGame, setSettingsGame] = useState<Game | null>(null)
   const [sessionAllowed, setSessionAllowed] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const [activeTab, setActiveTab] = useState<'games' | 'ip-registrations'>('games')
 
   // Require connection, but wait for status to resolve to avoid false redirects
   // Guard against 'connecting' AND 'reconnecting' — both are transient states
@@ -327,7 +329,39 @@ export default function MyGamesPage() {
         {/* Content */}
         <section className="py-12 px-4">
           <div className="max-w-6xl mx-auto">
-            {loading ? (
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-2 mb-8 border-b border-gray-200 dark:border-gray-800">
+              <button
+                onClick={() => setActiveTab('games')}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'games'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                <Gamepad2 className="w-4 h-4" />
+                My Games
+                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800">
+                  {games.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('ip-registrations')}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'ip-registrations'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                IP Registrations
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'ip-registrations' ? (
+              <IPRegistrationHistory />
+            ) : loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="animate-pulse bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-4">

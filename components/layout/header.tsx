@@ -11,6 +11,7 @@ import { isWhitelistedWriterCoin } from '@/lib/writerCoins'
 import { Switch } from '@/components/ui/switch'
 import { useDarkMode } from '@/components/providers/DarkModeProvider'
 import { motion, useReducedMotion } from 'framer-motion'
+import { NetworkIndicator, NetworkIndicatorCompact } from '@/components/layout/NetworkIndicator'
 
 function CreatorDashboardLink() {
   const { address, isConnected } = useAccount()
@@ -48,7 +49,7 @@ function DarkModeToggle() {
         onCheckedChange={toggleDarkMode}
         className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-zinc-700"
       />
-      <label htmlFor="dark-mode-toggle" className="text-sm text-gray-600 dark:text-gray-300">
+      <label htmlFor="dark-mode-toggle" className="text-sm text-gray-700 dark:text-gray-200">
         {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
       </label>
     </div>
@@ -76,7 +77,7 @@ function AnimatedNavLink({ href, label, isActive }: { href: string; label: strin
         className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black rounded pb-0.5 ${
           isActive
             ? 'text-gray-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900/60 dark:after:bg-white/60 after:rounded-full'
-            : 'text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+            : 'text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
@@ -99,7 +100,7 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
         className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black ${
           isActive
             ? 'bg-gray-900/10 dark:bg-white/10 border-gray-900/20 dark:border-white/20 text-gray-900 dark:text-white'
-            : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-500 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+            : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
@@ -123,7 +124,7 @@ export function Header() {
       : pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/50 backdrop-blur relative z-50">
+    <header className="border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-black/80 backdrop-blur-md relative z-50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo — use /logo.png (exists in /public); /images/logo-white.png does not exist */}
         <Link href="/" className="flex items-center space-x-2" onClick={closeMobileMenu}>
@@ -146,88 +147,18 @@ export function Header() {
 
           <CreatorDashboardLink />
           <BalanceDisplay />
+          <NetworkIndicator />
           <DarkModeToggle />
           <UserMenu />
         </nav>
 
-        {/* Mobile Menu Button */}
-        <motion.button
-          onClick={() => setIsMobileMenuOpen(v => !v)}
-          className="md:hidden p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black"
-          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={isMobileMenuOpen}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isMobileMenuOpen ? (
-            <X className="w-6 h-6 text-gray-900 dark:text-white" />
-          ) : (
-            <Menu className="w-6 h-6 text-gray-900 dark:text-white" />
-          )}
-        </motion.button>
-      </div>
-
-      {/* Transparent backdrop — tap outside to dismiss mobile menu */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-transparent md:hidden"
-          onClick={closeMobileMenu}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Mobile Navigation Menu */}
-      {isMobileMenuOpen && (
-        <div
-          className="md:hidden relative z-50 bg-white/95 dark:bg-black/95 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="mobile-menu-title"
-        >
-          <div className="px-4 py-4 space-y-2">
-            <h3 id="mobile-menu-title" className="sr-only">Mobile Navigation</h3>
-
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={closeMobileMenu}
-                aria-current={isActive(href) ? 'page' : undefined}
-                className={`block py-3 px-4 rounded-lg transition-colors text-base focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black ${
-                  isActive(href)
-                    ? 'bg-gray-900/10 dark:bg-white/10 text-gray-900 dark:text-white border border-gray-900/10 dark:border-white/10'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-
-            <Link
-              href="/generate"
-              onClick={closeMobileMenu}
-              aria-current={isActive('/generate') ? 'page' : undefined}
-              className={`flex items-center space-x-2 py-3 px-4 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black ${
-                isActive('/generate')
-                  ? 'bg-gray-900/10 dark:bg-white/10 border-gray-900/20 dark:border-white/20 text-gray-900 dark:text-white'
-                  : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <PenLine className="w-4 h-4" />
-              <span>Create</span>
-            </Link>
-
-            <div className="pt-3 border-t border-gray-800">
-              <BalanceDisplay mobileLayout={true} />
-            </div>
-            <div className="pt-3">
-              <DarkModeToggle />
-            </div>
-            <div className="pt-3">
-              <UserMenu mobileLayout={true} />
-            </div>
-          </div>
+        {/* Mobile Actions — ENHANCEMENT: Show balance, network, and user menu directly on mobile */}
+        <div className="flex md:hidden items-center space-x-3">
+          <NetworkIndicatorCompact />
+          <BalanceDisplay />
+          <UserMenu />
         </div>
-      )}
+      </div>
     </header>
   )
 }

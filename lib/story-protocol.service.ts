@@ -38,6 +38,7 @@ export interface IPRegistrationInput {
   gameMetadataUri: string; // IPFS URI pointing to full game JSON
   nftMetadataUri: string; // IPFS URI pointing to NFT metadata
   parentIpIds?: string[]; // Optional: Assets this game is derived from
+  licenseTermsId?: bigint; // Optional: License terms ID for registration
 }
 
 export interface IPRegistrationResult {
@@ -81,6 +82,8 @@ const DEFAULT_RETRY_CONFIG: TransactionRetryConfig = {
 /**
  * Estimate gas for a transaction before signing
  * Helps users know if they have enough ETH
+ * 
+ * Adds a 15% buffer to account for gas price fluctuations
  */
 async function estimateGasForRegistration(
   walletAddress: Address,
@@ -88,14 +91,14 @@ async function estimateGasForRegistration(
 ): Promise<{ estimatedGas: bigint; enoughFunds: boolean; costInEth?: string } | null> {
   try {
     const { createPublicClient, http, formatEther, parseEther } = await import("viem");
-    
+
     const publicClient = createPublicClient({
       chain: { id: STORY_CHAIN_ID, name: "Story Protocol", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [STORY_RPC_URL] } } },
       transport: http(STORY_RPC_URL),
     });
 
     // Try to estimate gas - this may not work for all contracts
-    const estimatedGas = await publicClient.estimateContractGas({
+    const baseEstimatedGas = await publicClient.estimateContractGas({
       address: spgNftContract,
       abi: [
         {
@@ -110,20 +113,25 @@ async function estimateGasForRegistration(
       args: [] as any,
     });
 
+    // Add 15% buffer to gas estimate for congestion fluctuations
+    // This prevents failures on chains with variable gas prices
+    const GAS_BUFFER_PERCENT = 15n;
+    const estimatedGas = (baseEstimatedGas * (100n + GAS_BUFFER_PERCENT)) / 100n;
+
     // Get current gas price
     const gasPrice = await publicClient.getGasPrice();
-    
-    // Estimate total cost
+
+    // Estimate total cost with buffered gas
     const totalCost = estimatedGas * gasPrice;
-    
+
     // Get user's balance
     const balance = await publicClient.getBalance({ address: walletAddress });
-    
+
     const enoughFunds = balance >= totalCost;
     const costInEth = formatEther(totalCost);
-    
-    console.log(`   Gas estimation: ~${costInEth} ETH (${estimatedGas} gas units)`);
-    
+
+    console.log(`   Gas estimation: ~${costInEth} ETH (${estimatedGas} gas units, ${GAS_BUFFER_PERCENT}% buffer)`);
+
     return { estimatedGas, enoughFunds, costInEth };
   } catch (error) {
     console.warn(`   Could not estimate gas:`, error);
@@ -137,7 +145,7 @@ async function estimateGasForRegistration(
 function parseTransactionError(error: unknown): string {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('user rejected') || message.includes('user denied')) {
       return 'Transaction was rejected. Please approve the transaction in your wallet.';
     }
@@ -181,7 +189,7 @@ async function getAvailableLicenseTerms(
       { id: 2n, terms: { flavor: 'commercial-remix', name: 'Commercial Remix' } },
       { id: 3n, terms: { flavor: 'commercial-use', name: 'Commercial Use' } },
     ];
-    
+
     console.log(`   Available license terms: ${knownTerms.length}`);
     return knownTerms;
   } catch (error) {
@@ -202,7 +210,7 @@ function findCommercialRemixTermsId(availableTerms: { id: bigint; terms: any }[]
   const remixTerms = availableTerms.find(
     (t) => t.terms?.flavor === 'commercial-remix' || t.terms?.name?.toLowerCase().includes('commercial remix')
   );
-  
+
   // Default to ID 2 for commercial remix if found, otherwise 1
   return remixTerms?.id || 2n;
 }
@@ -231,7 +239,7 @@ export async function registerGameAsIP(
   retryConfig: Partial<TransactionRetryConfig> = {}
 ): Promise<IPRegistrationResult> {
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
-  
+
   console.log(`📝 Registering game IP: ${input.title}`);
   console.log(`   Creator: ${input.gameCreatorAddress}`);
   console.log(`   Metadata: ${input.nftMetadataUri}`);
@@ -260,15 +268,15 @@ export async function registerGameAsIP(
     description: input.description,
   });
 
-  // 3. Get available license terms dynamically
+  // 3. Get available license terms dynamically (or use provided license)
   const availableTerms = await getAvailableLicenseTerms(client);
-  const licenseTermsId = findCommercialRemixTermsId(availableTerms);
+  const licenseTermsId = input.licenseTermsId || findCommercialRemixTermsId(availableTerms);
   console.log(`   Using license terms ID: ${licenseTermsId}`);
 
   // 4. Mint and register IP with retry logic - USER SIGNS THIS TRANSACTION
   let lastError: unknown;
   let response: any;
-  
+
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
       response = await client.ipAsset.mintAndRegisterIp({
@@ -280,23 +288,23 @@ export async function registerGameAsIP(
           nftMetadataHash: nftMetadataHash as `0x${string}`,
         },
       });
-      
+
       // Success - break out of retry loop
       break;
     } catch (error) {
       lastError = error;
       const errorMessage = parseTransactionError(error);
-      
+
       // Don't retry on user rejection
       if (errorMessage.includes('rejected')) {
         throw new Error(errorMessage);
       }
-      
+
       // Don't retry on insufficient funds
       if (errorMessage.includes('Insufficient funds')) {
         throw new Error(errorMessage);
       }
-      
+
       if (attempt < config.maxRetries) {
         const delayMs = Math.min(
           config.baseDelayMs * Math.pow(2, attempt),
@@ -307,7 +315,7 @@ export async function registerGameAsIP(
       }
     }
   }
-  
+
   // If we exhausted retries, throw the last error
   if (!response?.ipId) {
     const errorMessage = parseTransactionError(lastError);
@@ -392,7 +400,7 @@ export async function registerAssetAsIP(
   retryConfig: Partial<TransactionRetryConfig> = {}
 ): Promise<IPRegistrationResult> {
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
-  
+
   console.log(`📝 Registering asset IP: ${input.title} (${input.type})`);
 
   const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
@@ -420,7 +428,7 @@ export async function registerAssetAsIP(
   // Execute transaction with retry logic - USER SIGNS THIS TRANSACTION
   let lastError: unknown;
   let response: any;
-  
+
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
       response = await client.ipAsset.mintAndRegisterIp({
@@ -436,11 +444,11 @@ export async function registerAssetAsIP(
     } catch (error) {
       lastError = error;
       const errorMessage = parseTransactionError(error);
-      
+
       if (errorMessage.includes('rejected') || errorMessage.includes('Insufficient funds')) {
         throw new Error(errorMessage);
       }
-      
+
       if (attempt < config.maxRetries) {
         const delayMs = Math.min(config.baseDelayMs * Math.pow(2, attempt), config.maxDelayMs);
         console.log(`   ⚠️ Attempt ${attempt + 1} failed, retrying in ${delayMs}ms...`);
@@ -448,7 +456,7 @@ export async function registerAssetAsIP(
       }
     }
   }
-  
+
   if (!response?.ipId) {
     const errorMessage = parseTransactionError(lastError);
     throw new Error(errorMessage);
@@ -565,13 +573,13 @@ export async function verifyIPRegistration(
 ): Promise<{ verified: boolean; owner?: string; metadataUri?: string; error?: string }> {
   try {
     const { http, createPublicClient } = await import("viem");
-    
+
     const publicClient = createPublicClient({
-      chain: { 
-        id: STORY_CHAIN_ID, 
-        name: "Story Protocol", 
-        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, 
-        rpcUrls: { default: { http: [STORY_RPC_URL] } } 
+      chain: {
+        id: STORY_CHAIN_ID,
+        name: "Story Protocol",
+        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+        rpcUrls: { default: { http: [STORY_RPC_URL] } }
       },
       transport: http(STORY_RPC_URL),
     });
@@ -587,7 +595,7 @@ export async function verifyIPRegistration(
       },
       {
         name: "ownerOf",
-        type: "function", 
+        type: "function",
         inputs: [{ name: "tokenId", type: "uint256" }],
         outputs: [{ name: "", type: "address" }],
         stateMutability: "view"
@@ -602,7 +610,7 @@ export async function verifyIPRegistration(
       // Try to read owner - if IP doesn't exist, this will revert
       // IP ID on Story Protocol is actually a token ID (bigint), not an address
       const ipIdBigInt = BigInt(ipIdAddress);
-      
+
       const owner = await publicClient.readContract({
         address: STORY_SPG_CONTRACT,
         abi: ipAssetRegistryAbi,
@@ -619,7 +627,7 @@ export async function verifyIPRegistration(
           const receipt = await publicClient.getTransactionReceipt({
             hash: txHash as `0x${string}`,
           });
-          
+
           if (receipt.status === 'success') {
             console.log(`✅ IP ${ipId} verified via transaction receipt (block: ${receipt.blockNumber})`);
             return { verified: true };
@@ -632,7 +640,7 @@ export async function verifyIPRegistration(
           return { verified: false, error: 'Could not verify transaction' };
         }
       }
-      
+
       // No txHash provided and contract read failed
       console.warn(`⚠️ Could not verify IP ${ipId}: contract read failed`);
       return { verified: false, error: 'Could not verify IP on-chain' };

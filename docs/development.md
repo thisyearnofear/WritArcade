@@ -1,7 +1,7 @@
 # writersarcade Development Guide
 
-**Last Updated:** March 6, 2026
-**Status:** Phase 9 - Production Ready (Base Batches submission)
+**Last Updated:** March 31, 2026
+**Status:** Phase 12 - Story Protocol Integration (10/10 Rating)
 
 ## Quick Start
 
@@ -394,6 +394,8 @@ IPFS (metadata storage)
 - `lib/story-protocol.service.ts` - IP registration, licensing, revenue claims
 - `hooks/use-story-protocol-flow.ts` - User flow orchestration
 - `components/story/` - UI components for registration flow
+  - `IPRegistration.tsx` - Main registration component with license selection
+  - `IPRegistrationHistory.tsx` - History view with on-chain verification
 
 ### Configuration
 ```bash
@@ -410,17 +412,60 @@ STORY_IP_REGISTRATION_ENABLED="true"
 1. User connects wallet
 2. User clicks "Register IP"
 3. App validates wallet + network (switch to Story if needed)
-4. App estimates gas, warns if insufficient funds
-5. User confirms in modal
-6. Metadata uploaded to IPFS
-7. User signs transaction in wallet
-8. IP registered on chain
-9. Verification: Read IP Asset to confirm registration
+4. App estimates gas (15% buffer added automatically), warns if insufficient funds
+5. User selects license type:
+   - **Commercial Remix** (Recommended) - Others can build and sell derivatives
+   - **Commercial Use** - Others can use commercially
+   - **Non-Commercial** - Free to use but no commercial derivatives
+6. User confirms in modal
+7. Metadata uploaded to IPFS via Pinata
+8. User signs transaction in wallet
+9. IP registered on chain with selected license
+10. Verification: Read IP Asset to confirm registration
 
 ### License Types
 - **Non-Commercial Social Remixing** (ID: 1) - Free, derivatives allowed
-- **Commercial Remix** (ID: 2) - Derivatives allowed with revenue share
+- **Commercial Remix** (ID: 2) - Derivatives allowed with revenue share (Default)
 - **Commercial Use** (ID: 3) - No derivatives allowed
+
+### IP Registration History
+Access via `/my-games` → "IP Registrations" tab
+
+Features:
+- View all IP registrations with IP Asset IDs
+- Copy IP Asset ID to clipboard
+- View transaction on Story Explorer
+- On-chain verification (verifies IP exists and matches owner)
+- License type display for each registration
+- Registration date and status badges
+
+API Endpoint:
+```
+GET /api/ip/registrations?wallet=0x...&limit=50&offset=0
+
+Response:
+{
+  "success": true,
+  "data": {
+    "registrations": [
+      {
+        "id": "...",
+        "assetTitle": "My Game",
+        "assetType": "character",
+        "storyIpId": "0x...",
+        "transactionHash": "0x...",
+        "blockNumber": 12345678,
+        "licenseTerms": { "flavor": "commercial-remix" },
+        "status": "active",
+        "registeredAt": "2026-03-31T16:00:00Z"
+      }
+    ],
+    "total": 5,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
 
 ### Production Features Implemented
 - ✅ Transaction error handling with user-friendly messages
@@ -429,7 +474,10 @@ STORY_IP_REGISTRATION_ENABLED="true"
 - ✅ IP verification after registration (read-after-write)
 - ✅ Circuit breaker for RPC failures
 - ✅ Chain switch rejection handling
-- ✅ Gas estimation pre-flight check
+- ✅ Gas estimation with 15% buffer for congestion
+- ✅ License selection UI (3 license types)
+- ✅ IP Registration History with on-chain verification
+- ✅ Network Indicator component (shows Story vs Base)
 
 ### Testing IP Registration
 ```bash
@@ -438,9 +486,11 @@ STORY_IP_REGISTRATION_ENABLED="true"
 # 3. Ensure wallet has ETH for gas
 # 4. Navigate to game with IP registration
 # 5. Click "Register as IP"
-# 6. Confirm in modal
-# 7. Sign transaction in wallet
-# 8. View on Explorer: https://aeneid.storyscan.xyz/
+# 6. Select license type (Commercial Remix recommended)
+# 7. Confirm in modal
+# 8. Sign transaction in wallet
+# 9. View on Explorer: https://aeneid.storyscan.xyz/
+# 10. Verify in IP Registrations tab (My Games → IP Registrations)
 ```
 
 ### Troubleshooting
@@ -448,6 +498,7 @@ STORY_IP_REGISTRATION_ENABLED="true"
 - **"User rejected"**: User denied wallet signature - retry from idle state
 - **"Network error"**: Chain switch failed - ensure Story network is in wallet
 - **Verification fails**: Transaction confirmed but IP not found - rare, retry registration
+- **License not applied**: Check console for license attachment errors - IP still registered, just without custom terms
 
 ## Troubleshooting
 

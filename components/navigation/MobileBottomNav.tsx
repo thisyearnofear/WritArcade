@@ -2,18 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Gamepad2, Library, Sparkles, User } from 'lucide-react';
+import { Gamepad2, PenTool, Store, Sparkles, Library } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Mobile bottom nav focuses on the primary user journey:
-// Discover → Create → Own (My Games) → Profile
-// Workshop is an advanced feature, accessible from desktop nav and Generate page
+// Discover → Writers → Create → Marketplace → Own (My Games)
+// CONSOLIDATION: Removed 'Home' (Logo link) and 'Profile' (Header UserMenu) to make room
 const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/games', label: 'Games', icon: Gamepad2 },
+  { href: '/games', label: 'Arcade', icon: Gamepad2 },
+  { href: '/writers', label: 'Writers', icon: PenTool },
   { href: '/generate', label: 'Create', icon: Sparkles },
+  { href: '/assets', label: 'Market', icon: Store },
   { href: '/my-games', label: 'My Games', icon: Library },
-  { href: '/profile', label: 'Profile', icon: User },
 ];
 
 export function MobileBottomNav() {
