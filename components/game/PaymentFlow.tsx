@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { encodeFunctionData } from 'viem'
+import { useState, useMemo, useCallback } from 'react'
+import { useAccount, useWalletClient } from 'wagmi'
+import { encodeFunctionData, toHex } from 'viem'
 import { type WriterCoin } from '@/lib/writerCoins'
-import { detectWalletProvider } from '@/lib/wallet'
-import type { WalletProvider, TransactionRequest } from '@/lib/wallet/types'
 import type { PaymentAction } from '@/domains/payments/types'
 import { ErrorCard } from '@/components/error/ErrorCard'
 import { getUserMessage, retryWithBackoff } from '@/lib/error-handler'
+import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
+import { Loader2, Wallet } from 'lucide-react'
 
 interface PaymentFlowProps {
   writerCoin: WriterCoin
@@ -18,6 +19,8 @@ interface PaymentFlowProps {
   disabled?: boolean
 }
 
+const BASE_CHAIN_ID = 8453
+
 export function PaymentFlow({
   writerCoin,
   action,
@@ -26,34 +29,37 @@ export function PaymentFlow({
   onPaymentError,
   disabled = false,
 }: PaymentFlowProps) {
+  const { address: userAddress, chainId } = useAccount()
+  const { data: walletClient } = useWalletClient()
+  
+  const { balance, isLoading: isLoadingBalance, error: balanceError, refresh } = useWriterCoinBalance(writerCoin.id)
+  
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [wallet, setWallet] = useState<WalletProvider | null>(null)
-  const [walletType, setWalletType] = useState<string | null>(null)
 
-  // Detect wallet on mount
-  useEffect(() => {
-    const detectWallet = async () => {
-      const result = await detectWalletProvider()
-      setWallet(result.provider)
-      setWalletType(result.type)
+  const requiredAmount = useMemo(() => {
+    const cost = action === 'generate-game' ? writerCoin.gameGenerationCost : writerCoin.mintCost
+    return Number(cost) / 10 ** writerCoin.decimals
+  }, [writerCoin, action])
 
-      if (!result.available) {
-        setError('No wallet detected. Please open this in Farcaster or install MetaMask.')
-      }
+  const userBalance = useMemo(() => {
+    if (!balance?.formattedBalance) return null
+    return parseFloat(balance.formattedBalance)
+  }, [balance])
+
+  const hasInsufficientBalance = useMemo(() => {
+    if (userBalance === null || isLoadingBalance) return false
+    return userBalance < requiredAmount
+  }, [userBalance, requiredAmount, isLoadingBalance])
+
+  const handlePayment = useCallback(async () => {
+    if (!walletClient || !userAddress) {
+      setError('Wallet not available. Please make sure your wallet is connected.')
+      return
     }
 
-    detectWallet()
-  }, [])
-
-  const actionLabel =
-    action === 'generate-game'
-      ? `Generate Game (${costFormatted} ${writerCoin.symbol})`
-      : `Mint as NFT (${costFormatted} ${writerCoin.symbol})`
-
-  const handlePayment = async () => {
-    if (!wallet) {
-      setError('Wallet not available. Please make sure your wallet is connected.')
+    if (hasInsufficientBalance) {
+      setError(`Insufficient ${writerCoin.symbol} balance. You need ${requiredAmount} ${writerCoin.symbol} but have ${userBalance} ${writerCoin.symbol}.`)
       return
     }
 
@@ -63,13 +69,6 @@ export function PaymentFlow({
     try {
       await retryWithBackoff(
         async () => {
-          // Step 1: Get user's wallet address
-          const userAddress = await wallet.getAddress()
-          if (!userAddress) {
-            throw new Error('Failed to get wallet address. Please make sure your wallet is unlocked.')
-          }
-
-          // Step 2: Initiate payment on backend to get payment details
           const initiateResponse = await fetch('/api/payments/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -95,87 +94,80 @@ export function PaymentFlow({
             throw new Error('Invalid contract address received from server')
           }
 
-          // Step 3: Check if approval is needed for ERC20 token
-          // ERC20 tokens require approval before spending
           const approvalData = encodeERC20Approval(contractAddress, amount)
           
           try {
-            const approvalTx = await wallet.sendTransaction({
-              to: writerCoin.address as `0x${string}`,
-              data: approvalData,
-              chainId: 8453,
+            const approvalTx = await walletClient.writeContract({
+              address: writerCoin.address,
+              abi: ['function approve(address spender, uint256 amount) returns (bool)'],
+              functionName: 'approve',
+              args: [contractAddress as `0x${string}`, BigInt(amount)],
             })
 
-            if (!approvalTx.success) {
-              // If approval fails, it might already be approved, continue anyway
-              console.warn('[PaymentFlow] Approval transaction failed, attempting payment anyway:', approvalTx.error)
-            } else {
-              console.log('[PaymentFlow] Approval transaction successful:', approvalTx.transactionHash)
-            }
+            console.log('[PaymentFlow] Approval transaction sent:', approvalTx)
           } catch (approvalErr) {
-            // Log but don't fail - might already be approved
             console.warn('[PaymentFlow] Approval error (continuing):', approvalErr)
-            
-            // Check if error indicates already approved
             const errorMessage = String(approvalErr)
             if (errorMessage.includes('already approved') || errorMessage.includes('allowance sufficient')) {
               console.log('[PaymentFlow] Token already approved, proceeding with payment')
             }
           }
 
-          // Step 4: Encode transaction data based on action and wallet type
           let transactionData: `0x${string}`
 
-          if (walletType === 'farcaster') {
-            // Use Farcaster encoding
-            transactionData = encodeFarcasterPayment(contractAddress, writerCoin.address, userAddress, action)
+          if (action === 'generate-game') {
+            transactionData = encodeFunctionData({
+              abi: [{
+                name: 'payForGameGeneration',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [{ name: 'writerCoin', type: 'address' }]
+              }],
+              functionName: 'payForGameGeneration',
+              args: [writerCoin.address]
+            })
           } else {
-            // Use browser wallet encoding (same as Farcaster for now)
-            transactionData = encodeFarcasterPayment(contractAddress, writerCoin.address, userAddress, action)
+            transactionData = encodeFunctionData({
+              abi: [{
+                name: 'payAndMintGame',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [
+                  { name: 'writerCoin', type: 'address' },
+                  { name: 'tokenURI', type: 'string' }
+                ]
+              }],
+              functionName: 'payAndMintGame',
+              args: [writerCoin.address, 'demo']
+            })
           }
 
-          // Step 5: Send transaction through wallet provider
-          const txRequest: TransactionRequest = {
+          const txRequest = {
             to: contractAddress,
             data: transactionData,
-            chainId: 8453,
+            chainId: BASE_CHAIN_ID,
           }
 
           console.log('[PaymentFlow] Sending transaction to:', contractAddress)
-          console.log('[PaymentFlow] Transaction data:', transactionData)
-          console.log('[PaymentFlow] Action:', action)
           console.log('[PaymentFlow] Writer coin:', writerCoin.address)
           console.log('[PaymentFlow] User address:', userAddress)
-          console.log('[PaymentFlow] Amount:', amount)
 
-          const txResult = await wallet.sendTransaction(txRequest)
+          const txHash = await walletClient.writeContract({
+            address: contractAddress,
+            abi: action === 'generate-game' 
+              ? [{ name: 'payForGameGeneration', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'writerCoin', type: 'address' }] }]
+              : [{ name: 'payAndMintGame', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'writerCoin', type: 'address' }, { name: 'tokenURI', type: 'string' }] }],
+            functionName: action === 'generate-game' ? 'payForGameGeneration' : 'payAndMintGame',
+            args: action === 'generate-game' ? [writerCoin.address] : [writerCoin.address, 'demo'],
+          })
 
-          if (!txResult.success || !txResult.transactionHash) {
-            const errorMsg = txResult.error || 'Transaction was rejected or failed'
-            console.error('[PaymentFlow] Transaction failed:', errorMsg)
-            
-            // Provide helpful context for common errors
-            if (errorMsg.includes('1002') || errorMsg.includes('execution reverted')) {
-              throw new Error('Payment failed: Contract rejected the transaction. This could be due to: 1) Insufficient token balance, 2) Token not approved, 3) Wrong contract address, 4) Wrong function parameters. Error code: 1002. Contract: ' + contractAddress)
-            }
-            if (errorMsg.includes('insufficient balance') || errorMsg.includes('not enough funds')) {
-              throw new Error('Payment failed: Insufficient token balance. Please ensure you have enough ' + writerCoin.symbol + ' tokens.')
-            }
-            if (errorMsg.includes('allowance') || errorMsg.includes('approval')) {
-              throw new Error('Payment failed: Token approval required. Please approve the contract to spend your tokens first.')
-            }
-            if (errorMsg.includes('invalid address') || errorMsg.includes('address(0)')) {
-              throw new Error('Payment failed: Invalid contract address. Please check the contract configuration.')
-            }
-            throw new Error(errorMsg)
-          }
+          console.log('[PaymentFlow] Transaction sent:', txHash)
 
-          // Step 6: Verify payment on backend
           const verifyResponse = await fetch('/api/payments/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              transactionHash: txResult.transactionHash,
+              transactionHash: txHash,
               writerCoinId: writerCoin.id,
               action,
             }),
@@ -189,11 +181,12 @@ export function PaymentFlow({
             )
           }
 
-          return txResult.transactionHash
+          return txHash
         },
-        2, // Max 2 retries
-        1500 // 1.5 second base delay
+        2,
+        1500
       ).then((txHash) => {
+        refresh()
         onPaymentSuccess?.(txHash)
       })
     } catch (err) {
@@ -204,13 +197,47 @@ export function PaymentFlow({
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [walletClient, userAddress, writerCoin, action, hasInsufficientBalance, userBalance, requiredAmount, onPaymentSuccess, onPaymentError, refresh])
+
+  const actionLabel =
+    action === 'generate-game'
+      ? `Generate Game (${costFormatted} ${writerCoin.symbol})`
+      : `Mint as NFT (${costFormatted} ${writerCoin.symbol})`
+
+  const isWrongChain = Boolean(chainId && chainId !== BASE_CHAIN_ID)
 
   return (
     <div className="space-y-3">
+      {userAddress && (
+        <div className="rounded-lg bg-purple-900/20 border border-purple-500/30 p-3">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-purple-400" />
+              <span className="text-purple-200">Your Balance:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {isLoadingBalance ? (
+                <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+              ) : balanceError ? (
+                <span className="text-red-400">Unable to load</span>
+              ) : (
+                <>
+                  <span className={`font-semibold ${hasInsufficientBalance ? 'text-red-400' : 'text-green-400'}`}>
+                    {balance ? balance.formattedBalance : '0'} {writerCoin.symbol}
+                  </span>
+                  {hasInsufficientBalance && (
+                    <span className="text-xs text-red-400">(Insufficient)</span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={handlePayment}
-        disabled={disabled || isProcessing || !wallet}
+        disabled={disabled || isProcessing || !walletClient || !userAddress || !!isLoadingBalance || hasInsufficientBalance || isWrongChain}
         className="w-full rounded-lg bg-purple-600 px-6 py-4 font-semibold text-white transition-colors hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isProcessing ? (
@@ -225,6 +252,8 @@ export function PaymentFlow({
             </svg>
             Processing payment...
           </span>
+        ) : isWrongChain ? (
+          <span>Switch to Base Network</span>
         ) : (
           actionLabel
         )}
@@ -234,63 +263,21 @@ export function PaymentFlow({
 
       <div className="rounded-lg bg-purple-900/30 p-3 text-xs text-purple-300">
         <p>
-          💡 <span className="font-semibold">Payment flow:</span> You'll approve spending in your{' '}
-          {walletType === 'farcaster' ? 'Farcaster' : 'browser'} wallet, then we process your payment on Base.
+          💡 <span className="font-semibold">Payment flow:</span> You'll approve spending in your wallet, then we process your payment on Base.
         </p>
       </div>
     </div>
   )
 }
 
-/**
- * Encode ERC20 approval transaction
- * Approves contract to spend tokens on behalf of user
- */
 function encodeERC20Approval(
   spenderAddress: `0x${string}`,
   amount: string
 ): `0x${string}` {
-  // ERC20 approve function selector: approve(address,uint256)
   const selector = '0x095ea7b3'
-  
-  // Encode spender address (pad to 32 bytes)
   const encodedSpender = spenderAddress.slice(2).padStart(64, '0')
-  
-  // Encode amount (convert to hex and pad to 32 bytes)
   const amountBigInt = BigInt(amount)
   const encodedAmount = amountBigInt.toString(16).padStart(64, '0')
   
   return (selector + encodedSpender + encodedAmount) as `0x${string}`
-}
-
-/**
- * Encode transaction data for game generation payment
- * Used by both Farcaster and browser wallets
- */
-function encodeFarcasterPayment(
-  contractAddress: `0x${string}`,
-  writerCoinAddress: `0x${string}`,
-  userAddress: `0x${string}`,
-  action: PaymentAction
-): `0x${string}` {
-  if (action === 'generate-game') {
-    // Function signature: payForGameGeneration(address writerCoin)
-    const abi = [{
-      name: 'payForGameGeneration',
-      type: 'function',
-      stateMutability: 'nonpayable',
-      inputs: [
-        { name: 'writerCoin', type: 'address' }
-      ]
-    }] as const
-
-    return encodeFunctionData({
-      abi,
-      functionName: 'payForGameGeneration',
-      args: [writerCoinAddress]
-    })
-  } else {
-    // For minting, this should not be used - payAndMintGame should be called instead
-    throw new Error('Minting requires payAndMintGame function, not payForMinting')
-  }
 }
