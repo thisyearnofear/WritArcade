@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles, Info, Lightbulb } from 'lucide-react'
+import { Loader2, Sparkles, Info, Lightbulb, Wallet, AlertTriangle } from 'lucide-react'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { PaymentOption } from '@/components/game/PaymentOption'
@@ -17,6 +17,7 @@ import { ArticleFidelityReview } from '@/components/game/article-fidelity-review
 import { type WriterCoin } from '@/lib/writerCoins'
 import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { retryWithBackoff } from '@/lib/error-handler'
+import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 
 interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
@@ -124,6 +125,18 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
   // writerCoin is guaranteed non-null after the coin-selection gate below
   const writerCoin = selectedCoin as WriterCoin
   const isStoryMode = mode === 'story'
+
+  const requiredAmount = useMemo(() => {
+    if (!writerCoin) return 0
+    return Number(writerCoin.gameGenerationCost) / 10 ** writerCoin.decimals
+  }, [writerCoin])
+
+  const { balance, isLoading: isLoadingBalance } = useWriterCoinBalance(writerCoin?.id || 'avc')
+
+  const userBalance = useMemo(() => {
+    if (!balance?.formattedBalance) return null
+    return parseFloat(balance.formattedBalance)
+  }, [balance])
 
   const handlePaymentSuccess = async (_transactionHash: string) => {
     setPaymentApproved(true)
@@ -542,6 +555,19 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
               'Make sure your internet connection is stable',
             ]}
           />
+        )}
+
+        {isStoryMode && selectedCoin && balance && !paymentApproved && userBalance !== null && userBalance < requiredAmount && (
+          <div className="rounded-lg bg-red-900/20 border border-red-500/50 p-3 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="text-red-200 font-medium">Insufficient {writerCoin.symbol} Balance</p>
+              <p className="text-red-300/80">
+                You have {balance.formattedBalance} {writerCoin.symbol} but need {requiredAmount} {writerCoin.symbol} to generate a game.
+                {!isLoadingBalance && <span className="block mt-1">Your balance will be checked before payment.</span>}
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Payment Section (shown when customization requested in story mode) */}

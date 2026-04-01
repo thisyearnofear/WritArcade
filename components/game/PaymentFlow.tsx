@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { useAccount, useWalletClient } from 'wagmi'
+import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
 import { encodeFunctionData, toHex } from 'viem'
 import { type WriterCoin } from '@/lib/writerCoins'
 import type { PaymentAction } from '@/domains/payments/types'
@@ -31,6 +31,7 @@ export function PaymentFlow({
 }: PaymentFlowProps) {
   const { address: userAddress, chainId } = useAccount()
   const { data: walletClient } = useWalletClient()
+  const { switchChainAsync } = useSwitchChain()
   
   const { balance, isLoading: isLoadingBalance, error: balanceError, refresh } = useWriterCoinBalance(writerCoin.id)
   
@@ -253,7 +254,9 @@ export function PaymentFlow({
             Processing payment...
           </span>
         ) : isWrongChain ? (
-          <span>Switch to Base Network</span>
+          <span onClick={() => switchChainAsync({ chainId: BASE_CHAIN_ID })} className="cursor-pointer">
+            Switch to Base Network
+          </span>
         ) : (
           actionLabel
         )}
