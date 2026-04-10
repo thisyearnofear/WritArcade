@@ -3,19 +3,143 @@ import { NextRequest, NextResponse } from 'next/server'
 // ─── In-flight deduplication ──────────────────────────────────────────────
 // React StrictMode double-invokes effects in development, which can trigger
 // two identical image generation requests back-to-back — each costing real
-// Venice API credits. This Map coalesces concurrent identical requests so
+// API credits. This Map coalesces concurrent identical requests so
 // only one upstream call is made; both callers receive the same result.
-const IN_FLIGHT = new Map<string, Promise<{ imageUrl: string | null }>>()
+const IN_FLIGHT = new Map<string, Promise<{ imageUrl: string | null; model: string; provider: string }>>()
 
-function requestKey(prompt: string, model: string) {
+function requestKey(prompt: string, model: string, provider: string) {
   // Simple deterministic key — no crypto needed for this use-case
-  return `${model}::${prompt.slice(0, 200)}`
+  return `${provider}::${model}::${prompt.slice(0, 200)}`
 }
 // ─────────────────────────────────────────────────────────────────────────
 
+/**
+ * Call Venice AI image generation API
+ */
+async function callVeniceAPI(prompt: string, model: string): Promise<{ imageUrl: string | null; success: boolean }> {
+  const apiKey = process.env.VENICE_API_KEY
+  if (!apiKey) {
+    return { imageUrl: null, success: false }
+  }
+
+  try {
+    const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        prompt,
+        model,
+        width: 1024,
+        height: 1024,
+        format: 'png',
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Venice] API error:', response.status, errorText)
+      
+      if (response.status === 402) {
+        console.warn('[Venice] Credits exhausted - will use fallback provider')
+      }
+      
+      return { imageUrl: null, success: false }
+    }
+
+    const data = await response.json()
+    const imageUrl = data.images?.[0] ? `data:image/png;base64,${data.images[0]}` : null
+    
+    return { imageUrl, success: true }
+  } catch (error) {
+    console.error('[Venice] Request failed:', error)
+    return { imageUrl: null, success: false }
+  }
+}
+
+/**
+ * Call Netmind AI image generation API (OpenAI-compatible)
+ */
+async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl: string | null; success: boolean }> {
+  const apiKey = process.env.NETMIND_API_KEY
+  if (!apiKey) {
+    return { imageUrl: null, success: false }
+  }
+
+  try {
+    const response = await fetch('https://api.netmind.ai/inference-api/openai/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        prompt,
+        response_format: 'b64_json',
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Netmind] API error:', response.status, errorText)
+      return { imageUrl: null, success: false }
+    }
+
+    const data = await response.json()
+    const imageUrl = data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : null
+    
+    return { imageUrl, success: true }
+  } catch (error) {
+    console.error('[Netmind] Request failed:', error)
+    return { imageUrl: null, success: false }
+  }
+}
+
+/**
+ * Call Modal Stable Diffusion API (self-hosted)
+ */
+async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
+  const modalUrl = process.env.MODAL_IMAGE_GEN_URL
+  if (!modalUrl) {
+    console.warn('[Modal] MODAL_IMAGE_GEN_URL not configured')
+    return { imageUrl: null, success: false }
+  }
+
+  try {
+    const response = await fetch(modalUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt,
+        width: 512,
+        height: 512,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Modal] API error:', response.status, errorText)
+      return { imageUrl: null, success: false }
+    }
+
+    const data = await response.json()
+    const imageUrl = data.image || null
+    
+    return { imageUrl, success: !!imageUrl }
+  } catch (error) {
+    console.error('[Modal] Request failed:', error)
+    return { imageUrl: null, success: false }
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, type, model } = await req.json()
+    const { prompt, type, model, provider } = await req.json()
 
     if (!prompt || !type) {
       return NextResponse.json(
@@ -24,19 +148,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const apiKey = process.env.VENICE_API_KEY
-
-    if (!apiKey) {
-      console.warn('Venice API key not configured')
-      return NextResponse.json(
-        { imageUrl: null },
-        { status: 200 }
-      )
+    // Determine provider (default to venice, fallback chain: venice -> modal -> netmind)
+    const selectedProvider = provider || 'venice'
+    
+    // Use specified model or default based on provider
+    let selectedModel = model
+    if (!selectedModel) {
+      if (selectedProvider === 'venice') selectedModel = 'venice-sd35'
+      else if (selectedProvider === 'modal') selectedModel = 'stable-diffusion-v1-5'
+      else selectedModel = 'stabilityai/stable-diffusion-3.5-large'
     }
-
-    // Use specified model or default to venice-sd35
-    const selectedModel = model || 'venice-sd35'
-    const key = requestKey(prompt, selectedModel)
+    
+    const key = requestKey(prompt, selectedModel, selectedProvider)
 
     // Deduplicate: if an identical request is already in flight, share its result
     const existing = IN_FLIGHT.get(key)
@@ -47,37 +170,50 @@ export async function POST(req: NextRequest) {
     }
 
     // Create the upstream request promise and register it
-    const upstreamPromise = (async (): Promise<{ imageUrl: string | null }> => {
-      console.log(`Generating image with model: ${selectedModel}`)
-      const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          prompt,
-          model: selectedModel,
-          width: 1024,
-          height: 1024,
-          format: 'png',
-        }),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Venice API error:', response.status, errorText)
-        return { imageUrl: null }
+    const upstreamPromise = (async (): Promise<{ imageUrl: string | null; model: string; provider: string }> => {
+      console.log(`[Image] Generating with ${selectedProvider} / ${selectedModel}`)
+      
+      // Try primary provider
+      let result: { imageUrl: string | null; success: boolean }
+      if (selectedProvider === 'venice') {
+        result = await callVeniceAPI(prompt, selectedModel)
+      } else if (selectedProvider === 'modal') {
+        result = await callModalAPI(prompt)
+      } else {
+        result = await callNetmindAPI(prompt, selectedModel)
       }
-
-      const data = await response.json()
-
-      if (data.images?.[0]) {
-        return { imageUrl: `data:image/png;base64,${data.images[0]}` }
+      
+      if (result.success && result.imageUrl) {
+        return { imageUrl: result.imageUrl, model: selectedModel, provider: selectedProvider }
       }
-
-      console.warn('Venice API response missing images array:', data)
-      return { imageUrl: null }
+      
+      // Try Modal as first fallback (self-hosted, no API costs)
+      if (selectedProvider !== 'modal') {
+        console.log(`[Image] Primary failed, trying Modal / stable-diffusion-v1-5`)
+        result = await callModalAPI(prompt)
+        
+        if (result.success && result.imageUrl) {
+          return { imageUrl: result.imageUrl, model: 'stable-diffusion-v1-5', provider: 'modal' }
+        }
+      }
+      
+      // Try other providers as final fallback
+      const finalProvider = selectedProvider === 'venice' ? 'netmind' : 'venice'
+      const finalModel = finalProvider === 'venice' ? 'venice-sd35' : 'stabilityai/stable-diffusion-3.5-large'
+      
+      console.log(`[Image] Modal failed, trying ${finalProvider} / ${finalModel}`)
+      
+      result = finalProvider === 'venice'
+        ? await callVeniceAPI(prompt, finalModel)
+        : await callNetmindAPI(prompt, finalModel)
+      
+      if (result.success && result.imageUrl) {
+        return { imageUrl: result.imageUrl, model: finalModel, provider: finalProvider }
+      }
+      
+      // All providers failed
+      console.error('[Image] All providers failed')
+      return { imageUrl: null, model: selectedModel, provider: 'failed' }
     })()
 
     IN_FLIGHT.set(key, upstreamPromise)
@@ -92,7 +228,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Image generation failed:', error)
     return NextResponse.json(
-      { imageUrl: null },
+      { imageUrl: null, model: 'failed', provider: 'failed' },
       { status: 200 }
     )
   }

@@ -56,14 +56,16 @@ writersarcade integrates deeply with Story Protocol (L1 blockchain for IP) to en
 - Frontend: Next.js 16 (App Router) + TypeScript + Tailwind + Framer Motion
 - Web3: wagmi + viem + RainbowKit / WalletConnect
 - Backend: Next.js API routes + Prisma + PostgreSQL
-- AI: OpenAI/Anthropic via ai-sdk; image generation via Venice API
+- AI: OpenAI/Anthropic via ai-sdk; image generation via Venice API (with Modal & Netmind fallbacks)
 - IP: Story Protocol (testnet/mainnet configurable) + IPFS (Pinata)
 - Access Control: Lit Protocol (decentralized NFT-gated encryption)
 - Impact: Hypercerts (AT Protocol impact certificates)
 
 See docs for details:
+- Quick Reference: ./docs/QUICK_REFERENCE.md
 - Architecture: ./docs/architecture.md
 - Development Guide: ./docs/development.md
+- Modal Setup: ./docs/MODAL_SETUP.md
 - Roadmap: ./docs/roadmap.md
 - Hackathon Details: ./docs/hackathon.md
 
@@ -99,14 +101,39 @@ Revenue model is enforced on-chain and configurable per writer coin by the owner
    - npm run dev
    - Open http://localhost:3000 (or /mini-app for the Farcaster mini-app)
 2) Configure env (see .env.example)
+   - Copy `.env.example` to `.env.local` and add your secrets
    - DATABASE_URL (PostgreSQL)
    - WalletConnect project ID (NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID)
    - Venice AI key (VENICE_API_KEY)
+   - Modal endpoint (MODAL_IMAGE_GEN_URL) - see [docs/MODAL_SETUP.md](./docs/MODAL_SETUP.md)
+   - Netmind AI key (NETMIND_API_KEY) - optional fallback
    - Story Protocol (STORY_RPC_URL, STORY_WALLET_KEY, STORY_NETWORK)
    - Pinata JWT + IPFS gateway
    - Base contract addresses (NEXT_PUBLIC_* in .env)
    - Lit Protocol (LIT_PROTOCOL_ENABLED, LIT_NETWORK)
    - Hypercerts (HYPERCERTS_HANDLE, HYPERCERTS_APP_PASSWORD)
+
+## Image Generation Providers
+
+The app uses a multi-provider fallback system for reliable image generation:
+
+1. **Venice AI** (Primary) - High-quality Stable Diffusion 3.5
+   - Model: `venice-sd35`
+   - Size: 1024x1024
+   - Requires: `VENICE_API_KEY`
+
+2. **Modal** (Fallback 1) - Self-hosted Stable Diffusion 1.5
+   - Model: `stable-diffusion-v1-5`
+   - Size: 512x512
+   - Requires: `MODAL_IMAGE_GEN_URL`
+   - Cost: Pay-per-use GPU time (~$0.002-0.005 per image)
+   - Setup: See [docs/MODAL_SETUP.md](./docs/MODAL_SETUP.md)
+
+3. **Netmind AI** (Fallback 2) - OpenAI-compatible API
+   - Model: `stabilityai/stable-diffusion-3.5-large`
+   - Requires: `NETMIND_API_KEY`
+
+The system automatically tries each provider in order until one succeeds, ensuring reliable image generation even if Venice runs out of credits.
 
 ## Minimal API map (key routes)
 - POST /api/games/generate → AI game generation (+ background enrichment)

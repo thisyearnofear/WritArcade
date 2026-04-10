@@ -48,6 +48,12 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.production
+.env.modal
+
+# Modal
+modal_test_output.png
+scripts/modal/*.png
+scripts/modal/test-output/
 
 # vercel
 .vercel
@@ -104,3 +110,4 @@ Thumbs.db
 # Temporary folders
 tmp/
 temp/
+.blackboxcli/
