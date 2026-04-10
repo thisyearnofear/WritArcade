@@ -39,9 +39,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Create Viem client for Base network
+    // Use server-side env var (not NEXT_PUBLIC_) for API routes
+    const rpcUrl = process.env.BASE_RPC_URL || process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org'
+    
+    console.log(`[Balance API] Fetching balance for ${wallet} (${coinId}) using RPC: ${rpcUrl}`)
+    
     const client = createPublicClient({
       chain: base,
-      transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org'),
+      transport: http(rpcUrl, {
+        timeout: 10000, // 10 second timeout
+        retryCount: 2,
+      }),
     })
 
     // ERC-20 balanceOf ABI (minimal)
@@ -88,9 +96,16 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Balance fetch error:', error)
+    console.error('[Balance API] Error:', error)
+    console.error('[Balance API] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch balance' },
+      { 
+        error: 'Failed to fetch balance',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

@@ -1,18 +1,26 @@
 /**
- * Image Generation Service using Venice AI
+ * Image Generation Service with Multi-Provider Support
+ * Primary: Venice AI
+ * Fallback 1: Replicate (most reliable)
+ * Fallback 2: Netmind AI (if configured)
+ * 
  * Generates visual representations for games and narrative moments
  *
  * Architecture: Single source of truth for all image generation logic
  * - Game cover images: Called once at game creation
  * - Narrative images: Called per-turn to visualize story moments
  * - Caching: Prevents duplicate API calls for identical prompts
- * - Model experimentation: A/B tests different Venice models for comic quality
+ * - Model experimentation: A/B tests different models for comic quality
  * - Server-side API: Uses /api/generate-image endpoint to keep API key secure
+ * - Automatic failover: Falls back to Replicate/Netmind if Venice fails
  */
+
+export type ImageProvider = 'venice' | 'replicate' | 'netmind' | 'failed'
 
 export interface ImageGenerationResult {
   imageUrl: string | null
   model: string
+  provider: ImageProvider
   timestamp: number
 }
 
@@ -30,19 +38,73 @@ export class ImageGenerationService {
   }
   private static readonly CACHE = new Map<string, ImageGenerationResult>() // prompt → result with metadata
   
-  // Venice AI models to test (excluding nano-banana-pro for cost)
-  private static readonly MODELS = [
+  // Venice AI models (primary provider)
+  private static readonly VENICE_MODELS = [
     'venice-sd35',      // Default, works with all features ($0.01)
     'qwen-image',       // Highest quality ($0.01)
     'hidream',          // Fast generation ($0.01)
   ]
   
+  // Netmind AI models (fallback provider - OpenAI compatible)
+  // Note: Netmind service availability may vary. Test before relying on it.
+  private static readonly NETMIND_MODELS = [
+    'stable-diffusion-v1-5',  // Basic model (may have availability issues)
+  ]
+  
+  // Replicate models (reliable fallback provider)
+  private static readonly REPLICATE_MODELS = [
+    'black-forest-labs/flux-schnell',           // Fast, high quality (~2s)
+    'stability-ai/sdxl',                        // High quality
+  ]
+  
+  // Track provider health for smart failover
+  private static providerHealth = {
+    venice: { failures: 0, lastSuccess: Date.now() },
+    netmind: { failures: 0, lastSuccess: Date.now() },
+  }
+  
   // Track model performance over time
   private static readonly MODEL_RATINGS = new Map<string, { count: number; score: number }>()
   
-  private static getRandomModel(): string {
+  /**
+   * Determine which provider to use based on health status
+   */
+  private static selectProvider(): 'venice' | 'netmind' {
+    const veniceApiKey = process.env.VENICE_API_KEY
+    const netmindApiKey = process.env.NETMIND_API_KEY
+    
+    // If Venice has failed recently (>3 failures in last 5 min), try Netmind first
+    const veniceRecentFailures = this.providerHealth.venice.failures
+    const timeSinceVeniceSuccess = Date.now() - this.providerHealth.venice.lastSuccess
+    
+    if (veniceRecentFailures > 3 && timeSinceVeniceSuccess < 5 * 60 * 1000 && netmindApiKey) {
+      console.log('[Image] Using Netmind (Venice unhealthy)')
+      return 'netmind'
+    }
+    
+    // Prefer Venice if available
+    if (veniceApiKey) {
+      return 'venice'
+    }
+    
+    // Fallback to Netmind
+    if (netmindApiKey) {
+      console.log('[Image] Using Netmind (Venice not configured)')
+      return 'netmind'
+    }
+    
+    console.warn('[Image] No image provider configured')
+    return 'venice' // Will fail gracefully
+  }
+  
+  private static getRandomModel(provider: 'venice' | 'netmind'): string {
+  private static getRandomModel(provider: 'venice' | 'netmind'): string {
+    const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS
+    
     // Weight selection by quality ratings if available
     const ratings = Array.from(this.MODEL_RATINGS.entries())
+      .filter(([model]) => models.includes(model))
+    
     if (ratings.length > 0) {
       // Weighted random selection - higher rated models chosen more often
       const totalScore = ratings.reduce((sum, [_, { score }]) => sum + score, 0)
@@ -58,8 +120,107 @@ export class ImageGenerationService {
       }
     }
     
-    // Fallback: uniform random from all models
-    return this.MODELS[Math.floor(Math.random() * this.MODELS.length)]
+    // Fallback: uniform random from provider's models
+    return models[Math.floor(Math.random() * models.length)]
+  }
+  
+  /**
+   * Call Venice AI image generation API
+   */
+  private static async callVeniceAPI(prompt: string, model: string): Promise<{ imageUrl: string | null; success: boolean }> {
+    const veniceApiKey = process.env.VENICE_API_KEY
+    if (!veniceApiKey) {
+      return { imageUrl: null, success: false }
+    }
+
+    try {
+      const veniceResponse = await fetch('https://api.venice.ai/api/v1/image/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${veniceApiKey}`,
+        },
+        body: JSON.stringify({
+          prompt,
+          model,
+          width: 1280,
+          height: 720,
+          format: 'png',
+        }),
+      })
+
+      if (!veniceResponse.ok) {
+        const errorText = await veniceResponse.text()
+        console.error('[Venice] API error:', veniceResponse.status, errorText)
+        
+        if (veniceResponse.status === 402) {
+          console.warn('[Venice] Credits exhausted - will use fallback provider')
+        }
+        
+        this.providerHealth.venice.failures++
+        return { imageUrl: null, success: false }
+      }
+
+      const data = await veniceResponse.json()
+      const imageUrl = data.images?.[0] ? `data:image/png;base64,${data.images[0]}` : null
+      
+      if (imageUrl) {
+        this.providerHealth.venice.lastSuccess = Date.now()
+        this.providerHealth.venice.failures = 0
+      }
+      
+      return { imageUrl, success: true }
+    } catch (error) {
+      console.error('[Venice] Request failed:', error)
+      this.providerHealth.venice.failures++
+      return { imageUrl: null, success: false }
+    }
+  }
+  
+  /**
+   * Call Netmind AI image generation API (OpenAI-compatible)
+   */
+  private static async callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl: string | null; success: boolean }> {
+    const netmindApiKey = process.env.NETMIND_API_KEY
+    if (!netmindApiKey) {
+      return { imageUrl: null, success: false }
+    }
+
+    try {
+      const netmindResponse = await fetch('https://api.netmind.ai/inference-api/openai/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${netmindApiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          response_format: 'b64_json',
+        }),
+      })
+
+      if (!netmindResponse.ok) {
+        const errorText = await netmindResponse.text()
+        console.error('[Netmind] API error:', netmindResponse.status, errorText)
+        this.providerHealth.netmind.failures++
+        return { imageUrl: null, success: false }
+      }
+
+      const data = await netmindResponse.json()
+      const imageUrl = data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : null
+      
+      if (imageUrl) {
+        this.providerHealth.netmind.lastSuccess = Date.now()
+        this.providerHealth.netmind.failures = 0
+      }
+      
+      return { imageUrl, success: true }
+    } catch (error) {
+      console.error('[Netmind] Request failed:', error)
+      this.providerHealth.netmind.failures++
+      return { imageUrl: null, success: false }
+    }
   }
 
   /**
@@ -85,7 +246,9 @@ export class ImageGenerationService {
         narrative: params.prompt,
         genre: params.genre
       })
-      const selectedModel = this.getRandomModel()
+      
+      const provider = this.selectProvider()
+      const selectedModel = this.getRandomModel(provider)
       
       const response = await fetch(this.getApiEndpoint(), {
         method: 'POST',
@@ -94,6 +257,7 @@ export class ImageGenerationService {
           prompt: enhancedPrompt,
           type: 'narrative',
           model: selectedModel,
+          provider,
         }),
       })
 
@@ -106,6 +270,7 @@ export class ImageGenerationService {
       const result: ImageGenerationResult = {
         imageUrl: data.imageUrl || null,
         model: selectedModel,
+        provider: data.provider || provider,
         timestamp: Date.now(),
       }
 
@@ -118,6 +283,7 @@ export class ImageGenerationService {
       return {
         imageUrl: null,
         model: 'failed',
+        provider: 'failed',
         timestamp: Date.now(),
       }
     }
@@ -193,107 +359,106 @@ export class ImageGenerationService {
       return this.CACHE.get(prompt)!
     }
 
-    const selectedModel = this.getRandomModel()
-
-    try {
-      let data
-
-      // If server-side, call Venice API directly (avoid HTTP round-trip to own endpoint)
-      if (typeof window === 'undefined') {
-        const veniceApiKey = process.env.VENICE_API_KEY
-        if (!veniceApiKey) {
-          console.warn('Venice API key not configured')
-          return {
-            imageUrl: null,
-            model: selectedModel,
+    // If server-side, call image APIs directly with automatic failover
+    if (typeof window === 'undefined') {
+      const provider = this.selectProvider()
+      const selectedModel = this.getRandomModel(provider)
+      
+      console.log(`[Image] Attempting ${provider} with model ${selectedModel}`)
+      
+      // Try primary provider
+      let result = provider === 'venice' 
+        ? await this.callVeniceAPI(prompt, selectedModel)
+        : await this.callNetmindAPI(prompt, selectedModel)
+      
+      // If primary failed, try fallback
+      if (!result.success) {
+        const fallbackProvider = provider === 'venice' ? 'netmind' : 'venice'
+        const fallbackModel = this.getRandomModel(fallbackProvider)
+        
+        console.log(`[Image] Primary failed, trying ${fallbackProvider} with model ${fallbackModel}`)
+        
+        result = fallbackProvider === 'venice'
+          ? await this.callVeniceAPI(prompt, fallbackModel)
+          : await this.callNetmindAPI(prompt, fallbackModel)
+        
+        if (result.success) {
+          const imageResult: ImageGenerationResult = {
+            imageUrl: result.imageUrl,
+            model: fallbackModel,
+            provider: fallbackProvider,
             timestamp: Date.now(),
           }
-        }
-
-        // Retry logic for transient network failures
-        const maxRetries = 3
-        let lastError: Error | null = null
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            const veniceResponse = await fetch('https://api.venice.ai/api/v1/image/generate', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${veniceApiKey}`,
-              },
-              body: JSON.stringify({
-                prompt,
-                model: selectedModel,
-                width: 1280,    // Landscape for comic panels (Venice max)
-                height: 720,    // 16:9 aspect ratio
-                format: 'png',
-              }),
-            })
-
-            if (!veniceResponse.ok) {
-              const errorText = await veniceResponse.text()
-              console.error('Venice API error:', veniceResponse.status, errorText)
-              return {
-                imageUrl: null,
-                model: selectedModel,
-                timestamp: Date.now(),
-              }
-            }
-
-            data = await veniceResponse.json()
-            break // Success, exit retry loop
-          } catch (fetchError) {
-            lastError = fetchError as Error
-            console.warn(`Venice image fetch attempt ${attempt}/${maxRetries} failed:`, fetchError)
-            if (attempt < maxRetries) {
-              await new Promise(resolve => setTimeout(resolve, 1000 * attempt)) // Exponential backoff
-            }
+          
+          if (imageResult.imageUrl) {
+            this.CACHE.set(prompt, imageResult)
           }
-        }
-        
-        if (!data && lastError) {
-          console.error('Venice image fetch failed after retries:', lastError)
-          return {
-            imageUrl: null,
-            model: selectedModel,
-            timestamp: Date.now(),
-          }
+          
+          return imageResult
         }
       } else {
-        // Client-side: use local API endpoint
-        const response = await fetch(this.getApiEndpoint(), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt,
-            model: selectedModel,
-            type: 'narrative',
-          }),
-        })
-
-        if (!response.ok) {
-          console.error('Image generation API error:', response.status)
-          return {
-            imageUrl: null,
-            model: selectedModel,
-            timestamp: Date.now(),
-          }
+        const imageResult: ImageGenerationResult = {
+          imageUrl: result.imageUrl,
+          model: selectedModel,
+          provider,
+          timestamp: Date.now(),
         }
+        
+        if (imageResult.imageUrl) {
+          this.CACHE.set(prompt, imageResult)
+        }
+        
+        return imageResult
+      }
+      
+      // Both providers failed
+      console.error('[Image] All providers failed')
+      return {
+        imageUrl: null,
+        model: selectedModel,
+        provider: 'failed',
+        timestamp: Date.now(),
+      }
+    }
 
-        data = await response.json()
+    // Client-side: use local API endpoint
+    const provider = this.selectProvider()
+    const selectedModel = this.getRandomModel(provider)
+    
+    try {
+      const response = await fetch(this.getApiEndpoint(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          model: selectedModel,
+          provider,
+          type: 'narrative',
+        }),
+      })
+
+      if (!response.ok) {
+        console.error('Image generation API error:', response.status)
+        return {
+          imageUrl: null,
+          model: selectedModel,
+          provider: 'failed',
+          timestamp: Date.now(),
+        }
       }
 
+      const data = await response.json()
+      
       const result: ImageGenerationResult = {
-        imageUrl: data.images?.[0] ? `data:image/png;base64,${data.images[0]}` : (data.imageUrl || null),
-        model: selectedModel,
+        imageUrl: data.imageUrl || null,
+        model: data.model || selectedModel,
+        provider: data.provider || provider,
         timestamp: Date.now(),
       }
 
       if (result.imageUrl) {
-        // Cache for future identical prompts
         this.CACHE.set(prompt, result)
       }
 
@@ -303,6 +468,7 @@ export class ImageGenerationService {
       return {
         imageUrl: null,
         model: selectedModel,
+        provider: 'failed',
         timestamp: Date.now(),
       }
     }

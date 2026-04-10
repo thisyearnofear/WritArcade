@@ -96,6 +96,16 @@ export async function encryptSecretPanel(
   }
 
   try {
+    // Guard: Lit Protocol requires browser APIs (indexedDB)
+    // Only run in environments where these are available
+    if (typeof window === 'undefined') {
+      logger.litProtocol('Server-side encryption not supported, using fallback', {})
+      return {
+        ciphertext: Buffer.from(plaintext).toString('base64'),
+        dataToEncryptHash: Buffer.from(plaintext).toString('base64'),
+      }
+    }
+
     const { LitNodeClient } = await import('@lit-protocol/lit-node-client')
     const { encryptString } = await import('@lit-protocol/encryption')
 

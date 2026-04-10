@@ -102,7 +102,9 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include', // Ensure cookies are sent
+        });
         const data = await res.json();
         setAuthStatus(data.success ? 'authenticated' : 'unauthenticated');
       } catch {

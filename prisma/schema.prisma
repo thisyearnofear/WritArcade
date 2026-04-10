@@ -6,6 +6,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Optimize for serverless with connection pooling
+  directUrl = env("DIRECT_URL")
 }
 
 // Minimal User model - wallet-based preferences only

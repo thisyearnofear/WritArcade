@@ -111,3 +111,18 @@ Thumbs.db
 tmp/
 temp/
 .blackboxcli/
+
+# IDE
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Test scripts (temporary)
+scripts/test-*.ts
+scripts/test-*.js

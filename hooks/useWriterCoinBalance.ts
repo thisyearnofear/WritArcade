@@ -40,7 +40,8 @@ export function useWriterCoinBalance(coinId = 'avc') {
 
         // Call backend endpoint to get balance
         const response = await fetch(
-          `/api/user/balance?wallet=${encodeURIComponent(address)}&coin=${encodeURIComponent(coinId)}`
+          `/api/user/balance?wallet=${encodeURIComponent(address)}&coin=${encodeURIComponent(coinId)}`,
+          { credentials: 'include' } // Ensure cookies are sent
         )
 
         if (!response.ok) {
@@ -89,7 +90,8 @@ export function useWriterCoinBalance(coinId = 'avc') {
       }
 
       const response = await fetch(
-        `/api/user/balance?wallet=${encodeURIComponent(address)}&coin=${encodeURIComponent(coinId)}`
+        `/api/user/balance?wallet=${encodeURIComponent(address)}&coin=${encodeURIComponent(coinId)}`,
+        { credentials: 'include' } // Ensure cookies are sent
       )
 
       if (!response.ok) {
