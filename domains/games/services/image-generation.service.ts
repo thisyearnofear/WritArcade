@@ -98,7 +98,6 @@ export class ImageGenerationService {
   }
   
   private static getRandomModel(provider: 'venice' | 'netmind'): string {
-  private static getRandomModel(provider: 'venice' | 'netmind'): string {
     const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS
     
     // Weight selection by quality ratings if available
