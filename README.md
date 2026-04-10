@@ -98,6 +98,7 @@ Revenue model is enforced on-chain and configurable per writer coin by the owner
 ## Quick start
 1) Install and run
    - npm install --legacy-peer-deps
+   - bash scripts/install-git-hooks.sh  # Install pre-push TypeScript checks
    - npm run dev
    - Open http://localhost:3000 (or /mini-app for the Farcaster mini-app)
 2) Configure env (see .env.example)
