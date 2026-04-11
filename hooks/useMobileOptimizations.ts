@@ -15,66 +15,45 @@ interface MobileOptimizations {
 }
 
 export function useMobileOptimizations(): MobileOptimizations {
-  const [optimizations, setOptimizations] = useState<MobileOptimizations>({
-    isMobile: false,
-    prefersReducedMotion: false,
-    isTouchDevice: false,
-    windowSize: {
-      width: typeof window !== 'undefined' ? window.innerWidth : 0,
-      height: typeof window !== 'undefined' ? window.innerHeight : 0,
-    },
-    optimized: false,
+  const [optimizations, setOptimizations] = useState<MobileOptimizations>(() => {
+    if (typeof window === 'undefined') {
+        return {
+            isMobile: false,
+            prefersReducedMotion: false,
+            isTouchDevice: false,
+            windowSize: { width: 0, height: 0 },
+            optimized: false,
+        }
+    }
+    const isTouch = isTouchDevice();
+    const isMobile = isMobileDevice();
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return {
+        isMobile,
+        prefersReducedMotion,
+        isTouchDevice: isTouch,
+        windowSize: { width: window.innerWidth, height: window.innerHeight },
+        optimized: isMobile || isTouch,
+    }
   });
 
   useEffect(() => {
-    // ENHANCEMENT FIRST: Use consolidated utility functions
-    const isTouch = isTouchDevice();
-    const isMobile = isMobileDevice();
-    
-    // Check if prefers reduced motion
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const prefersReducedMotion = mediaQuery.matches;
-
-    /**
-     * Prevent double-tap zoom on mobile - PERFORMANT
-     * Defined inside effect so the same reference can be removed on cleanup
-     */
+    // Apply mobile optimizations once on mount
     const preventDoubleTapZoom = (e: TouchEvent) => {
       if (e.touches.length > 1) {
         e.preventDefault();
       }
     };
     
-    // Apply mobile optimizations if needed
-    if (isMobile || isTouch) {
-      // Prevent double-tap zoom — reference kept for cleanup below
+    if (optimizations.isMobile || optimizations.isTouchDevice) {
       document.addEventListener('touchmove', preventDoubleTapZoom, { passive: false });
-      
-      // Add mobile-specific CSS classes
       document.body.classList.add('mobile-device');
-      
-      if (isTouch) {
-        document.body.classList.add('touch-device');
-      }
-      
-      // Optimize font rendering for mobile
+      if (optimizations.isTouchDevice) document.body.classList.add('touch-device');
       document.body.style.setProperty('-webkit-font-smoothing', 'antialiased');
       document.body.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
     }
     
-    setOptimizations({
-      isMobile,
-      prefersReducedMotion,
-      isTouchDevice: isTouch,
-      windowSize: {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      },
-      optimized: isMobile || isTouch,
-    });
-
     const handleResize = () => {
-      // Use isMobileDevice() utility consistently instead of raw breakpoint
       const updatedIsMobile = isMobileDevice();
       setOptimizations(prev => ({
         ...prev,
@@ -87,14 +66,9 @@ export function useMobileOptimizations(): MobileOptimizations {
     };
 
     window.addEventListener('resize', handleResize);
-    
-    // Also listen for changes to reduced motion preference
     const motionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handleMotionChange = (_e: MediaQueryListEvent) => {
-      setOptimizations(prev => ({
-        ...prev,
-        prefersReducedMotion: _e.matches,
-      }));
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      setOptimizations(prev => ({ ...prev, prefersReducedMotion: e.matches }));
     };
     
     motionMediaQuery.addEventListener('change', handleMotionChange);
@@ -102,10 +76,9 @@ export function useMobileOptimizations(): MobileOptimizations {
     return () => {
       window.removeEventListener('resize', handleResize);
       motionMediaQuery.removeEventListener('change', handleMotionChange);
-      // BUGFIX: Remove touchmove listener to prevent memory leak
       document.removeEventListener('touchmove', preventDoubleTapZoom);
     };
-  }, []);
+  }, [optimizations.isMobile, optimizations.isTouchDevice]);
 
   /**
    * Get mobile-optimized class names - DRY approach

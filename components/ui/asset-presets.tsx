@@ -23,14 +23,14 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
     const [presetDescription, setPresetDescription] = useState('')
     const [_mergeMode, _setMergeMode] = useState<'replace' | 'merge'>('replace')
 
-    useEffect(() => {
-        loadPresets()
-    }, [])
-
     const loadPresets = () => {
         const loaded = AssetPresetsService.getAllPresetsLocally()
         setPresets(loaded)
     }
+
+    useEffect(() => {
+        loadPresets()
+    }, [])
 
     const handleSavePreset = () => {
         if (!presetName.trim()) return

@@ -15,6 +15,7 @@ interface AssetCardProps {
     assetType?: 'character' | 'mechanic' | 'story'
     assetIndex?: number
     description?: string
+    sourceSnippet?: string
     tags?: AssetTag[]
     children: React.ReactNode
     onDelete: () => void
@@ -30,6 +31,7 @@ export function AssetCard({
     assetType,
     assetIndex,
     description,
+    sourceSnippet,
     tags = [],
     children,
     onDelete,
@@ -84,6 +86,11 @@ export function AssetCard({
                     onDescriptionChange={onDescriptionChange}
                     onTagsChange={onTagsChange}
                 />
+                {sourceSnippet && (
+                    <div className="mt-2 text-[10px] text-gray-500 italic border-l-2 border-gray-700 pl-2">
+                        <span className="font-bold text-gray-400">Provenance:</span> {sourceSnippet}
+                    </div>
+                )}
             </div>
 
             {/* Asset-specific content */}

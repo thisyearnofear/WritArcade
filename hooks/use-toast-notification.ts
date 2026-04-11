@@ -18,6 +18,10 @@ export interface Toast {
 export function useToastNotification() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
+  const dismiss = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
   const show = useCallback(
     (message: string, options: {
       type?: 'success' | 'error' | 'info' | 'warning'
@@ -44,12 +48,8 @@ export function useToastNotification() {
 
       return id
     },
-    []
+    [dismiss]
   )
-
-  const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
-  }, [])
 
   return { toasts, show, dismiss }
 }

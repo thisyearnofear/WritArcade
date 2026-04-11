@@ -1,6 +1,7 @@
 /**
  * Undo/Redo Manager
  * Manages state history for graceful recovery from deletions
+ * Enhanced with localStorage persistence
  */
 
 export interface HistoryState<T> {
@@ -13,9 +14,54 @@ export class UndoManager<T> {
   private history: HistoryState<T>[] = []
   private currentIndex: number = -1
   private maxHistory: number
+  private persistenceKey: string | null
 
-  constructor(maxHistory: number = 20) {
+  constructor(maxHistory: number = 20, persistenceKey: string | null = null) {
     this.maxHistory = maxHistory
+    this.persistenceKey = persistenceKey
+
+    if (this.persistenceKey && typeof window !== 'undefined') {
+      this.hydrate()
+    }
+  }
+
+  /**
+   * Hydrate history from localStorage
+   */
+  private hydrate(): void {
+    if (!this.persistenceKey) return
+
+    try {
+      const saved = localStorage.getItem(this.persistenceKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed.history) && typeof parsed.currentIndex === 'number') {
+          this.history = parsed.history
+          this.currentIndex = parsed.currentIndex
+          console.log(`[UndoManager] Hydrated ${this.history.length} states from "${this.persistenceKey}"`)
+        }
+      }
+    } catch (error) {
+      console.warn(`[UndoManager] Failed to hydrate history for "${this.persistenceKey}":`, error)
+      this.clear()
+    }
+  }
+
+  /**
+   * Persist history to localStorage
+   */
+  private persist(): void {
+    if (!this.persistenceKey || typeof window === 'undefined') return
+
+    try {
+      const data = JSON.stringify({
+        history: this.history,
+        currentIndex: this.currentIndex
+      })
+      localStorage.setItem(this.persistenceKey, data)
+    } catch (error) {
+      console.warn(`[UndoManager] Failed to persist history for "${this.persistenceKey}":`, error)
+    }
   }
 
   /**
@@ -39,6 +85,8 @@ export class UndoManager<T> {
     } else {
       this.currentIndex++
     }
+
+    this.persist()
   }
 
   /**
@@ -47,6 +95,7 @@ export class UndoManager<T> {
   undo(): HistoryState<T> | null {
     if (this.currentIndex > 0) {
       this.currentIndex--
+      this.persist()
       return this.history[this.currentIndex]
     }
     return null
@@ -58,6 +107,7 @@ export class UndoManager<T> {
   redo(): HistoryState<T> | null {
     if (this.currentIndex < this.history.length - 1) {
       this.currentIndex++
+      this.persist()
       return this.history[this.currentIndex]
     }
     return null
@@ -100,5 +150,9 @@ export class UndoManager<T> {
   clear(): void {
     this.history = []
     this.currentIndex = -1
+    
+    if (this.persistenceKey && typeof window !== 'undefined') {
+      localStorage.removeItem(this.persistenceKey)
+    }
   }
 }

@@ -382,6 +382,7 @@ model Asset {
   id          String   @id @default(cuid())
   title       String
   description String   @db.Text
+  sourceSnippet String?  @db.Text // Provenance: the exact text from which this asset was derived
   type        String   // 'character' | 'mechanic' | 'plot' | 'world' | 'dialog'
   content     String   @db.Text
   genre       String

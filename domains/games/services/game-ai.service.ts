@@ -241,14 +241,17 @@ export class GameAIService {
     const model = getModel(request.model || 'gpt-4o-mini', userPreferences)
     const maxRetries = 2
 
-    let promptText = request.promptText || ''
+    const promptText = request.promptText || ''
+    let articleThemes = ''
 
-    // If URL provided, content extraction handled separately
-    if (request.url && !promptText) {
-      promptText = `Generate game assets from content at: ${request.url}`
+    // If URL provided, and promptText is derived from it
+    if (request.url && request.promptText) {
+        // Extract themes and provenance snippets for grounded generation
+        articleThemes = await import('@/domains/content/services/content-processor.service')
+            .then(m => m.ContentProcessorService.extractArticleThemes(request.promptText!))
     }
 
-    const prompt = this.buildAssetGenerationPrompt(promptText, request.genre)
+    const prompt = this.buildAssetGenerationPrompt(promptText, request.genre, articleThemes)
 
     try {
       const { object: assets } = await generateObject({
@@ -644,32 +647,27 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
     */
     private static buildAssetGenerationPrompt(
     promptText: string,
-    genre?: string
+    genre?: string,
+    articleThemes?: string
     ): string {
     let basePrompt = `You are AssetCreator-GPT, specialized in extracting reusable game components from source material.
 
     Your task is to decompose an article into game asset components that others can use to create multiple different games.
     These assets are the building blocks—characters, mechanics, story beats, visual style—not a complete game.`
 
-    // Detect if this is article-based generation
-    const isArticleContent = promptText?.includes('article:') || promptText?.includes('Article:')
+    // Include Article Provenance if available (Provenance Snippets)
+    if (articleThemes) {
+        basePrompt += `
 
-    if (isArticleContent) {
-      basePrompt += `
+    CRITICAL: ARTICLE PROVENANCE (GROUNDING)
+    ========================================
+    Every asset MUST be grounded in the following article themes and specific snippets.
+    For each asset, ensure it relates to these concepts and snippets:
+    ${articleThemes}
 
-    CRITICAL: EXTRACT AUTHENTIC ASSETS
-    ====================================
-    The following article defines your creative direction. Every asset MUST authentically capture its essence:
-    - Characters should embody the article's core ideas and conflicts
-    - Story beats should reflect the article's narrative arc and themes
-    - Game mechanics should model the article's systems and consequences
-    - Visual style should evoke the article's mood and tone
-
-    ${promptText}
-
-    After reading the above, you will extract assets that let others create games expressing these concepts.`
+    If an asset does not directly relate to one of these themes, do not include it.`
     } else if (promptText) {
-      basePrompt += `\n\nExtract game assets from this concept: ${promptText}`
+        basePrompt += `\n\nExtract game assets from this concept: ${promptText}`
     }
 
     // Genre is secondary for assets (different games may use different genres)

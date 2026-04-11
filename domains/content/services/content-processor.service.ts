@@ -172,21 +172,17 @@ export class ContentProcessorService {
   }
 
   /**
-    * Extract key themes and concepts from article
+    * Extract key themes, concepts, and provenance snippets from article
     * Identifies the article's core ideas for game thematic integration
-    * Returns structured themes that games can authentically interpret
     */
   static extractArticleThemes(text: string, title?: string): string {
-    // Identify key themes by analyzing sentence structure and keyword clustering
     const sentences = text.match(/[^.!?]+[.!?]+/g) || []
     
-    // Extract opening (establishes premise)
+    // Extract opening and closing as general premise/conclusion
     const opening = sentences.slice(0, 2).join(' ').trim()
-    
-    // Extract closing (conclusions/implications)
     const closing = sentences.slice(-2).join(' ').trim()
     
-    // Identify potential themes by looking for emphasized concepts (caps, repeated words)
+    // Identify top keywords
     const words = text.toLowerCase().match(/\b\w+\b/g) || []
     const wordFreq = new Map<string, number>()
     
@@ -196,24 +192,39 @@ export class ContentProcessorService {
       }
     })
     
-    // Get top themes (words appearing 3+ times)
     const topThemes = Array.from(wordFreq.entries())
       .filter(([, count]) => count >= 3)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([word]) => word)
     
-    // Build structured theme description
+    // Get representative snippets for the top themes
+    const snippets = topThemes.map(theme => this.extractSnippet(text, theme)).filter(Boolean)
+    
     const themeDescription = [
       title ? `Article Title: "${title}"` : '',
       `Core Premise: ${opening}`,
-      `Key Themes: ${topThemes.length > 0 ? topThemes.join(', ') : 'general concepts'}`,
+      `Key Themes: ${topThemes.join(', ')}`,
+      `Provenance Snippets: ${snippets.join(' | ')}`,
       `Conclusion: ${closing}`,
     ]
       .filter(Boolean)
       .join('\n')
     
     return themeDescription
+  }
+
+  /**
+   * Find a snippet containing the given keyword
+   */
+  private static extractSnippet(text: string, keyword: string): string {
+    const index = text.toLowerCase().indexOf(keyword.toLowerCase())
+    if (index === -1) return ''
+    
+    const start = Math.max(0, index - 50)
+    const end = Math.min(text.length, index + 50)
+    
+    return `"${text.slice(start, end).trim().replace(/\n/g, ' ')}..."`
   }
 
   /**
