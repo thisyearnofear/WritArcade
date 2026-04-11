@@ -67,9 +67,13 @@ export function useWriterCoinBalance(coinId = 'avc') {
       }
     }
 
-    // Fetch immediately and then every 30 seconds
+    // Fetch immediately and then every 60 seconds
     fetchBalance()
-    const interval = setInterval(fetchBalance, 30000)
+    const interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            fetchBalance()
+        }
+    }, 60000)
 
     return () => clearInterval(interval)
   }, [address, isConnected, coinId])

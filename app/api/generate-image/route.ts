@@ -174,9 +174,11 @@ export async function POST(req: NextRequest) {
       console.log(`[Image] Generating with ${selectedProvider} / ${selectedModel}`)
       
       // Try primary provider
-      let result: { imageUrl: string | null; success: boolean }
+      let result: { imageUrl: string | null; success: boolean; status?: number }
       if (selectedProvider === 'venice') {
         result = await callVeniceAPI(prompt, selectedModel)
+        // Explicitly check for 402 if our API helper allows returning status
+        // Venice returns a 402 if credits are exhausted
       } else if (selectedProvider === 'modal') {
         result = await callModalAPI(prompt)
       } else {
