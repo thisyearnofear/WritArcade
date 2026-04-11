@@ -38,19 +38,35 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Create Viem client for Base network
-    // Use server-side env var (not NEXT_PUBLIC_) for API routes
-    const rpcUrl = process.env.BASE_RPC_URL || process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org'
-    
-    console.log(`[Balance API] Fetching balance for ${wallet} (${coinId}) using RPC: ${rpcUrl}`)
-    
-    const client = createPublicClient({
-      chain: base,
-      transport: http(rpcUrl, {
-        timeout: 10000, // 10 second timeout
-        retryCount: 2,
-      }),
-    })
+    // Create Viem client with fallback providers
+    const rpcUrls = [
+      process.env.BASE_RPC_URL,
+      'https://mainnet.base.org',
+      'https://base.llamarpc.com'
+    ].filter(Boolean) as string[]
+
+    let client;
+    let lastError;
+
+    for (const rpcUrl of rpcUrls) {
+      try {
+        client = createPublicClient({
+          chain: base,
+          transport: http(rpcUrl, { timeout: 5000 }),
+        })
+        
+        // Test connection
+        await client.getChainId()
+        break
+      } catch (e) {
+        lastError = e
+        continue
+      }
+    }
+
+    if (!client) {
+      throw new Error(`All RPC providers failed. Last error: ${lastError instanceof Error ? lastError.message : 'Unknown'}`)
+    }
 
     // ERC-20 balanceOf ABI (minimal)
     const ABI = [

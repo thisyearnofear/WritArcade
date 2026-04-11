@@ -12,51 +12,33 @@
      All brand-specific colors use these semantic variables.
      ─────────────────────────────────────────────────────────────────────────── */
   :root {
-    /* Light mode — activated when user toggles to Sun/day */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 3%;
-    --card: 0 0% 96%;
-    --card-foreground: 0 0% 3%;
-    --popover: 0 0% 98%;
-    --popover-foreground: 0 0% 3%;
-    --primary: 271 81% 56%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 90%;
-    --secondary-foreground: 0 0% 10%;
-    --muted: 0 0% 90%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 0 0% 90%;
-    --accent-foreground: 0 0% 10%;
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 82%;
-    --input: 0 0% 88%;
-    --ring: 271 81% 56%;
-    --radius: 0.5rem;
+    /* Light mode */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 10%;
+    --primary: 271 81% 45%; /* Slightly darker for contrast */
+    --primary-foreground: 0 0% 100%;
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 35%; /* Darker for better read */
+    --border: 0 0% 75%; /* Darker for better visibility */
+    --input: 0 0% 85%;
+    --ring: 271 81% 45%;
   }
 
   .dark {
-    /* Dark mode — default state (Moon icon) */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 271 81% 65%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 271 81% 65%;
-    --radius: 0.5rem;
+    /* Dark mode */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+    --primary: 271 81% 70%; /* Lighter for visibility */
+    --primary-foreground: 0 0% 5%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 70%; /* Lighter for better read */
+    --border: 0 0% 20%; /* Lighter for better visibility */
+    --input: 0 0% 15%;
+    --ring: 271 81% 70%;
   }
 }
 

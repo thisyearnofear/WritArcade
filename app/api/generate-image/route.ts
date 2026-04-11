@@ -184,35 +184,40 @@ export async function POST(req: NextRequest) {
       }
       
       if (result.success && result.imageUrl) {
+        console.log(`[Image] Primary provider ${selectedProvider} succeeded.`)
         return { imageUrl: result.imageUrl, model: selectedModel, provider: selectedProvider }
       }
+      console.log(`[Image] Primary provider ${selectedProvider} failed.`)
       
       // Try Modal as first fallback (self-hosted, no API costs)
       if (selectedProvider !== 'modal') {
-        console.log(`[Image] Primary failed, trying Modal / stable-diffusion-v1-5`)
+        console.log(`[Image] Trying Modal fallback / stable-diffusion-v1-5`)
         result = await callModalAPI(prompt)
         
         if (result.success && result.imageUrl) {
+          console.log(`[Image] Modal fallback succeeded.`)
           return { imageUrl: result.imageUrl, model: 'stable-diffusion-v1-5', provider: 'modal' }
         }
+        console.log(`[Image] Modal fallback failed.`)
       }
       
       // Try other providers as final fallback
       const finalProvider = selectedProvider === 'venice' ? 'netmind' : 'venice'
       const finalModel = finalProvider === 'venice' ? 'venice-sd35' : 'stabilityai/stable-diffusion-3.5-large'
       
-      console.log(`[Image] Modal failed, trying ${finalProvider} / ${finalModel}`)
+      console.log(`[Image] Trying final fallback: ${finalProvider} / ${finalModel}`)
       
       result = finalProvider === 'venice'
         ? await callVeniceAPI(prompt, finalModel)
         : await callNetmindAPI(prompt, finalModel)
       
       if (result.success && result.imageUrl) {
+        console.log(`[Image] Final fallback ${finalProvider} succeeded.`)
         return { imageUrl: result.imageUrl, model: finalModel, provider: finalProvider }
       }
       
       // All providers failed
-      console.error('[Image] All providers failed')
+      console.error('[Image] All providers failed. Final provider attempted:', finalProvider)
       return { imageUrl: null, model: selectedModel, provider: 'failed' }
     })()
 
