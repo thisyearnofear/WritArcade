@@ -78,6 +78,11 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
     router.push('/')
   }
 
+  // Keep initial server/client render consistent to avoid hydration mismatch
+  if (!mounted) {
+    return <div className="h-10 w-10" aria-hidden="true" />
+  }
+
   // When not connected, show wallet connect button
   if (!isConnected) {
     return (

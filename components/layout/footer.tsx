@@ -1,7 +1,10 @@
+"use client"
+
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 
 const NAV_LINKS = [
   { href: '/games', label: 'The Arcade' },
@@ -78,6 +81,12 @@ function AnimatedExternalLink({ href, children }: { href: string; children: Reac
 }
 
 export function Footer() {
+  const [year, setYear] = useState<number | null>(null)
+
+  useEffect(() => {
+    setYear(new Date().getFullYear())
+  }, [])
+
   return (
     <footer className="border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 py-10">
       <div className="max-w-6xl mx-auto px-4">
@@ -142,7 +151,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-gray-200 dark:border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-500">
-          <span>© {new Date().getFullYear()} writersarcade. Built on Base · Story Protocol.</span>
+          <span>©{year ? ` ${year}` : ''} writersarcade. Built on Base · Story Protocol.</span>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" aria-hidden="true" />

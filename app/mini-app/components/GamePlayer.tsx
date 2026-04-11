@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { PaymentButton } from "./PaymentButton";
 import { type WriterCoin } from "@/lib/writerCoins";
 import type { Game } from "@/domains/games/types";
@@ -16,12 +16,13 @@ interface GamePlayerProps {
 }
 
 export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
+  const stableId = useId();
   const [gameContent, setGameContent] = useState<string>("");
   const [options, setOptions] = useState<Array<{ id: number; text: string }>>(
     []
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(() => Math.random().toString(36).slice(2, 11));
+  const [sessionId] = useState(() => stableId.replace(/[:]/g, "").slice(0, 9));
   const [gameHistory, setGameHistory] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([]);
@@ -430,4 +431,3 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
     </div>
   );
 }
-

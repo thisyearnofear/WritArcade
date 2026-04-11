@@ -115,9 +115,14 @@ function BalanceRow({ row, mobileLayout }: { row: CoinBalanceRow; mobileLayout: 
  */
 export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const { isConnected } = useAccount()
+  const [mounted, setMounted] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const allBalances = useAllWriterCoinBalances()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const close = useCallback(() => setIsOpen(false), [])
   useClickOutside(containerRef, close)
@@ -131,7 +136,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [isOpen])
 
-  if (!isConnected) {
+  if (!mounted || !isConnected) {
     return null
   }
 
