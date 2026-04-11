@@ -9,18 +9,26 @@ cat > .git/hooks/pre-push << 'EOF'
 
 echo "🔍 Running pre-push checks..."
 
-# Check TypeScript compilation
-echo "📝 Checking TypeScript..."
-npx tsc --noEmit
+# Run full TypeScript type checking
+echo "📝 Running TypeScript type checking..."
+pnpm type-check
 if [ $? -ne 0 ]; then
-  echo "❌ TypeScript check failed. Fix errors before pushing."
+  echo ""
+  echo "❌ TypeScript type checking failed!"
+  echo "   Run 'pnpm type-check' to see all errors."
+  echo "   Fix type errors before pushing."
   exit 1
 fi
 
+echo ""
 echo "✅ Pre-push checks passed!"
 EOF
 
 chmod +x .git/hooks/pre-push
 
 echo "✅ Git hooks installed successfully!"
-echo "TypeScript will be checked before every push."
+echo "Full TypeScript type checking will run before every push."
+echo ""
+echo "Note: If type checking has too many errors, you can:"
+echo "  1. Fix the type errors in your code"
+echo "  2. Or temporarily bypass the hook with: git push --no-verify"

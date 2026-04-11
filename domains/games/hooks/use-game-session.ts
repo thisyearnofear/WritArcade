@@ -217,7 +217,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
                   setLoadingProgress(prev => ({ ...prev, images: true }))
                 }).catch(err => {
                   console.error('Hero screen image preload error:', err)
-                  handleImageGenerated(finalMessage.id, { imageUrl: null, model: 'failed', timestamp: Date.now() })
+                  handleImageGenerated(finalMessage.id, { imageUrl: null, model: 'failed', provider: 'failed', timestamp: Date.now() })
                   setLoadingProgress(prev => ({ ...prev, images: true }))
                 })
               }
@@ -347,7 +347,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
                 }).catch(err => {
                   console.error('Image generation error:', err)
                   if (messageId) {
-                    handleImageGenerated(messageId, { imageUrl: null, model: 'failed', timestamp: Date.now() })
+                    handleImageGenerated(messageId, { imageUrl: null, model: 'failed', provider: 'failed', timestamp: Date.now() })
                   }
                   setResponseReady(prev => ({ ...prev, images: true }))
                 })
