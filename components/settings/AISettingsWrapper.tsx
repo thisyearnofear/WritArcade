@@ -13,6 +13,7 @@ export function AISettingsWrapper() {
   const [mounted, setMounted] = useState(false);
   const [initialPreferences, setInitialPreferences] = useState<UserAIPreferences | null>(null);
 
+   
   useEffect(() => {
     setMounted(true);
 

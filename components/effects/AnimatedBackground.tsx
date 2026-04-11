@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useReducedMotion } from 'framer-motion'
+import { useMemo } from 'react'
 
 interface AnimatedBackgroundProps {
   variant?: 'gradient' | 'mesh' | 'particles' | 'aurora'
@@ -137,15 +138,16 @@ function MeshGradient({ className }: { className?: string }) {
 }
 
 function ParticleField({ className }: { className?: string }) {
-  // Generate random particles
-  const particles = Array.from({ length: 30 }, (_, i) => ({
+  // Generate random particles using useMemo to avoid impure function calls during render
+  const particles = useMemo(() => Array.from({ length: 30 }, (_, i) => ({
     id: i,
     size: Math.random() * 4 + 2,
     x: Math.random() * 100,
     y: Math.random() * 100,
+    xOffset: Math.random() * 50 - 25,
     duration: Math.random() * 20 + 10,
     delay: Math.random() * 5,
-  }))
+  })), [])
 
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
@@ -161,7 +163,7 @@ function ParticleField({ className }: { className?: string }) {
           }}
           animate={{
             y: [0, -100, 0],
-            x: [0, Math.random() * 50 - 25, 0],
+            x: [0, particle.xOffset, 0],
             opacity: [0.2, 0.6, 0.2],
             scale: [1, 1.5, 1],
           }}

@@ -262,6 +262,7 @@ export function StreamingTypewriter({
   onComplete?: () => void
 }) {
   const [displayedText, setDisplayedText] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
   const indexRef = useRef(0)
   const lastTimeRef = useRef(0)
   const prefersReducedMotion = useReducedMotion()
@@ -274,6 +275,7 @@ export function StreamingTypewriter({
     }
 
     setDisplayedText('')
+    setIsTyping(true)
     indexRef.current = 0
     lastTimeRef.current = performance.now()
 
@@ -295,6 +297,7 @@ export function StreamingTypewriter({
       if (indexRef.current < text.length) {
         rafId = requestAnimationFrame(animate)
       } else {
+        setIsTyping(false)
         onComplete?.()
       }
     }
@@ -306,7 +309,7 @@ export function StreamingTypewriter({
   return (
     <span className={className}>
       {displayedText}
-      {indexRef.current < text.length && (
+      {isTyping && (
         <motion.span
           className="inline-block w-[2px] h-[1em] bg-current ml-1 align-middle"
           animate={{ opacity: [1, 0] }}

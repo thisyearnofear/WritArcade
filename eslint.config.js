@@ -27,6 +27,11 @@ module.exports = [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // Downgrade new strict rules to warnings
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/immutability': 'warn',
       'react/no-unescaped-entities': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [

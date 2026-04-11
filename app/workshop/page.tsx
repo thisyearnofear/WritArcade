@@ -63,6 +63,7 @@ export default function WorkshopPage() {
     }, [state])
 
     // Hydrate from persisted history on mount
+     
     useEffect(() => {
         const current = undoManager.current()
         if (current && !assets) {
@@ -72,6 +73,7 @@ export default function WorkshopPage() {
     }, [undoManager, assets])
 
     // Push to undo history when assets change + compute relationships
+     
     useEffect(() => {
         if (assets && state === 'workshop') {
             undoManager.push(assets, 'Asset modified')

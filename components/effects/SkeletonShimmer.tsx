@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useReducedMotion } from 'framer-motion'
+import { useMemo } from 'react'
 
 interface SkeletonShimmerProps {
   className?: string
@@ -31,13 +32,13 @@ export function SkeletonShimmer({
         </div>
       )}
       <div className="space-y-2">
-        {Array.from({ length: lines }).map((_, i) => (
+        {useMemo(() => Array.from({ length: lines }).map((_, i) => (
           <ShimmerBox
             key={i}
             className="h-4 rounded"
             style={{ width: `${Math.random() * 40 + 60}%` }}
           />
-        ))}
+        )), [lines])}
       </div>
     </motion.div>
   )

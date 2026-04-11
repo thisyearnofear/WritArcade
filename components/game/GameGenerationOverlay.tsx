@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { Loader2, Sparkles, Gamepad2, X, Lightbulb, BookOpen, Quote } from 'lucide-react'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 
@@ -85,6 +85,18 @@ export function GameGenerationOverlay({
   const warnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Memoize background particles to avoid impure function calls during render
+  const backgroundParticles = useMemo(() =>
+    [...Array(20)].map((_, i) => ({
+      id: i,
+      initialX: Math.random() * window.innerWidth,
+      initialY: Math.random() * window.innerHeight,
+      animateY: Math.random() * window.innerHeight,
+      duration: 3 + Math.random() * 2,
+    })),
+    []
+  )
+
   // Rotate tips every 8 seconds
   useEffect(() => {
     if (isOpen) {
@@ -126,20 +138,20 @@ export function GameGenerationOverlay({
         >
           {/* Animated background particles */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(20)].map((_, i) => (
+            {backgroundParticles.map((particle) => (
               <motion.div
-                key={i}
+                key={particle.id}
                 className="absolute w-1 h-1 bg-purple-500/30 rounded-full"
                 initial={{
-                  x: Math.random() * window.innerWidth,
-                  y: Math.random() * window.innerHeight,
+                  x: particle.initialX,
+                  y: particle.initialY,
                 }}
                 animate={{
-                  y: [null, Math.random() * window.innerHeight],
+                  y: [null, particle.animateY],
                   opacity: [0.3, 0.6, 0.3],
                 }}
                 transition={{
-                  duration: 3 + Math.random() * 2,
+                  duration: particle.duration,
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}

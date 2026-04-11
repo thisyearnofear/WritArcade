@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Game } from '../types'
-import { GameCardEnhanced } from './game-card-enhanced'
+import { GameCard } from '@/components/ui/game-card'
 import { animationConfig } from '@/lib/animations'
 import { CardSkeleton } from '@/components/effects'
 
@@ -121,7 +121,15 @@ export function GameGrid({ limit = 25, search, genre, writerCoinId, page = 1, fe
           key={game.id}
           variants={animationConfig.variants.staggerItem}
         >
-          <GameCardEnhanced game={game} isUserGame={false} />
+          <GameCard 
+            slug={game.slug}
+            title={game.title}
+            description={game.description}
+            genre={game.genre}
+            imageUrl={game.imageUrl}
+            primaryColor={game.primaryColor}
+            symbol={game.playFee?.split(' ')[1] || 'AVC'} 
+          />
         </motion.div>
       ))}
     </motion.div>

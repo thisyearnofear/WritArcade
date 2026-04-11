@@ -2,7 +2,7 @@
 
 import { CheckCircle, Eye, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
 
@@ -61,12 +61,17 @@ export function SuccessModal({
     }
   }
 
-  if (!isOpen) return null
+  // Scroll lock effect
+  useEffect(() => {
+    if (!isOpen) return
+    const originalOverflow = document.documentElement.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.style.overflow = originalOverflow
+    }
+  }, [isOpen])
 
-  // Prevent scroll when modal is open
-  if (typeof document !== 'undefined') {
-    document.documentElement.style.overflow = isOpen ? 'hidden' : ''
-  }
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4">

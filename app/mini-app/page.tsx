@@ -29,11 +29,13 @@ export default function MiniAppPage() {
         } else {
             setIsInFrame(await isInFarcasterContext())
         }
-        
+
         setIsInitialized(true)
         await readyMiniApp()
     }, [])
 
+    // Use useSyncExternalStore pattern: initialize on mount
+     
     useEffect(() => {
         init()
     }, [init])

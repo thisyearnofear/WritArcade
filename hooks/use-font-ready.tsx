@@ -27,6 +27,7 @@ export function useFontReady(options: FontReadyOptions = {}) {
     if (resolvedRef.current) return
     
     // If document.fonts is not supported, skip
+     
     if (!('fonts' in document)) {
       setFontsReady(true)
       resolvedRef.current = true
