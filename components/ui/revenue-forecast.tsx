@@ -12,8 +12,10 @@ interface RevenueForecastProps {
 export function RevenueForecast({ writerCoinId, action }: RevenueForecastProps) {
   const [distribution, setDistribution] = useState<RevenueDistribution | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     async function fetchDist() {
       setLoading(true);
       try {
@@ -28,6 +30,7 @@ export function RevenueForecast({ writerCoinId, action }: RevenueForecastProps) 
     fetchDist();
   }, [writerCoinId, action]);
 
+  if (!mounted) return <Skeleton className="w-full h-32 rounded-xl" />;
   if (loading) return <Skeleton className="w-full h-32 rounded-xl" />;
   if (!distribution) return null;
 
