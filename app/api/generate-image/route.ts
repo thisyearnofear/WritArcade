@@ -148,15 +148,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Determine provider (default to venice, fallback chain: venice -> modal -> netmind)
-    const selectedProvider = provider || 'venice'
+    // Determine provider (default to modal, fallback chain: modal -> netmind -> venice)
+    // Venice is tertiary because it runs out of credits quickly
+    const selectedProvider = provider || 'modal'
     
     // Use specified model or default based on provider
     let selectedModel = model
     if (!selectedModel) {
-      if (selectedProvider === 'venice') selectedModel = 'venice-sd35'
-      else if (selectedProvider === 'modal') selectedModel = 'stable-diffusion-v1-5'
-      else selectedModel = 'stabilityai/stable-diffusion-3.5-large'
+      if (selectedProvider === 'modal') selectedModel = 'stable-diffusion-v1-5'
+      else if (selectedProvider === 'netmind') selectedModel = 'black-forest-labs/FLUX.1-schnell'
+      else selectedModel = 'venice-sd35'
     }
     
     const key = requestKey(prompt, selectedModel, selectedProvider)
@@ -191,35 +192,25 @@ export async function POST(req: NextRequest) {
       }
       console.log(`[Image] Primary provider ${selectedProvider} failed.`)
       
-      // Try Modal as first fallback (self-hosted, no API costs)
-      if (selectedProvider !== 'modal') {
-        console.log(`[Image] Trying Modal fallback / stable-diffusion-v1-5`)
-        result = await callModalAPI(prompt)
-        
+      // Fallback chain: modal -> netmind -> venice (venice last, runs out of credits)
+      const fallbackChain: Array<{ provider: string; model: string; call: () => Promise<{ imageUrl: string | null; success: boolean }> }> = [
+        { provider: 'modal', model: 'stable-diffusion-v1-5', call: () => callModalAPI(prompt) },
+        { provider: 'netmind', model: 'black-forest-labs/FLUX.1-schnell', call: () => callNetmindAPI(prompt, 'black-forest-labs/FLUX.1-schnell') },
+        { provider: 'venice', model: 'venice-sd35', call: () => callVeniceAPI(prompt, 'venice-sd35') },
+      ].filter(f => f.provider !== selectedProvider) // Skip the one we already tried
+
+      for (const fallback of fallbackChain) {
+        console.log(`[Image] Trying fallback: ${fallback.provider} / ${fallback.model}`)
+        result = await fallback.call()
         if (result.success && result.imageUrl) {
-          console.log(`[Image] Modal fallback succeeded.`)
-          return { imageUrl: result.imageUrl, model: 'stable-diffusion-v1-5', provider: 'modal' }
+          console.log(`[Image] Fallback ${fallback.provider} succeeded.`)
+          return { imageUrl: result.imageUrl, model: fallback.model, provider: fallback.provider }
         }
-        console.log(`[Image] Modal fallback failed.`)
-      }
-      
-      // Try other providers as final fallback
-      const finalProvider = selectedProvider === 'venice' ? 'netmind' : 'venice'
-      const finalModel = finalProvider === 'venice' ? 'venice-sd35' : 'stabilityai/stable-diffusion-3.5-large'
-      
-      console.log(`[Image] Trying final fallback: ${finalProvider} / ${finalModel}`)
-      
-      result = finalProvider === 'venice'
-        ? await callVeniceAPI(prompt, finalModel)
-        : await callNetmindAPI(prompt, finalModel)
-      
-      if (result.success && result.imageUrl) {
-        console.log(`[Image] Final fallback ${finalProvider} succeeded.`)
-        return { imageUrl: result.imageUrl, model: finalModel, provider: finalProvider }
+        console.log(`[Image] Fallback ${fallback.provider} failed.`)
       }
       
       // All providers failed
-      console.error('[Image] All providers failed. Final provider attempted:', finalProvider)
+      console.error('[Image] All providers failed.')
       return { imageUrl: null, model: selectedModel, provider: 'failed' }
     })()
 

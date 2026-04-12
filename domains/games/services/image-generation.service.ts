@@ -15,7 +15,7 @@
  * - Automatic failover: Falls back to Replicate/Netmind if Venice fails
  */
 
-export type ImageProvider = 'venice' | 'replicate' | 'netmind' | 'failed'
+export type ImageProvider = 'venice' | 'replicate' | 'netmind' | 'modal' | 'failed'
 
 export interface ImageGenerationResult {
   imageUrl: string | null
@@ -30,11 +30,9 @@ export class ImageGenerationService {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/api/generate-image`
     }
-    // Server-side: use absolute URL for fetch
-    // Next.js uses 3000 by default, but respects PORT env var at startup
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
-    const host = process.env.VERCEL_URL || 'localhost:3000'
-    return `${protocol}://${host}/api/generate-image`
+    // Server-side: use Hetzner backend directly (persistent process, no cold starts)
+    const backendUrl = process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
+    return `${backendUrl}/api/generate-image`
   }
   private static readonly CACHE = new Map<string, ImageGenerationResult>() // prompt → result with metadata
   
@@ -48,7 +46,7 @@ export class ImageGenerationService {
   // Netmind AI models (fallback provider - OpenAI compatible)
   // Note: Netmind service availability may vary. Test before relying on it.
   private static readonly NETMIND_MODELS = [
-    'stable-diffusion-v1-5',  // Basic model (may have availability issues)
+    'black-forest-labs/FLUX.1-schnell',  // Fast, high quality (~2s)
   ]
   
   // Replicate models (reliable fallback provider)
@@ -68,36 +66,36 @@ export class ImageGenerationService {
   
   /**
    * Determine which provider to use based on health status
+   * Priority: modal (free, self-hosted) -> netmind -> venice (tertiary, runs out of credits)
    */
-  private static selectProvider(): 'venice' | 'netmind' {
-    const veniceApiKey = process.env.VENICE_API_KEY
+  private static selectProvider(): 'modal' | 'netmind' | 'venice' {
+    const modalUrl = process.env.MODAL_IMAGE_GEN_URL
     const netmindApiKey = process.env.NETMIND_API_KEY
+    const veniceApiKey = process.env.VENICE_API_KEY
     
-    // If Venice has failed recently (>3 failures in last 5 min), try Netmind first
-    const veniceRecentFailures = this.providerHealth.venice.failures
-    const timeSinceVeniceSuccess = Date.now() - this.providerHealth.venice.lastSuccess
+    // Prefer Modal (self-hosted, no API costs)
+    if (modalUrl) {
+      return 'modal'
+    }
     
-    if (veniceRecentFailures > 3 && timeSinceVeniceSuccess < 5 * 60 * 1000 && netmindApiKey) {
-      console.log('[Image] Using Netmind (Venice unhealthy)')
+    // Secondary: Netmind
+    if (netmindApiKey) {
+      console.log('[Image] Using Netmind (Modal not configured)')
       return 'netmind'
     }
     
-    // Prefer Venice if available
+    // Tertiary: Venice (runs out of credits quickly)
     if (veniceApiKey) {
+      console.log('[Image] Using Venice (tertiary - Modal and Netmind not configured)')
       return 'venice'
     }
     
-    // Fallback to Netmind
-    if (netmindApiKey) {
-      console.log('[Image] Using Netmind (Venice not configured)')
-      return 'netmind'
-    }
-    
     console.warn('[Image] No image provider configured')
-    return 'venice' // Will fail gracefully
+    return 'modal' // Will fail gracefully, fallback chain will try others
   }
   
-  private static getRandomModel(provider: 'venice' | 'netmind'): string {
+  private static getRandomModel(provider: 'venice' | 'netmind' | 'modal'): string {
+    if (provider === 'modal') return 'stable-diffusion-v1-5'
     const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS
     
     // Weight selection by quality ratings if available
@@ -358,60 +356,43 @@ export class ImageGenerationService {
       return this.CACHE.get(prompt)!
     }
 
-    // If server-side, call image APIs directly with automatic failover
+    // If server-side, delegate to the API route which handles the full fallback chain
+    // (modal -> netmind -> venice). This avoids duplicating fallback logic.
     if (typeof window === 'undefined') {
       const provider = this.selectProvider()
       const selectedModel = this.getRandomModel(provider)
       
       console.log(`[Image] Attempting ${provider} with model ${selectedModel}`)
       
-      // Try primary provider
-      let result = provider === 'venice' 
-        ? await this.callVeniceAPI(prompt, selectedModel)
-        : await this.callNetmindAPI(prompt, selectedModel)
-      
-      // If primary failed, try fallback
-      if (!result.success) {
-        const fallbackProvider = provider === 'venice' ? 'netmind' : 'venice'
-        const fallbackModel = this.getRandomModel(fallbackProvider)
-        
-        console.log(`[Image] Primary failed, trying ${fallbackProvider} with model ${fallbackModel}`)
-        
-        result = fallbackProvider === 'venice'
-          ? await this.callVeniceAPI(prompt, fallbackModel)
-          : await this.callNetmindAPI(prompt, fallbackModel)
-        
-        if (result.success) {
+      try {
+        const response = await fetch(this.getApiEndpoint(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            type: 'narrative',
+            model: selectedModel,
+            provider,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
           const imageResult: ImageGenerationResult = {
-            imageUrl: result.imageUrl,
-            model: fallbackModel,
-            provider: fallbackProvider,
+            imageUrl: data.imageUrl || null,
+            model: data.model || selectedModel,
+            provider: data.provider || provider,
             timestamp: Date.now(),
           }
-          
           if (imageResult.imageUrl) {
             this.CACHE.set(prompt, imageResult)
           }
-          
           return imageResult
         }
-      } else {
-        const imageResult: ImageGenerationResult = {
-          imageUrl: result.imageUrl,
-          model: selectedModel,
-          provider,
-          timestamp: Date.now(),
-        }
-        
-        if (imageResult.imageUrl) {
-          this.CACHE.set(prompt, imageResult)
-        }
-        
-        return imageResult
+      } catch (error) {
+        console.error('[Image] Server-side fetch failed:', error)
       }
-      
-      // Both providers failed
-      console.error('[Image] All providers failed')
+
       return {
         imageUrl: null,
         model: selectedModel,

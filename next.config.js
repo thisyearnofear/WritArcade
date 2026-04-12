@@ -1,5 +1,22 @@
 /** @type {import('next').NextConfig} */
+
+// Hetzner backend for heavy API routes (image gen, audio gen, balance)
+const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
+
 const nextConfig = {
+  async rewrites() {
+    return {
+      // beforeFiles rewrites run before Next.js API routes — ensures Hetzner backend takes priority
+      beforeFiles: [
+        { source: '/api/generate-image', destination: `${API_BACKEND_URL}/api/generate-image` },
+        { source: '/api/generate-image/:path*', destination: `${API_BACKEND_URL}/api/generate-image/:path*` },
+        { source: '/api/generate-audio', destination: `${API_BACKEND_URL}/api/generate-audio` },
+        { source: '/api/user/balance', destination: `${API_BACKEND_URL}/api/user/balance` },
+      ],
+      afterFiles: [],
+      fallback: [],
+    }
+  },
   images: {
     // Scoped remotePatterns — avoids the wildcard '**' security footgun that
     // allows any HTTPS image to be proxied/optimised through our Next.js server.
