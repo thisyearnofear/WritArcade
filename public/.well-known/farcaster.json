@@ -6,20 +6,20 @@
   },
   "miniapp": {
     "version": "1",
-    "name": "WritArcade",
+    "name": "Writers Arcade",
     "homeUrl": "https://writersarcade.vercel.app/mini-app",
-    "iconUrl": "https://writersarcade.vercel.app/android-chrome-192x192.png",
-    "splashImageUrl": "https://writersarcade.vercel.app/android-chrome-192x192.png",
-    "splashBackgroundColor": "#1a1a2e",
+    "iconUrl": "https://writersarcade.vercel.app/images/logo-white.png",
+    "splashImageUrl": "https://writersarcade.vercel.app/images/banner.png",
+    "splashBackgroundColor": "#0a0a14",
     "subtitle": "Games from articles",
     "description": "Generate AI-powered games from articles using writer coins. Play, create, and mint NFTs on Base.",
-    "imageUrl": "https://writersarcade.vercel.app/api/og-image",
-    "buttonTitle": "Play WritArcade",
+    "imageUrl": "https://writersarcade.vercel.app/images/banner.png",
+    "buttonTitle": "Play Writers Arcade",
     "primaryCategory": "games",
     "tags": ["games", "ai", "nft", "base", "farcaster"],
-    "ogTitle": "WritArcade",
+    "ogTitle": "Writers Arcade",
     "ogDescription": "Turn articles into playable games",
-    "ogImageUrl": "https://writersarcade.vercel.app/api/og-image",
+    "ogImageUrl": "https://writersarcade.vercel.app/images/banner.png",
     "webhookUrl": "https://writersarcade.vercel.app/api/farcaster/webhook"
   }
 }

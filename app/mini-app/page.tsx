@@ -19,7 +19,7 @@ export default function MiniAppPage() {
                 </div>
                 
                 <div className="space-y-2">
-                    <h1 className="text-3xl font-black text-white uppercase italic tracking-tight">WritArcade</h1>
+                    <h1 className="text-3xl font-black text-white uppercase italic tracking-tight">Writers Arcade</h1>
                     <p className="text-purple-300/80">Turn articles into interactive fiction. Play, build, and support your favorite writers.</p>
                 </div>
 
