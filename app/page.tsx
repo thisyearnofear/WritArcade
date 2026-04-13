@@ -79,7 +79,7 @@ function useGameCount() {
 function WriterTicker() {
   const [index, setIndex] = useState(0)
   useEffect(() => {
-    const id = setInterval(() => setIndex((i) => (i + 1) % WRITER_COINS.length), 2800)
+    const id = setInterval(() => setIndex((i) => (i + 1) % WRITER_COINS.length), 4500)
     return () => clearInterval(id)
   }, [])
   const coin = WRITER_COINS[index]

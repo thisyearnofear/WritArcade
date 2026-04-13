@@ -2,7 +2,16 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Play } from 'lucide-react';
+import { Play, Compass, Sword, Zap, Brain, Store, BookOpen } from 'lucide-react';
+
+const GENRE_STYLES: Record<string, { gradient: string; icon: React.ElementType }> = {
+  Adventure:  { gradient: 'from-emerald-800 via-teal-900 to-cyan-950', icon: Compass },
+  Action:     { gradient: 'from-red-800 via-orange-900 to-amber-950', icon: Sword },
+  Strategy:   { gradient: 'from-blue-800 via-indigo-900 to-violet-950', icon: Zap },
+  Puzzle:     { gradient: 'from-violet-800 via-purple-900 to-fuchsia-950', icon: Brain },
+  Simulation: { gradient: 'from-amber-800 via-yellow-900 to-lime-950', icon: Store },
+};
+const DEFAULT_STYLE = { gradient: 'from-slate-700 via-gray-800 to-slate-900', icon: BookOpen };
 
 interface GameCardProps {
   slug: string;
@@ -15,6 +24,9 @@ interface GameCardProps {
 }
 
 export function GameCard({ slug, title, description, genre, imageUrl, primaryColor, symbol }: GameCardProps) {
+  const genreStyle = GENRE_STYLES[genre] || DEFAULT_STYLE;
+  const GenreIcon = genreStyle.icon;
+
   return (
     <Card 
       className="group overflow-hidden transition-all duration-300 hover:shadow-2xl border-gray-800 bg-gray-900/40"
@@ -24,8 +36,9 @@ export function GameCard({ slug, title, description, genre, imageUrl, primaryCol
         {imageUrl ? (
           <img src={imageUrl} alt={title} className="object-cover w-full h-full transform transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-gray-600">
-            {title[0]}
+          <div className={`w-full h-full bg-gradient-to-br ${genreStyle.gradient} flex flex-col items-center justify-center gap-2`}>
+            <GenreIcon className="w-10 h-10 text-white/30" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-white/25">{genre || 'Game'}</span>
           </div>
         )}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

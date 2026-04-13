@@ -50,8 +50,8 @@ export const WRITER_COINS: WriterCoin[] = [
         paragraphAuthor: "fredwilson",
         paragraphUrl: "https://avc.xyz/",
         bio: "Venture capitalist and blogger writing about technology, startups, and markets since 2003.",
-        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $AVC
-        mintCost: BigInt(50 * 10 ** 18), // 50 $AVC
+        gameGenerationCost: 100000000000000000000n, // 100 $AVC (100 * 10^18)
+        mintCost: 50000000000000000000n, // 50 $AVC (50 * 10^18)
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
@@ -71,8 +71,8 @@ export const WRITER_COINS: WriterCoin[] = [
         paragraphAuthor: "debbie",
         paragraphUrl: "https://paragraph.com/@debbie",
         bio: "Writer and researcher exploring the intersection of technology, culture, and human behaviour.",
-        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $DEBBIE
-        mintCost: BigInt(50 * 10 ** 18), // 50 $DEBBIE
+        gameGenerationCost: 100000000000000000000n, // 100 $DEBBIE (100 * 10^18)
+        mintCost: 50000000000000000000n, // 50 $DEBBIE (50 * 10^18)
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
@@ -92,8 +92,8 @@ export const WRITER_COINS: WriterCoin[] = [
         paragraphAuthor: "jake",
         paragraphUrl: "https://paragraph.com/@jake",
         bio: "Independent writer covering crypto, culture, and the open web.",
-        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $JAKE
-        mintCost: BigInt(50 * 10 ** 18), // 50 $JAKE
+        gameGenerationCost: 100000000000000000000n, // 100 $JAKE (100 * 10^18)
+        mintCost: 50000000000000000000n, // 50 $JAKE (50 * 10^18)
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
@@ -113,8 +113,8 @@ export const WRITER_COINS: WriterCoin[] = [
         paragraphAuthor: "cryptso",
         paragraphUrl: "https://paragraph.com/@cryptso",
         bio: "Crypto-native thinker writing about onchain ecosystems, DeFi, and the future of money.",
-        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $THOUGHTS
-        mintCost: BigInt(50 * 10 ** 18), // 50 $THOUGHTS
+        gameGenerationCost: 100000000000000000000n, // 100 $THOUGHTS (100 * 10^18)
+        mintCost: 50000000000000000000n, // 50 $THOUGHTS (50 * 10^18)
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
@@ -134,8 +134,8 @@ export const WRITER_COINS: WriterCoin[] = [
         paragraphAuthor: "papajams.eth",
         paragraphUrl: "https://paragraph.com/@papajams.eth",
         bio: "Music, culture, and life — personal essays from the intersection of fatherhood and the creative life.",
-        gameGenerationCost: BigInt(100 * 10 ** 18), // 100 $PARAPAPA
-        mintCost: BigInt(50 * 10 ** 18), // 50 $PARAPAPA
+        gameGenerationCost: 100000000000000000000n, // 100 $PARAPAPA (100 * 10^18)
+        mintCost: 50000000000000000000n, // 50 $PARAPAPA (50 * 10^18)
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
