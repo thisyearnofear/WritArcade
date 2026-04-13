@@ -158,7 +158,15 @@ export default function HomePage() {
                 transition={{ delay: 0.35, duration: 0.6, ease: 'easeOut' }}
               >
                 <ErrorBoundary>
-                  <GameGeneratorForm />
+                    <div className="p-6 rounded-2xl bg-white/5 border border-white/10 shadow-xl">
+                        <SimpleGameForm 
+                            onGenerate={(url) => window.location.href = `/generate?url=${encodeURIComponent(url)}`} 
+                            isGenerating={false} 
+                        />
+                        <p className="text-xs text-gray-400 mt-4">
+                            Need more control? <a href="/workshop" className="text-purple-400 hover:text-purple-300 underline">Enter the Workshop</a> for genre, difficulty, and coin selection.
+                        </p>
+                    </div>
                 </ErrorBoundary>
               </motion.div>
             </div>
