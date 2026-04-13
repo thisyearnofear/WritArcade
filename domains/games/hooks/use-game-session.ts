@@ -336,6 +336,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
 
                 // Generate image for this panel
                 const { narrative } = parsePanel(currentMessage)
+                const startTime = Date.now()
                 ImageGenerationService.generateImage({
                   prompt: narrative,
                   genre: game.genre,
@@ -345,6 +346,12 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
                 }).then((result) => {
                   if (messageId) {
                     handleImageGenerated(messageId, result)
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+                    // Show performance toast
+                    toast({
+                      title: '🎨 Visual Ready',
+                      description: `Generated using ${result.model} in ~${duration}s`,
+                    })
                   }
                   setResponseReady(prev => ({ ...prev, images: true }))
                 }).catch(err => {
