@@ -261,12 +261,8 @@ export class ImageGenerationService {
         body: JSON.stringify({
           prompt: enhancedPrompt,
           model: selectedModel,
-          type: 'narrative'
-        }),
-      })
           type: 'narrative',
-          model: selectedModel,
-          provider,
+          provider
         }),
       })
 
