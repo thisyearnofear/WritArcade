@@ -345,7 +345,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
                 // Generate image for this panel
                 const { narrative } = parsePanel(currentMessage)
                 const startTime = Date.now()
-                const moodModifiers = MoodModifierService.getMoodModifiers(worldMood)
+                const moodModifiers = MoodModifierService.getMoodModifiers(worldMood, game.genre)
                 const finalPrompt = moodModifiers ? `${narrative}, ${moodModifiers}` : narrative
 
                 ImageGenerationService.generateImage({
