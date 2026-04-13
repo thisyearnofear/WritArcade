@@ -4,6 +4,7 @@ import { useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, BookOpen, ChevronDown } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
+import { MoodIndicator } from '@/components/game/MoodIndicator'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 
@@ -12,6 +13,7 @@ const MAX_COMIC_PANELS = 5
 interface GameplayScreenProps {
   game: Game
   messages: ChatEntry[]
+  worldMood: { tension: number; chaos: number; hope: number }
   isWaitingForResponse: boolean
   pendingOptionId: number | null
   assistantMessageCount: number
