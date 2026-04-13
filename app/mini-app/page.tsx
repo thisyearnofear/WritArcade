@@ -31,6 +31,7 @@ export default function MiniAppPage() {
                         Build a Game
                     </Button>
                     <Button 
+                        onClick={() => router.push('/mini-app/discovery')}
                         variant="outline"
                         className="w-full h-12 border-white/10 hover:bg-white/5"
                     >
