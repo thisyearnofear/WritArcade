@@ -1,3 +1,5 @@
+'use client'
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserAIPreferenceService, UserAIPreferences } from '@/lib/user-ai-preferences.service';
 

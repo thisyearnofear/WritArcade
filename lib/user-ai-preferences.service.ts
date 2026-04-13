@@ -1,5 +1,3 @@
-import { cookies } from 'next/headers';
-
 export interface UserAIPreferences {
   geminiEnabled: boolean;
   googleApiKey?: string;
@@ -14,17 +12,7 @@ export class UserAIPreferenceService {
 
   static async getUserPreferences(): Promise<UserAIPreferences> {
     try {
-      // Get from cookies for server components or localStorage for client components
-      if (typeof window === 'undefined') {
-        // Server-side
-        const cookieStore = await cookies();
-        const prefsCookie = cookieStore.get(this.PREFERENCE_COOKIE_NAME)?.value;
-
-        if (prefsCookie) {
-          return JSON.parse(decodeURIComponent(prefsCookie));
-        }
-      } else {
-        // Client-side
+      if (typeof window !== 'undefined') {
         const prefs = localStorage.getItem('aiPreferences');
         if (prefs) {
           return JSON.parse(prefs);
@@ -34,7 +22,6 @@ export class UserAIPreferenceService {
       console.warn('Failed to load AI preferences:', error);
     }
 
-    // Default preferences
     return {
       geminiEnabled: false,
       preferGemini: false,
@@ -44,21 +31,7 @@ export class UserAIPreferenceService {
 
   static async saveUserPreferences(preferences: UserAIPreferences) {
     try {
-      if (typeof window === 'undefined') {
-        // Server-side
-        const cookieStore = await cookies();
-        cookieStore.set(
-          this.PREFERENCE_COOKIE_NAME,
-          encodeURIComponent(JSON.stringify(preferences)),
-          {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 30, // 30 days
-            path: '/',
-          }
-        );
-      } else {
-        // Client-side
+      if (typeof window !== 'undefined') {
         localStorage.setItem('aiPreferences', JSON.stringify(preferences));
       }
     } catch (error) {
@@ -68,12 +41,7 @@ export class UserAIPreferenceService {
 
   static async clearUserPreferences() {
     try {
-      if (typeof window === 'undefined') {
-        // Server-side
-        const cookieStore = await cookies();
-        cookieStore.delete(this.PREFERENCE_COOKIE_NAME);
-      } else {
-        // Client-side
+      if (typeof window !== 'undefined') {
         localStorage.removeItem('aiPreferences');
       }
     } catch (error) {
