@@ -121,35 +121,34 @@ export default function HomePage() {
           <section className="py-14 px-4">
             <div className="max-w-3xl mx-auto">
               <motion.h1
-                className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 leading-tight"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
               >
-                Interactive fiction<br />
-                <span className="text-gray-500 dark:text-gray-400">from </span><WriterTicker />
+              Interactive fiction<br />
+              <span className="text-gray-700 dark:text-gray-400">from </span><WriterTicker />
               </motion.h1>
 
               <motion.p
-                className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6 max-w-xl leading-relaxed"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
+              className="text-sm sm:text-base text-gray-700 dark:text-gray-400 mb-6 max-w-xl leading-relaxed"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
               >
-                Paste an article URL, generate a playable game, and mint it as an NFT — the writer earns every time someone plays or mints.
+              Paste an article URL, generate a playable game, and mint it as an NFT — the writer earns every time someone plays or mints.
               </motion.p>
 
               {gameCount !== null && gameCount > 0 && (
-                <motion.p
-                  className="text-sm text-gray-600 dark:text-gray-400 mb-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  {gameCount} {gameCount === 1 ? 'game' : 'games'} generated so far.
-                </motion.p>
-              )}
-              {gameCount === null && <div className="mb-6" />}
+              <motion.p
+                className="text-sm text-gray-700 dark:text-gray-400 mb-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
+                {gameCount} {gameCount === 1 ? 'game' : 'games'} generated so far.
+              </motion.p>
+              )}              {gameCount === null && <div className="mb-6" />}
 
               <motion.div
                 className="max-w-2xl"
