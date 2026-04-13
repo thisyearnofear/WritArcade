@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useVisualConfig } from '@/contexts/visual-config.context'
+import { MoodModifierService } from '../services/mood-modifier.service'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'
 import type { Game, ChatMessage, GameplayOption } from '../types'
@@ -33,6 +34,12 @@ export interface GameSessionState {
   assistantMessageCount: number
   canAddMorePanels: boolean
   regeneratingMessageId: string | null
+  // Mood tracking
+  worldMood: {
+    tension: number
+    chaos: number
+    hope: number
+  }
 }
 
 export interface GameSessionActions {
@@ -65,6 +72,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   const [pendingOptionId, setPendingOptionId] = useState<number | null>(null)
   const [userChoices, setUserChoices] = useState<UserChoice[]>([])
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
+  const [worldMood, setWorldMood] = useState({ tension: 0, chaos: 0, hope: 0 })
 
   // Derived state
   const assistantMessageCount = messages.filter(m => m.role === 'assistant').length
@@ -337,8 +345,11 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
                 // Generate image for this panel
                 const { narrative } = parsePanel(currentMessage)
                 const startTime = Date.now()
+                const moodModifiers = MoodModifierService.getMoodModifiers(worldMood)
+                const finalPrompt = moodModifiers ? `${narrative}, ${moodModifiers}` : narrative
+
                 ImageGenerationService.generateImage({
-                  prompt: narrative,
+                  prompt: finalPrompt,
                   genre: game.genre,
                   style: 'comic_book',
                   aspectRatio: 'landscape',
@@ -398,6 +409,15 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       choice: optionText,
       timestamp: new Date().toISOString()
     }])
+
+    // Mood shift logic (example)
+    const lowerText = optionText.toLowerCase()
+    setWorldMood(prev => ({
+      tension: prev.tension + (lowerText.includes('fight') || lowerText.includes('run') ? 2 : -1),
+      chaos: prev.chaos + (lowerText.includes('unexpected') || lowerText.includes('surprise') ? 2 : -1),
+      hope: prev.hope + (lowerText.includes('help') || lowerText.includes('trust') ? 2 : -1)
+    }))
+
     sendMessage(optionText)
   }, [assistantMessageCount, sendMessage])
 
@@ -461,6 +481,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
     isWaitingForResponse,
     loadingProgress,
     responseReady,
+    worldMood,
     pendingOptionId,
     userChoices,
     assistantMessageCount,
