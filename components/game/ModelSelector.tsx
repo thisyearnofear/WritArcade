@@ -15,9 +15,17 @@ export const ModelSelector: React.FC = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className={getTouchClasses("gap-2", "min-h-[44px] px-6")}>
-          <Settings2 size={16} />
-          Advanced Visuals
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className={getTouchClasses(
+            "gap-2 bg-background/95 backdrop-blur-sm border-border hover:bg-accent shadow-lg",
+            "min-h-[48px] px-4"
+          )}
+        >
+          <Settings2 size={18} />
+          <span className="hidden sm:inline">Advanced Visuals</span>
+          <span className="sm:hidden">Visuals</span>
         </Button>
       </DialogTrigger>
 // ... (rest of component)

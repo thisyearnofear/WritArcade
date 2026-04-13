@@ -134,25 +134,22 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   // HERO SCREEN
   if (!session.isPlaying) {
     return (
-      <>
-        <ModelSelector />
-        <HeroScreen
-          game={game}
-          isStarting={session.isStarting}
-          loadingProgress={session.loadingProgress}
-          messages={session.messages}
-          showPreview={showPreview}
-          showPaymentModal={showPaymentModal}
-          isPaying={blockchain.isPaying}
-          playFee={game.playFee || '0'}
-          onStartClick={handleStartClick}
-          onPreviewApproved={handlePreviewApproved}
-          onPaymentConfirm={onPaymentConfirm}
-          onClosePreview={() => setShowPreview(false)}
-          onClosePayment={() => setShowPaymentModal(false)}
-          generateStoryboardPreview={generateStoryboardPreview}
-        />
-      </>
+      <HeroScreen
+        game={game}
+        isStarting={session.isStarting}
+        loadingProgress={session.loadingProgress}
+        messages={session.messages}
+        showPreview={showPreview}
+        showPaymentModal={showPaymentModal}
+        isPaying={blockchain.isPaying}
+        playFee={game.playFee || '0'}
+        onStartClick={handleStartClick}
+        onPreviewApproved={handlePreviewApproved}
+        onPaymentConfirm={onPaymentConfirm}
+        onClosePreview={() => setShowPreview(false)}
+        onClosePayment={() => setShowPaymentModal(false)}
+        generateStoryboardPreview={generateStoryboardPreview}
+      />
     )
   }
 

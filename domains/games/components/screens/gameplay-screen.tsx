@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Loader2, BookOpen, ChevronDown } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
+import { ModelSelector } from '@/components/game/ModelSelector'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 
@@ -69,11 +70,16 @@ export function GameplayScreen({
 
   return (
     <div
-      className="min-h-screen w-full flex flex-col animate-fade-in mobile-optimized"
+      className="min-h-screen w-full flex flex-col animate-fade-in mobile-optimized relative"
       style={{
         background: `linear-gradient(135deg, ${game.primaryColor || '#8b5cf6'}05, black)`,
       }}
     >
+      {/* Fixed Settings Button - Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <ModelSelector />
+      </div>
+
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
