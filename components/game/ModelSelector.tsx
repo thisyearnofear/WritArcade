@@ -4,20 +4,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Settings2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useMobileOptimizations } from '@/hooks/useMobileOptimizations';
 
 export const ModelSelector: React.FC = () => {
   const { preferences, updatePreferences, loading } = useVisualConfig();
+  const { getTouchClasses } = useMobileOptimizations();
 
   if (loading || !preferences) return null;
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className={getTouchClasses("gap-2", "min-h-[44px] px-6")}>
           <Settings2 size={16} />
           Advanced Visuals
         </Button>
       </DialogTrigger>
+// ... (rest of component)
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Image Generation Settings</DialogTitle>
