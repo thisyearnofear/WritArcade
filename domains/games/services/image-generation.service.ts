@@ -101,7 +101,7 @@ export class ImageGenerationService {
   }
   
   private static getRandomModel(provider: 'venice' | 'netmind' | 'modal'): string {
-    if (provider === 'modal') return 'flux-1-schnell'
+    if (provider === 'modal') return 'sdxl-turbo'
     const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS
     
     // Weight selection by quality ratings if available
