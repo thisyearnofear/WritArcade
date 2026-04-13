@@ -39,6 +39,31 @@ export function GameCard({ slug, title, description, genre, imageUrl, primaryCol
           <h3 className="text-lg font-bold text-white truncate">{title}</h3>
           <Badge variant="secondary" className="text-[10px]">{genre}</Badge>
         </div>
+        <p className="text-sm text-gray-300 line-clamp-2 mb-4">{description}</p>
+        <div className="flex items-center text-xs font-mono text-gray-500">
+          Powered by <span className="ml-1 text-purple-400">${symbol}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+5" />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${gradientClass} flex items-center justify-center`}>
+            <span className="text-4xl opacity-60">{emoji}</span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Link href={`/games/${slug}`} className="bg-white text-black px-6 py-2 rounded-full font-bold flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform">
+            <Play className="w-4 h-4 fill-current" /> Play Now
+          </Link>
+        </div>
+      </div>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-lg font-bold text-white truncate">{title}</h3>
+          <Badge variant="secondary" className="text-[10px]">{genre}</Badge>
+        </div>
         <p className="text-sm text-gray-400 line-clamp-2 mb-4">{description}</p>
         <div className="flex items-center text-xs font-mono text-gray-500">
           Powered by <span className="ml-1 text-purple-400">${symbol}</span>

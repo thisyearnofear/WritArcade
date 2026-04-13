@@ -35,7 +35,7 @@
     --primary: 271 81% 70%; /* Lighter for visibility */
     --primary-foreground: 0 0% 5%;
     --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 70%; /* Lighter for better read */
+    --muted-foreground: 0 0% 75%; /* Lighter for better read - WCAG AA compliant */
     --border: 0 0% 20%; /* Lighter for better visibility */
     --input: 0 0% 15%;
     --ring: 271 81% 70%;

@@ -38,6 +38,7 @@ interface GameplayScreenProps {
 export function GameplayScreen({
   game,
   messages,
+  worldMood,
   isWaitingForResponse,
   pendingOptionId,
   assistantMessageCount,
@@ -88,7 +89,10 @@ export function GameplayScreen({
             <div className="w-full max-w-5xl mb-8 pb-6 border-b border-white/10">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Story Progress</p>
-                <p className="text-sm text-gray-500">Panel {assistantMessageCount} of {MAX_COMIC_PANELS}</p>
+                <div className="flex items-center gap-4">
+                  <MoodIndicator mood={worldMood} />
+                  <p className="text-sm text-gray-500">Panel {assistantMessageCount} of {MAX_COMIC_PANELS}</p>
+                </div>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div
