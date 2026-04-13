@@ -3,11 +3,28 @@
 import Link from 'next/link'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
-import { PenLine, LayoutDashboard } from 'lucide-react'
+import { PenLine, LayoutDashboard, Sun, Moon } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { isWhitelistedWriterCoin } from '@/lib/writerCoins'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useIsActive } from '@/hooks/useIsActive'
+import { useDarkMode } from '@/components/providers/DarkModeProvider'
+import { Button } from '@/components/ui/button'
+
+function ThemeToggle() {
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
+  return (
+    <Button 
+      variant="ghost" 
+      size="icon" 
+      onClick={toggleDarkMode}
+      className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+    >
+      {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+    </Button>
+  )
+}
+
 
 function CreatorDashboardLink() {
   const { address, isConnected } = useAccount()
@@ -105,11 +122,13 @@ export function Header() {
 
           <CreatorDashboardLink />
           <BalanceDisplay />
+          <ThemeToggle />
           <UserMenu />
         </nav>
 
         {/* Mobile Actions */}
         <div className="flex md:hidden items-center space-x-3">
+          <ThemeToggle />
           <BalanceDisplay />
           <UserMenu mobileLayout />
         </div>
