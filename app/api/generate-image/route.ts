@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Vercel serverless function timeout (max 60s on Hobby plan)
+export const maxDuration = 60
+
 // ─── In-flight deduplication ──────────────────────────────────────────────
 // React StrictMode double-invokes effects in development, which can trigger
 // two identical image generation requests back-to-back — each costing real
@@ -23,6 +26,10 @@ async function callVeniceAPI(prompt: string, model: string): Promise<{ imageUrl:
   }
 
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 50000) // 50s timeout
+
     const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
       method: 'POST',
       headers: {
@@ -36,7 +43,10 @@ async function callVeniceAPI(prompt: string, model: string): Promise<{ imageUrl:
         height: 1024,
         format: 'png',
       }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -54,7 +64,11 @@ async function callVeniceAPI(prompt: string, model: string): Promise<{ imageUrl:
     
     return { imageUrl, success: true }
   } catch (error) {
-    console.error('[Venice] Request failed:', error)
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[Venice] Request timeout after 50s')
+    } else {
+      console.error('[Venice] Request failed:', error)
+    }
     return { imageUrl: null, success: false }
   }
 }
@@ -69,6 +83,10 @@ async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl
   }
 
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 50000) // 50s timeout
+
     const response = await fetch('https://api.netmind.ai/inference-api/openai/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -80,7 +98,10 @@ async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl
         prompt,
         response_format: 'b64_json',
       }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -93,7 +114,11 @@ async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl
     
     return { imageUrl, success: true }
   } catch (error) {
-    console.error('[Netmind] Request failed:', error)
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[Netmind] Request timeout after 50s')
+    } else {
+      console.error('[Netmind] Request failed:', error)
+    }
     return { imageUrl: null, success: false }
   }
 }
@@ -109,6 +134,10 @@ async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; 
   }
 
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 55000) // 55s timeout (Vercel has 60s limit)
+
     const response = await fetch(modalUrl, {
       method: 'POST',
       headers: {
@@ -119,7 +148,10 @@ async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; 
         width: 1024,
         height: 1024,
       }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -132,7 +164,11 @@ async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; 
     
     return { imageUrl, success: !!imageUrl }
   } catch (error) {
-    console.error('[Modal] Request failed:', error)
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[Modal] Request timeout after 55s')
+    } else {
+      console.error('[Modal] Request failed:', error)
+    }
     return { imageUrl: null, success: false }
   }
 }
