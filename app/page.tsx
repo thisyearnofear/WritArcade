@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
-import { GameGeneratorForm } from '@/domains/games/components/game-generator-form'
+import { SimpleGameForm } from '@/domains/games/components/simple-game-form'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -160,7 +160,7 @@ export default function HomePage() {
                 <ErrorBoundary>
                     <div className="p-6 rounded-2xl bg-white/5 border border-white/10 shadow-xl">
                         <SimpleGameForm 
-                            onGenerate={(url) => window.location.href = `/generate?url=${encodeURIComponent(url)}`} 
+                            onGenerate={(url: string) => window.location.href = `/generate?url=${encodeURIComponent(url)}`} 
                             isGenerating={false} 
                         />
                         <p className="text-xs text-gray-400 mt-4">
