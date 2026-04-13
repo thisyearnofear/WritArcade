@@ -23,6 +23,8 @@ export function useMobileOptimizations(): MobileOptimizations {
             isTouchDevice: false,
             windowSize: { width: 0, height: 0 },
             optimized: false,
+            getMobileClasses: (b) => b,
+            getTouchClasses: (b) => b,
         }
     }
     const isTouch = isTouchDevice();
@@ -34,6 +36,8 @@ export function useMobileOptimizations(): MobileOptimizations {
         isTouchDevice: isTouch,
         windowSize: { width: window.innerWidth, height: window.innerHeight },
         optimized: isMobile || isTouch,
+        getMobileClasses,
+        getTouchClasses,
     }
   });
 
