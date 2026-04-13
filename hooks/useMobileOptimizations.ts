@@ -10,8 +10,8 @@ interface MobileOptimizations {
     height: number;
   };
   optimized: boolean;
-  getMobileClasses?: (baseClasses: string, mobileClasses?: string) => string;
-  getTouchClasses?: (baseClasses: string, touchClasses?: string) => string;
+  getMobileClasses: (baseClasses: string, mobileClasses?: string) => string;
+  getTouchClasses: (baseClasses: string, touchClasses?: string) => string;
 }
 
 export function useMobileOptimizations(): MobileOptimizations {
