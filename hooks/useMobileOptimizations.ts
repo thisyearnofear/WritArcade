@@ -15,6 +15,16 @@ interface MobileOptimizations {
 }
 
 export function useMobileOptimizations(): MobileOptimizations {
+  // Helper functions must be declared before the useState initializer
+  // so they are available in the closure (avoids TDZ in webpack bundles).
+  const getMobileClasses = (isMob: boolean) => (baseClasses: string, mobileClasses: string = ''): string => {
+    return `${baseClasses} ${isMob ? mobileClasses : ''}`.trim();
+  };
+
+  const getTouchClasses = (isTouch: boolean) => (baseClasses: string, touchClasses: string = ''): string => {
+    return `${baseClasses} ${isTouch ? touchClasses : ''}`.trim();
+  };
+
   const [optimizations, setOptimizations] = useState<MobileOptimizations>(() => {
     if (typeof window === 'undefined') {
         return {
@@ -23,8 +33,8 @@ export function useMobileOptimizations(): MobileOptimizations {
             isTouchDevice: false,
             windowSize: { width: 0, height: 0 },
             optimized: false,
-            getMobileClasses: (b) => b,
-            getTouchClasses: (b) => b,
+            getMobileClasses: getMobileClasses(false),
+            getTouchClasses: getTouchClasses(false),
         }
     }
     const isTouch = isTouchDevice();
@@ -36,13 +46,12 @@ export function useMobileOptimizations(): MobileOptimizations {
         isTouchDevice: isTouch,
         windowSize: { width: window.innerWidth, height: window.innerHeight },
         optimized: isMobile || isTouch,
-        getMobileClasses,
-        getTouchClasses,
+        getMobileClasses: getMobileClasses(isMobile),
+        getTouchClasses: getTouchClasses(isTouch),
     }
   });
 
   useEffect(() => {
-    // Apply mobile optimizations once on mount
     const preventDoubleTapZoom = (e: TouchEvent) => {
       if (e.touches.length > 1) {
         e.preventDefault();
@@ -66,6 +75,7 @@ export function useMobileOptimizations(): MobileOptimizations {
           width: window.innerWidth,
           height: window.innerHeight,
         },
+        getMobileClasses: getMobileClasses(updatedIsMobile),
       }));
     };
 
@@ -84,25 +94,7 @@ export function useMobileOptimizations(): MobileOptimizations {
     };
   }, [optimizations.isMobile, optimizations.isTouchDevice]);
 
-  /**
-   * Get mobile-optimized class names - DRY approach
-   * Single source of truth for mobile class names
-   */
-  const getMobileClasses = (baseClasses: string, mobileClasses: string = ''): string => {
-    return `${baseClasses} ${optimizations.isMobile ? mobileClasses : ''}`.trim();
-  };
-
-  /**
-   * Get touch-optimized class names - CLEAN separation
-   * Explicit dependency on touch capability
-   */
-  const getTouchClasses = (baseClasses: string, touchClasses: string = ''): string => {
-    return `${baseClasses} ${optimizations.isTouchDevice ? touchClasses : ''}`.trim();
-  };
-
   return {
     ...optimizations,
-    getMobileClasses,
-    getTouchClasses,
   };
 }
