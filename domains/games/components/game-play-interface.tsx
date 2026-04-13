@@ -175,6 +175,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       onImageRating={session.handleImageRating}
       messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
       responseReady={session.responseReady}
+      worldMood={session.worldMood}
       isRegenerating={session.regeneratingMessageId}
       setShowComicFinale={setShowComicFinale}
       availableThemes={availableThemes}
