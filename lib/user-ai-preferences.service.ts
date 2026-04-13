@@ -4,7 +4,9 @@ export interface UserAIPreferences {
   geminiEnabled: boolean;
   googleApiKey?: string;
   preferGemini: boolean;
-  // Future: other provider preferences
+  // Visual Generation Preferences
+  imageQuality: 'fast' | 'quality'; // High-level toggle
+  preferredModel?: string;         // Fine-grained control
 }
 
 export class UserAIPreferenceService {
@@ -35,7 +37,8 @@ export class UserAIPreferenceService {
     // Default preferences
     return {
       geminiEnabled: false,
-      preferGemini: false
+      preferGemini: false,
+      imageQuality: 'fast'
     };
   }
 

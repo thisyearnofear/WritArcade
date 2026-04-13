@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi'
 import { Game } from '../types'
 import { useGameSession } from '../hooks/use-game-session'
 import { useGameBlockchain } from '../hooks/use-game-blockchain'
+import { ModelSelector } from '@/components/game/ModelSelector'
 
 // Screen Components
 import { HeroScreen } from './screens/hero-screen'
@@ -133,22 +134,25 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   // HERO SCREEN
   if (!session.isPlaying) {
     return (
-      <HeroScreen
-        game={game}
-        isStarting={session.isStarting}
-        loadingProgress={session.loadingProgress}
-        messages={session.messages}
-        showPreview={showPreview}
-        showPaymentModal={showPaymentModal}
-        isPaying={blockchain.isPaying}
-        playFee={game.playFee || '0'}
-        onStartClick={handleStartClick}
-        onPreviewApproved={handlePreviewApproved}
-        onPaymentConfirm={onPaymentConfirm}
-        onClosePreview={() => setShowPreview(false)}
-        onClosePayment={() => setShowPaymentModal(false)}
-        generateStoryboardPreview={generateStoryboardPreview}
-      />
+      <>
+        <ModelSelector />
+        <HeroScreen
+          game={game}
+          isStarting={session.isStarting}
+          loadingProgress={session.loadingProgress}
+          messages={session.messages}
+          showPreview={showPreview}
+          showPaymentModal={showPaymentModal}
+          isPaying={blockchain.isPaying}
+          playFee={game.playFee || '0'}
+          onStartClick={handleStartClick}
+          onPreviewApproved={handlePreviewApproved}
+          onPaymentConfirm={onPaymentConfirm}
+          onClosePreview={() => setShowPreview(false)}
+          onClosePayment={() => setShowPaymentModal(false)}
+          generateStoryboardPreview={generateStoryboardPreview}
+        />
+      </>
     )
   }
 

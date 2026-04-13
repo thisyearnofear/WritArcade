@@ -9,6 +9,7 @@ import { ToastProvider } from '@/components/ui/use-toast'
 import { DarkModeProvider } from '@/components/providers/DarkModeProvider'
 import { MobileBottomNav } from '@/components/navigation/MobileBottomNav'
 import { PageTransition } from '@/components/providers/PageTransition'
+import { VisualConfigProvider } from '@/contexts/visual-config.context'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const sourceSerif = Source_Serif_4({ subsets: ['latin'], variable: '--font-serif' })
@@ -61,10 +62,12 @@ export default function RootLayout({
             <WalletSync />
             <DarkModeProvider>
               <AuthProvider>
-                <PageTransition>
-                  {children}
-                </PageTransition>
-                <Toaster />
+                <VisualConfigProvider>
+                  <PageTransition>
+                    {children}
+                  </PageTransition>
+                  <Toaster />
+                </VisualConfigProvider>
               </AuthProvider>
             </DarkModeProvider>
           </ToastProvider>

@@ -234,7 +234,8 @@ export class ImageGenerationService {
     genre: string
     style?: string
     aspectRatio?: string
-    force?: boolean  // Force regeneration, bypass cache
+    force?: boolean
+    preferredModel?: string // Added
   }): Promise<ImageGenerationResult> {
     const cacheKey = `${params.prompt}_${params.genre}_${params.style || 'comic'}`
     
@@ -251,13 +252,18 @@ export class ImageGenerationService {
       })
       
       const provider = this.selectProvider()
-      const selectedModel = this.getRandomModel(provider)
+      // Use preferredModel if provided, else random
+      const selectedModel = params.preferredModel || this.getRandomModel(provider)
       
       const response = await fetch(this.getApiEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: enhancedPrompt,
+          model: selectedModel,
+          type: 'narrative'
+        }),
+      })
           type: 'narrative',
           model: selectedModel,
           provider,

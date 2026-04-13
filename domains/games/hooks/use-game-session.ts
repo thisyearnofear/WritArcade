@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useToast } from '@/components/ui/use-toast'
+import { useVisualConfig } from '@/contexts/visual-config.context'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'
 import type { Game, ChatMessage, GameplayOption } from '../types'
@@ -51,6 +52,7 @@ const MAX_COMIC_PANELS = 5
 
 export function useGameSession(game: Game): GameSessionState & GameSessionActions {
   const { toast } = useToast()
+  const { preferences } = useVisualConfig()
 
   // Core session state
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -211,9 +213,9 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
                   prompt: firstNarrative,
                   genre: game.genre,
                   style: 'comic_book',
-                  aspectRatio: 'landscape'
-                }).then((result) => {
-                  handleImageGenerated(finalMessage.id, result)
+                  aspectRatio: 'landscape',
+                  preferredModel: preferences?.preferredModel // Pass preference
+                }).then((result) => {                  handleImageGenerated(finalMessage.id, result)
                   setLoadingProgress(prev => ({ ...prev, images: true }))
                 }).catch(err => {
                   console.error('Hero screen image preload error:', err)
@@ -338,7 +340,8 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
                   prompt: narrative,
                   genre: game.genre,
                   style: 'comic_book',
-                  aspectRatio: 'landscape'
+                  aspectRatio: 'landscape',
+                  preferredModel: preferences?.preferredModel
                 }).then((result) => {
                   if (messageId) {
                     handleImageGenerated(messageId, result)
@@ -405,7 +408,8 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
         genre: game.genre,
         style: 'comic_book',
         aspectRatio: 'landscape',
-        force: true
+        force: true,
+        preferredModel: preferences?.preferredModel
       })
       handleImageGenerated(messageId, result)
 
