@@ -18,7 +18,7 @@ function ThemeToggle() {
       variant="ghost" 
       size="icon" 
       onClick={toggleDarkMode}
-      className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+      className="text-muted-foreground hover:text-foreground"
     >
       {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </Button>
@@ -58,10 +58,10 @@ function AnimatedNavLink({ href, label, isActive }: { href: string; label: strin
     >
       <Link
         href={href}
-        className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black rounded pb-0.5 ${
+        className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background rounded pb-0.5 ${
           isActive
-            ? 'text-gray-900 dark:text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900/60 dark:after:bg-white/60 after:rounded-full'
-            : 'text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'
+            ? 'text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground/60 after:rounded-full'
+            : 'text-muted-foreground hover:text-foreground'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
@@ -81,10 +81,10 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
     >
       <Link
         href="/generate"
-        className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black ${
+        className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background ${
           isActive
-            ? 'bg-gray-900/10 dark:bg-white/10 border-gray-900/20 dark:border-white/20 text-gray-900 dark:text-white'
-            : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'
+            ? 'bg-accent border-border text-foreground'
+            : 'bg-transparent border-border hover:bg-accent hover:border-foreground/20 text-muted-foreground hover:text-foreground'
         }`}
         aria-current={isActive ? 'page' : undefined}
       >
@@ -99,7 +99,7 @@ export function Header() {
   const isActive = useIsActive()
 
   return (
-    <header className="border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-black/80 backdrop-blur-md relative z-50">
+    <header className="border-b border-border bg-background/95 backdrop-blur-md relative z-50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">

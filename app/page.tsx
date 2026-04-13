@@ -33,10 +33,10 @@ const steps = [
 
 function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-20 px-4 border-t border-gray-200 dark:border-gray-800">
+    <section id="how-it-works" className="py-20 px-4 border-t border-border">
       <div className="max-w-4xl mx-auto">
         <motion.h2
-          className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-12 text-center"
+          className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-12 text-center"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -54,9 +54,9 @@ function HowItWorksSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <p className="text-3xl font-light text-gray-400 dark:text-gray-500 mb-4 tabular-nums">{step.number}</p>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">{step.title}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{step.description}</p>
+              <p className="text-3xl font-light text-muted-foreground mb-4 tabular-nums">{step.number}</p>
+              <h3 className="text-base font-semibold text-foreground mb-2">{step.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
             </motion.div>
           ))}
         </div>
@@ -96,11 +96,11 @@ function WriterTicker() {
         >
           <a
             href={`/writers/${coin.id}`}
-            className="font-semibold text-gray-900 dark:text-white underline underline-offset-4 decoration-gray-300 dark:decoration-gray-600 hover:decoration-gray-600 dark:hover:decoration-gray-300 transition-all"
+            className="font-semibold text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground transition-all"
           >
             {coin.writer}
           </a>
-          <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{coin.symbol}</span>
+          <span className="text-xs font-mono text-muted-foreground">{coin.symbol}</span>
         </motion.span>
       </AnimatePresence>
     </span>
@@ -121,17 +121,17 @@ export default function HomePage() {
           <section className="py-14 px-4">
             <div className="max-w-3xl mx-auto">
               <motion.h1
-              className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 leading-tight"
+              className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground mb-4 leading-tight"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
               >
               Interactive fiction<br />
-              <span className="text-gray-700 dark:text-gray-400">from </span><WriterTicker />
+              <span className="text-muted-foreground">from </span><WriterTicker />
               </motion.h1>
 
               <motion.p
-              className="text-sm sm:text-base text-gray-700 dark:text-gray-400 mb-6 max-w-xl leading-relaxed"
+              className="text-sm sm:text-base text-muted-foreground mb-6 max-w-xl leading-relaxed"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
@@ -141,7 +141,7 @@ export default function HomePage() {
 
               {gameCount !== null && gameCount > 0 && (
               <motion.p
-                className="text-sm text-gray-700 dark:text-gray-400 mb-6"
+                className="text-sm text-muted-foreground mb-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
@@ -157,13 +157,13 @@ export default function HomePage() {
                 transition={{ delay: 0.35, duration: 0.6, ease: 'easeOut' }}
               >
                 <ErrorBoundary>
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/10 shadow-xl">
+                    <div className="p-6 rounded-2xl bg-card border border-border shadow-xl">
                         <SimpleGameForm 
                             onGenerate={(url: string) => window.location.href = `/generate?url=${encodeURIComponent(url)}`} 
                             isGenerating={false} 
                         />
-                        <p className="text-xs text-gray-400 mt-4">
-                            Need more control? <a href="/workshop" className="text-purple-400 hover:text-purple-300 underline">Enter the Workshop</a> for genre, difficulty, and coin selection.
+                        <p className="text-xs text-muted-foreground mt-4">
+                            Need more control? <a href="/workshop" className="text-primary hover:opacity-80 underline">Enter the Workshop</a> for genre, difficulty, and coin selection.
                         </p>
                     </div>
                 </ErrorBoundary>
@@ -172,13 +172,13 @@ export default function HomePage() {
           </section>
 
           {/* Featured Works */}
-          <section className="py-16 px-4 border-t border-gray-200 dark:border-gray-800">
+          <section className="py-16 px-4 border-t border-border">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Featured works
                 </h2>
-                <a href="/games" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   View all →
                 </a>
               </div>
@@ -189,13 +189,13 @@ export default function HomePage() {
           </section>
 
           {/* Recent */}
-          <section className="py-16 px-4 border-t border-gray-200 dark:border-gray-800">
+          <section className="py-16 px-4 border-t border-border">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Recent
                 </h2>
-                <a href="/games" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   View all →
                 </a>
               </div>

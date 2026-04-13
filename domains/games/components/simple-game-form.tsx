@@ -24,13 +24,13 @@ export function SimpleGameForm({ onGenerate, isGenerating }: SimpleGameFormProps
         placeholder="https://paragraph.xyz/..."
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+        className="h-12"
         required
       />
       <Button 
         type="submit" 
         disabled={isGenerating}
-        className="h-12 px-6 bg-purple-600 hover:bg-purple-500 font-bold uppercase tracking-widest"
+        className="h-12 px-6 font-bold uppercase tracking-widest"
       >
         {isGenerating ? <Loader2 className="animate-spin" /> : <ArrowRight />}
       </Button>

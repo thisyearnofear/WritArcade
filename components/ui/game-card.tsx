@@ -29,7 +29,7 @@ export function GameCard({ slug, title, description, genre, imageUrl, primaryCol
 
   return (
     <Card 
-      className="group overflow-hidden transition-all duration-300 hover:shadow-2xl border-gray-800 bg-gray-900/40"
+      className="group overflow-hidden transition-all duration-300 hover:shadow-2xl border-border bg-card"
       style={{ borderColor: primaryColor ? `${primaryColor}40` : undefined }}
     >
       <div className="relative aspect-video overflow-hidden">
@@ -49,12 +49,12 @@ export function GameCard({ slug, title, description, genre, imageUrl, primaryCol
       </div>
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-bold text-white truncate">{title}</h3>
+          <h3 className="text-lg font-bold text-card-foreground truncate">{title}</h3>
           <Badge variant="secondary" className="text-[10px]">{genre}</Badge>
         </div>
-        <p className="text-sm text-gray-300 line-clamp-2 mb-4">{description}</p>
-        <div className="flex items-center text-xs font-mono text-gray-500">
-          Powered by <span className="ml-1 text-purple-400">${symbol}</span>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{description}</p>
+        <div className="flex items-center text-xs font-mono text-muted-foreground">
+          Powered by <span className="ml-1 text-primary">${symbol}</span>
         </div>
       </CardContent>
     </Card>
