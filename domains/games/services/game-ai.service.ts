@@ -173,6 +173,7 @@ export class GameAIService {
           geminiEnabled: true,
           googleApiKey: userPreferences?.googleApiKey,
           preferGemini: true,
+          imageQuality: userPreferences?.imageQuality || 'fast'
         })
       }
 
@@ -187,6 +188,7 @@ export class GameAIService {
           geminiEnabled: userPreferences?.geminiEnabled ?? false,
           googleApiKey: userPreferences?.googleApiKey,
           preferGemini: false,
+          imageQuality: userPreferences?.imageQuality || 'fast'
         })
       }
 
