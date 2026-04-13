@@ -162,9 +162,6 @@ export default function HomePage() {
                             onGenerate={(url: string) => window.location.href = `/generate?url=${encodeURIComponent(url)}`} 
                             isGenerating={false} 
                         />
-                        <p className="text-xs text-muted-foreground mt-4">
-                            Need more control? <a href="/workshop" className="text-primary hover:opacity-80 underline">Enter the Workshop</a> for genre, difficulty, and coin selection.
-                        </p>
                     </div>
                 </ErrorBoundary>
               </motion.div>

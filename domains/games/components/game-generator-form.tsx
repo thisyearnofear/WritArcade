@@ -21,6 +21,7 @@ import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 
 interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
+  initialUrl?: string
 }
 
 function getGenerationErrorMessage(errorData: { error?: string; code?: string }, status: number, statusText: string): string {
@@ -85,10 +86,10 @@ function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: Gam
   )
 }
 
-export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
+export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGeneratorFormProps) {
   const { isConnected } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [url, setUrl] = useState('')
+  const [url, setUrl] = useState(initialUrl || '')
   const [mode, setMode] = useState<'story' | 'wordle'>('story')
   const [genre, setGenre] = useState<GameGenre>('horror')
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy')
@@ -299,19 +300,32 @@ export function GameGeneratorForm({ onGameGenerated }: GameGeneratorFormProps) {
   if (!isConnected) {
     return (
       <div className="w-full max-w-2xl mx-auto px-4">
-        <div className="p-6 md:p-8 bg-gradient-to-br from-purple-950/80 to-purple-800/80 border border-purple-400/50 rounded-xl text-center space-y-4">
-          <h3 className="text-lg md:text-xl font-semibold text-white">Connect Wallet to Create</h3>
-          <p className="text-sm md:text-base text-gray-200">Get access to game generation, minting, and IP registration</p>
-          <div className="bg-purple-900/40 border border-purple-400/40 rounded-lg p-3 md:p-4 text-xs md:text-sm text-gray-200">
-            <div className="flex flex-col md:flex-row gap-2 justify-center">
-              <span>💰 Writer Coins</span>
+        <motion.div 
+          className="p-6 md:p-8 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/50 rounded-xl text-center space-y-4"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
+            <Wallet className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-lg md:text-xl font-semibold text-foreground">Connect Wallet to Create Games</h3>
+          <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
+            Game generation requires a connected wallet to pay with Writer Coins and manage your creations.
+          </p>
+          <div className="bg-card border border-border rounded-lg p-3 md:p-4 text-xs md:text-sm text-muted-foreground">
+            <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
+              <span className="flex items-center gap-1">💰 Pay with Writer Coins</span>
               <span className="hidden md:inline">•</span>
-              <span>🎮 NFT Mint</span>
+              <span className="flex items-center gap-1">🎮 Mint as NFTs</span>
               <span className="hidden md:inline">•</span>
-              <span>📜 IP Rights</span>
+              <span className="flex items-center gap-1">📜 Register IP Rights</span>
             </div>
           </div>
-        </div>
+          <p className="text-xs text-muted-foreground pt-2">
+            Click the <span className="font-semibold text-foreground">wallet icon</span> in the header to connect
+          </p>
+        </motion.div>
       </div>
     )
   }
