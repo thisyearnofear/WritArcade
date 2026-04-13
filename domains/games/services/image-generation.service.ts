@@ -69,6 +69,12 @@ export class ImageGenerationService {
    * Priority: modal (free, self-hosted) -> netmind -> venice (tertiary, runs out of credits)
    */
   private static selectProvider(): 'modal' | 'netmind' | 'venice' {
+    // If we're on the client, we just default to modal and let the API decide
+    // based on actual server-side environment variables.
+    if (typeof window !== 'undefined') {
+      return 'modal'
+    }
+
     const modalUrl = process.env.MODAL_IMAGE_GEN_URL
     const netmindApiKey = process.env.NETMIND_API_KEY
     const veniceApiKey = process.env.VENICE_API_KEY
@@ -95,7 +101,7 @@ export class ImageGenerationService {
   }
   
   private static getRandomModel(provider: 'venice' | 'netmind' | 'modal'): string {
-    if (provider === 'modal') return 'stable-diffusion-v1-5'
+    if (provider === 'modal') return 'flux-1-schnell'
     const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS
     
     // Weight selection by quality ratings if available

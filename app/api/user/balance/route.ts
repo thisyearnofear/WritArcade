@@ -42,29 +42,37 @@ export async function GET(request: NextRequest) {
     const rpcUrls = [
       process.env.BASE_RPC_URL,
       'https://mainnet.base.org',
-      'https://base.llamarpc.com'
+      'https://base.llamarpc.com',
+      'https://base-mainnet.public.blastapi.io'
     ].filter(Boolean) as string[]
+
+    console.log(`[Balance API] Fetching balance for ${wallet} (${coinId}) using ${rpcUrls.length} providers`)
 
     let client;
     let lastError;
 
     for (const rpcUrl of rpcUrls) {
       try {
+        console.log(`[Balance API] Trying RPC: ${rpcUrl}`)
         client = createPublicClient({
           chain: base,
-          transport: http(rpcUrl, { timeout: 5000 }),
+          transport: http(rpcUrl, { timeout: 8000 }),
         })
         
         // Test connection
         await client.getChainId()
+        console.log(`[Balance API] RPC Success: ${rpcUrl}`)
         break
       } catch (e) {
+        console.warn(`[Balance API] RPC Failed: ${rpcUrl}`, e instanceof Error ? e.message : 'Unknown error')
         lastError = e
+        client = null
         continue
       }
     }
 
     if (!client) {
+      console.error('[Balance API] All RPC providers failed')
       throw new Error(`All RPC providers failed. Last error: ${lastError instanceof Error ? lastError.message : 'Unknown'}`)
     }
 
@@ -79,6 +87,8 @@ export async function GET(request: NextRequest) {
       },
     ]
 
+    console.log(`[Balance API] Calling balanceOf on ${coin.address} for ${wallet}`)
+
     // Fetch balance from contract
     const balance = await client.readContract({
       address: coin.address as `0x${string}`,
@@ -86,6 +96,8 @@ export async function GET(request: NextRequest) {
       functionName: 'balanceOf',
       args: [wallet as `0x${string}`],
     })
+
+    console.log(`[Balance API] Raw balance: ${balance?.toString()}`)
 
     // Format balance (divide by decimals)
     const balanceBigInt = balance as bigint

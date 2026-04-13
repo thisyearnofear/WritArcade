@@ -116,8 +116,8 @@ async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; 
       },
       body: JSON.stringify({
         prompt,
-        width: 512,
-        height: 512,
+        width: 1024,
+        height: 1024,
       }),
     })
 
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
     // Use specified model or default based on provider
     let selectedModel = model
     if (!selectedModel) {
-      if (selectedProvider === 'modal') selectedModel = 'stable-diffusion-v1-5'
+      if (selectedProvider === 'modal') selectedModel = 'flux-1-schnell'
       else if (selectedProvider === 'netmind') selectedModel = 'black-forest-labs/FLUX.1-schnell'
       else selectedModel = 'venice-sd35'
     }
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
       
       // Fallback chain: modal -> netmind -> venice (venice last, runs out of credits)
       const fallbackChain: Array<{ provider: string; model: string; call: () => Promise<{ imageUrl: string | null; success: boolean }> }> = [
-        { provider: 'modal', model: 'stable-diffusion-v1-5', call: () => callModalAPI(prompt) },
+        { provider: 'modal', model: 'flux-1-schnell', call: () => callModalAPI(prompt) },
         { provider: 'netmind', model: 'black-forest-labs/FLUX.1-schnell', call: () => callNetmindAPI(prompt, 'black-forest-labs/FLUX.1-schnell') },
         { provider: 'venice', model: 'venice-sd35', call: () => callVeniceAPI(prompt, 'venice-sd35') },
       ].filter(f => f.provider !== selectedProvider) // Skip the one we already tried
