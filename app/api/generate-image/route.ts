@@ -124,6 +124,63 @@ async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl
 }
 
 /**
+ * Call Hugging Face Inference API (free tier available)
+ */
+async function callHuggingFaceAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
+  const apiKey = process.env.HUGGINGFACE_API_KEY
+  if (!apiKey) {
+    console.warn('[HuggingFace] HUGGINGFACE_API_KEY not configured')
+    return { imageUrl: null, success: false }
+  }
+
+  try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 50000) // 50s timeout
+
+    // Using Stable Diffusion XL on Hugging Face (free tier)
+    const response = await fetch('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          width: 1024,
+          height: 1024,
+        }
+      }),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[HuggingFace] API error:', response.status, errorText)
+      return { imageUrl: null, success: false }
+    }
+
+    // Response is a blob (image data)
+    const blob = await response.blob()
+    const buffer = await blob.arrayBuffer()
+    const base64 = Buffer.from(buffer).toString('base64')
+    const imageUrl = `data:image/png;base64,${base64}`
+    
+    return { imageUrl, success: true }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[HuggingFace] Request timeout after 50s')
+    } else {
+      console.error('[HuggingFace] Request failed:', error)
+    }
+    return { imageUrl: null, success: false }
+  }
+}
+
+/**
  * Call Modal Stable Diffusion API (self-hosted)
  */
 async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
@@ -184,14 +241,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Determine provider (default to modal, fallback chain: modal -> netmind -> venice)
-    // Venice is tertiary because it runs out of credits quickly
-    const selectedProvider = provider || 'modal'
+    // Determine provider (default to huggingface, fallback chain: huggingface -> modal -> netmind -> venice)
+    // HuggingFace is primary because it has a generous free tier and is reliable
+    const selectedProvider = provider || 'huggingface'
     
     // Use specified model or default based on provider
     let selectedModel = model
     if (!selectedModel) {
-      if (selectedProvider === 'modal') selectedModel = 'sdxl-turbo'
+      if (selectedProvider === 'huggingface') selectedModel = 'stable-diffusion-xl'
+      else if (selectedProvider === 'modal') selectedModel = 'sdxl-turbo'
       else if (selectedProvider === 'netmind') selectedModel = 'black-forest-labs/FLUX.1-schnell'
       else selectedModel = 'venice-sd35'
     }
@@ -212,10 +270,10 @@ export async function POST(req: NextRequest) {
       
       // Try primary provider
       let result: { imageUrl: string | null; success: boolean; status?: number }
-      if (selectedProvider === 'venice') {
+      if (selectedProvider === 'huggingface') {
+        result = await callHuggingFaceAPI(prompt)
+      } else if (selectedProvider === 'venice') {
         result = await callVeniceAPI(prompt, selectedModel)
-        // Explicitly check for 402 if our API helper allows returning status
-        // Venice returns a 402 if credits are exhausted
       } else if (selectedProvider === 'modal') {
         result = await callModalAPI(prompt)
       } else {
@@ -228,8 +286,10 @@ export async function POST(req: NextRequest) {
       }
       console.log(`[Image] Primary provider ${selectedProvider} failed.`)
       
-      // Fallback chain: modal -> netmind -> venice (venice last, runs out of credits)
+      // Fallback chain: huggingface -> modal -> netmind -> venice
+      // HuggingFace first (free tier, reliable), venice last (runs out of credits)
       const fallbackChain: Array<{ provider: string; model: string; call: () => Promise<{ imageUrl: string | null; success: boolean }> }> = [
+        { provider: 'huggingface', model: 'stable-diffusion-xl', call: () => callHuggingFaceAPI(prompt) },
         { provider: 'modal', model: 'sdxl-turbo', call: () => callModalAPI(prompt) },
         { provider: 'netmind', model: 'black-forest-labs/FLUX.1-schnell', call: () => callNetmindAPI(prompt, 'black-forest-labs/FLUX.1-schnell') },
         { provider: 'venice', model: 'venice-sd35', call: () => callVeniceAPI(prompt, 'venice-sd35') },
