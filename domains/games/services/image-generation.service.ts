@@ -66,41 +66,44 @@ export class ImageGenerationService {
   
   /**
    * Determine which provider to use based on health status
-   * Priority: modal (free, self-hosted) -> netmind -> venice (tertiary, runs out of credits)
+   * Priority: pollinations (free) -> venice (has credits) -> (netmind/modal if configured)
    */
-  private static selectProvider(): 'modal' | 'netmind' | 'venice' {
-    // If we're on the client, we just default to modal and let the API decide
-    // based on actual server-side environment variables.
+  private static selectProvider(): 'pollinations' | 'venice' | 'netmind' | 'modal' {
+    // If we're on the client, default to pollinations and let the API decide
     if (typeof window !== 'undefined') {
-      return 'modal'
+      return 'pollinations'
     }
 
-    const modalUrl = process.env.MODAL_IMAGE_GEN_URL
-    const netmindApiKey = process.env.NETMIND_API_KEY
     const veniceApiKey = process.env.VENICE_API_KEY
+    const netmindApiKey = process.env.NETMIND_API_KEY
+    const modalUrl = process.env.MODAL_IMAGE_GEN_URL
     
-    // Prefer Modal (self-hosted, no API costs)
-    if (modalUrl) {
-      return 'modal'
-    }
+    // Primary: Pollinations (free, no API key)
+    // No check needed - always available
     
-    // Secondary: Netmind
-    if (netmindApiKey) {
-      console.log('[Image] Using Netmind (Modal not configured)')
-      return 'netmind'
-    }
-    
-    // Tertiary: Venice (runs out of credits quickly)
+    // Fallback: Venice (works, has credits)
     if (veniceApiKey) {
-      console.log('[Image] Using Venice (tertiary - Modal and Netmind not configured)')
       return 'venice'
     }
     
-    console.warn('[Image] No image provider configured')
-    return 'modal' // Will fail gracefully, fallback chain will try others
+    // Fallback: Netmind (if configured)
+    if (netmindApiKey) {
+      console.log('[Image] Using Netmind')
+      return 'netmind'
+    }
+    
+    // Fallback: Modal (self-hosted, if configured)
+    if (modalUrl) {
+      console.log('[Image] Using Modal')
+      return 'modal'
+    }
+    
+    // Default to pollinations (will try fallbacks on failure)
+    return 'pollinations'
   }
   
-  private static getRandomModel(provider: 'venice' | 'netmind' | 'modal'): string {
+  private static getRandomModel(provider: 'pollinations' | 'venice' | 'netmind' | 'modal'): string {
+    if (provider === 'pollinations') return 'flux'
     if (provider === 'modal') return 'sdxl-turbo'
     const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS
     

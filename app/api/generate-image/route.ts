@@ -252,8 +252,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Determine provider (default to pollinations, fallback chain: pollinations -> modal -> netmind -> venice)
-    // Pollinations is primary because it's completely free and requires no API key
+    // Determine provider (default to pollinations)
+    // Primary: Pollinations (free, no API key, reliable)
+    // Fallback chain: pollinations -> venice -> (netmind/modal if configured)
     const selectedProvider = provider || 'pollinations'
     
     // Use specified model or default based on provider
@@ -298,13 +299,13 @@ export async function POST(req: NextRequest) {
       }
       console.log(`[Image] Primary provider ${selectedProvider} failed.`)
       
-      // Fallback chain: pollinations -> modal -> netmind -> venice
-      // Pollinations first (free, no API key), venice last (runs out of credits)
+      // Fallback chain: pollinations -> venice -> (netmind/modal if configured)
+      // Pollinations first (free, no API key), Venice second (works, has credits)
       const fallbackChain: Array<{ provider: string; model: string; call: () => Promise<{ imageUrl: string | null; success: boolean }> }> = [
         { provider: 'pollinations', model: 'flux', call: () => callPollinationsAPI(prompt) },
+        { provider: 'venice', model: 'venice-sd35', call: () => callVeniceAPI(prompt, 'venice-sd35') },
         { provider: 'modal', model: 'sdxl-turbo', call: () => callModalAPI(prompt) },
         { provider: 'netmind', model: 'black-forest-labs/FLUX.1-schnell', call: () => callNetmindAPI(prompt, 'black-forest-labs/FLUX.1-schnell') },
-        { provider: 'venice', model: 'venice-sd35', call: () => callVeniceAPI(prompt, 'venice-sd35') },
       ].filter(f => f.provider !== selectedProvider) // Skip the one we already tried
 
       for (const fallback of fallbackChain) {
