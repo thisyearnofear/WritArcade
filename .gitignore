@@ -133,3 +133,6 @@ scripts/test-*.ts
 scripts/test-*.js
 test-*.mjs
 test-*.js
+
+.junie
+.qwen

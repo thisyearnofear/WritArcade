@@ -100,7 +100,16 @@ export function PaymentFlow({
           try {
             const approvalTx = await walletClient.writeContract({
               address: writerCoin.address,
-              abi: ['function approve(address spender, uint256 amount) returns (bool)'],
+              abi: [{
+                name: 'approve',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [
+                  { name: 'spender', type: 'address' },
+                  { name: 'amount', type: 'uint256' }
+                ],
+                outputs: [{ name: '', type: 'bool' }]
+              }],
               functionName: 'approve',
               args: [contractAddress as `0x${string}`, BigInt(amount)],
             })
@@ -156,8 +165,23 @@ export function PaymentFlow({
           const txHash = await walletClient.writeContract({
             address: contractAddress,
             abi: action === 'generate-game' 
-              ? [{ name: 'payForGameGeneration', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'writerCoin', type: 'address' }] }]
-              : [{ name: 'payAndMintGame', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'writerCoin', type: 'address' }, { name: 'tokenURI', type: 'string' }] }],
+              ? [{ 
+                  name: 'payForGameGeneration', 
+                  type: 'function', 
+                  stateMutability: 'nonpayable', 
+                  inputs: [{ name: 'writerCoin', type: 'address' }],
+                  outputs: []
+                }]
+              : [{ 
+                  name: 'payAndMintGame', 
+                  type: 'function', 
+                  stateMutability: 'nonpayable', 
+                  inputs: [
+                    { name: 'writerCoin', type: 'address' }, 
+                    { name: 'tokenURI', type: 'string' }
+                  ],
+                  outputs: []
+                }],
             functionName: action === 'generate-game' ? 'payForGameGeneration' : 'payAndMintGame',
             args: action === 'generate-game' ? [writerCoin.address] : [writerCoin.address, 'demo'],
           })
