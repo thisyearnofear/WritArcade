@@ -86,6 +86,8 @@ function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: Gam
   )
 }
 
+export type ImageQuality = 'fast' | 'quality'
+
 export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGeneratorFormProps) {
   const { isConnected } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
@@ -93,6 +95,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
   const [mode, setMode] = useState<'story' | 'wordle'>('story')
   const [genre, setGenre] = useState<GameGenre>('horror')
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy')
+  const [imageQuality, setImageQuality] = useState<ImageQuality>('fast')
   const [showCustomization, setShowCustomization] = useState(true)
   const [showPayment, setShowPayment] = useState(false)
   const [paymentApproved, setPaymentApproved] = useState(false)
@@ -184,6 +187,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                 customization: {
                   genre,
                   difficulty,
+                  imageQuality,
                 },
               }),
               ...(isStoryMode && paymentApproved && {
@@ -488,6 +492,45 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
 
                       <div>
                         <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={isGenerating} />
+                      </div>
+
+                      {/* Image Quality Selector */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-purple-100">
+                          Image Quality
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setImageQuality('fast')}
+                            disabled={isGenerating}
+                            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                              imageQuality === 'fast'
+                                ? 'bg-purple-600 text-white border-2 border-purple-400'
+                                : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
+                            }`}
+                          >
+                            ⚡ Fast (Turbo)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setImageQuality('quality')}
+                            disabled={isGenerating}
+                            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                              imageQuality === 'quality'
+                                ? 'bg-purple-600 text-white border-2 border-purple-400'
+                                : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
+                            }`}
+                          >
+                            ✨ High Quality
+                          </button>
+                        </div>
+                        <p className="text-xs text-purple-300/70">
+                          {imageQuality === 'fast' 
+                            ? 'Optimized for narrative flow - faster generation'
+                            : 'Higher-end models - better visual fidelity'
+                          }
+                        </p>
                       </div>
 
                       <motion.div
