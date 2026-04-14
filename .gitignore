@@ -111,6 +111,11 @@ Thumbs.db
 tmp/
 temp/
 .blackboxcli/
+.gemini/
+.junie/
+.qwen/
+.zencoder/
+.zenflow/
 
 # IDE
 .vscode/
@@ -126,3 +131,5 @@ __pycache__/
 # Test scripts (temporary)
 scripts/test-*.ts
 scripts/test-*.js
+test-*.mjs
+test-*.js
