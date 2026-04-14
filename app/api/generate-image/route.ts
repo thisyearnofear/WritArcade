@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Determine provider (default to pollinations)
-    // Primary: Pollinations (free, no API key, reliable)
+    // Primary: Pollinations (free, no API key) - always try first
     // Fallback chain: pollinations -> venice -> (netmind/modal if configured)
     const selectedProvider = provider || 'pollinations'
     
