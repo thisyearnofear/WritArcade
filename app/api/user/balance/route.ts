@@ -43,7 +43,8 @@ export async function GET(request: NextRequest) {
       process.env.BASE_RPC_URL,
       'https://mainnet.base.org',
       'https://base.llamarpc.com',
-      'https://base-mainnet.public.blastapi.io'
+      'https://base-mainnet.public.blastapi.io',
+      'https://rpc.ankr.com/base'
     ].filter(Boolean) as string[]
 
     console.log(`[Balance API] Fetching balance for ${wallet} (${coinId}) using ${rpcUrls.length} providers`)
