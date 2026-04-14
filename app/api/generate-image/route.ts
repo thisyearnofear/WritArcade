@@ -17,6 +17,51 @@ function requestKey(prompt: string, model: string, provider: string) {
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
+ * Call Pollinations.ai (Free, no API key required)
+ * This is a completely free service that doesn't require authentication
+ */
+async function callPollinationsAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
+  try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 50000) // 50s timeout
+
+    // Pollinations.ai provides a simple URL-based API
+    // The image is generated on-demand when you request the URL
+    const encodedPrompt = encodeURIComponent(prompt)
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true`
+    
+    // Fetch the image and convert to base64 for consistency with other providers
+    const response = await fetch(imageUrl, {
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      console.error('[Pollinations] Image generation failed:', response.status)
+      return { imageUrl: null, success: false }
+    }
+
+    // Convert to base64 for consistency with other providers
+    const blob = await response.blob()
+    const buffer = await blob.arrayBuffer()
+    const base64 = Buffer.from(buffer).toString('base64')
+    const base64Url = `data:image/jpeg;base64,${base64}`
+    
+    console.log('[Pollinations] Image generated successfully')
+    return { imageUrl: base64Url, success: true }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[Pollinations] Request timeout after 50s')
+    } else {
+      console.error('[Pollinations] Request failed:', error)
+    }
+    return { imageUrl: null, success: false }
+  }
+}
+
+/**
  * Call Venice AI image generation API
  */
 async function callVeniceAPI(prompt: string, model: string): Promise<{ imageUrl: string | null; success: boolean }> {
@@ -124,7 +169,13 @@ async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl
 }
 
 /**
- * Call Hugging Face Inference API (free tier available)
+ * Call Hugging Face Inference Providers API
+ * Note: The old api-inference.huggingface.co endpoint is deprecated (returns 410).
+ * HuggingFace now uses inference providers for better reliability and performance.
+ * This requires the @huggingface/inference SDK or direct provider API calls.
+ * 
+ * Since we can't use the SDK in this serverless function without adding dependencies,
+ * we'll disable this provider for now. Alternative: Use Replicate, Together AI, or other providers.
  */
 async function callHuggingFaceAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
   const apiKey = process.env.HUGGINGFACE_API_KEY
@@ -133,51 +184,11 @@ async function callHuggingFaceAPI(prompt: string): Promise<{ imageUrl: string | 
     return { imageUrl: null, success: false }
   }
 
-  try {
-    // Add timeout to prevent hanging
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 50000) // 50s timeout
-
-    // Using Stable Diffusion XL on Hugging Face (free tier)
-    const response = await fetch('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          width: 1024,
-          height: 1024,
-        }
-      }),
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('[HuggingFace] API error:', response.status, errorText)
-      return { imageUrl: null, success: false }
-    }
-
-    // Response is a blob (image data)
-    const blob = await response.blob()
-    const buffer = await blob.arrayBuffer()
-    const base64 = Buffer.from(buffer).toString('base64')
-    const imageUrl = `data:image/png;base64,${base64}`
-    
-    return { imageUrl, success: true }
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.error('[HuggingFace] Request timeout after 50s')
-    } else {
-      console.error('[HuggingFace] Request failed:', error)
-    }
-    return { imageUrl: null, success: false }
-  }
+  // HuggingFace deprecated their old serverless inference API in 2026
+  // The new API requires using their SDK or going through inference providers
+  // For now, we'll return false and rely on other providers
+  console.warn('[HuggingFace] Old API deprecated. Use @huggingface/inference SDK or alternative providers.')
+  return { imageUrl: null, success: false }
 }
 
 /**
@@ -241,17 +252,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Determine provider (default to huggingface, fallback chain: huggingface -> modal -> netmind -> venice)
-    // HuggingFace is primary because it has a generous free tier and is reliable
-    const selectedProvider = provider || 'huggingface'
+    // Determine provider (default to pollinations, fallback chain: pollinations -> modal -> netmind -> venice)
+    // Pollinations is primary because it's completely free and requires no API key
+    const selectedProvider = provider || 'pollinations'
     
     // Use specified model or default based on provider
     let selectedModel = model
     if (!selectedModel) {
-      if (selectedProvider === 'huggingface') selectedModel = 'stable-diffusion-xl'
+      if (selectedProvider === 'pollinations') selectedModel = 'flux'
       else if (selectedProvider === 'modal') selectedModel = 'sdxl-turbo'
       else if (selectedProvider === 'netmind') selectedModel = 'black-forest-labs/FLUX.1-schnell'
-      else selectedModel = 'venice-sd35'
+      else if (selectedProvider === 'venice') selectedModel = 'venice-sd35'
+      else selectedModel = 'flux'
     }
     
     const key = requestKey(prompt, selectedModel, selectedProvider)
@@ -270,8 +282,8 @@ export async function POST(req: NextRequest) {
       
       // Try primary provider
       let result: { imageUrl: string | null; success: boolean; status?: number }
-      if (selectedProvider === 'huggingface') {
-        result = await callHuggingFaceAPI(prompt)
+      if (selectedProvider === 'pollinations') {
+        result = await callPollinationsAPI(prompt)
       } else if (selectedProvider === 'venice') {
         result = await callVeniceAPI(prompt, selectedModel)
       } else if (selectedProvider === 'modal') {
@@ -286,10 +298,10 @@ export async function POST(req: NextRequest) {
       }
       console.log(`[Image] Primary provider ${selectedProvider} failed.`)
       
-      // Fallback chain: huggingface -> modal -> netmind -> venice
-      // HuggingFace first (free tier, reliable), venice last (runs out of credits)
+      // Fallback chain: pollinations -> modal -> netmind -> venice
+      // Pollinations first (free, no API key), venice last (runs out of credits)
       const fallbackChain: Array<{ provider: string; model: string; call: () => Promise<{ imageUrl: string | null; success: boolean }> }> = [
-        { provider: 'huggingface', model: 'stable-diffusion-xl', call: () => callHuggingFaceAPI(prompt) },
+        { provider: 'pollinations', model: 'flux', call: () => callPollinationsAPI(prompt) },
         { provider: 'modal', model: 'sdxl-turbo', call: () => callModalAPI(prompt) },
         { provider: 'netmind', model: 'black-forest-labs/FLUX.1-schnell', call: () => callNetmindAPI(prompt, 'black-forest-labs/FLUX.1-schnell') },
         { provider: 'venice', model: 'venice-sd35', call: () => callVeniceAPI(prompt, 'venice-sd35') },
