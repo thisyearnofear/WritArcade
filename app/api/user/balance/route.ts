@@ -3,6 +3,10 @@ import { createPublicClient, http } from 'viem'
 import { base } from 'viem/chains'
 import { getWriterCoinById } from '@/lib/writerCoins'
 
+// In-memory cache for balance queries (server-side)
+const balanceCache = new Map<string, { data: { balance: string; formattedBalance: string }; timestamp: number }>()
+const CACHE_DURATION = 15000 // 15 seconds server-side cache
+
 /**
  * GET /api/user/balance
  * Fetch user's writer coin balance
@@ -36,6 +40,23 @@ export async function GET(request: NextRequest) {
         { error: `Unknown writer coin: ${coinId}` },
         { status: 400 }
       )
+    }
+
+    // Check server-side cache first
+    const cacheKey = `${wallet.toLowerCase()}-${coinId}`
+    const cached = balanceCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          wallet,
+          coin: coinId,
+          balance: cached.data.balance,
+          decimals: coin.decimals,
+          symbol: coin.symbol,
+          formattedBalance: cached.data.formattedBalance,
+        },
+      })
     }
 
     // Create Viem client with fallback providers
@@ -112,6 +133,12 @@ export async function GET(request: NextRequest) {
     const formattedBalanceString = formattedRemainder === '' 
       ? formattedBalance 
       : `${formattedBalance}.${formattedRemainder}`
+
+    // Cache the result
+    balanceCache.set(cacheKey, {
+      data: { balance: balanceBigInt.toString(), formattedBalance: formattedBalanceString },
+      timestamp: Date.now()
+    })
 
     return NextResponse.json({
       success: true,
