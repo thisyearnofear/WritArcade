@@ -65,6 +65,14 @@
 - ✅ Background enrichment (`enrichGameInBackground()` - non-blocking)
 - ✅ Config & schema updates
 
+### Mezo Hackathon Integration (MUSD & Goldsky)
+- ✅ Mezo Testnet configuration & Spectrum Nodes RPC
+- ✅ Multi-chain simulation via Tenderly
+- ✅ MUSD payment architecture (Strategy Pattern) decoupled from Base
+- ✅ `MezoPaymentSplitter` smart contract deployed to Mezo Testnet
+- ✅ UI updated for Mezo Passport & MUSD toggles
+- ⏳ **TODO: Deploy Goldsky Pipeline via Web UI** (Use 'Decoded contract events' template, point webhook to `/api/indexer/webhook`)
+
 ## Platform Maturity
 
 | Component | Status | Notes |

@@ -1,0 +1,274 @@
+🚀 Deploying MezoPaymentSplitter to Mezo Testnet...
+No files changed, compilation skipped
+Warning: Dry run enabled, not broadcasting transaction
+
+Contract: MezoPaymentSplitter
+Transaction: {
+  "from": "0xb8ce765cd679ecb958c0d2869d516c386b9d5a85",
+  "to": null,
+  "gasPrice": "0x92",
+  "gas": "0xd65da",
+  "input": "0x60a06040526113886001556109c46002556109c4600355348015610021575f5ffd5b50604051610ecd380380610ecd8339818101604052810190610043919061011b565b8173ffffffffffffffffffffffffffffffffffffffff1660808173ffffffffffffffffffffffffffffffffffffffff1681525050805f5f6101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505050610159565b5f5ffd5b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f6100ea826100c1565b9050919050565b6100fa816100e0565b8114610104575f5ffd5b50565b5f81519050610115816100f1565b92915050565b5f5f60408385031215610131576101306100bd565b5b5f61013e85828601610107565b925050602061014f85828601610107565b9150509250929050565b608051610d396101945f395f818161015b015281816101e10152818161027f0152818161033b0152818161049f015261053d0152610d395ff3fe608060405234801561000f575f5ffd5b506004361061007b575f3560e01c8063a2c02e2711610059578063a2c02e27146100d9578063c0d46b91146100f5578063e138818c14610113578063f2bdfe91146101315761007b565b8063081b48511461007f57806318b17f201461009d5780639d78d46b146100bb575b5f5ffd5b61008761014d565b6040516100949190610666565b60405180910390f35b6100a5610153565b6040516100b29190610666565b60405180910390f35b6100c3610159565b6040516100d091906106be565b60405180910390f35b6100f360048036038101906100ee9190610762565b61017d565b005b6100fd610446565b60405161010a9190610666565b60405180910390f35b61011b61044c565b60405161012891906106be565b60405180910390f35b61014b60048036038101906101469190610805565b610470565b005b60035481565b60015481565b7f000000000000000000000000000000000000000000000000000000000000000081565b5f670de0b6b3a764000090505f6127106002548361019b919061085d565b6101a591906108cb565b90505f612710600354846101b9919061085d565b6101c391906108cb565b90505f8183856101d391906108fb565b6101dd91906108fb565b90507f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff166323b872dd3330876040518463ffffffff1660e01b815260040161023c9392919061092e565b6020604051808303815f875af1158015610258573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061027c9190610998565b507f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff1663a9059cbb5f5f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff16856040518363ffffffff1660e01b81526004016102f89291906109c3565b6020604051808303815f875af1158015610314573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103389190610998565b507f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff1663a9059cbb8660200160208101906103889190610a14565b846040518363ffffffff1660e01b81526004016103a69291906109c3565b6020604051808303815f875af11580156103c2573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103e69190610998565b503373ffffffffffffffffffffffffffffffffffffffff167f8480d3fe027b4d176ebef3a084156d5416dcc4ce4727f58d924abb43d6d886ae8888888688604051610435959493929190610c7b565b60405180910390a250505050505050565b60025481565b5f5f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b5f61271060025483610482919061085d565b61048c91906108cb565b90505f818361049b91906108fb565b90507f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff166323b872dd3330866040518463ffffffff1660e01b81526004016104fa9392919061092e565b6020604051808303815f875af1158015610516573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061053a9190610998565b507f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff1663a9059cbb5f5f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff16846040518363ffffffff1660e01b81526004016105b69291906109c3565b6020604051808303815f875af11580156105d2573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906105f69190610998565b503373ffffffffffffffffffffffffffffffffffffffff167f36ff9a5723e095488fda79f072befc5904dfaca65dcd8e327745b76022d5494f84848460405161064193929190610cce565b60405180910390a2505050565b5f819050919050565b6106608161064e565b82525050565b5f6020820190506106795f830184610657565b92915050565b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f6106a88261067f565b9050919050565b6106b88161069e565b82525050565b5f6020820190506106d15f8301846106af565b92915050565b5f5ffd5b5f5ffd5b5f5ffd5b5f5ffd5b5f5ffd5b5f5f83601f840112610700576106ff6106df565b5b8235905067ffffffffffffffff81111561071d5761071c6106e3565b5b602083019150836001820283011115610739576107386106e7565b5b9250929050565b5f5ffd5b5f60e0828403121561075957610758610740565b5b81905092915050565b5f5f5f60408486031215610779576107786106d7565b5b5f84013567ffffffffffffffff811115610796576107956106db565b5b6107a2868287016106eb565b9350935050602084013567ffffffffffffffff8111156107c5576107c46106db565b5b6107d186828701610744565b9150509250925092565b6107e48161064e565b81146107ee575f5ffd5b50565b5f813590506107ff816107db565b92915050565b5f6020828403121561081a576108196106d7565b5b5f610827848285016107f1565b91505092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f6108678261064e565b91506108728361064e565b92508282026108808161064e565b9150828204841483151761089757610896610830565b5b5092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601260045260245ffd5b5f6108d58261064e565b91506108e08361064e565b9250826108f0576108ef61089e565b5b828204905092915050565b5f6109058261064e565b91506109108361064e565b925082820390508181111561092857610927610830565b5b92915050565b5f6060820190506109415f8301866106af565b61094e60208301856106af565b61095b6040830184610657565b949350505050565b5f8115159050919050565b61097781610963565b8114610981575f5ffd5b50565b5f815190506109928161096e565b92915050565b5f602082840312156109ad576109ac6106d7565b5b5f6109ba84828501610984565b91505092915050565b5f6040820190506109d65f8301856106af565b6109e36020830184610657565b9392505050565b6109f38161069e565b81146109fd575f5ffd5b50565b5f81359050610a0e816109ea565b92915050565b5f60208284031215610a2957610a286106d7565b5b5f610a3684828501610a00565b91505092915050565b5f82825260208201905092915050565b828183375f83830152505050565b5f601f19601f8301169050919050565b5f610a788385610a3f565b9350610a85838584610a4f565b610a8e83610a5d565b840190509392505050565b5f5ffd5b5f5ffd5b5f5ffd5b5f5f83356001602003843603038112610ac157610ac0610aa1565b5b83810192508235915060208301925067ffffffffffffffff821115610ae957610ae8610a99565b5b600182023603831315610aff57610afe610a9d565b5b509250929050565b5f82825260208201905092915050565b5f610b228385610b07565b9350610b2f838584610a4f565b610b3883610a5d565b840190509392505050565b5f610b516020840184610a00565b905092915050565b610b628161069e565b82525050565b5f610b7660208401846107f1565b905092915050565b610b878161064e565b82525050565b5f60e08301610b9e5f840184610aa5565b8583035f870152610bb0838284610b17565b92505050610bc16020840184610b43565b610bce6020860182610b59565b50610bdc6040840184610b43565b610be96040860182610b59565b50610bf76060840184610aa5565b8583036060870152610c0a838284610b17565b92505050610c1b6080840184610aa5565b8583036080870152610c2e838284610b17565b92505050610c3f60a0840184610b68565b610c4c60a0860182610b7e565b50610c5a60c0840184610aa5565b85830360c0870152610c6d838284610b17565b925050508091505092915050565b5f6080820190508181035f830152610c94818789610a6d565b90508181036020830152610ca88186610b8d565b9050610cb76040830185610657565b610cc46060830184610657565b9695505050505050565b5f606082019050610ce15f830186610657565b610cee6020830185610657565b610cfb6040830184610657565b94935050505056fea2646970667358221220cfbbdead940e4cac442e605e784899eebbe5a697ae440aca15a582e28e933b7964736f6c634300081b0033000000000000000000000000118917a40faf1cd7a13db0ef56c86de7973ac503000000000000000000000000b8ce765cd679ecb958c0d2869d516c386b9d5a85",
+  "nonce": "0x0",
+  "chainId": "0x7b7b"
+}
+ABI: [
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_musdToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_platformTreasury",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "creatorShareBP",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "musdToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "payAndMintGame",
+    "inputs": [
+      {
+        "name": "tokenURI",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "metadata",
+        "type": "tuple",
+        "internalType": "struct MezoPaymentSplitter.GameMetadata",
+        "components": [
+          {
+            "name": "articleUrl",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "creator",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "writerCoin",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "genre",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "difficulty",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "createdAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "gameTitle",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "payForGeneration",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "platformShareBP",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "platformTreasury",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "writerShareBP",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "GameGenerationPaid",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "platformFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "writerFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "GameMintedAndPaid",
+    "inputs": [
+      {
+        "name": "creator",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenURI",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "metadata",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct MezoPaymentSplitter.GameMetadata",
+        "components": [
+          {
+            "name": "articleUrl",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "creator",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "writerCoin",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "genre",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "difficulty",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "createdAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "gameTitle",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      },
+      {
+        "name": "creatorFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "platformFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  }
+]
+
+Warning: To broadcast this transaction, add --broadcast to the previous command. See forge create --help for more.
+✅ Deployment complete. Note the 'Deployed to' address above.
+➡️ Next, run: ./scripts/deploy-goldsky.sh <YOUR_NEW_CONTRACT_ADDRESS>

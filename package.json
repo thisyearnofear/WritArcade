@@ -79,6 +79,7 @@
     "@babel/plugin-proposal-optional-chaining": "7.21.0",
     "@babel/plugin-transform-modules-commonjs": "7.27.1",
     "@babel/preset-env": "7.28.5",
+    "@goldskycom/cli": "13.3.4",
     "@prisma/client": "^5.22.0",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.8.6",
