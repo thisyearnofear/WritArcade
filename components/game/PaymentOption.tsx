@@ -1,14 +1,15 @@
 'use client'
 
 import { useAccount } from 'wagmi'
-import { type WriterCoin } from '@/lib/writerCoins'
+import { type WriterCoin, type PaymentToken } from '@/lib/writerCoins'
 import { PaymentFlow } from './PaymentFlow'
 import { CostPreview } from './CostPreview'
 import { WalletConnect } from '@/components/ui/wallet-connect'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { PaymentAction } from '@/domains/payments/types'
 import { AlertCircle } from 'lucide-react'
+import { PaymentTokenSelector } from './PaymentTokenSelector'
 
 interface PaymentOptionProps {
   writerCoin: WriterCoin
@@ -40,9 +41,11 @@ export function PaymentOption({
 }: PaymentOptionProps) {
   const { isConnected } = useAccount()
 
+  const [selectedToken, setSelectedToken] = useState<PaymentToken>({ type: 'writercoin', coin: writerCoin })
+
   const cost = useMemo(() => {
-    return PaymentCostService.calculateCostSync(writerCoin.id, action)
-  }, [writerCoin.id, action])
+    return PaymentCostService.calculateCostTokenSync(selectedToken, action)
+  }, [selectedToken, action])
 
   if (!isConnected) {
     return (
@@ -66,14 +69,21 @@ export function PaymentOption({
 
   return (
     <div className="space-y-4">
+      {/* Network / Token Selection */}
+      <PaymentTokenSelector 
+        selectedToken={selectedToken}
+        onSelectToken={setSelectedToken}
+        writerCoin={{ type: 'writercoin', coin: writerCoin }}
+      />
+
       {/* Cost Preview */}
-      <CostPreview writerCoin={writerCoin} action={action} showBreakdown={true} />
+      <CostPreview paymentToken={selectedToken} action={action} showBreakdown={true} />
 
       {/* Payment Flow */}
       {/* Elevated CTA visuals for stronger contrast */}
       <div className="rounded-xl border border-[color:var(--ia-panel-border)] bg-[color:var(--ia-panel-bg)] p-3 shadow-[0_0_0_1px_var(--ia-outline)]">
         <PaymentFlow
-        writerCoin={writerCoin}
+        paymentToken={selectedToken}
         action={action}
         costFormatted={cost.amountFormatted}
         onPaymentSuccess={onPaymentSuccess}

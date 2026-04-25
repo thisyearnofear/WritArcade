@@ -5,7 +5,8 @@
  * Used by both web app + mini app payment flows
  */
 
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
+import type { PaymentToken } from '@/lib/writerCoins'
 import type { PaymentAction, PaymentCost, RevenueDistribution } from '../types'
 
 import { cacheGet, cacheSet } from '@/lib/cache'
@@ -20,6 +21,27 @@ export class PaymentCostService {
       throw new Error(`Writer coin "${writerCoinId}" not found`)
     }
 
+    return this.calculateCostTokenSync({ type: 'writercoin', coin }, action)
+  }
+
+  /**
+   * Calculate cost for a payment action using a PaymentToken
+   */
+  static calculateCostTokenSync(token: PaymentToken, action: PaymentAction): PaymentCost {
+    if (token.type === 'musd') {
+      const config = MUSD_CONFIG[token.network]
+      const amount = action === 'generate-game' || action === 'play-wordle' ? config.gameGenerationCost : config.mintCost
+      return {
+        action,
+        amount,
+        amountFormatted: (Number(amount) / 10 ** config.decimals).toFixed(2),
+        writerCoinId: `musd-${token.network}`,
+        writerCoinSymbol: config.symbol,
+        decimals: config.decimals,
+      }
+    }
+
+    const coin = token.coin
     const amount =
       action === 'generate-game' || action === 'play-wordle'
         ? coin.gameGenerationCost

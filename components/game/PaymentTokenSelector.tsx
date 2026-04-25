@@ -1,0 +1,38 @@
+'use client'
+
+import { type PaymentToken } from '@/lib/writerCoins'
+
+interface PaymentTokenSelectorProps {
+  selectedToken: PaymentToken
+  onSelectToken: (token: PaymentToken) => void
+  writerCoin: PaymentToken & { type: 'writercoin' }
+}
+
+export function PaymentTokenSelector({ selectedToken, onSelectToken, writerCoin }: PaymentTokenSelectorProps) {
+  return (
+    <div className="flex gap-2 p-1 rounded-lg bg-slate-900/50 border border-purple-500/20 mb-4">
+      <button
+        type="button"
+        onClick={() => onSelectToken(writerCoin)}
+        className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
+          selectedToken.type === 'writercoin'
+            ? 'bg-purple-600 text-white shadow-lg'
+            : 'text-purple-300 hover:bg-purple-800/50'
+        }`}
+      >
+        {writerCoin.coin.symbol} (Base)
+      </button>
+      <button
+        type="button"
+        onClick={() => onSelectToken({ type: 'musd', network: 'testnet' })}
+        className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
+          selectedToken.type === 'musd'
+            ? 'bg-orange-600 text-white shadow-lg'
+            : 'text-orange-300 hover:bg-orange-800/50'
+        }`}
+      >
+        MUSD (Mezo Testnet)
+      </button>
+    </div>
+  )
+}

@@ -204,3 +204,47 @@ export function isWhitelistedWriterCoin(address: string): boolean {
         (coin) => coin.address.toLowerCase() === address.toLowerCase()
     )
 }
+
+/**
+ * MUSD Payment Configuration
+ * 
+ * MUSD is the Bitcoin-backed stablecoin on Mezo network.
+ * It can be used as an alternative payment method for game generation.
+ * 
+ * Docs: https://mezo.org/docs/developers/musd/
+ */
+export const MUSD_CONFIG = {
+    // Mezo Testnet MUSD token
+    testnet: {
+        address: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
+        decimals: 18,
+        symbol: "MUSD",
+        name: "Mezo USD",
+        // Cost: $1 USD equivalent (in wei)
+        gameGenerationCost: 1000000000000000000n, // 1 MUSD
+        mintCost: 500000000000000000n,   // 0.5 MUSD
+    },
+    // Mezo Mainnet MUSD token
+    mainnet: {
+        address: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
+        decimals: 18,
+        symbol: "MUSD",
+        name: "Mezo USD",
+        gameGenerationCost: 1000000000000000000n,
+        mintCost: 500000000000000000n,
+    },
+} as const
+
+export type PaymentToken = 
+    | { type: 'writercoin'; coin: WriterCoin }
+    | { type: 'musd'; network: 'testnet' | 'mainnet' }
+
+/**
+ * Get payment token config by type
+ */
+export function getPaymentTokenConfig(token: PaymentToken) {
+    if (token.type === 'musd') {
+        return MUSD_CONFIG[token.network]
+    }
+    return token.coin
+}

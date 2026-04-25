@@ -3,15 +3,17 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
 import { encodeFunctionData, toHex } from 'viem'
-import { type WriterCoin } from '@/lib/writerCoins'
+import { type PaymentToken, getPaymentTokenConfig } from '@/lib/writerCoins'
 import type { PaymentAction } from '@/domains/payments/types'
 import { ErrorCard } from '@/components/error/ErrorCard'
 import { getUserMessage, retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { Loader2, Wallet } from 'lucide-react'
+import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
+import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
 
 interface PaymentFlowProps {
-  writerCoin: WriterCoin
+  paymentToken: PaymentToken
   action: PaymentAction
   costFormatted: string
   onPaymentSuccess?: (transactionHash: string) => void
@@ -22,7 +24,7 @@ interface PaymentFlowProps {
 const BASE_CHAIN_ID = 8453
 
 export function PaymentFlow({
-  writerCoin,
+  paymentToken,
   action,
   costFormatted,
   onPaymentSuccess,
@@ -32,26 +34,33 @@ export function PaymentFlow({
   const { address: userAddress, chainId } = useAccount()
   const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
-  
-  const { balance, isLoading: isLoadingBalance, error: balanceError, refresh } = useWriterCoinBalance(writerCoin.id)
+
+  const isMUSD = paymentToken.type === 'musd'
+  const config = getPaymentTokenConfig(paymentToken)
+  const tokenSymbol = isMUSD ? config.symbol : config.symbol
+
+  // Only check balance for WriterCoin right now
+  const { balance, isLoading: isLoadingBalance, error: balanceError, refresh } = useWriterCoinBalance(isMUSD ? '' : paymentToken.coin.id)
   
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const requiredAmount = useMemo(() => {
-    const cost = action === 'generate-game' ? writerCoin.gameGenerationCost : writerCoin.mintCost
-    return Number(cost) / 10 ** writerCoin.decimals
-  }, [writerCoin, action])
+    const cost = action === 'generate-game' ? config.gameGenerationCost : config.mintCost
+    return Number(cost) / 10 ** config.decimals
+  }, [config, action])
 
   const userBalance = useMemo(() => {
+    if (isMUSD) return Infinity // mock sufficient balance for MUSD
     if (!balance?.formattedBalance) return null
     return parseFloat(balance.formattedBalance)
-  }, [balance])
+  }, [balance, isMUSD])
 
   const hasInsufficientBalance = useMemo(() => {
+    if (isMUSD) return false
     if (userBalance === null || isLoadingBalance) return false
     return userBalance < requiredAmount
-  }, [userBalance, requiredAmount, isLoadingBalance])
+  }, [userBalance, requiredAmount, isLoadingBalance, isMUSD])
 
   const handlePayment = useCallback(async () => {
     if (!walletClient || !userAddress) {
@@ -60,7 +69,7 @@ export function PaymentFlow({
     }
 
     if (hasInsufficientBalance) {
-      setError(`Insufficient ${writerCoin.symbol} balance. You need ${requiredAmount} ${writerCoin.symbol} but have ${userBalance} ${writerCoin.symbol}.`)
+      setError(`Insufficient ${tokenSymbol} balance. You need ${requiredAmount} ${tokenSymbol} but have ${userBalance} ${tokenSymbol}.`)
       return
     }
 
@@ -70,148 +79,21 @@ export function PaymentFlow({
     try {
       await retryWithBackoff(
         async () => {
-          const initiateResponse = await fetch('/api/payments/initiate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              writerCoinId: writerCoin.id,
-              action,
-            }),
-          })
-
-          if (!initiateResponse.ok) {
-            const errorData = await initiateResponse.json().catch(() => ({}))
-            throw new Error(
-              errorData.error || 
-              `Failed to initiate payment (${initiateResponse.status})`
-            )
-          }
-
-          const paymentInfo = await initiateResponse.json()
-          const contractAddress = paymentInfo.contractAddress as `0x${string}`
-          const amount = paymentInfo.amount as string
-
-          if (!contractAddress) {
-            throw new Error('Invalid contract address received from server')
-          }
-
-          const approvalData = encodeERC20Approval(contractAddress, amount)
+          const strategy = isMUSD ? new MUSDStrategy() : new WriterCoinStrategy()
+          const amount = (action === 'generate-game' ? config.gameGenerationCost : config.mintCost).toString()
           
-          try {
-            const approvalTx = await walletClient.writeContract({
-              address: writerCoin.address,
-              abi: [{
-                name: 'approve',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [
-                  { name: 'spender', type: 'address' },
-                  { name: 'amount', type: 'uint256' }
-                ],
-                outputs: [{ name: '', type: 'bool' }]
-              }],
-              functionName: 'approve',
-              args: [contractAddress as `0x${string}`, BigInt(amount)],
-            })
-
-            console.log('[PaymentFlow] Approval transaction sent:', approvalTx)
-          } catch (approvalErr) {
-            console.warn('[PaymentFlow] Approval error (continuing):', approvalErr)
-            const errorMessage = String(approvalErr)
-            if (errorMessage.includes('already approved') || errorMessage.includes('allowance sufficient')) {
-              console.log('[PaymentFlow] Token already approved, proceeding with payment')
-            }
-          }
-
-          let transactionData: `0x${string}`
-
-          if (action === 'generate-game') {
-            transactionData = encodeFunctionData({
-              abi: [{
-                name: 'payForGameGeneration',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [{ name: 'writerCoin', type: 'address' }]
-              }],
-              functionName: 'payForGameGeneration',
-              args: [writerCoin.address]
-            })
-          } else {
-            transactionData = encodeFunctionData({
-              abi: [{
-                name: 'payAndMintGame',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [
-                  { name: 'writerCoin', type: 'address' },
-                  { name: 'tokenURI', type: 'string' }
-                ]
-              }],
-              functionName: 'payAndMintGame',
-              args: [writerCoin.address, 'demo']
-            })
-          }
-
-          const txRequest = {
-            to: contractAddress,
-            data: transactionData,
-            chainId: BASE_CHAIN_ID,
-          }
-
-          console.log('[PaymentFlow] Sending transaction to:', contractAddress)
-          console.log('[PaymentFlow] Writer coin:', writerCoin.address)
-          console.log('[PaymentFlow] User address:', userAddress)
-
-          const txHash = await walletClient.writeContract({
-            address: contractAddress,
-            abi: action === 'generate-game' 
-              ? [{ 
-                  name: 'payForGameGeneration', 
-                  type: 'function', 
-                  stateMutability: 'nonpayable', 
-                  inputs: [{ name: 'writerCoin', type: 'address' }],
-                  outputs: []
-                }]
-              : [{ 
-                  name: 'payAndMintGame', 
-                  type: 'function', 
-                  stateMutability: 'nonpayable', 
-                  inputs: [
-                    { name: 'writerCoin', type: 'address' }, 
-                    { name: 'tokenURI', type: 'string' }
-                  ],
-                  outputs: []
-                }],
-            functionName: action === 'generate-game' ? 'payForGameGeneration' : 'payAndMintGame',
-            args: action === 'generate-game' ? [writerCoin.address] : [writerCoin.address, 'demo'],
+          return strategy.executePayment({
+            walletClient,
+            userAddress,
+            token: paymentToken,
+            action,
+            amount
           })
-
-          console.log('[PaymentFlow] Transaction sent:', txHash)
-
-          const verifyResponse = await fetch('/api/payments/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              transactionHash: txHash,
-              writerCoinId: writerCoin.id,
-              action,
-            }),
-          })
-
-          if (!verifyResponse.ok) {
-            const errorData = await verifyResponse.json().catch(() => ({}))
-            throw new Error(
-              errorData.error || 
-              `Failed to verify payment (${verifyResponse.status})`
-            )
-          }
-
-          return txHash
         },
         2,
         1500
       ).then((txHash) => {
-        refresh()
+        if (!isMUSD) refresh()
         onPaymentSuccess?.(txHash)
       })
     } catch (err) {
@@ -222,14 +104,15 @@ export function PaymentFlow({
     } finally {
       setIsProcessing(false)
     }
-  }, [walletClient, userAddress, writerCoin, action, hasInsufficientBalance, userBalance, requiredAmount, onPaymentSuccess, onPaymentError, refresh])
+  }, [walletClient, userAddress, paymentToken, action, hasInsufficientBalance, userBalance, requiredAmount, onPaymentSuccess, onPaymentError, refresh, isMUSD, config])
 
   const actionLabel =
     action === 'generate-game'
-      ? `Generate Game (${costFormatted} ${writerCoin.symbol})`
-      : `Mint as NFT (${costFormatted} ${writerCoin.symbol})`
+      ? `Generate Game (${costFormatted} ${tokenSymbol})`
+      : `Mint as NFT (${costFormatted} ${tokenSymbol})`
 
-  const isWrongChain = Boolean(chainId && chainId !== BASE_CHAIN_ID)
+  const targetChainId = isMUSD ? 31611 : BASE_CHAIN_ID // 31611 is Mezo Testnet
+  const isWrongChain = Boolean(chainId && chainId !== targetChainId)
 
   return (
     <div className="space-y-3">
@@ -248,7 +131,7 @@ export function PaymentFlow({
               ) : (
                 <>
                   <span className={`font-semibold ${hasInsufficientBalance ? 'text-red-400' : 'text-green-400'}`}>
-                    {balance ? balance.formattedBalance : '0'} {writerCoin.symbol}
+                    {isMUSD ? 'N/A' : (balance ? balance.formattedBalance : '0')} {tokenSymbol}
                   </span>
                   {hasInsufficientBalance && (
                     <span className="text-xs text-red-400">(Insufficient)</span>
@@ -278,8 +161,8 @@ export function PaymentFlow({
             Processing payment...
           </span>
         ) : isWrongChain ? (
-          <span onClick={() => switchChainAsync({ chainId: BASE_CHAIN_ID })} className="cursor-pointer">
-            Switch to Base Network
+          <span onClick={() => switchChainAsync({ chainId: targetChainId })} className="cursor-pointer">
+            Switch to {isMUSD ? 'Mezo Network' : 'Base Network'}
           </span>
         ) : (
           actionLabel
@@ -295,16 +178,4 @@ export function PaymentFlow({
       </div>
     </div>
   )
-}
-
-function encodeERC20Approval(
-  spenderAddress: `0x${string}`,
-  amount: string
-): `0x${string}` {
-  const selector = '0x095ea7b3'
-  const encodedSpender = spenderAddress.slice(2).padStart(64, '0')
-  const amountBigInt = BigInt(amount)
-  const encodedAmount = amountBigInt.toString(16).padStart(64, '0')
-  
-  return (selector + encodedSpender + encodedAmount) as `0x${string}`
 }

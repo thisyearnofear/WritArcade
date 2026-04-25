@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { type WriterCoin } from '@/lib/writerCoins'
+import { type WriterCoin, type PaymentToken } from '@/lib/writerCoins'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { CostPreview } from '@/components/game/CostPreview'
 import { PaymentFlow } from '@/components/game/PaymentFlow'
+import { PaymentTokenSelector } from '@/components/game/PaymentTokenSelector'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -36,12 +37,13 @@ export function GameCustomizer({ writerCoin, articleUrl, onBack, onGameGenerated
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [paymentApproved, setPaymentApproved] = useState(false)
+  const [selectedToken, setSelectedToken] = useState<PaymentToken>({ type: 'writercoin', coin: writerCoin })
 
   const isStoryMode = mode === 'story'
 
   const cost = useMemo(() => {
-    return PaymentCostService.calculateCostSync(writerCoin.id, 'generate-game')
-  }, [writerCoin.id])
+    return PaymentCostService.calculateCostTokenSync(selectedToken, 'generate-game')
+  }, [selectedToken])
 
   const handlePaymentSuccess = async (_transactionHash: string) => {
     setPaymentApproved(true)
@@ -66,7 +68,7 @@ export function GameCustomizer({ writerCoin, articleUrl, onBack, onGameGenerated
                 difficulty,
               },
               payment: {
-                writerCoinId: writerCoin.id,
+                writerCoinId: selectedToken.type === 'musd' ? 'musd-testnet' : writerCoin.id,
               },
             }
 
@@ -207,7 +209,12 @@ export function GameCustomizer({ writerCoin, articleUrl, onBack, onGameGenerated
                     </div>
 
                     <div className="pt-4 border-t border-white/5">
-                        <CostPreview writerCoin={writerCoin} action="generate-game" showBreakdown />
+                        <PaymentTokenSelector 
+                          selectedToken={selectedToken}
+                          onSelectToken={setSelectedToken}
+                          writerCoin={{ type: 'writercoin', coin: writerCoin }}
+                        />
+                        <CostPreview paymentToken={selectedToken} action="generate-game" showBreakdown />
                     </div>
                 </>
             ) : (
@@ -238,7 +245,7 @@ export function GameCustomizer({ writerCoin, articleUrl, onBack, onGameGenerated
           !paymentApproved ? (
             <div className="pt-2">
                 <PaymentFlow
-                    writerCoin={writerCoin}
+                    paymentToken={selectedToken}
                     action="generate-game"
                     costFormatted={cost.amountFormatted}
                     onPaymentSuccess={handlePaymentSuccess}

@@ -2,16 +2,40 @@
 
 import '@rainbow-me/rainbowkit/styles.css';
 import {
-  getDefaultConfig,
   RainbowKitProvider,
   darkTheme,
 } from '@rainbow-me/rainbowkit';
+import { getConfig as getDefaultConfig } from '@mezo-org/passport';
 import { WagmiProvider } from 'wagmi';
 import {
   base,
   baseSepolia,
 } from 'wagmi/chains';
 import { defineChain } from 'viem';
+
+/**
+ * Mezo Testnet
+ * Bitcoin-backed stablecoin ecosystem for decentralized finance
+ * Docs: https://mezo.org/docs/developers/getting-started/
+ * 
+ * RPC: Using Spectrum Nodes as per hackathon requirements
+ * https://spectrum.fdn.hackathon.mezo.org/
+ */
+export const mezoTestnet = defineChain({
+  id: 31611,
+  name: 'Mezo Testnet',
+  nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://mezotestnet-spectrum-rpc.fdn.hackathon.mezo.org'] },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Mezo Explorer',
+      url: 'https://explorer.test.mezo.org'
+    },
+  },
+  testnet: true,
+});
 import {
   rainbowWallet,
   metaMaskWallet,
@@ -64,8 +88,8 @@ const otherWallets = [phantomWallet, trustWallet, ledgerWallet, okxWallet];
 
 const config = getDefaultConfig({
   appName: 'writersarcade',
-  projectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
-  chains: [base, baseSepolia, storyAeneid],
+  walletConnectProjectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
+  chains: [base, baseSepolia, storyAeneid, mezoTestnet],
   ssr: true,
   wallets: [
     {
