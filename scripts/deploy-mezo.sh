@@ -22,14 +22,17 @@ if [ -z "$MEZO_TESTNET_MUSD_ADDRESS" ]; then
   exit 1
 fi
 
-echo "🚀 Deploying MezoPaymentSplitter to Mezo Testnet..."
+MEZO_PRECOMPILE="0x7B7c000000000000000000000000000000000001"
+
+echo "🚀 Deploying MezoBoostedSplitter to Mezo Testnet..."
 
 # Use forge to compile and deploy
-forge create contracts/src/MezoPaymentSplitter.sol:MezoPaymentSplitter \
+forge create contracts/src/MezoBoostedSplitter.sol:MezoBoostedSplitter \
   --rpc-url https://rpc.test.mezo.org \
   --private-key $MEZO_DEPLOYER_PRIVATE_KEY \
   --legacy \
-  --constructor-args $MEZO_TESTNET_MUSD_ADDRESS $PLATFORM_TREASURY_ADDRESS
+  --constructor-args $MEZO_TESTNET_MUSD_ADDRESS $MEZO_PRECOMPILE $PLATFORM_TREASURY_ADDRESS
 
 echo "✅ Deployment complete. Note the 'Deployed to' address above."
-echo "➡️ Next, run: ./scripts/deploy-goldsky.sh <YOUR_NEW_CONTRACT_ADDRESS>"
+echo "➡️ Next, update NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET in .env.local"
+echo "➡️ Then, run: ./scripts/deploy-goldsky.sh <YOUR_NEW_CONTRACT_ADDRESS>"

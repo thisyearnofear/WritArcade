@@ -21,11 +21,37 @@
   - `payForMinting(writerCoin, user)` - Process NFT minting payment
   - `payAndMintGame(writerCoin, tokenURI, metadata)` - Process payment and mint NFT atomically
 
+### 3. MezoBoostedSplitter.sol
+- **Purpose**: MUSD payment and revenue split contract for the Mezo network with native MEZO holder revenue boost.
+- **Functions**:
+  - `isMezoHolder(address user)` - Check if user holds >= 1 MEZO.
+  - `payAndMintGame(string tokenURI, GameMetadata metadata)` - Atomic pay and mint; automatically applies a 10% creator revenue boost for MEZO holders.
+
 ## Deployment Steps
 
-### Phase 1: Base Sepolia Testnet
+...
 
-1. **Deploy GameNFT**
+### Phase 3: Mezo Matsnet (Testnet)
+
+1. **Deploy MezoBoostedSplitter**
+   ```bash
+   # Arguments: MUSD_ADDRESS PRECOMPILE_ADDRESS PLATFORM_TREASURY_ADDRESS
+   # PRECOMPILE: 0x7B7c000000000000000000000000000000000001
+   ./scripts/deploy-mezo.sh
+   ```
+
+2. **Configure Environment**
+   - Update `NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET` in `.env.local`.
+
+3. **Verify**
+   - Check Mezo Explorer for contract deployment.
+
+## Safety Checks (MezoBoostedSplitter)
+
+- ✅ Static call to MEZO system precompile for real-time holder status.
+- ✅ Proportionate reduction of platform fee to fund boosts.
+- ✅ ReentrancyGuard on pay/mint functions.
+- ✅ MUSD token balance check before transfer.
    ```bash
    # Deploy to Sepolia
    # Owner will be deployer address
