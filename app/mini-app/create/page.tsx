@@ -193,7 +193,7 @@ export default function MiniAppPage() {
                                         {step === 'select-coin' && <WriterCoinSelector onSelect={handleCoinSelect} />}
                                         {step === 'input-article' && (selectedCoin || isMUSDSelected) && (
                                             <ArticleInput
-                                                writerCoin={selectedCoin}
+                                                writerCoin={selectedCoin || undefined}
                                                 isMUSD={isMUSDSelected}
                                                 onSubmit={handleArticleSubmit}
                                                 onBack={handleBack}
@@ -201,7 +201,7 @@ export default function MiniAppPage() {
                                         )}
                                         {step === 'customize-game' && (selectedCoin || isMUSDSelected) && articleUrl && (
                                             <GameCustomizer
-                                                writerCoin={selectedCoin}
+                                                writerCoin={selectedCoin || undefined}
                                                 isMUSD={isMUSDSelected}
                                                 articleUrl={articleUrl}
                                                 onBack={handleBack}
@@ -212,7 +212,7 @@ export default function MiniAppPage() {
                                             <GamePlayer
                                                 game={generatedGame}
                                                 onBack={handleBack}
-                                                writerCoin={selectedCoin}
+                                                writerCoin={selectedCoin || undefined}
                                                 isMUSD={isMUSDSelected}
                                             />
                                         )}
