@@ -11,7 +11,8 @@ import {
   MoreVertical,
   Circle,
   Moon,
-  Sun
+  Sun,
+  LayoutDashboard
 } from 'lucide-react'
 import { useAccount, useDisconnect } from 'wagmi'
 import { useAccountModal } from '@rainbow-me/rainbowkit'
@@ -201,6 +202,15 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
             </div>
 
             <div className="p-2 space-y-1">
+              <Link
+                href="/creators/dashboard"
+                className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-amber-500/10 transition-colors group"
+                onClick={() => setIsOpen(false)}
+              >
+                <LayoutDashboard className="w-4 h-4 text-amber-500 group-hover:text-amber-400" />
+                <span className="text-gray-300 group-hover:text-white font-bold uppercase tracking-widest text-[10px]">Creator Hub</span>
+              </Link>
+
               <Link
                 href="/profile"
                 className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-purple-600/10 transition-colors group"

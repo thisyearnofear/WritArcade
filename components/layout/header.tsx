@@ -27,15 +27,15 @@ function ThemeToggle() {
 
 
 function CreatorDashboardLink() {
-  const { address, isConnected } = useAccount()
-  if (!isConnected || !address || !isWhitelistedWriterCoin(address)) return null
+  const { isConnected } = useAccount()
+  if (!isConnected) return null
   return (
     <Link
       href="/creators/dashboard"
-      className="flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+      className="flex items-center gap-1.5 text-sm font-bold text-amber-500 hover:text-amber-400 transition-colors"
     >
       <LayoutDashboard className="w-4 h-4" />
-      <span>Dashboard</span>
+      <span className="uppercase tracking-widest text-[10px]">Hub</span>
     </Link>
   )
 }

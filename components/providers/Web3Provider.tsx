@@ -5,7 +5,13 @@ import {
   RainbowKitProvider,
   darkTheme,
 } from '@rainbow-me/rainbowkit';
-import { getConfig as getDefaultConfig } from '@mezo-org/passport';
+import { 
+  getConfig, 
+  mezoTestnet, 
+  mezoMainnet, 
+  getDefaultWallets,
+  PassportProvider 
+} from '@mezo-org/passport';
 import { WagmiProvider } from 'wagmi';
 import {
   base,
@@ -13,43 +19,6 @@ import {
 } from 'wagmi/chains';
 import { defineChain } from 'viem';
 
-/**
- * Mezo Matsnet (testnet)
- * Bitcoin-backed stablecoin ecosystem for decentralized finance
- * Docs: https://mezo.org/docs/developers/getting-started/
- *
- * RPC priority:
- *   1. NEXT_PUBLIC_MEZO_TESTNET_RPC (override, e.g. dedicated hackathon node)
- *   2. Public RPC (https://rpc.test.mezo.org) — verified working
- */
-const MEZO_TESTNET_RPC =
-  process.env.NEXT_PUBLIC_MEZO_TESTNET_RPC || 'https://rpc.test.mezo.org';
-
-export const mezoTestnet = defineChain({
-  id: 31611,
-  name: 'Mezo Testnet',
-  nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
-  rpcUrls: {
-    default: { http: [MEZO_TESTNET_RPC] },
-  },
-  blockExplorers: {
-    default: {
-      name: 'Mezo Explorer',
-      url: 'https://explorer.test.mezo.org'
-    },
-  },
-  testnet: true,
-});
-import {
-  rainbowWallet,
-  metaMaskWallet,
-  coinbaseWallet,
-  walletConnectWallet,
-  ledgerWallet,
-  trustWallet,
-  phantomWallet,
-  okxWallet,
-} from '@rainbow-me/rainbowkit/wallets';
 import {
   QueryClientProvider,
   QueryClient,
@@ -80,31 +49,15 @@ export const storyAeneid = defineChain({
 const WALLET_CONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
 const HAS_WC = Boolean(WALLET_CONNECT_PROJECT_ID && WALLET_CONNECT_PROJECT_ID !== 'YOUR_PROJECT_ID');
 
-const recommendedWallets = [
-  rainbowWallet,
-  metaMaskWallet,
-  coinbaseWallet,
-  // Conditionally include WalletConnect
-  ...(HAS_WC ? [walletConnectWallet] : []),
-];
+// Combine Mezo default wallets with our app-specific requirements
+const wallets = getDefaultWallets("testnet");
 
-const otherWallets = [phantomWallet, trustWallet, ledgerWallet, okxWallet];
-
-const config = getDefaultConfig({
+const config = getConfig({
   appName: 'writersarcade',
   walletConnectProjectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
   chains: [base, baseSepolia, storyAeneid, mezoTestnet],
   ssr: true,
-  wallets: [
-    {
-      groupName: 'Recommended',
-      wallets: recommendedWallets,
-    },
-    {
-      groupName: 'Others',
-      wallets: otherWallets,
-    },
-  ],
+  wallets,
 });
 
 const queryClient = new QueryClient();
@@ -224,17 +177,19 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       )}
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
-          <RainbowKitAuthenticationProvider
-            adapter={authenticationAdapter}
-            status={authStatus}
-          >
-            <RainbowKitProvider
-              theme={darkTheme()}
-              modalSize="compact"
+          <PassportProvider environment="testnet">
+            <RainbowKitAuthenticationProvider
+              adapter={authenticationAdapter}
+              status={authStatus}
             >
-              {children}
-            </RainbowKitProvider>
-          </RainbowKitAuthenticationProvider>
+              <RainbowKitProvider
+                theme={darkTheme()}
+                modalSize="compact"
+              >
+                {children}
+              </RainbowKitProvider>
+            </RainbowKitAuthenticationProvider>
+          </PassportProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </Web3AuthContext.Provider>
