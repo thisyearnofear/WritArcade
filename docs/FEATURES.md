@@ -33,6 +33,16 @@ Auto-fallback chain ensures reliability:
 
 See [docs/MODAL_SETUP.md](./MODAL_SETUP.md) for Modal deployment.
 
+### Mezo MUSD Payments (Hackathon Track)
+WritersArcade supports the Mezo ecosystem via a dedicated MUSD payment track:
+
+- **MUSD Strategy**: Native payment support on Mezo Matsnet (Chain ID 31611).
+- **On-chain Splitter**: Uses `MezoPaymentSplitter` to atomically distribute MUSD to writers, creators, and the platform.
+- **MEZO Holder Perks**:
+    - **Detection**: `useMezoBalance` hook detects MEZO token holders on-chain.
+    - **Badge**: "MEZO Holder" status surfaces in the payment flow for wallets with ≥ 1 MEZO.
+    - **Future-Proof**: Roadmap includes on-chain boosted splits for MEZO holders via `MezoBoostedSplitter`.
+
 ### Creative Control
 - **Image Regeneration**: "New Image" button per panel with loading state
 - **Prompt Editing**: View/edit prompts, regenerate with custom text
@@ -194,14 +204,20 @@ Splits fetched live from contract via `fetchGenerationDistributionOnChain()` / `
 ## Smart Contracts
 
 ### GameNFT (ERC-721)
-**Address**: `0x778C87dAA2b284982765688AE22832AADae7dccC`  
+**Address**: `0x778C87dAA2b284982765688AE22832AADae7dccC` (Base Mainnet)
 - Mints games as NFTs on Base mainnet
 - On-chain metadata: creator, article URL, genre, difficulty
 - Verified on Sourcify
 
 ### WriterCoinPayment
-**Address**: `0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75`  
+**Address**: `0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75` (Base Mainnet)
 - Handles writer coin payments for generation + minting
 - Dynamic revenue splits (configurable per coin)
 - Reentrancy guards, access control
 - Verified on Sourcify
+
+### MezoPaymentSplitter
+**Address**: `0x32D0356f533cC429F94Db73f383bBb21a459E16b` (Mezo Matsnet)
+- Native MUSD payment handler for Mezo Hackathon.
+- Atomic on-chain splitting of Bitcoin-backed stablecoins.
+- Verified on Mezo Explorer.

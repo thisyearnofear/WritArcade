@@ -64,6 +64,11 @@ STORY_RPC_URL="https://aeneid.storyrpc.io"
 STORY_WALLET_KEY="0x..."          # For server-side Story txs
 PINATA_JWT="pina_..."             # IPFS uploads
 
+# Mezo Hackathon
+NEXT_PUBLIC_MEZO_TESTNET_RPC="https://rpc.test.mezo.org"
+NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET="0x32D0356f533cC429F94Db73f383bBb21a459E16b"
+MEZO_TESTNET_MUSD_ADDRESS="0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503"
+
 # Feature Integrations
 LIT_PROTOCOL_ENABLED="true"
 LIT_NETWORK="datil-dev"

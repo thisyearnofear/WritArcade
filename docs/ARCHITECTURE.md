@@ -24,6 +24,7 @@ Article URL
 **Web3**: wagmi + viem + RainbowKit / WalletConnect  
 **Backend**: Next.js API routes + Prisma + PostgreSQL  
 **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (image generation)  
+**Mezo**: MUSD (Bitcoin-backed stablecoin) for payments; Mezo Matsnet (testnet)
 **IP**: Story Protocol (testnet) + IPFS (Pinata)  
 **Access Control**: Lit Protocol (NFT-gated encryption)  
 **Impact**: Hypercerts (AT Protocol impact certificates)
@@ -40,9 +41,11 @@ writarcade/
 ├── domains/                # Business logic by domain
 │   ├── games/              # Game generation & management
 │   ├── assets/             # Asset creation & marketplace
-│   ├── payments/           # Payment processing
+│   ├── payments/           # Payment processing (Strategy Pattern)
 │   ├── content/            # Article processing
 │   └── users/              # User management
+├── hooks/                  # Custom React hooks
+│   └── useMezoBalance.ts   # On-chain MEZO balance detection
 ├── lib/                    # Cross-cutting infrastructure
 │   ├── wallet/             # Runtime wallet abstraction
 │   ├── story-protocol.*    # Story Protocol integration
@@ -66,9 +69,11 @@ writarcade/
 - Asset CRUD, marketplace discovery, Story Protocol integration
 - Game composition from marketplace assets
 
-**`domains/payments/`** - Centralized payment logic  
+**`domains/payments/`** - Centralized payment logic (Strategy Pattern)
 - `PaymentCostService` - Pricing and revenue splits
-- Payment initiation/verification
+- `strategies/` - Multi-chain payment strategies
+    - `writer-coin.strategy.ts` - Base Mainnet WriterCoin payments
+    - `musd.strategy.ts` - Mezo Matsnet MUSD payments via Splitter contract
 
 **`domains/content/`** - Article processing  
 - `ContentProcessorService` - Fetching and cleaning articles
@@ -82,6 +87,7 @@ writarcade/
 - `WalletProvider` interface
 - Farcaster Mini App wallet + Browser wallets (RainbowKit/Wagmi)
 - `detectWalletProvider()` returns unified interface
+- Support for Mezo Matsnet (Chain ID 31611)
 
 **`lib/story-protocol.service.ts`** - IP registration  
 - Client-side wallet signing (no platform keys)
@@ -96,7 +102,8 @@ writarcade/
 - Activity claims with contributors, measurements
 
 **`lib/contracts.ts`** - On-chain helpers  
-- WriterCoinPayment + GameNFT via viem
+- WriterCoinPayment + GameNFT via viem (Base)
+- MezoPaymentSplitter configuration (Mezo)
 
 ## Data Models
 
@@ -124,7 +131,9 @@ WriterCoin
 └─ publicationUrl
 ```
 
-## Smart Contracts (Base Mainnet)
+## Smart Contracts
+
+### Base Mainnet (Chain ID: 8453)
 
 **GameNFT** (`0x778C87dAA2b284982765688AE22832AADae7dccC`)  
 - ERC-721 for game NFT minting
@@ -134,15 +143,25 @@ WriterCoin
 - Payments with configurable revenue splits
 - Multi-coin support, reentrancy guards
 
+### Mezo Matsnet (Chain ID: 31611)
+
+**MezoPaymentSplitter** (`0x32D0356f533cC429F94Db73f383bBb21a459E16b`)
+- Bitcoin-backed MUSD payments for the Mezo Hackathon
+- Atomic on-chain revenue splits (Platform / Writer / Creator)
+- Native integration with MUSD token (`0x1189...Ac503`)
+
 ### Revenue Splits (configurable per coin)
 
 **Generation**: 60% Writer / 20% Platform / 20% Creator Pool  
 **Minting**: 30% Creator / 15% Writer / 5% Platform (remainder to payer)
 
-## Dual-Chain Architecture
+## Multi-Chain Architecture
 
 **Base Mainnet** (Chain ID: 8453)  
 - Writer Coins (ERC-20), GameNFT minting, revenue distribution
+
+**Mezo Matsnet** (Chain ID: 31611)
+- MUSD payments, MEZO holder perks, Bitcoin-backed economy
 
 **Story Protocol** (Chain ID: 1516 testnet)  
 - IP Asset Registry, PIL licenses, royalty automation, derivative tracking
