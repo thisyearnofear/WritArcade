@@ -207,32 +207,76 @@ export function isWhitelistedWriterCoin(address: string): boolean {
 
 /**
  * MUSD Payment Configuration
- * 
+ *
  * MUSD is the Bitcoin-backed stablecoin on Mezo network.
- * It can be used as an alternative payment method for game generation.
- * 
+ * It is used as a primary payment method for game generation in the
+ * Mezo Hackathon track (MUSD/Consumer Experiences).
+ *
  * Docs: https://mezo.org/docs/developers/musd/
+ *
+ * The `paymentSplitter` address is a deployed `MezoPaymentSplitter` instance
+ * that pulls MUSD from the user and atomically forwards platform/writer/
+ * creator shares on-chain. See contracts/src/MezoPaymentSplitter.sol.
+ *
+ * The address can be overridden per-environment via
+ * `NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET` / `_MAINNET`.
  */
+const MEZO_TESTNET_PAYMENT_SPLITTER =
+    (process.env.NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET as `0x${string}` | undefined) ||
+    "0x32D0356f533cC429F94Db73f383bBb21a459E16b" // deployed via scripts/deploy-mezo.sh
+
+const MEZO_MAINNET_PAYMENT_SPLITTER =
+    (process.env.NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_MAINNET as `0x${string}` | undefined) ||
+    "0x0000000000000000000000000000000000000000" // not yet deployed
+
 export const MUSD_CONFIG = {
-    // Mezo Testnet MUSD token
+    // Mezo Testnet MUSD token (Mezo Matsnet, chainId 31611)
     testnet: {
-        address: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
+        address: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503" as `0x${string}`,
+        paymentSplitter: MEZO_TESTNET_PAYMENT_SPLITTER,
         decimals: 18,
         symbol: "MUSD",
         name: "Mezo USD",
         // Cost: $1 USD equivalent (in wei)
         gameGenerationCost: 1000000000000000000n, // 1 MUSD
-        mintCost: 500000000000000000n,   // 0.5 MUSD
+        mintCost: 500000000000000000n,            // 0.5 MUSD (informational; splitter currently fixes mint at 1 MUSD)
     },
-    // Mezo Mainnet MUSD token
+    // Mezo Mainnet MUSD token (Mezo Mainnet, chainId 30062)
     mainnet: {
-        address: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
+        address: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186" as `0x${string}`,
+        paymentSplitter: MEZO_MAINNET_PAYMENT_SPLITTER,
         decimals: 18,
         symbol: "MUSD",
         name: "Mezo USD",
         gameGenerationCost: 1000000000000000000n,
         mintCost: 500000000000000000n,
     },
+} as const
+
+/**
+ * MEZO Token Configuration
+ *
+ * MEZO is the native governance/utility token of the Mezo network. The same
+ * address is deployed on both Mezo Mainnet (chainId 31612) and Mezo Matsnet
+ * (chainId 31611) as a system precompile.
+ *
+ * In WritersArcade, MEZO is used as a "loyalty" signal: holders see a
+ * "MEZO Holder" badge in the MUSD payment flow and (roadmap) will receive
+ * boosted writer/creator share weights enforced on-chain by an extended
+ * MezoPaymentSplitter ("MezoBoostedSplitter"). The minimum-balance threshold
+ * to qualify is configurable.
+ *
+ * Docs: https://mezo.org/docs/users/resources/contracts-reference/
+ */
+export const MEZO_CONFIG = {
+    address: "0x7B7c000000000000000000000000000000000001" as `0x${string}`,
+    decimals: 18,
+    symbol: "MEZO",
+    name: "MEZO",
+    /** Minimum MEZO balance (wei) that earns the "MEZO Holder" perk in UI. */
+    holderThreshold: 1000000000000000000n, // 1 MEZO
+    /** Discount applied to MUSD costs when a wallet meets `holderThreshold`. */
+    holderDiscountBP: 1000, // 10%
 } as const
 
 export type PaymentToken = 

@@ -14,19 +14,23 @@ import {
 import { defineChain } from 'viem';
 
 /**
- * Mezo Testnet
+ * Mezo Matsnet (testnet)
  * Bitcoin-backed stablecoin ecosystem for decentralized finance
  * Docs: https://mezo.org/docs/developers/getting-started/
- * 
- * RPC: Using Spectrum Nodes as per hackathon requirements
- * https://spectrum.fdn.hackathon.mezo.org/
+ *
+ * RPC priority:
+ *   1. NEXT_PUBLIC_MEZO_TESTNET_RPC (override, e.g. dedicated hackathon node)
+ *   2. Public RPC (https://rpc.test.mezo.org) — verified working
  */
+const MEZO_TESTNET_RPC =
+  process.env.NEXT_PUBLIC_MEZO_TESTNET_RPC || 'https://rpc.test.mezo.org';
+
 export const mezoTestnet = defineChain({
   id: 31611,
   name: 'Mezo Testnet',
   nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://mezotestnet-spectrum-rpc.fdn.hackathon.mezo.org'] },
+    default: { http: [MEZO_TESTNET_RPC] },
   },
   blockExplorers: {
     default: {

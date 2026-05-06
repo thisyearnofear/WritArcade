@@ -2,13 +2,13 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
-import { encodeFunctionData, toHex } from 'viem'
-import { type PaymentToken, getPaymentTokenConfig } from '@/lib/writerCoins'
+import { type PaymentToken, getPaymentTokenConfig, MEZO_CONFIG } from '@/lib/writerCoins'
 import type { PaymentAction } from '@/domains/payments/types'
 import { ErrorCard } from '@/components/error/ErrorCard'
 import { getUserMessage, retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
-import { Loader2, Wallet } from 'lucide-react'
+import { useMezoBalance } from '@/hooks/useMezoBalance'
+import { Loader2, Wallet, Sparkles } from 'lucide-react'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
 import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
 
@@ -41,6 +41,9 @@ export function PaymentFlow({
 
   // Only check balance for WriterCoin right now
   const { balance, isLoading: isLoadingBalance, error: balanceError, refresh } = useWriterCoinBalance(isMUSD ? '' : paymentToken.coin.id)
+  // Read MEZO balance only when paying in MUSD (chainId 31611). Provides a
+  // "MEZO Holder" perk indicator and powers future on-chain boost logic.
+  const { isHolder: isMezoHolder, formatted: mezoFormatted } = useMezoBalance()
   
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -140,6 +143,28 @@ export function PaymentFlow({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {isMUSD && userAddress && (
+        <div
+          className={`rounded-lg border p-3 text-xs flex items-center justify-between gap-3 ${
+            isMezoHolder
+              ? 'bg-amber-900/20 border-amber-500/40 text-amber-200'
+              : 'bg-slate-900/40 border-slate-700/40 text-slate-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles className={`w-4 h-4 ${isMezoHolder ? 'text-amber-300' : 'text-slate-400'}`} />
+            <span>
+              {isMezoHolder
+                ? `MEZO Holder perk active (${mezoFormatted} MEZO)`
+                : 'Hold MEZO to unlock holder perks'}
+            </span>
+          </div>
+          <span className="opacity-70">
+            {(MEZO_CONFIG.holderDiscountBP / 100).toFixed(0)}% boost (soon)
+          </span>
         </div>
       )}
 

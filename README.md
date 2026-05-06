@@ -53,10 +53,18 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 - **Access Control**: Lit Protocol (NFT-gated encryption)
 - **Impact**: Hypercerts (AT Protocol)
 
-## Smart contracts (Base mainnet)
+## Smart contracts
 
+**Base mainnet** (production writer-coin payments)
 - **GameNFT**: `0x778C87dAA2b284982765688AE22832AADae7dccC`
 - **WriterCoinPayment**: `0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75`
+
+**Mezo Matsnet (testnet)** — Mezo Hackathon, MUSD track
+- **MezoPaymentSplitter**: [`0x32D0356f533cC429F94Db73f383bBb21a459E16b`](https://explorer.test.mezo.org/address/0x32D0356f533cC429F94Db73f383bBb21a459E16b)
+- **MUSD token**: `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`
+- **MEZO token** (read-only, holder perks): `0x7B7c000000000000000000000000000000000001`
+- Pay 1 MUSD to generate a game; splitter atomically forwards platform / writer / creator shares on-chain.
+- MEZO holders see a "MEZO Holder" badge in the payment flow today; on-chain boosted splits land in `MezoBoostedSplitter` (roadmap).
 
 Revenue splits enforced on-chain, configurable per writer coin.
 

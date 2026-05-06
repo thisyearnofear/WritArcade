@@ -65,13 +65,16 @@
 - ✅ Background enrichment (`enrichGameInBackground()` - non-blocking)
 - ✅ Config & schema updates
 
-### Mezo Hackathon Integration (MUSD & Goldsky)
-- ✅ Mezo Testnet configuration & Spectrum Nodes RPC
+### Mezo Hackathon Integration (MUSD)
+- ✅ Mezo Matsnet (testnet) chain config (chainId 31611, RPC `https://rpc.test.mezo.org`)
 - ✅ Multi-chain simulation via Tenderly
 - ✅ MUSD payment architecture (Strategy Pattern) decoupled from Base
-- ✅ `MezoPaymentSplitter` smart contract deployed to Mezo Testnet
+- ✅ `MezoPaymentSplitter` deployed to Mezo Testnet at [`0x32D0356f533cC429F94Db73f383bBb21a459E16b`](https://explorer.test.mezo.org/address/0x32D0356f533cC429F94Db73f383bBb21a459E16b)
+- ✅ `MUSDStrategy` wired to call `approve` → `payForGeneration` / `payAndMintGame` on the splitter (atomic on-chain platform/creator/writer split)
 - ✅ UI updated for Mezo Passport & MUSD toggles
-- ⏳ **TODO: Deploy Goldsky Pipeline via Web UI** (Use 'Decoded contract events' template, point webhook to `/api/indexer/webhook`)
+- ✅ MEZO touchpoint (Phase 1): on-chain `useMezoBalance` reads from MEZO ERC-20 (`0x7B7c…0001`), "MEZO Holder" badge surfaces in the MUSD payment flow when balance ≥ `MEZO_CONFIG.holderThreshold`
+- ⏳ MEZO touchpoint (Phase 2): extend `MezoPaymentSplitter` → `MezoBoostedSplitter` so the holder discount is enforced atomically on-chain (currently informational only)
+- ⏳ Goldsky pipeline (optional, for indexed analytics)
 
 ## Platform Maturity
 
