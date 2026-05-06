@@ -2,20 +2,22 @@
 
 import { useState } from 'react'
 import { type WriterCoin } from '@/lib/writerCoins'
-import { validateArticleForWriterCoin, fetchParagraphArticle } from '@/lib/paragraph'
+import { validateArticleForWriterCoin, fetchParagraphArticle, extractParagraphAuthor } from '@/lib/paragraph'
 import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 interface ArticleInputProps {
-    writerCoin: WriterCoin
+    writerCoin?: WriterCoin | null
+    isMUSD?: boolean
     onSubmit: (url: string) => void
     onBack: () => void
 }
 
-export function ArticleInput({ writerCoin, onSubmit, onBack }: ArticleInputProps) {
+export function ArticleInput({ writerCoin, isMUSD, onSubmit, onBack }: ArticleInputProps) {
     const [url, setUrl] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [preview, setPreview] = useState<{ title: string; excerpt: string } | null>(null)
+    const [preview, setPreview] = useState<{ title: string; excerpt: string; author?: string } | null>(null)
 
     const handleValidate = async () => {
         setError(null)
@@ -23,11 +25,21 @@ export function ArticleInput({ writerCoin, onSubmit, onBack }: ArticleInputProps
         setLoading(true)
 
         try {
-            const validation = await validateArticleForWriterCoin(url, writerCoin.id)
-            if (!validation.valid) {
-                setError(validation.error || 'Invalid article URL')
-                setLoading(false)
-                return
+            if (isMUSD) {
+                // For MUSD, we just need to verify it's a valid Paragraph URL
+                const author = extractParagraphAuthor(url)
+                if (!author) {
+                    setError('Please provide a valid Paragraph article URL (e.g. paragraph.xyz/@author/...)')
+                    setLoading(false)
+                    return
+                }
+            } else if (writerCoin) {
+                const validation = await validateArticleForWriterCoin(url, writerCoin.id)
+                if (!validation.valid) {
+                    setError(validation.error || 'Invalid article URL')
+                    setLoading(false)
+                    return
+                }
             }
 
             const article = await fetchParagraphArticle(url)
@@ -40,6 +52,7 @@ export function ArticleInput({ writerCoin, onSubmit, onBack }: ArticleInputProps
             setPreview({
                 title: article.title,
                 excerpt: article.content.slice(0, 160) + '...',
+                author: article.author || 'Unknown'
             })
         } catch {
             setError('Failed to validate article')
@@ -54,11 +67,16 @@ export function ArticleInput({ writerCoin, onSubmit, onBack }: ArticleInputProps
         }
     }
 
+    const themeColor = isMUSD ? 'amber' : 'purple'
+
     return (
         <div className="space-y-6">
             <button
                 onClick={onBack}
-                className="group flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-purple-400 transition-colors hover:text-purple-300"
+                className={cn(
+                    "group flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest transition-colors",
+                    isMUSD ? "text-amber-500 hover:text-amber-400" : "text-purple-400 hover:text-purple-300"
+                )}
             >
                 <svg className="h-3 w-3 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
@@ -68,15 +86,15 @@ export function ArticleInput({ writerCoin, onSubmit, onBack }: ArticleInputProps
 
             <div className="space-y-1">
                 <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">Load Target</h2>
-                <p className="text-sm text-purple-300/80">
-                    Paste a Paragraph article URL from <span className="text-purple-300 font-bold">{writerCoin.writer}</span>
+                <p className="text-sm text-white/60">
+                    Paste any Paragraph article URL to begin {isMUSD ? 'MUSD generation' : `synthesis for ${writerCoin?.writer}`}
                 </p>
             </div>
 
             <div className="space-y-4">
                 <div className="relative">
                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-purple-500/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className={cn("h-5 w-5 opacity-50", isMUSD ? "text-amber-500" : "text-purple-500")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                     </div>
@@ -88,14 +106,24 @@ export function ArticleInput({ writerCoin, onSubmit, onBack }: ArticleInputProps
                             setError(null)
                             setPreview(null)
                         }}
-                        placeholder={`${writerCoin.paragraphUrl}slug`}
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 pl-12 pr-32 text-white placeholder-purple-400/30 focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
+                        placeholder="https://paragraph.xyz/@author/..."
+                        className={cn(
+                            "w-full rounded-2xl border bg-white/5 py-4 pl-12 pr-32 text-white transition-all focus:outline-none focus:ring-4",
+                            isMUSD 
+                                ? "border-amber-500/20 placeholder-amber-500/20 focus:border-amber-500/50 focus:ring-amber-500/10" 
+                                : "border-white/10 placeholder-purple-400/30 focus:border-purple-500/50 focus:ring-purple-500/10"
+                        )}
                     />
                     <div className="absolute inset-y-2 right-2">
                         <button
                             onClick={handleValidate}
                             disabled={!url || loading}
-                            className="h-full rounded-xl bg-purple-600 px-4 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] active:scale-95"
+                            className={cn(
+                                "h-full rounded-xl px-4 text-xs font-black uppercase tracking-widest text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95",
+                                isMUSD
+                                    ? "bg-amber-600 hover:bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]"
+                                    : "bg-purple-600 hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]"
+                            )}
                         >
                             {loading ? (
                                 <span className="flex items-center space-x-2">
@@ -126,22 +154,44 @@ export function ArticleInput({ writerCoin, onSubmit, onBack }: ArticleInputProps
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="overflow-hidden rounded-2xl border border-green-500/20 bg-green-500/5"
+                            className={cn(
+                                "overflow-hidden rounded-2xl border",
+                                isMUSD ? "border-amber-500/20 bg-amber-500/5" : "border-green-500/20 bg-green-500/5"
+                            )}
                         >
-                            <div className="bg-green-500/10 px-4 py-2 flex items-center justify-between">
+                            <div className={cn(
+                                "px-4 py-2 flex items-center justify-between",
+                                isMUSD ? "bg-amber-500/10" : "bg-green-500/10"
+                            )}>
                                 <div className="flex items-center space-x-2">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-green-400/80">Data Synchronized</span>
+                                    <span className={cn(
+                                        "h-1.5 w-1.5 rounded-full animate-pulse",
+                                        isMUSD ? "bg-amber-400" : "bg-green-400"
+                                    )}></span>
+                                    <span className={cn(
+                                        "text-[10px] font-black uppercase tracking-widest",
+                                        isMUSD ? "text-amber-400/80" : "text-green-400/80"
+                                    )}>Data Synchronized</span>
                                 </div>
-                                <span className="text-[10px] font-mono text-green-400/40">ID: {writerCoin.id.slice(0, 8)}</span>
+                                <span className={cn(
+                                    "text-[10px] font-mono",
+                                    isMUSD ? "text-amber-400/40" : "text-green-400/40"
+                                )}>
+                                    SOURCE: PARAGRAPH.XYZ
+                                </span>
                             </div>
                             <div className="p-5">
                                 <h3 className="mb-2 text-lg font-black text-white italic tracking-tight">{preview.title}</h3>
-                                <p className="text-xs leading-relaxed text-purple-200/60 line-clamp-2">{preview.excerpt}</p>
+                                <p className="text-xs leading-relaxed text-white/50 line-clamp-2">{preview.excerpt}</p>
                                 
                                 <button
                                     onClick={handleSubmit}
-                                    className="group mt-6 w-full rounded-xl bg-green-500 py-3 text-xs font-black uppercase tracking-widest text-black transition-all hover:bg-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_25px_rgba(34,197,94,0.5)] active:scale-[0.98] flex items-center justify-center space-x-2"
+                                    className={cn(
+                                        "group mt-6 w-full rounded-xl py-3 text-xs font-black uppercase tracking-widest text-black transition-all active:scale-[0.98] flex items-center justify-center space-x-2 shadow-lg",
+                                        isMUSD
+                                            ? "bg-amber-500 hover:bg-amber-400 shadow-amber-500/20 hover:shadow-amber-500/40"
+                                            : "bg-green-500 hover:bg-green-400 shadow-green-500/20 hover:shadow-green-500/40"
+                                    )}
                                 >
                                     <span>Proceed to Configuration</span>
                                     <svg className="h-3 w-3 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

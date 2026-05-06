@@ -5,7 +5,7 @@ import { PaymentButton } from "./PaymentButton";
 import { type WriterCoin } from "@/lib/writerCoins";
 import type { Game } from "@/domains/games/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { triggerHaptic } from "@/lib/utils";
+import { triggerHaptic, cn } from "@/lib/utils";
 import { composeCast } from "@/lib/farcaster";
 import { Share2, ExternalLink, ShieldCheck, Trophy } from "lucide-react";
 
@@ -13,9 +13,10 @@ interface GamePlayerProps {
   game: Game;
   onBack: () => void;
   writerCoin?: WriterCoin;
+  isMUSD?: boolean;
 }
 
-export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
+export function GamePlayer({ game, onBack, writerCoin, isMUSD }: GamePlayerProps) {
   const stableId = useId();
   const [gameContent, setGameContent] = useState<string>("");
   const [options, setOptions] = useState<Array<{ id: number; text: string }>>(
@@ -204,31 +205,49 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
             <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-purple-400/60 italic">Arena Active</span>
-                <span className="h-1 w-1 rounded-full bg-purple-500 animate-pulse"></span>
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-widest italic",
+                  isMUSD ? "text-amber-500/60" : "text-purple-400/60"
+                )}>Arena Active</span>
+                <span className={cn(
+                  "h-1 w-1 rounded-full animate-pulse",
+                  isMUSD ? "bg-amber-500" : "bg-purple-500"
+                )}></span>
             </div>
             <h2 className="text-xl font-black text-white uppercase italic tracking-tight">{game.title}</h2>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-purple-300/40">
+            <p className={cn(
+              "text-[10px] font-bold uppercase tracking-[0.2em]",
+              isMUSD ? "text-amber-300/40" : "text-purple-300/40"
+            )}>
                 {game.genre} // {game.subgenre}
             </p>
         </div>
         <button
           onClick={() => { triggerHaptic('medium'); onBack(); }}
-          className="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all hover:border-red-500/50 hover:bg-red-500/10"
+          className={cn(
+            "group flex h-10 w-10 items-center justify-center rounded-xl border transition-all hover:border-red-500/50 hover:bg-red-500/10",
+            isMUSD ? "border-amber-500/10 bg-amber-900/5" : "border-white/10 bg-white/5"
+          )}
         >
-          <svg className="h-4 w-4 text-purple-400 group-hover:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className={cn("h-4 w-4 group-hover:text-red-400", isMUSD ? "text-amber-500" : "text-purple-400")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
       {/* Terminal Display */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl">
+      <div className={cn(
+        "relative overflow-hidden rounded-3xl border shadow-2xl transition-all duration-500",
+        isMUSD ? "border-amber-500/20 bg-amber-950/20 shadow-amber-900/10" : "border-white/10 bg-black/40"
+      )}>
         {/* Terminal Scanline Effect */}
         <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,128,0.03))] bg-[length:100%_4px,3px_100%]"></div>
         
         {/* Terminal Header */}
-        <div className="flex items-center justify-between bg-white/5 px-4 py-2 border-b border-white/5">
+        <div className={cn(
+          "flex items-center justify-between px-4 py-2 border-b",
+          isMUSD ? "bg-amber-500/10 border-amber-500/10" : "bg-white/5 border-white/5"
+        )}>
             <div className="flex space-x-1.5">
                 <div className="h-2 w-2 rounded-full bg-red-500/40"></div>
                 <div className="h-2 w-2 rounded-full bg-yellow-500/40"></div>
@@ -242,10 +261,18 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
             className="h-[400px] overflow-y-auto p-6 font-mono text-sm leading-relaxed scrollbar-hide"
         >
           <div className="prose prose-invert max-w-none prose-sm">
-            <p className="whitespace-pre-wrap text-purple-100/90 [text-shadow:0_0_8px_rgba(168,85,247,0.4)]">
+            <p className={cn(
+              "whitespace-pre-wrap",
+              isMUSD 
+                ? "text-amber-100/90 [text-shadow:0_0_8px_rgba(245,158,11,0.4)]" 
+                : "text-purple-100/90 [text-shadow:0_0_8px_rgba(168,85,247,0.4)]"
+            )}>
                 {gameContent}
                 {isLoading && (
-                    <span className="inline-block h-4 w-2 bg-purple-500 animate-pulse ml-1 align-middle"></span>
+                    <span className={cn(
+                      "inline-block h-4 w-2 animate-pulse ml-1 align-middle",
+                      isMUSD ? "bg-amber-500" : "bg-purple-500"
+                    )}></span>
                 )}
             </p>
           </div>
@@ -259,7 +286,10 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
                 >
                   <div className="flex items-center space-x-2 py-2">
                     <span className="h-px flex-1 bg-white/5"></span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-purple-400/40 italic">System Input Required</span>
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-widest italic",
+                      isMUSD ? "text-amber-500/40" : "text-purple-400/40"
+                    )}>System Input Required</span>
                     <span className="h-px flex-1 bg-white/5"></span>
                   </div>
                   {options.map((option, idx) => (
@@ -270,9 +300,17 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
                       transition={{ delay: idx * 0.1 }}
                       onClick={() => handleChoice(option)}
                       disabled={isLoading}
-                      className="group flex w-full items-start space-x-3 rounded-xl border border-white/5 bg-white/5 p-4 text-left transition-all hover:border-purple-500/50 hover:bg-purple-500/10 active:scale-[0.98]"
+                      className={cn(
+                        "group flex w-full items-start space-x-3 rounded-xl border p-4 text-left transition-all active:scale-[0.98]",
+                        isMUSD 
+                          ? "border-amber-500/10 bg-amber-500/5 hover:border-amber-400/50 hover:bg-amber-500/10"
+                          : "border-white/5 bg-white/5 hover:border-purple-500/50 hover:bg-purple-500/10"
+                      )}
                     >
-                      <span className="text-[10px] font-black text-purple-400 group-hover:text-purple-300">0{option.id}</span>
+                      <span className={cn(
+                        "text-[10px] font-black",
+                        isMUSD ? "text-amber-500 group-hover:text-amber-400" : "text-purple-400 group-hover:text-purple-300"
+                      )}>0{option.id}</span>
                       <span className="text-xs font-medium text-white/80 group-hover:text-white transition-colors">{option.text}</span>
                     </motion.button>
                   ))}
@@ -286,14 +324,24 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
       <div className="grid grid-cols-2 gap-4">
         <button
           onClick={() => { triggerHaptic('medium'); onBack(); }}
-          className="rounded-2xl border border-white/10 bg-white/5 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-purple-400/60 transition-all hover:bg-white/10 hover:text-purple-300"
+          className={cn(
+            "rounded-2xl border py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+            isMUSD 
+              ? "border-amber-500/10 bg-amber-900/10 text-amber-500/60 hover:bg-amber-900/20 hover:text-amber-400"
+              : "border-white/10 bg-white/5 text-purple-400/60 hover:bg-white/10 hover:text-purple-300"
+          )}
         >
           Terminate
         </button>
         <button
           onClick={() => { triggerHaptic('heavy'); setShowMintDialog(true); }}
           disabled={isMinting}
-          className="rounded-2xl bg-green-500 py-4 text-[10px] font-black uppercase tracking-[0.2em] italic text-black shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all hover:bg-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.5)] active:scale-[0.98] disabled:opacity-50"
+          className={cn(
+            "rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.2em] italic transition-all active:scale-[0.98] disabled:opacity-50 shadow-lg",
+            isMUSD
+              ? "bg-amber-500 text-black shadow-amber-500/20 hover:bg-amber-400"
+              : "bg-green-500 text-black shadow-green-500/20 hover:bg-green-400"
+          )}
         >
           Archive NFT
         </button>
@@ -375,7 +423,7 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
 
       {/* Mint Dialog */}
       <AnimatePresence>
-        {showMintDialog && writerCoin && (
+        {showMintDialog && (writerCoin || isMUSD) && (
             <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -386,29 +434,47 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
                     initial={{ scale: 0.9, y: 20 }}
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.9, y: 20 }}
-                    className="w-full max-w-sm rounded-[32px] border border-white/10 bg-white/[0.03] p-1 shadow-2xl"
+                    className={cn(
+                      "w-full max-w-sm rounded-[32px] border p-1 shadow-2xl transition-all duration-500",
+                      isMUSD ? "border-amber-500/20 bg-amber-950/20" : "border-white/10 bg-white/[0.03]"
+                    )}
                 >
                     <div className="rounded-[28px] bg-gradient-to-br from-white/[0.05] to-transparent p-8">
                         <div className="mb-6 text-center space-y-2">
-                            <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">Permanence Protocol</h3>
-                            <p className="text-xs text-purple-200/40 font-medium">Archive your experience on the Base network</p>
+                            <h3 className={cn(
+                              "text-2xl font-black uppercase italic tracking-tighter",
+                              isMUSD ? "text-amber-400" : "text-white"
+                            )}>Permanence Protocol</h3>
+                            <p className="text-xs text-white/40 font-medium">
+                              Archive your experience on the {isMUSD ? 'Mezo' : 'Base'} network
+                            </p>
                         </div>
 
-                        <div className="mb-8 rounded-2xl bg-purple-500/5 p-4 border border-purple-500/10">
+                        <div className={cn(
+                          "mb-8 rounded-2xl p-4 border",
+                          isMUSD ? "bg-amber-500/5 border-amber-500/20" : "bg-purple-500/5 border-purple-500/10"
+                        )}>
                             <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-purple-400/60">Mint Cost</span>
+                                <span className={cn(
+                                  "text-[10px] font-black uppercase tracking-widest",
+                                  isMUSD ? "text-amber-500/60" : "text-purple-400/60"
+                                )}>Mint Cost</span>
                                 <div className="flex items-center space-x-2">
                                     <span className="font-mono text-lg font-black text-white">
-                                        {(Number(writerCoin.mintCost) / 10 ** writerCoin.decimals).toFixed(0)}
+                                        {isMUSD ? '1' : (writerCoin ? (Number(writerCoin.mintCost) / 10 ** writerCoin.decimals).toFixed(0) : '0')}
                                     </span>
-                                    <span className="text-[10px] font-black text-purple-400">{writerCoin.symbol}</span>
+                                    <span className={cn(
+                                      "text-[10px] font-black",
+                                      isMUSD ? "text-amber-500" : "text-purple-400"
+                                    )}>{isMUSD ? 'MUSD' : writerCoin?.symbol}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-3">
                             <PaymentButton
-                                writerCoin={writerCoin}
+                                writerCoin={writerCoin as WriterCoin}
+                                isMUSD={isMUSD}
                                 action="mint-nft"
                                 gameId={game.id}
                                 onPaymentSuccess={handleMintSuccess}
@@ -418,7 +484,10 @@ export function GamePlayer({ game, onBack, writerCoin }: GamePlayerProps) {
                             <button
                                 onClick={() => { triggerHaptic('medium'); setShowMintDialog(false); }}
                                 disabled={isMinting}
-                                className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-purple-400/40 transition-colors hover:text-purple-300 disabled:opacity-50"
+                                className={cn(
+                                  "w-full py-4 text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-50",
+                                  isMUSD ? "text-amber-500/40 hover:text-amber-300" : "text-purple-400/40 hover:text-purple-300"
+                                )}
                             >
                                 Cancel ARCHIVE
                             </button>

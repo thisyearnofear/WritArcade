@@ -17,6 +17,7 @@ export default function MiniAppPage() {
     const [user, setUser] = useState<FarcasterUser | null>(null)
     const [isInFrame, setIsInFrame] = useState(false)
     const [selectedCoin, setSelectedCoin] = useState<WriterCoin | null>(null)
+    const [isMUSDSelected, setIsMUSDSelected] = useState(false)
     const [articleUrl, setArticleUrl] = useState('')
     const [generatedGame, setGeneratedGame] = useState<Game | null>(null)
     const [step, setStep] = useState<'select-coin' | 'input-article' | 'customize-game' | 'play-game'>('select-coin')
@@ -40,8 +41,14 @@ export default function MiniAppPage() {
         init()
     }, [init])
 
-    const handleCoinSelect = (coin: WriterCoin) => {
-        setSelectedCoin(coin)
+    const handleCoinSelect = (coin: WriterCoin | { type: 'musd' }) => {
+        if ('type' in coin && coin.type === 'musd') {
+            setIsMUSDSelected(true)
+            setSelectedCoin(null)
+        } else {
+            setSelectedCoin(coin as WriterCoin)
+            setIsMUSDSelected(false)
+        }
         setStep('input-article')
     }
 
@@ -59,6 +66,7 @@ export default function MiniAppPage() {
         } else if (step === 'input-article') {
             setStep('select-coin')
             setSelectedCoin(null)
+            setIsMUSDSelected(false)
         }
     }, [step])
 
@@ -183,26 +191,29 @@ export default function MiniAppPage() {
                                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
                                     >
                                         {step === 'select-coin' && <WriterCoinSelector onSelect={handleCoinSelect} />}
-                                        {step === 'input-article' && selectedCoin && (
+                                        {step === 'input-article' && (selectedCoin || isMUSDSelected) && (
                                             <ArticleInput
                                                 writerCoin={selectedCoin}
+                                                isMUSD={isMUSDSelected}
                                                 onSubmit={handleArticleSubmit}
                                                 onBack={handleBack}
                                             />
                                         )}
-                                        {step === 'customize-game' && selectedCoin && articleUrl && (
+                                        {step === 'customize-game' && (selectedCoin || isMUSDSelected) && articleUrl && (
                                             <GameCustomizer
                                                 writerCoin={selectedCoin}
+                                                isMUSD={isMUSDSelected}
                                                 articleUrl={articleUrl}
                                                 onBack={handleBack}
                                                 onGameGenerated={handleGameGenerated}
                                             />
                                         )}
-                                        {step === 'play-game' && generatedGame && selectedCoin && (
+                                        {step === 'play-game' && generatedGame && (selectedCoin || isMUSDSelected) && (
                                             <GamePlayer
                                                 game={generatedGame}
                                                 onBack={handleBack}
                                                 writerCoin={selectedCoin}
+                                                isMUSD={isMUSDSelected}
                                             />
                                         )}
                                     </motion.div>

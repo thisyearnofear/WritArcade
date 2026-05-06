@@ -8,9 +8,12 @@ import { ErrorCard } from '@/components/error/ErrorCard'
 import { getUserMessage, retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { useMezoBalance } from '@/hooks/useMezoBalance'
-import { Loader2, Wallet, Sparkles } from 'lucide-react'
+import { Loader2, Wallet, Sparkles, ExternalLink, ArrowRight } from 'lucide-react'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
 import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
+import { Button } from '@/components/ui/button'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 interface PaymentFlowProps {
   paymentToken: PaymentToken
@@ -22,6 +25,16 @@ interface PaymentFlowProps {
 }
 
 const BASE_CHAIN_ID = 8453
+const MEZO_TESTNET_CHAIN_ID = 31611
+
+/**
+ * Stylized MUSD Logo for Mezo Hackathon track
+ */
+const MUSDLogo = ({ className }: { className?: string }) => (
+  <div className={cn("flex items-center justify-center bg-amber-500 rounded-full text-black font-bold text-[10px] w-5 h-5", className)}>
+    M
+  </div>
+)
 
 export function PaymentFlow({
   paymentToken,
@@ -41,10 +54,10 @@ export function PaymentFlow({
 
   // Only check balance for WriterCoin right now
   const { balance, isLoading: isLoadingBalance, error: balanceError, refresh } = useWriterCoinBalance(isMUSD ? '' : paymentToken.coin.id)
-  // Read MEZO balance only when paying in MUSD (chainId 31611). Provides a
-  // "MEZO Holder" perk indicator and powers future on-chain boost logic.
-  const { isHolder: isMezoHolder, formatted: mezoFormatted } = useMezoBalance()
-  
+
+  // Read MEZO balance only when paying in MUSD.
+  const { isHolder: isMezoHolder, formatted: mezoFormatted, balance: rawMezoBalance } = useMezoBalance()
+
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -60,7 +73,7 @@ export function PaymentFlow({
   }, [balance, isMUSD])
 
   const hasInsufficientBalance = useMemo(() => {
-    if (isMUSD) return false
+    if (isMUSD) return false // TODO: Real MUSD balance check
     if (userBalance === null || isLoadingBalance) return false
     return userBalance < requiredAmount
   }, [userBalance, requiredAmount, isLoadingBalance, isMUSD])
@@ -84,7 +97,7 @@ export function PaymentFlow({
         async () => {
           const strategy = isMUSD ? new MUSDStrategy() : new WriterCoinStrategy()
           const amount = (action === 'generate-game' ? config.gameGenerationCost : config.mintCost).toString()
-          
+
           return strategy.executePayment({
             walletClient,
             userAddress,
@@ -114,91 +127,167 @@ export function PaymentFlow({
       ? `Generate Game (${costFormatted} ${tokenSymbol})`
       : `Mint as NFT (${costFormatted} ${tokenSymbol})`
 
-  const targetChainId = isMUSD ? 31611 : BASE_CHAIN_ID // 31611 is Mezo Testnet
+  const targetChainId = isMUSD ? MEZO_TESTNET_CHAIN_ID : BASE_CHAIN_ID
   const isWrongChain = Boolean(chainId && chainId !== targetChainId)
 
   return (
-    <div className="space-y-3">
-      {userAddress && (
-        <div className="rounded-lg bg-purple-900/20 border border-purple-500/30 p-3">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-purple-400" />
-              <span className="text-purple-200">Your Balance:</span>
+    <div className="space-y-4">
+      <AnimatePresence mode="wait">
+        {userAddress && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={cn(
+              "rounded-xl border p-4 transition-all duration-300",
+              isMUSD 
+                ? "bg-slate-900/60 border-amber-500/30 shadow-[0_0_20px_-12px_rgba(245,158,11,0.3)]" 
+                : "bg-purple-900/20 border-purple-500/30"
+            )}
+          >
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                {isMUSD ? (
+                  <MUSDLogo className="shadow-sm" />
+                ) : (
+                  <Wallet className="w-4 h-4 text-purple-400" />
+                )}
+                <span className={isMUSD ? "text-amber-200" : "text-purple-200"}>
+                  {isMUSD ? "MUSD Balance" : "Your Balance"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isLoadingBalance ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                ) : balanceError ? (
+                  <span className="text-red-400">Unable to load</span>
+                ) : (
+                  <>
+                    <span className={cn(
+                      "font-bold text-base",
+                      hasInsufficientBalance ? 'text-red-400' : isMUSD ? 'text-amber-400' : 'text-green-400'
+                    )}>
+                      {isMUSD ? 'Available' : (balance ? balance.formattedBalance : '0')} {tokenSymbol}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {isLoadingBalance ? (
-                <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-              ) : balanceError ? (
-                <span className="text-red-400">Unable to load</span>
-              ) : (
-                <>
-                  <span className={`font-semibold ${hasInsufficientBalance ? 'text-red-400' : 'text-green-400'}`}>
-                    {isMUSD ? 'N/A' : (balance ? balance.formattedBalance : '0')} {tokenSymbol}
-                  </span>
-                  {hasInsufficientBalance && (
-                    <span className="text-xs text-red-400">(Insufficient)</span>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
+            {isMUSD && (
+              <div className="mt-3 pt-3 border-t border-amber-500/10 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[10px] text-amber-200/60 font-medium tracking-wide uppercase">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  Mezo Matsnet Testnet
+                </div>
+                <a 
+                  href="https://mezo.org/bridge" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[10px] text-amber-500 hover:text-amber-400 transition-colors font-semibold"
+                >
+                  Get MUSD <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isMUSD && userAddress && (
-        <div
-          className={`rounded-lg border p-3 text-xs flex items-center justify-between gap-3 ${
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={cn(
+            "rounded-xl border p-4 text-xs relative overflow-hidden group transition-all duration-500",
             isMezoHolder
-              ? 'bg-amber-900/20 border-amber-500/40 text-amber-200'
+              ? 'bg-amber-900/30 border-amber-400/50 text-amber-100 shadow-[0_0_25px_-10px_rgba(245,158,11,0.4)]'
               : 'bg-slate-900/40 border-slate-700/40 text-slate-300'
-          }`}
+          )}
         >
-          <div className="flex items-center gap-2">
-            <Sparkles className={`w-4 h-4 ${isMezoHolder ? 'text-amber-300' : 'text-slate-400'}`} />
-            <span>
-              {isMezoHolder
-                ? `MEZO Holder perk active (${mezoFormatted} MEZO)`
-                : 'Hold MEZO to unlock holder perks'}
-            </span>
+          {/* Animated Background for Holders */}
+          {isMezoHolder && (
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-600/0 via-amber-400/20 to-amber-600/0 animate-shimmer" />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3 relative z-10">
+            <div className="flex items-center gap-2.5">
+              <div className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                isMezoHolder ? "bg-amber-500/20 text-amber-400" : "bg-slate-800 text-slate-500"
+              )}>
+                <Sparkles className={cn("w-4 h-4", isMezoHolder && "animate-pulse")} />
+              </div>
+              <div className="flex flex-col">
+                <span className={cn("font-bold", isMezoHolder ? "text-amber-300" : "text-slate-300")}>
+                  {isMezoHolder ? "MEZO Holder Status Active" : "Unlock MEZO Holder Perks"}
+                </span>
+                <span className="opacity-70 text-[10px]">
+                  {isMezoHolder 
+                    ? `Balance: ${mezoFormatted} MEZO` 
+                    : `Requires ${Number(MEZO_CONFIG.holderThreshold) / 10**18} MEZO`}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className={cn(
+                "font-mono font-bold text-sm",
+                isMezoHolder ? "text-amber-400" : "text-slate-500"
+              )}>
+                {(MEZO_CONFIG.holderDiscountBP / 100).toFixed(0)}% Boost
+              </div>
+              <div className="text-[9px] opacity-60">Writer Share</div>
+            </div>
           </div>
-          <span className="opacity-70">
-            {(MEZO_CONFIG.holderDiscountBP / 100).toFixed(0)}% boost (soon)
-          </span>
-        </div>
+        </motion.div>
       )}
 
-      <button
+      <Button
         onClick={handlePayment}
         disabled={disabled || isProcessing || !walletClient || !userAddress || !!isLoadingBalance || hasInsufficientBalance || isWrongChain}
-        className="w-full rounded-lg bg-purple-600 px-6 py-4 font-semibold text-white transition-colors hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+        size="lg"
+        className={cn(
+          "w-full py-7 rounded-xl text-base font-bold transition-all duration-300 shadow-lg group",
+          isWrongChain 
+            ? "bg-slate-800 hover:bg-slate-700 text-white" 
+            : isMUSD 
+              ? "bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/20"
+              : "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/20"
+        )}
       >
         {isProcessing ? (
           <span className="flex items-center justify-center gap-2">
-            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            Processing payment...
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Processing...
           </span>
         ) : isWrongChain ? (
-          <span onClick={() => switchChainAsync({ chainId: targetChainId })} className="cursor-pointer">
-            Switch to {isMUSD ? 'Mezo Network' : 'Base Network'}
+          <span onClick={(e) => {
+            e.stopPropagation();
+            switchChainAsync({ chainId: targetChainId });
+          }} className="flex items-center gap-2">
+            Switch to {isMUSD ? 'Mezo Matsnet' : 'Base'} <ArrowRight className="w-4 h-4" />
           </span>
         ) : (
-          actionLabel
+          <span className="flex items-center gap-2">
+            {actionLabel}
+            {!disabled && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
+          </span>
         )}
-      </button>
+      </Button>
 
       {error && <ErrorCard error={error} onDismiss={() => setError(null)} />}
 
-      <div className="rounded-lg bg-purple-900/30 p-3 text-xs text-purple-300">
-        <p>
-          💡 <span className="font-semibold">Payment flow:</span> You'll approve spending in your wallet, then we process your payment on Base.
+      <div className={cn(
+        "rounded-xl p-4 text-xs transition-colors",
+        isMUSD ? "bg-amber-900/10 text-amber-200/60" : "bg-purple-900/30 text-purple-300"
+      )}>
+        <p className="flex gap-2">
+          <span className="text-base leading-none">💡</span>
+          <span>
+            <span className="font-bold text-white/80">Payment flow:</span> You'll approve the {tokenSymbol} spend in your wallet, then process the transaction on {isMUSD ? 'Mezo' : 'Base'}.
+          </span>
         </p>
       </div>
     </div>

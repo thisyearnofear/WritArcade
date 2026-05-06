@@ -8,8 +8,11 @@ import {
 } from '@/lib/contracts'
 import { detectWalletProvider, type WalletProvider } from '@/lib/wallet'
 
+import { triggerHaptic, cn } from '@/lib/utils'
+
 interface PaymentButtonProps {
-  writerCoin: WriterCoin
+  writerCoin?: WriterCoin | null
+  isMUSD?: boolean
   action: 'generate-game' | 'mint-nft'
   gameId?: string
   onPaymentSuccess?: (transactionHash: string, storyIPAssetId?: string) => void
@@ -19,6 +22,7 @@ interface PaymentButtonProps {
 
 export function PaymentButton({
   writerCoin,
+  isMUSD,
   action,
   gameId,
   onPaymentSuccess,
@@ -37,17 +41,27 @@ export function PaymentButton({
     setupProvider()
   }, [])
 
-  const cost = action === 'generate-game'
-    ? writerCoin.gameGenerationCost
-    : writerCoin.mintCost
+  const cost = isMUSD 
+    ? (action === 'generate-game' ? 1000000000000000000n : 1000000000000000000n)
+    : (action === 'generate-game' ? writerCoin?.gameGenerationCost || 0n : writerCoin?.mintCost || 0n)
 
-  const costFormatted = (Number(cost) / 10 ** writerCoin.decimals).toFixed(0)
+  const symbol = isMUSD ? 'MUSD' : writerCoin?.symbol || 'TOKENS'
+  const decimals = isMUSD ? 18 : writerCoin?.decimals || 18
+  const costFormatted = (Number(cost) / 10 ** decimals).toFixed(0)
 
   const actionLabel = action === 'generate-game'
-    ? `Generate Game (${costFormatted} ${writerCoin.symbol})`
-    : `Mint as NFT (${costFormatted} ${writerCoin.symbol})`
+    ? `Generate Game (${costFormatted} ${symbol})`
+    : `Mint as NFT (${costFormatted} ${symbol})`
 
   const handlePayment = async () => {
+    if (isMUSD) {
+      triggerHaptic('error')
+      setError('Mezo payments are optimized for the web app today. Switching to MUSD (Mezo Matsnet) in Farcaster wallet is coming soon.')
+      return
+    }
+
+    if (!writerCoin) return
+
     setIsProcessing(true)
     setError(null)
 
@@ -147,7 +161,12 @@ export function PaymentButton({
       <button
         onClick={handlePayment}
         disabled={disabled || isProcessing}
-        className="w-full rounded-lg bg-purple-600 px-6 py-4 font-semibold text-white transition-colors hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className={cn(
+          "w-full rounded-xl px-6 py-4 font-bold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50 shadow-lg",
+          isMUSD 
+            ? "bg-amber-600 hover:bg-amber-500 shadow-amber-900/20" 
+            : "bg-purple-600 hover:bg-purple-500 shadow-purple-900/20"
+        )}
       >
         {isProcessing ? (
           <span className="flex items-center justify-center gap-2">
@@ -155,7 +174,7 @@ export function PaymentButton({
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            Processing payment...
+            Processing...
           </span>
         ) : (
           actionLabel
@@ -163,14 +182,24 @@ export function PaymentButton({
       </button>
 
       {error && (
-        <div className="rounded-lg bg-red-500/20 border border-red-500/50 p-3">
-          <p className="text-sm text-red-200">{error}</p>
+        <div className={cn(
+          "rounded-lg border p-3 transition-all duration-300",
+          isMUSD ? "bg-amber-500/10 border-amber-500/30 text-amber-200" : "bg-red-500/20 border-red-500/50 text-red-200"
+        )}>
+          <p className="text-xs font-medium leading-relaxed">{error}</p>
         </div>
       )}
 
-      <div className="rounded-lg border border-[color:var(--ia-panel-border)] bg-[color:var(--ia-panel-bg)] p-3 text-xs text-purple-100">
+      <div className={cn(
+        "rounded-lg border p-3 text-[10px] leading-relaxed transition-all",
+        isMUSD 
+          ? "bg-amber-900/10 border-amber-500/10 text-amber-200/50" 
+          : "bg-purple-900/30 border-white/5 text-purple-100/40"
+      )}>
         <p>
-          💡 <span className="font-semibold">Payment flow:</span> You'll approve spending in your Farcaster wallet, then we process your payment on Base.
+          💡 <span className="font-bold text-white/40">Protocol Info:</span> {isMUSD 
+            ? "You'll authorize the MUSD spend on Mezo Matsnet. Ensure your Mezo Passport or wallet is set to the correct network." 
+            : "You'll approve spending in your Farcaster wallet, then we process your payment on Base."}
         </p>
       </div>
     </div>
