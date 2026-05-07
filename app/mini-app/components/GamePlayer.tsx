@@ -110,11 +110,9 @@ export function GamePlayer({ game, onBack, writerCoin, isMUSD }: GamePlayerProps
     setIsMinting(false);
     setMintResult({ txHash: transactionHash, storyIpId: storyIPAssetId });
     setShowSuccessDialog(true);
-  };
+    };
 
-import { shareGame } from "@/lib/farcaster-sharing.service";
-...
-  const handleShare = async () => {
+    const handleShare = async () => {
     triggerHaptic('medium');
     const success = await shareGame(game);
     if (!success) {
@@ -122,7 +120,8 @@ import { shareGame } from "@/lib/farcaster-sharing.service";
       navigator.clipboard.writeText(`${window.location.origin}/games/${game.slug}`);
       alert("Link copied to clipboard!");
     }
-  };
+    };
+
 
   const handleChoice = async (option: { id: number; text: string }) => {
     if (isLoading) return;
