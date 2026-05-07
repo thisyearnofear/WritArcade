@@ -12,6 +12,7 @@ const nextConfig = {
     '@mezo-org/orangekit',
     '@mezo-org/orangekit-contracts',
     '@mezo-org/orangekit-smart-account',
+    '@mezo-org/mezo-clay',
     '@rainbow-me/rainbowkit',
     '@wagmi/connectors',
   ],
@@ -86,6 +87,7 @@ const nextConfig = {
           request.includes('@mezo-org/orangekit-contracts') ||
           request.includes('@mezo-org/orangekit-smart-account') ||
           request.includes('@mezo-org/orangekit') ||
+          request.includes('@mezo-org/mezo-clay') ||
           request.includes('@metamask/sdk')
         )) {
           return callback(null, 'commonjs ' + request);
