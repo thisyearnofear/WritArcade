@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+const path = require('path')
 
 // Hetzner backend for heavy API routes (image gen, audio gen, balance)
 const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
@@ -56,7 +57,17 @@ const nextConfig = {
   experimental: {
     optimizeCss: false, // Disable CSS optimization that may cause issues
   },
-  webpack: (config, { _isServer, webpack }) => {
+  webpack: (config, { isServer, webpack }) => {
+    // Force a single React instance in the CLIENT bundle to prevent
+    // "ReactCurrentOwner" duplicate-React runtime errors caused by
+    // @metamask/sdk (via @rainbow-me/rainbowkit) bundling its own React copy.
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        react: path.resolve(__dirname, 'node_modules/react'),
+        'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      };
+    }
     // Ignore test files from problematic dependencies
     config.module.rules.push({
       test: /\.(test|spec)\.(js|ts|mjs)$/,
