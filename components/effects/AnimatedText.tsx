@@ -269,8 +269,10 @@ export function StreamingTypewriter({
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setDisplayedText(text)
-      onComplete?.()
+      requestAnimationFrame(() => {
+        setDisplayedText(text)
+        onComplete?.()
+      })
       return
     }
 
@@ -298,7 +300,7 @@ export function StreamingTypewriter({
         rafId = requestAnimationFrame(animate)
       } else {
         setIsTyping(false)
-        onComplete?.()
+        requestAnimationFrame(() => onComplete?.())
       }
     }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -33,11 +33,7 @@ export default function AssetsPage() {
 
   const ITEMS_PER_PAGE = 12
 
-  useEffect(() => {
-    loadAssets()
-  }, [searchTerm, selectedType, selectedGenre, currentPage])
-
-  const loadAssets = async () => {
+  const loadAssets = useCallback(async () => {
     setLoading(true)
     try {
       // P0 FIX: was importing AssetMarketplaceService (Prisma) directly in client component.
@@ -65,7 +61,11 @@ export default function AssetsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchTerm, selectedType, selectedGenre, currentPage])
+
+  useEffect(() => {
+    loadAssets()
+  }, [loadAssets])
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)

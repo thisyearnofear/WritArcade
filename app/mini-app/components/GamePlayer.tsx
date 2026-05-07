@@ -6,8 +6,8 @@ import { type WriterCoin } from "@/lib/writerCoins";
 import type { Game } from "@/domains/games/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { triggerHaptic, cn } from "@/lib/utils";
-import { composeCast } from "@/lib/farcaster";
 import { Share2, ExternalLink, ShieldCheck, Trophy } from "lucide-react";
+import { shareGame } from "@/lib/farcaster-sharing.service";
 
 interface GamePlayerProps {
   game: Game;

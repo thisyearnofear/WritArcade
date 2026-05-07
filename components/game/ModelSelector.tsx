@@ -1,8 +1,7 @@
 import React from 'react';
 import { useVisualConfig } from '@/contexts/visual-config.context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Settings2, Zap, Sparkles } from 'lucide-react';
+import { Zap, Sparkles } from 'lucide-react';
 import { useMobileOptimizations } from '@/hooks/useMobileOptimizations';
 
 export const ModelSelector: React.FC = () => {

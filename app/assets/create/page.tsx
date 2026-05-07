@@ -39,11 +39,7 @@ export default function CreateGamePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadAssets()
-  }, [searchTerm, selectedTypeFilter, selectedGenreFilter])
-
-  const loadAssets = async () => {
+  const loadAssets = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -58,11 +54,15 @@ export default function CreateGamePage() {
       setAvailableAssets(json.data?.assets || [])
     } catch (err) {
       console.error('Failed to load assets:', err)
-      setAvailableAssets([])
+      setError('Failed to load assets. Please try again.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchTerm, selectedTypeFilter, selectedGenreFilter])
+
+  useEffect(() => {
+    loadAssets()
+  }, [loadAssets])
 
   const toggleAsset = (assetId: string) => {
     const newSelected = new Set(selectedAssets)

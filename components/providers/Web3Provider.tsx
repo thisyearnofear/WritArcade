@@ -5,10 +5,9 @@ import {
   RainbowKitProvider,
   darkTheme,
 } from '@rainbow-me/rainbowkit';
-import { 
+import {
   getConfig, 
   mezoTestnet, 
-  mezoMainnet, 
   getDefaultWallets,
   PassportProvider 
 } from '@mezo-org/passport';

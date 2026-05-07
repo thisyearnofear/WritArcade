@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { BookOpen } from 'lucide-react'
 import { useAccount } from 'wagmi'
 
 import { Game } from '../types'
 import { useGameSession } from '../hooks/use-game-session'
 import { useGameBlockchain } from '../hooks/use-game-blockchain'
-import { ModelSelector } from '@/components/game/ModelSelector'
 
 // Screen Components
 import { HeroScreen } from './screens/hero-screen'

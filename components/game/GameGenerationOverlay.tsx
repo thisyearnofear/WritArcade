@@ -85,17 +85,21 @@ export function GameGenerationOverlay({
   const warnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Memoize background particles to avoid impure function calls during render
-  const backgroundParticles = useMemo(() =>
-    [...Array(20)].map((_, i) => ({
+  // Memoize background particles with seeded random to avoid impure function calls during render
+  const backgroundParticles = useMemo(() => {
+    let seed = 67890
+    const seededRandom = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff
+      return seed / 0x7fffffff
+    }
+    return [...Array(20)].map((_, i) => ({
       id: i,
-      initialX: Math.random() * window.innerWidth,
-      initialY: Math.random() * window.innerHeight,
-      animateY: Math.random() * window.innerHeight,
-      duration: 3 + Math.random() * 2,
-    })),
-    []
-  )
+      initialX: seededRandom() * window.innerWidth,
+      initialY: seededRandom() * window.innerHeight,
+      animateY: seededRandom() * window.innerHeight,
+      duration: 3 + seededRandom() * 2,
+    }))
+  }, [])
 
   // Rotate tips every 8 seconds
   useEffect(() => {

@@ -16,9 +16,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const prefersReducedMotion = useReducedMotion()
     const [isFocused, setIsFocused] = React.useState(false)
 
-    // CONSOLIDATION: Use CSS variable for ring color
-    const focusRingColor = "hsl(var(--ring))"
-
     if (animated && !prefersReducedMotion) {
       return (
         <motion.div

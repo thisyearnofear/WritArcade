@@ -32,13 +32,20 @@ export function SkeletonShimmer({
         </div>
       )}
       <div className="space-y-2">
-        {useMemo(() => Array.from({ length: lines }).map((_, i) => (
-          <ShimmerBox
-            key={i}
-            className="h-4 rounded"
-            style={{ width: `${Math.random() * 40 + 60}%` }}
-          />
-        )), [lines])}
+        {useMemo(() => {
+          let seed = 54321
+          const seededRandom = () => {
+            seed = (seed * 1103515245 + 12345) & 0x7fffffff
+            return seed / 0x7fffffff
+          }
+          return Array.from({ length: lines }).map((_, i) => (
+            <ShimmerBox
+              key={i}
+              className="h-4 rounded"
+              style={{ width: `${seededRandom() * 40 + 60}%` }}
+            />
+          ))
+        }, [lines])}
       </div>
     </motion.div>
   )

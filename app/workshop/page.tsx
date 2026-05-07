@@ -76,6 +76,23 @@ export default function WorkshopPage() {
         }
     }
 
+    const handleMint = async () => {
+        setState('minting')
+        try {
+            const res = await fetch('/api/assets/mint', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assets }),
+            })
+            if (!res.ok) throw new Error('Minting failed')
+            showToast('IP registered successfully!', { type: 'success', duration: 5000 })
+        } catch {
+            showToast('Failed to register IP. Please try again.', { type: 'error', duration: 6000 })
+        } finally {
+            setState('workshop')
+        }
+    }
+
     const handleUndo = () => {
         const prev = undoManager.undo()
         if (prev) setAssets(prev.state)

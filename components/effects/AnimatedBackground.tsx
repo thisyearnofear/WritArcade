@@ -1,7 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useMemo } from 'react'
 
 interface AnimatedBackgroundProps {
@@ -138,16 +137,23 @@ function MeshGradient({ className }: { className?: string }) {
 }
 
 function ParticleField({ className }: { className?: string }) {
-  // Generate random particles using useMemo to avoid impure function calls during render
-  const particles = useMemo(() => Array.from({ length: 30 }, (_, i) => ({
-    id: i,
-    size: Math.random() * 4 + 2,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    xOffset: Math.random() * 50 - 25,
-    duration: Math.random() * 20 + 10,
-    delay: Math.random() * 5,
-  })), [])
+  // Use seeded random to avoid impure function calls during render
+  const particles = useMemo(() => {
+    let seed = 12345
+    const seededRandom = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff
+      return seed / 0x7fffffff
+    }
+    return Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      size: seededRandom() * 4 + 2,
+      x: seededRandom() * 100,
+      y: seededRandom() * 100,
+      xOffset: seededRandom() * 50 - 25,
+      duration: seededRandom() * 20 + 10,
+      delay: seededRandom() * 5,
+    }))
+  }, [])
 
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
