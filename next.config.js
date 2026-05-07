@@ -56,7 +56,7 @@ const nextConfig = {
   experimental: {
     optimizeCss: false, // Disable CSS optimization that may cause issues
   },
-  webpack: (config, { webpack }) => {
+  webpack: (config, { webpack, isServer }) => {
     // Ignore test files from problematic dependencies
     config.module.rules.push({
       test: /\.(test|spec)\.(js|ts|mjs)$/,
@@ -77,23 +77,64 @@ const nextConfig = {
       )
     );
 
-    // Treat Mezo orangekit packages as external - they use advanced TS features webpack can't parse
-    // Also treat @metamask/sdk as external in the CLIENT bundle to prevent it bundling
-    // its own React copy which causes "ReactCurrentOwner" duplicate-React runtime errors.
-    config.externals = config.externals || [];
-    if (Array.isArray(config.externals)) {
-      config.externals.push(function({ request }, callback) {
-        if (request && (
-          request.includes('@mezo-org/orangekit-contracts') ||
-          request.includes('@mezo-org/orangekit-smart-account') ||
-          request.includes('@mezo-org/orangekit') ||
-          request.includes('@mezo-org/mezo-clay') ||
-          request.includes('@metamask/sdk')
-        )) {
-          return callback(null, 'commonjs ' + request);
-        }
-        callback();
-      });
+    if (isServer) {
+      // ── SERVER builds ──────────────────────────────────────────────
+      // Node.js has require(), so commonjs externals are safe here.
+      // These packages use ESM bare directory imports or bundle their own
+      // React copy — externalizing avoids SSR prerender crashes.
+      config.externals = config.externals || [];
+      if (Array.isArray(config.externals)) {
+        config.externals.push(function({ request }, callback) {
+          if (request && (
+            request.includes('@mezo-org/orangekit-contracts') ||
+            request.includes('@mezo-org/orangekit-smart-account') ||
+            request.includes('@mezo-org/orangekit') ||
+            request.includes('@mezo-org/mezo-clay') ||
+            request.includes('@metamask/sdk')
+          )) {
+            return callback(null, 'commonjs ' + request);
+          }
+          callback();
+        });
+      }
+    } else {
+      // ── CLIENT builds ─────────────────────────────────────────────
+      // The browser has no require(). Using "commonjs" externals in the
+      // client bundle generates require() calls → ReferenceError crash.
+      // Instead:
+      //   1. Stub @metamask/sdk so it never enters the bundle (it bundles
+      //      its own React copy causing ReactCurrentOwner errors).
+      //   2. Force a single React instance via resolve.alias so that any
+      //      @mezo-org/* packages that get bundled all use the same React.
+
+      // ① Stub packages that ship untranspiled TypeScript or bundle their
+      //    own React copy, which would crash the client bundle.
+      //    Using resolve.alias (not NormalModuleReplacementPlugin) because
+      //    NormalModuleReplacementPlugin matches resolved absolute paths, not
+      //    bare specifiers, and the pnpm virtual-store layout makes the path
+      //    unpredictable.
+      //
+      //    On the server side these are handled by serverExternalPackages and
+      //    the commonjs externals callback above.
+      const path = require('path');
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // @metamask/sdk bundles its own React → duplicate React → ReactCurrentOwner
+        '@metamask/sdk': require.resolve('./webpack-stubs/metamask-sdk-stub.js'),
+        // @mezo-org/orangekit-contracts ships raw index.ts → webpack can't parse
+        '@mezo-org/orangekit-contracts': require.resolve('./webpack-stubs/orangekit-contracts-stub.js'),
+        // @mezo-org/orangekit-smart-account has untranspiled TS in re-exports
+        '@mezo-org/orangekit-smart-account': require.resolve('./webpack-stubs/orangekit-smart-account-stub.js'),
+        // @mezo-org/orangekit umbrella: must also be stubbed because it uses
+        // deep import paths (e.g. orangekit-smart-account/src/lib/utils/chains)
+        // that bypass the bare-specifier aliases for the sub-packages above.
+        '@mezo-org/orangekit': require.resolve('./webpack-stubs/orangekit-stub.js'),
+        // ② Force a single React instance for the entire client bundle.
+        //    Any remaining packages that get bundled and depend on React
+        //    will use this single copy, preventing duplicate-React errors.
+        react: path.resolve(__dirname, 'node_modules/react'),
+        'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      };
     }
 
     return config;
