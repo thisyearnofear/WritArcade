@@ -31,7 +31,6 @@
     "@lit-protocol/constants": "9.0.1",
     "@lit-protocol/encryption": "7.4.0",
     "@lit-protocol/lit-node-client": "7.4.0",
-    "@metamask/sdk": "^0.34.0",
     "@mezo-org/passport": "0.17.2",
     "@paragraph_xyz/sdk": "^0.0.13",
     "@radix-ui/react-dialog": "^1.1.2",

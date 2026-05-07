@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-const path = require('path')
 
 // Hetzner backend for heavy API routes (image gen, audio gen, balance)
 const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
@@ -14,7 +13,6 @@ const nextConfig = {
     '@mezo-org/orangekit-contracts',
     '@mezo-org/orangekit-smart-account',
     '@rainbow-me/rainbowkit',
-    '@metamask/sdk',
     '@wagmi/connectors',
   ],
   async rewrites() {
@@ -57,17 +55,7 @@ const nextConfig = {
   experimental: {
     optimizeCss: false, // Disable CSS optimization that may cause issues
   },
-  webpack: (config, { isServer, webpack }) => {
-    // Force a single React instance in the CLIENT bundle to prevent
-    // "ReactCurrentOwner" duplicate-React runtime errors caused by
-    // @metamask/sdk (via @rainbow-me/rainbowkit) bundling its own React copy.
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        react: path.resolve(__dirname, 'node_modules/react'),
-        'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
-      };
-    }
+  webpack: (config, { webpack }) => {
     // Ignore test files from problematic dependencies
     config.module.rules.push({
       test: /\.(test|spec)\.(js|ts|mjs)$/,
@@ -88,26 +76,17 @@ const nextConfig = {
       )
     );
 
-    // Stub out @metamask/sdk in the CLIENT bundle — it bundles its own React copy
-    // which causes "ReactCurrentOwner" duplicate-React runtime errors.
-    // We don't use MetaMask directly; it's only pulled in transitively.
-    if (!isServer) {
-      config.plugins.push(
-        new webpack.NormalModuleReplacementPlugin(
-          /@metamask\/sdk/,
-          require.resolve('./webpack-stubs/metamask-sdk-stub.js')
-        )
-      );
-    }
-
     // Treat Mezo orangekit packages as external - they use advanced TS features webpack can't parse
+    // Also treat @metamask/sdk as external in the CLIENT bundle to prevent it bundling
+    // its own React copy which causes "ReactCurrentOwner" duplicate-React runtime errors.
     config.externals = config.externals || [];
     if (Array.isArray(config.externals)) {
       config.externals.push(function({ request }, callback) {
         if (request && (
           request.includes('@mezo-org/orangekit-contracts') ||
           request.includes('@mezo-org/orangekit-smart-account') ||
-          request.includes('@mezo-org/orangekit')
+          request.includes('@mezo-org/orangekit') ||
+          request.includes('@metamask/sdk')
         )) {
           return callback(null, 'commonjs ' + request);
         }
