@@ -6,6 +6,7 @@ const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.
 const nextConfig = {
   output: 'standalone',
   serverExternalPackages: [
+    '@mezo-org/passport',
     '@mezo-org/orangekit-contracts',
     '@mezo-org/orangekit-smart-account',
     '@mezo-org/orangekit',
