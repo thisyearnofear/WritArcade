@@ -7,27 +7,29 @@
 
 import { type Game } from '@/domains/games/types'
 
-// SDK reference
+// SDK reference — loaded lazily via dynamic import (no require() in browser bundles)
 let sdk: { actions: { share: (params: { text: string; url: string }) => Promise<unknown> } } | null = null
 
-// Load SDK lazily
-if (typeof window !== 'undefined') {
+async function getSDK() {
+    if (sdk) return sdk
+    if (typeof window === 'undefined') return null
     try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const farcasterModule = require('@farcaster/miniapp-sdk')
+        const farcasterModule = await import('@farcaster/miniapp-sdk')
         if (farcasterModule && farcasterModule.sdk) {
-            sdk = farcasterModule.sdk
+            sdk = farcasterModule.sdk as unknown as typeof sdk
         }
     } catch {
         // SDK not available, silent fail (web app fallback)
     }
+    return sdk
 }
 
 /**
  * Trigger a native Farcaster share action
  */
 export async function shareGame(game: Game): Promise<boolean> {
-    if (!sdk) {
+    const resolvedSdk = await getSDK()
+    if (!resolvedSdk) {
         console.warn('[FarcasterSharing] SDK not available')
         return false
     }
@@ -36,7 +38,7 @@ export async function shareGame(game: Game): Promise<boolean> {
         const shareUrl = `${window.location.origin}/games/${game.slug}`
         const text = `I just archived my experience in "${game.title}"! Play it here.`
         
-        await sdk.actions.share({
+        await resolvedSdk.actions.share({
             text,
             url: shareUrl,
         })
