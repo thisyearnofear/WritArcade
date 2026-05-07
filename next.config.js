@@ -83,6 +83,7 @@ const nextConfig = {
     if (Array.isArray(config.externals)) {
       config.externals.push(function({ request }, callback) {
         if (request && (
+          request.includes('@mezo-org/passport') ||
           request.includes('@mezo-org/orangekit-contracts') ||
           request.includes('@mezo-org/orangekit-smart-account') ||
           request.includes('@mezo-org/orangekit')
