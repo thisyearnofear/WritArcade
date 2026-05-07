@@ -88,6 +88,18 @@ const nextConfig = {
       )
     );
 
+    // Stub out @metamask/sdk in the CLIENT bundle — it bundles its own React copy
+    // which causes "ReactCurrentOwner" duplicate-React runtime errors.
+    // We don't use MetaMask directly; it's only pulled in transitively.
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /@metamask\/sdk/,
+          require.resolve('./webpack-stubs/metamask-sdk-stub.js')
+        )
+      );
+    }
+
     // Treat Mezo orangekit packages as external - they use advanced TS features webpack can't parse
     config.externals = config.externals || [];
     if (Array.isArray(config.externals)) {
