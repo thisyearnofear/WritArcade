@@ -4,8 +4,8 @@
 const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
 
 const nextConfig = {
-  // Next.js 16+ uses Turbopack by default. Empty config to enable while we migrate any webpack-specific logic.
-  turbopack: {},
+  output: 'standalone',
+  serverExternalPackages: ['@mezo-org/orangekit-contracts', '@mezo-org/orangekit-smart-account', '@mezo-org/orangekit'],
   async rewrites() {
     return {
       // beforeFiles rewrites run before Next.js API routes — ensures Hetzner backend takes priority

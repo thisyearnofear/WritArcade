@@ -6,10 +6,10 @@ import {
   darkTheme,
 } from '@rainbow-me/rainbowkit';
 import {
-  getConfig, 
-  mezoTestnet, 
+  getConfig,
+  mezoTestnet,
   getDefaultWallets,
-  PassportProvider 
+  PassportProvider
 } from '@mezo-org/passport';
 import { WagmiProvider } from 'wagmi';
 import {
@@ -48,20 +48,32 @@ export const storyAeneid = defineChain({
 const WALLET_CONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
 const HAS_WC = Boolean(WALLET_CONNECT_PROJECT_ID && WALLET_CONNECT_PROJECT_ID !== 'YOUR_PROJECT_ID');
 
-// Combine Mezo default wallets with our app-specific requirements
-const wallets = getDefaultWallets("testnet");
+// Lazy load config to avoid SSR issues
+let config: ReturnType<typeof getConfig> | null = null;
+let queryClient: QueryClient | null = null;
 
-const config = getConfig({
-  appName: 'writersarcade',
-  walletConnectProjectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
-  chains: [base, baseSepolia, storyAeneid, mezoTestnet],
-  ssr: true,
-  wallets,
-});
+function getWagmiConfig() {
+  if (!config) {
+    const wallets = getDefaultWallets("testnet");
+    config = getConfig({
+      appName: 'writersarcade',
+      walletConnectProjectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
+      chains: [base, baseSepolia, storyAeneid, mezoTestnet],
+      ssr: true,
+      wallets,
+    });
+  }
+  return config;
+}
 
-const queryClient = new QueryClient();
+function getQueryClient() {
+  if (!queryClient) {
+    queryClient = new QueryClient();
+  }
+  return queryClient;
+}
 
-import { useState, useEffect, useMemo, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import {
   createAuthenticationAdapter,
   RainbowKitAuthenticationProvider,
@@ -78,12 +90,14 @@ export const useWeb3Auth = () => useContext(Web3AuthContext);
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthenticationStatus>('loading');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [authAdapter, setAuthAdapter] = useState<ReturnType<typeof createAuthenticationAdapter> | null>(null);
 
   useEffect(() => {
     async function checkAuth() {
       try {
         const res = await fetch('/api/auth/me', {
-          credentials: 'include', // Ensure cookies are sent
+          credentials: 'include',
         });
         const data = await res.json();
         setAuthStatus(data.success ? 'authenticated' : 'unauthenticated');
@@ -91,11 +105,9 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         setAuthStatus('unauthenticated');
       }
     }
-    checkAuth();
-  }, []);
 
-  const authenticationAdapter = useMemo(() => {
-    return createAuthenticationAdapter({
+    // Create authentication adapter on client side only
+    const adapter = createAuthenticationAdapter({
       getNonce: async () => {
         try {
           const response = await fetch('/api/auth/nonce');
@@ -110,35 +122,30 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 
       createMessage: ({ nonce, address, chainId }) => {
         console.log('[SIWE] Creating message for:', { address, chainId, nonce });
-        try {
-          const message = new SiweMessage({
-            domain: window.location.host,
-            address,
-            statement: 'Sign in to writersarcade.',
-            uri: window.location.origin,
-            version: '1',
-            chainId,
-            nonce,
-          });
-          // RainbowKit expects a string for signing. Return the prepared string.
-          return message.prepareMessage();
-        } catch (e) {
-          console.error('[SIWE] Error creating SiweMessage:', e);
-          throw e;
-        }
+        // Only access window on client
+        const domain = typeof window !== 'undefined' ? window.location.host : '';
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const message = new SiweMessage({
+          domain,
+          address,
+          statement: 'Sign in to writersarcade.',
+          uri: origin,
+          version: '1',
+          chainId,
+          nonce,
+        });
+        return message.prepareMessage();
       },
 
-      getMessageBody: ({ message }) => {
-        // Return the message body - in RainbowKit 2.1.7 this is required
+      getMessageBody: ({ message }: { message: unknown }) => {
         return String(message);
       },
 
       verify: async ({ message, signature }) => {
         console.log('[SIWE] Verifying signature...');
         try {
-          // Ensure we send the exact string message that was signed
-          const messageContent = typeof message === 'object' && message !== null && 'prepareMessage' in message && typeof (message as { prepareMessage?: () => string }).prepareMessage === 'function' 
-            ? (message as { prepareMessage?: () => string }).prepareMessage?.() 
+          const messageContent = typeof message === 'object' && message !== null && 'prepareMessage' in message && typeof (message as { prepareMessage?: () => string }).prepareMessage === 'function'
+            ? (message as { prepareMessage?: () => string }).prepareMessage?.()
             : String(message);
 
           const verifyRes = await fetch('/api/auth/verify', {
@@ -161,10 +168,14 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       },
 
       signOut: async () => {
-        setAuthStatus('unauthenticated'); // Optimistic update
+        setAuthStatus('unauthenticated');
         await fetch('/api/auth/logout', { method: 'POST' });
       },
     });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setAuthAdapter(adapter as any);
+    checkAuth();
   }, []);
 
   return (
@@ -174,20 +185,29 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
           WalletConnect disabled: set NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID to enable.
         </div>
       )}
-      <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
+      <WagmiProvider config={getWagmiConfig()}>
+        <QueryClientProvider client={getQueryClient()}>
           <PassportProvider environment="testnet">
-            <RainbowKitAuthenticationProvider
-              adapter={authenticationAdapter}
-              status={authStatus}
-            >
+            {authAdapter ? (
+              <RainbowKitAuthenticationProvider
+                adapter={authAdapter}
+                status={authStatus}
+              >
+                <RainbowKitProvider
+                  theme={darkTheme()}
+                  modalSize="compact"
+                >
+                  {children}
+                </RainbowKitProvider>
+              </RainbowKitAuthenticationProvider>
+            ) : (
               <RainbowKitProvider
                 theme={darkTheme()}
                 modalSize="compact"
               >
                 {children}
               </RainbowKitProvider>
-            </RainbowKitAuthenticationProvider>
+            )}
           </PassportProvider>
         </QueryClientProvider>
       </WagmiProvider>
