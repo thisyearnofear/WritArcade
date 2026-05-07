@@ -9,29 +9,35 @@ import type { WalletProvider, TransactionRequest, TransactionResult } from './ty
 import { createWalletClient, custom, WalletClient } from 'viem'
 import { base } from 'viem/chains'
 
-let sdk: { 
+type FarcasterSDK = { 
   wallet: { 
     getEthereumProvider: () => Promise<unknown> 
   } 
-} | null = null
+}
 
-// Lazy-load SDK only in browser and Farcaster context
-try {
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const farcasterModule = require('@farcaster/miniapp-sdk')
+let sdk: FarcasterSDK | null = null
+
+// Lazy-load SDK only in browser and Farcaster context — uses dynamic import()
+// so it is never evaluated at module load time (avoids require() in browser bundles)
+async function getSDK(): Promise<FarcasterSDK | null> {
+  if (sdk) return sdk
+  if (typeof window === 'undefined') return null
+  try {
+    const farcasterModule = await import('@farcaster/miniapp-sdk')
     if (farcasterModule && farcasterModule.sdk) {
-      sdk = farcasterModule.sdk
+      sdk = farcasterModule.sdk as unknown as FarcasterSDK
     }
+  } catch {
+    // SDK not available
   }
-} catch {
-  // SDK not available
+  return sdk
 }
 
 async function getViemClient(): Promise<WalletClient | null> {
   try {
-    if (!sdk) return null
-    const provider = await sdk.wallet.getEthereumProvider()
+    const resolvedSdk = await getSDK()
+    if (!resolvedSdk) return null
+    const provider = await resolvedSdk.wallet.getEthereumProvider()
     if (!provider) return null
 
     const client = createWalletClient({
@@ -50,8 +56,9 @@ export class FarcasterWalletProvider implements WalletProvider {
 
   async isAvailable(): Promise<boolean> {
     try {
-      if (!sdk) return false
-      const provider = await sdk.wallet.getEthereumProvider()
+      const resolvedSdk = await getSDK()
+      if (!resolvedSdk) return false
+      const provider = await resolvedSdk.wallet.getEthereumProvider()
       return !!provider
     } catch {
       return false
