@@ -5,7 +5,16 @@ const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.
 
 const nextConfig = {
   output: 'standalone',
-  serverExternalPackages: ['@mezo-org/orangekit-contracts', '@mezo-org/orangekit-smart-account', '@mezo-org/orangekit'],
+  serverExternalPackages: [
+    '@mezo-org/orangekit-contracts',
+    '@mezo-org/orangekit-smart-account',
+    '@mezo-org/orangekit',
+    // RainbowKit pulls in @metamask/sdk which bundles its own React copy.
+    // Marking it external prevents the duplicate-React crash during SSR prerendering.
+    '@rainbow-me/rainbowkit',
+    '@metamask/sdk',
+    '@wagmi/connectors',
+  ],
   async rewrites() {
     return {
       // beforeFiles rewrites run before Next.js API routes — ensures Hetzner backend takes priority
@@ -47,17 +56,6 @@ const nextConfig = {
     optimizeCss: false, // Disable CSS optimization that may cause issues
   },
   webpack: (config, { _isServer, webpack }) => {
-    // Force all React imports to resolve to a single instance.
-    // Prevents "Cannot read properties of undefined (reading 'ReactCurrentOwner')"
-    // caused by @metamask/sdk and other packages bundling their own React copy.
-    config.resolve = config.resolve || {};
-    const path = require('path');
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      react: path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
-    };
-
     // Ignore test files from problematic dependencies
     config.module.rules.push({
       test: /\.(test|spec)\.(js|ts|mjs)$/,
