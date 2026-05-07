@@ -6,12 +6,12 @@ const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.
 const nextConfig = {
   output: 'standalone',
   serverExternalPackages: [
+    // These packages use ESM bare directory imports or bundle their own React copy.
+    // Marking them external prevents SSR prerender crashes.
     '@mezo-org/passport',
+    '@mezo-org/orangekit',
     '@mezo-org/orangekit-contracts',
     '@mezo-org/orangekit-smart-account',
-    '@mezo-org/orangekit',
-    // RainbowKit pulls in @metamask/sdk which bundles its own React copy.
-    // Marking it external prevents the duplicate-React crash during SSR prerendering.
     '@rainbow-me/rainbowkit',
     '@metamask/sdk',
     '@wagmi/connectors',
@@ -78,12 +78,10 @@ const nextConfig = {
     );
 
     // Treat Mezo orangekit packages as external - they use advanced TS features webpack can't parse
-    // These are used server-side anyway, so we can safely ignore them during client builds
     config.externals = config.externals || [];
     if (Array.isArray(config.externals)) {
       config.externals.push(function({ request }, callback) {
         if (request && (
-          request.includes('@mezo-org/passport') ||
           request.includes('@mezo-org/orangekit-contracts') ||
           request.includes('@mezo-org/orangekit-smart-account') ||
           request.includes('@mezo-org/orangekit')

@@ -1,15 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Source_Serif_4 } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
-import { AuthProvider } from '@/domains/users/components/auth-provider'
-import { Web3Provider } from '@/components/providers/Web3Provider'
-import { WalletSync } from '@/components/providers/WalletSync'
-import { ToastProvider } from '@/components/ui/use-toast'
-import { DarkModeProvider } from '@/components/providers/DarkModeProvider'
 import { MobileBottomNav } from '@/components/navigation/MobileBottomNav'
-import { PageTransition } from '@/components/providers/PageTransition'
-import { VisualConfigProvider } from '@/contexts/visual-config.context'
+import { ClientProvidersLoader } from '@/components/providers/ClientProvidersLoader'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const sourceSerif = Source_Serif_4({ subsets: ['latin'], variable: '--font-serif' })
@@ -57,21 +50,9 @@ export default function RootLayout({
     <html lang="en" className="dark">
       {/* CONSOLIDATION: Use CSS variables for consistent theming */}
       <body className={`${inter.variable} ${sourceSerif.variable} font-sans bg-background text-foreground min-h-screen pb-16 md:pb-0`}>
-        <Web3Provider>
-          <ToastProvider>
-            <WalletSync />
-            <DarkModeProvider>
-              <AuthProvider>
-                <VisualConfigProvider>
-                  <PageTransition>
-                    {children}
-                  </PageTransition>
-                  <Toaster />
-                </VisualConfigProvider>
-              </AuthProvider>
-            </DarkModeProvider>
-          </ToastProvider>
-        </Web3Provider>
+        <ClientProvidersLoader>
+          {children}
+        </ClientProvidersLoader>
         <MobileBottomNav />
       </body>
     </html>
