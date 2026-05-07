@@ -47,6 +47,16 @@ const nextConfig = {
     optimizeCss: false, // Disable CSS optimization that may cause issues
   },
   webpack: (config, { _isServer, webpack }) => {
+    // Force all React imports to resolve to a single instance.
+    // Prevents "Cannot read properties of undefined (reading 'ReactCurrentOwner')"
+    // caused by @metamask/sdk and other packages bundling their own React copy.
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      react: require.resolve('react'),
+      'react-dom': require.resolve('react-dom'),
+    };
+
     // Ignore test files from problematic dependencies
     config.module.rules.push({
       test: /\.(test|spec)\.(js|ts|mjs)$/,
