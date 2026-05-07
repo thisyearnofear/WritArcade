@@ -67,8 +67,6 @@ export function ArticleInput({ writerCoin, isMUSD, onSubmit, onBack }: ArticleIn
         }
     }
 
-    const themeColor = isMUSD ? 'amber' : 'purple'
-
     return (
         <div className="space-y-6">
             <button

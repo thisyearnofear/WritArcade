@@ -112,14 +112,16 @@ export function GamePlayer({ game, onBack, writerCoin, isMUSD }: GamePlayerProps
     setShowSuccessDialog(true);
   };
 
+import { shareGame } from "@/lib/farcaster-sharing.service";
+...
   const handleShare = async () => {
     triggerHaptic('medium');
-    const text = `I just minted "${game.title}" on writersarcade! 🎮\n\nGenerated from a Paragraph article and archived on @base. Play it here:`;
-    const url = `${window.location.origin}/games/${game.slug}`;
-    await composeCast({
-        text: text,
-        embeds: [url]
-    });
+    const success = await shareGame(game);
+    if (!success) {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(`${window.location.origin}/games/${game.slug}`);
+      alert("Link copied to clipboard!");
+    }
   };
 
   const handleChoice = async (option: { id: number; text: string }) => {

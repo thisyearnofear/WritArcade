@@ -65,6 +65,22 @@ const nextConfig = {
       )
     );
 
+    // Treat Mezo orangekit packages as external - they use advanced TS features webpack can't parse
+    // These are used server-side anyway, so we can safely ignore them during client builds
+    config.externals = config.externals || [];
+    if (Array.isArray(config.externals)) {
+      config.externals.push(function({ request }, callback) {
+        if (request && (
+          request.includes('@mezo-org/orangekit-contracts') ||
+          request.includes('@mezo-org/orangekit-smart-account') ||
+          request.includes('@mezo-org/orangekit')
+        )) {
+          return callback(null, 'commonjs ' + request);
+        }
+        callback();
+      });
+    }
+
     return config;
   },
 }

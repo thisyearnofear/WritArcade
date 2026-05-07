@@ -35,10 +35,11 @@ export default function MiniAppPage() {
         await readyMiniApp()
     }, [])
 
-    // Use useSyncExternalStore pattern: initialize on mount
-     
+    // Initialize on mount - defer state updates to avoid cascading renders
     useEffect(() => {
-        init()
+        requestAnimationFrame(() => {
+            init()
+        })
     }, [init])
 
     const handleCoinSelect = (coin: WriterCoin | { type: 'musd' }) => {

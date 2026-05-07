@@ -177,7 +177,7 @@ async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl
  * Since we can't use the SDK in this serverless function without adding dependencies,
  * we'll disable this provider for now. Alternative: Use Replicate, Together AI, or other providers.
  */
-async function callHuggingFaceAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
+async function _callHuggingFaceAPI(_prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
   const apiKey = process.env.HUGGINGFACE_API_KEY
   if (!apiKey) {
     console.warn('[HuggingFace] HUGGINGFACE_API_KEY not configured')

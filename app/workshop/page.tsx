@@ -4,55 +4,21 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { UndoManager } from '@/lib/undo-manager'
 import { useToastNotification } from '@/hooks/use-toast-notification'
-import { ToastContainer } from '@/components/ui/toast-container'
-import { AssetCard } from './components/AssetCard'
-import { AssetCanvas } from '@/components/ui/asset-canvas'
-import { AssetPalette } from '@/components/ui/asset-palette'
-import { AssetPresets } from '@/components/ui/asset-presets'
-import { AssetBalanceAnalysis } from '@/components/ui/asset-balance-analysis'
-import { AssetMintChecklist } from '@/components/ui/asset-mint-checklist'
-import { CollapsibleSection } from '@/components/ui/collapsible-section'
-import { BalanceGauge } from '@/components/ui/balance-gauge'
-import { SuccessMoment } from '@/components/ui/success-moment'
-import { AssetHoverProvider } from '@/components/providers/asset-hover-provider'
-import { IPRegistrationFlow } from '@/components/story/IPRegistrationFlow'
-import { AssetGenerationResponse, AssetRelationship } from '@/domains/games/types'
-import { AssetRelationshipService } from '@/domains/assets/services/asset-relationship.service'
-import { AssetEditPanel } from '@/components/ui/asset-edit-panel'
-import { useRouter } from 'next/navigation'
-import { useAccount } from 'wagmi'
-import { RotateCcw } from 'lucide-react'
+import { AssetGenerationResponse } from '@/domains/games/types'
 import { Header } from '@/components/layout/header'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { RevenueForecast } from '@/components/ui/revenue-forecast'
 
 type WorkshopState = 'input' | 'processing' | 'workshop' | 'compiling' | 'minting'
-type LayoutMode = 'grid' | 'flow'
-
-interface AssetTag {
-    key: string
-    value: string
-}
 
 export default function WorkshopPage() {
     const { showOnboarding, currentStep, flowId, startTour, nextStep, dismissOnboarding } = useOnboarding()
-    const router = useRouter()
-    const { address } = useAccount()
-    const { toasts, show: showToast, dismiss } = useToastNotification()
+    const { show: showToast } = useToastNotification()
     const [url, setUrl] = useState('')
     const [state, setState] = useState<WorkshopState>('input')
     const [assets, setAssets] = useState<AssetGenerationResponse | null>(null)
-    const [isMarketplaceOpen, setMarketplaceOpen] = useState(false)
-    const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid')
-    const [assetTags, setAssetTags] = useState<Record<string, AssetTag[]>>({})
     const [undoManager] = useState(() => new UndoManager<AssetGenerationResponse>(15, 'writarcade_workshop_history'))
-    const [relationships, setRelationships] = useState<AssetRelationship[]>([])
-    const [showMintSuccess, setShowMintSuccess] = useState(false)
     const [allChecklistsPassed, setAllChecklistsPassed] = useState(false)
-    const [isIPRegistrationModalOpen, setIsIPRegistrationModalOpen] = useState(false)
-    const [pendingVisualAsset, setPendingVisualAsset] = useState<{
-        id: string; title: string; description: string; type: string; content: unknown
-    } | null>(null)
 
     // Trigger workshop tour on first entry
     useEffect(() => {
@@ -60,29 +26,24 @@ export default function WorkshopPage() {
             startTour('workshop-tour')
             localStorage.setItem('workshop_tour_seen', 'true')
         }
-    }, [state])
+    }, [state, startTour])
 
     // Hydrate from persisted history on mount
-     
     useEffect(() => {
         const current = undoManager.current()
         if (current && !assets) {
-            setAssets(current.state)
-            setState('workshop')
+            // Defer state updates to avoid cascading renders
+            requestAnimationFrame(() => {
+                setAssets(current.state)
+                setState('workshop')
+            })
         }
     }, [undoManager, assets])
 
     // Push to undo history when assets change + compute relationships
-     
     useEffect(() => {
         if (assets && state === 'workshop') {
             undoManager.push(assets, 'Asset modified')
-            const rels = AssetRelationshipService.computeRelationships(
-                assets.characters,
-                assets.gameMechanics,
-                assets.storyBeats
-            )
-            setRelationships(rels)
 
             const hasTitle = assets.title.trim().length > 0
             const hasDescription = assets.description.trim().length > 0
@@ -91,12 +52,12 @@ export default function WorkshopPage() {
             const hasBeats = assets.storyBeats.length >= 3
             const isPassing = hasTitle && hasDescription && hasChars && hasMechs && hasBeats
 
-            setAllChecklistsPassed(isPassing)
-            if (isPassing && !allChecklistsPassed) {
-                setShowMintSuccess(true)
-            }
+            // Defer state updates to avoid cascading renders
+            requestAnimationFrame(() => {
+                setAllChecklistsPassed(isPassing)
+            })
         }
-    }, [assets, state, undoManager, allChecklistsPassed])
+    }, [assets, state, undoManager])
 
     // Handlers
     const handleDecompose = async () => {
@@ -115,18 +76,9 @@ export default function WorkshopPage() {
         }
     }
 
-    const handleMint = async () => {
-        if (!assets || !address) return
-        setIsIPRegistrationModalOpen(true)
-    }
-
     const handleUndo = () => {
         const prev = undoManager.undo()
         if (prev) setAssets(prev.state)
-    }
-
-    const handleSave = async (isMinting: boolean = false) => {
-        return 'mock-asset-id'
     }
 
     const renderTour = () => {

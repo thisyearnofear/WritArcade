@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import type { Game } from '@/domains/games/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
