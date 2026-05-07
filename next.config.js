@@ -51,10 +51,11 @@ const nextConfig = {
     // Prevents "Cannot read properties of undefined (reading 'ReactCurrentOwner')"
     // caused by @metamask/sdk and other packages bundling their own React copy.
     config.resolve = config.resolve || {};
+    const path = require('path');
     config.resolve.alias = {
       ...config.resolve.alias,
-      react: require.resolve('react'),
-      'react-dom': require.resolve('react-dom'),
+      react: path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
     };
 
     // Ignore test files from problematic dependencies
