@@ -3,6 +3,7 @@
 import { useReadContract } from 'wagmi'
 import { useAccount } from 'wagmi'
 import { MEZO_CONFIG } from '@/lib/writerCoins'
+import { MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
 
 const ERC20_BALANCE_OF_ABI = [{
   name: 'balanceOf',
@@ -11,8 +12,6 @@ const ERC20_BALANCE_OF_ABI = [{
   inputs: [{ name: 'account', type: 'address' }],
   outputs: [{ name: '', type: 'uint256' }],
 }] as const
-
-const MEZO_TESTNET_CHAIN_ID = 31611
 
 /**
  * Read the connected wallet's MEZO balance from the Mezo Matsnet (testnet).

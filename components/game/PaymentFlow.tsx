@@ -14,6 +14,7 @@ import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
 
 interface PaymentFlowProps {
   paymentToken: PaymentToken
@@ -23,9 +24,6 @@ interface PaymentFlowProps {
   onPaymentError?: (error: string) => void
   disabled?: boolean
 }
-
-const BASE_CHAIN_ID = 8453
-const MEZO_TESTNET_CHAIN_ID = 31611
 
 /**
  * Stylized MUSD Logo for Mezo Hackathon track
@@ -127,7 +125,7 @@ export function PaymentFlow({
       ? `Generate Game (${costFormatted} ${tokenSymbol})`
       : `Mint as NFT (${costFormatted} ${tokenSymbol})`
 
-  const targetChainId = isMUSD ? MEZO_TESTNET_CHAIN_ID : BASE_CHAIN_ID
+  const targetChainId = isMUSD ? MEZO_TESTNET_CHAIN_ID : BASE_MAINNET_CHAIN_ID
   const isWrongChain = Boolean(chainId && chainId !== targetChainId)
 
   return (

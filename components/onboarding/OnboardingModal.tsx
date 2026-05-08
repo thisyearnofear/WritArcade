@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, ChevronRight, Lightbulb, BookOpen, Coins, Layers } from 'lucide-react'
+import { X, ChevronRight, Lightbulb, BookOpen, Coins, Layers, GitFork } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 
@@ -19,8 +19,15 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       title: "Turn articles into games",
       description: "Paste a Paragraph.xyz article URL — AI transforms it into an interactive comic you can play.",
       visual: <BookOpen className="w-12 h-12 text-blue-400" />,
-      content: "Works with supported writers. Choose genre and difficulty to shape the narrative.",
+      content: "Choose genre and difficulty to shape the narrative.",
       tip: "Start with short articles for the best results"
+    },
+    {
+      title: "Two ways to pay",
+      description: "Use a writer's coin on Base for the curated arcade, or MUSD on Mezo to remix any article.",
+      visual: <GitFork className="w-12 h-12 text-amber-400" />,
+      content: "Connect any Ethereum/Base wallet for writer coins, or a Bitcoin wallet (Xverse, Unisat, OKX) via Mezo Passport for MUSD. MEZO holders earn a payment boost.",
+      tip: "Pick your path on the home page — switch any time"
     },
     {
       title: "Play, customize, and own",
@@ -31,8 +38,8 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     },
     {
       title: "Mint as on-chain IP",
-      description: "Mint your game as an NFT on Base. Revenue splits are enforced on-chain — writers earn every time.",
-      visual: <Coins className="w-12 h-12 text-amber-400" />,
+      description: "Mint as an NFT on Base. Revenue splits are enforced on-chain — writers earn every time.",
+      visual: <Coins className="w-12 h-12 text-emerald-400" />,
       content: "Register your creation as IP on Story Protocol. Derivatives earn royalties for the original creator.",
       tip: null
     },

@@ -1,7 +1,6 @@
 import type { PaymentStrategy, ExecutePaymentParams } from './payment-strategy'
 import { getPaymentTokenConfig } from '@/lib/writerCoins'
-
-const MEZO_TESTNET_CHAIN_ID = 31611
+import { MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
 
 const ERC20_APPROVE_ABI = [{
   name: 'approve',

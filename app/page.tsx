@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
-import { SimpleGameForm } from '@/domains/games/components/simple-game-form'
+import { SimpleGameForm, type PaymentPath } from '@/domains/games/components/simple-game-form'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -17,17 +17,20 @@ const steps = [
   {
     number: '01',
     title: 'Submit an article',
-    description: 'Paste a Paragraph article URL from a supported writer.',
+    description: 'Paste a Paragraph article URL — any writer for MUSD, supported writers for writer coins.',
+    chains: ['Base', 'Mezo'],
   },
   {
     number: '02',
     title: 'Customise & generate',
-    description: 'Shape the characters, tone, and narrative. Pay with the writer\u2019s coin to create.',
+    description: 'Shape characters, tone, and narrative. Pay in a writer coin or in MUSD.',
+    chains: ['Base', 'Mezo'],
   },
   {
     number: '03',
     title: 'Play & own',
-    description: 'Experience your unique interpretation and mint it as an NFT with on-chain revenue splits.',
+    description: 'Mint as an NFT with on-chain revenue splits. MEZO holders earn a payment boost.',
+    chains: ['Base', 'Story'],
   },
 ]
 
@@ -56,7 +59,23 @@ function HowItWorksSection() {
             >
               <p className="text-3xl font-light text-muted-foreground mb-4 tabular-nums">{step.number}</p>
               <h3 className="text-base font-semibold text-foreground mb-2">{step.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-3">{step.description}</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {step.chains.map((chain) => (
+                  <span
+                    key={chain}
+                    className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${
+                      chain === 'Mezo'
+                        ? 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5'
+                        : chain === 'Story'
+                          ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                          : 'border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-500/5'
+                    }`}
+                  >
+                    {chain}
+                  </span>
+                ))}
+              </div>
             </motion.div>
           ))}
         </div>
@@ -107,9 +126,34 @@ function WriterTicker() {
   )
 }
 
+function PaymentPathChip({ value, onChange }: { value: PaymentPath; onChange: (v: PaymentPath) => void }) {
+  const base = 'flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors'
+  return (
+    <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border max-w-xl">
+      <button
+        type="button"
+        onClick={() => onChange('writercoin')}
+        aria-pressed={value === 'writercoin'}
+        className={`${base} ${value === 'writercoin' ? 'bg-blue-600 text-white shadow' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        Writer coin · Base
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('musd')}
+        aria-pressed={value === 'musd'}
+        className={`${base} ${value === 'musd' ? 'bg-amber-600 text-white shadow' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        MUSD · Mezo
+      </button>
+    </div>
+  )
+}
+
 export default function HomePage() {
   const { showOnboarding, dismissOnboarding } = useOnboarding()
   const gameCount = useGameCount()
+  const [paymentPath, setPaymentPath] = useState<PaymentPath>('writercoin')
 
   return (
     <ThemeWrapper theme="arcade">
@@ -136,7 +180,10 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
               >
-              Paste an article URL, generate a playable game, and mint it as an NFT — the writer earns every time someone plays or mints.
+              Paste an article URL, generate a playable game, and mint it as an NFT.{' '}
+              <span className="text-foreground font-medium">
+                Pay in a writer coin on Base, or in MUSD on Mezo.
+              </span>
               </motion.p>
 
               {gameCount !== null && gameCount > 0 && (
@@ -157,10 +204,15 @@ export default function HomePage() {
                 transition={{ delay: 0.35, duration: 0.6, ease: 'easeOut' }}
               >
                 <ErrorBoundary>
-                    <div className="p-6 rounded-2xl bg-card border border-border shadow-xl">
-                        <SimpleGameForm 
-                            onGenerate={(url: string) => window.location.href = `/generate?url=${encodeURIComponent(url)}`} 
-                            isGenerating={false} 
+                    <div className="p-6 rounded-2xl bg-card border border-border shadow-xl space-y-4">
+                        <PaymentPathChip value={paymentPath} onChange={setPaymentPath} />
+                        <SimpleGameForm
+                            paymentPath={paymentPath}
+                            onGenerate={(url: string) => {
+                              const params = new URLSearchParams({ url, pay: paymentPath })
+                              window.location.href = `/generate?${params.toString()}`
+                            }}
+                            isGenerating={false}
                         />
                     </div>
                 </ErrorBoundary>

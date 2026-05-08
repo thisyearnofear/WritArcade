@@ -1,8 +1,7 @@
 import { encodeFunctionData } from 'viem'
 import type { PaymentStrategy, ExecutePaymentParams } from './payment-strategy'
 import { getPaymentTokenConfig } from '@/lib/writerCoins'
-
-const BASE_CHAIN_ID = 8453
+import { BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
 
 function encodeERC20Approval(
   spenderAddress: `0x${string}`,
@@ -19,7 +18,7 @@ function encodeERC20Approval(
 export class WriterCoinStrategy implements PaymentStrategy {
   id = 'writercoin'
   name = 'WriterCoin (Base)'
-  chainId = BASE_CHAIN_ID
+  chainId = BASE_MAINNET_CHAIN_ID
 
   async executePayment({ walletClient, userAddress, token, action }: ExecutePaymentParams): Promise<string> {
     if (token.type !== 'writercoin') {
