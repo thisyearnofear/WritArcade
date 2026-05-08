@@ -275,8 +275,8 @@ export const MEZO_CONFIG = {
     name: "MEZO",
     /** Minimum MEZO balance (wei) that earns the "MEZO Holder" perk in UI. */
     holderThreshold: 1000000000000000000n, // 1 MEZO
-    /** Discount applied to MUSD costs when a wallet meets `holderThreshold`. */
-    holderDiscountBP: 1000, // 10%
+    /** Writer share boost (in basis points) applied when a wallet meets `holderThreshold`. More of the payment goes to the writer. */
+    holderDiscountBP: 1000, // 10% boost to writer share
 } as const
 
 export type PaymentToken = 

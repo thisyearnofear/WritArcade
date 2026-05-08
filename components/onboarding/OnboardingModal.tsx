@@ -26,14 +26,14 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       title: "Two ways to pay",
       description: "Use a writer's coin on Base for the curated arcade, or MUSD on Mezo to remix any article.",
       visual: <GitFork className="w-12 h-12 text-amber-400" />,
-      content: "Connect any Ethereum/Base wallet for writer coins, or a Bitcoin wallet (Xverse, Unisat, OKX) via Mezo Passport for MUSD. MEZO holders earn a payment boost.",
+      content: "Connect any Ethereum/Base wallet for writer coins, or a Bitcoin wallet (Xverse, Unisat, OKX) via Mezo Passport for MUSD. MEZO holders get a boosted writer share — more of your payment goes to the writer.",
       tip: "Pick your path on the home page — switch any time"
     },
     {
       title: "Play, customize, and own",
       description: "Experience your unique 5-panel comic story. Regenerate images, edit text, and personalize every detail.",
       visual: <Layers className="w-12 h-12 text-purple-400" />,
-      content: "Every game is unique. Your choices shape the story — play it multiple times for different outcomes.",
+      content: "Every game is unique — AI generates a story tailored to the article you chose. Your choices shape which panels you see along the way.",
       tip: "Use the Workshop for deeper customization before generating"
     },
     {

@@ -30,7 +30,7 @@ const steps = [
   {
     number: '03',
     title: 'Play & own',
-    description: 'Mint as an NFT with on-chain revenue splits. MEZO holders earn a payment boost.',
+    description: 'Mint as an NFT with on-chain revenue splits. MEZO holders get a boosted writer share.',
     chains: ['Base', 'Story'],
   },
 ]
