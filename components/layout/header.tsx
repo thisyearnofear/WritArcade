@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
-import { PenLine, LayoutDashboard, Sun, Moon } from 'lucide-react'
+import { PenLine, LayoutDashboard, Sun, Moon, HelpCircle } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useIsActive } from '@/hooks/useIsActive'
@@ -41,13 +41,13 @@ function CreatorDashboardLink() {
 
 // Nav link definitions — single source of truth for desktop + mobile
 const NAV_LINKS = [
-  { href: '/games',    label: 'Arcade' },
-  { href: '/writers',  label: 'Writers' },
-  { href: '/assets',   label: 'Market' },
-  { href: '/my-games', label: 'My Games' },
+  { href: '/games',    label: 'Arcade',      title: 'Browse all generated games' },
+  { href: '/writers',  label: 'Writers',     title: 'Explore supported writers and their coins' },
+  { href: '/assets',   label: 'Marketplace', title: 'Buy and sell game NFTs' },
+  { href: '/my-games', label: 'My Games',    title: 'Games you have generated or own' },
 ]
 
-function AnimatedNavLink({ href, label, isActive }: { href: string; label: string; isActive: boolean }) {
+function AnimatedNavLink({ href, label, title, isActive }: { href: string; label: string; title?: string; isActive: boolean }) {
   const prefersReducedMotion = useReducedMotion()
   
   return (
@@ -57,6 +57,7 @@ function AnimatedNavLink({ href, label, isActive }: { href: string; label: strin
     >
       <Link
         href={href}
+        title={title}
         className={`relative transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background rounded pb-0.5 ${
           isActive
             ? 'text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground/60 after:rounded-full'
@@ -94,7 +95,7 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
   )
 }
 
-export function Header() {
+export function Header({ onOpenOnboarding }: { onOpenOnboarding?: () => void } = {}) {
   const isActive = useIsActive()
 
   return (
@@ -113,11 +114,23 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          {NAV_LINKS.map(({ href, label }) => (
-            <AnimatedNavLink key={href} href={href} label={label} isActive={isActive(href)} />
+          {NAV_LINKS.map(({ href, label, title }) => (
+            <AnimatedNavLink key={href} href={href} label={label} title={title} isActive={isActive(href)} />
           ))}
 
           <AnimatedCreateButton isActive={isActive('/generate')} />
+
+          {onOpenOnboarding && (
+            <button
+              type="button"
+              onClick={onOpenOnboarding}
+              title="How it works"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border hover:border-foreground/30"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">How it works</span>
+            </button>
+          )}
 
           <CreatorDashboardLink />
           <BalanceDisplay />

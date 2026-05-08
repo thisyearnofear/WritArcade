@@ -116,16 +116,18 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
 
         {/* Footer */}
         <div className="flex gap-3 p-6 border-t border-gray-800">
-          <Button
-            variant="outline"
-            onClick={handleSkip}
-            className="flex-1 text-gray-300 border-gray-600 hover:bg-gray-800"
-          >
-            Skip
-          </Button>
+          {currentStep >= 2 && (
+            <Button
+              variant="outline"
+              onClick={handleSkip}
+              className="flex-1 text-gray-300 border-gray-600 hover:bg-gray-800"
+            >
+              Skip
+            </Button>
+          )}
           <Button
             onClick={handleNext}
-            className="flex-1 bg-blue-600 text-white hover:bg-blue-500 border border-blue-500 flex items-center justify-center gap-2"
+            className={`${currentStep >= 2 ? 'flex-1' : 'w-full'} bg-blue-600 text-white hover:bg-blue-500 border border-blue-500 flex items-center justify-center gap-2`}
           >
             {currentStep === steps.length - 1 ? 'Start' : 'Next'}
             <ChevronRight className="w-4 h-4" />

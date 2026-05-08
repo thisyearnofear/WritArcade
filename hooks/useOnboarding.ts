@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
 const ONBOARDING_DISMISSED_KEY = 'writarcade_onboarding_dismissed'
+const ONBOARDING_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 
 export interface TourState {
   showTour: boolean
@@ -11,10 +12,16 @@ export interface TourState {
 export function useOnboarding() {
   const [tour, setTour] = useState<TourState>(() => {
     if (typeof window !== 'undefined') {
-        const isDismissed = localStorage.getItem(ONBOARDING_DISMISSED_KEY)
-        if (!isDismissed) {
-            return { showTour: true, currentStep: 0, flowId: 'app-intro' }
+      const raw = localStorage.getItem(ONBOARDING_DISMISSED_KEY)
+      if (raw) {
+        const dismissedAt = Number(raw)
+        if (!isNaN(dismissedAt) && Date.now() - dismissedAt < ONBOARDING_TTL_MS) {
+          return { showTour: false, currentStep: 0, flowId: null }
         }
+        // TTL expired — clear and show again
+        localStorage.removeItem(ONBOARDING_DISMISSED_KEY)
+      }
+      return { showTour: true, currentStep: 0, flowId: 'app-intro' }
     }
     return { showTour: false, currentStep: 0, flowId: null }
   })
@@ -32,7 +39,7 @@ export function useOnboarding() {
   }
 
   const dismissOnboarding = () => {
-    localStorage.setItem(ONBOARDING_DISMISSED_KEY, 'true')
+    localStorage.setItem(ONBOARDING_DISMISSED_KEY, String(Date.now()))
     setTour({ showTour: false, currentStep: 0, flowId: null })
   }
 

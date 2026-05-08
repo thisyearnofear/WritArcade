@@ -10,6 +10,7 @@ import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal'
 import { useOnboarding } from '@/hooks/useOnboarding'
+import { ExternalLink } from 'lucide-react'
 import { GridSkeleton } from '@/components/effects'
 import { WRITER_COINS } from '@/lib/writerCoins'
 
@@ -57,7 +58,7 @@ function HowItWorksSection() {
     <section id="how-it-works" className="py-20 px-4 border-t border-border">
       <div className="max-w-4xl mx-auto">
         <motion.h2
-          className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-12 text-center"
+          className="text-sm font-semibold text-foreground mb-12 text-center"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -169,7 +170,7 @@ function PaymentPathChip({ value, onChange }: { value: PaymentPath; onChange: (v
 }
 
 export default function HomePage() {
-  const { showOnboarding, dismissOnboarding } = useOnboarding()
+  const { showOnboarding, dismissOnboarding, startTour } = useOnboarding()
   const gameCount = useGameCount()
   const [paymentPath, setPaymentPath] = useState<PaymentPath>('writercoin')
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
@@ -178,7 +179,7 @@ export default function HomePage() {
   return (
     <ThemeWrapper theme="arcade">
       <div className="flex flex-col min-h-screen">
-        <Header />
+        <Header onOpenOnboarding={() => startTour('app-intro')} />
 
         <main className="flex-1">
           {/* Hero */}
@@ -200,10 +201,9 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
               >
-              Paste an article URL, generate a playable game, and mint it as an NFT.{' '}
-              <span className="text-foreground font-medium">
-                Pay in a writer coin on Base, or in MUSD on Mezo.
-              </span>
+              Paste any Paragraph article → AI generates a{' '}
+              <span className="text-foreground font-medium">5-panel playable comic</span>{' '}
+              → mint it as an NFT with on-chain revenue splits for the writer.
               </motion.p>
 
               {gameCount !== null && gameCount >= 10 && (
@@ -235,8 +235,58 @@ export default function HomePage() {
                             }}
                             isGenerating={false}
                         />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const demoUrl = 'https://paragraph.xyz/@fredwilson/making-advisors'
+                            const params = new URLSearchParams({ url: demoUrl, pay: 'writercoin', demo: '1' })
+                            window.location.href = `/generate?${params.toString()}`
+                          }}
+                          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                        >
+                          Try a demo — no wallet needed
+                        </button>
                     </div>
                 </ErrorBoundary>
+              </motion.div>
+
+              {/* Trust badges */}
+              <motion.div
+                className="flex flex-wrap items-center gap-3 mt-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+              >
+                <a
+                  href="https://base.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                  Powered by Base
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <a
+                  href="https://storyprotocol.xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                  Story Protocol
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <a
+                  href="https://mezo.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                  Mezo
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </motion.div>
             </div>
           </section>
@@ -246,7 +296,7 @@ export default function HomePage() {
           <section className="py-16 px-4 border-t border-border">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <h2 className="text-sm font-semibold text-foreground">
                   Featured works
                 </h2>
                 <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -273,7 +323,7 @@ export default function HomePage() {
           <section className="py-16 px-4 border-t border-border">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <h2 className="text-sm font-semibold text-foreground">
                   Recent
                 </h2>
                 <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
