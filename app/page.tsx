@@ -239,12 +239,12 @@ export default function HomePage() {
                           type="button"
                           onClick={() => {
                             const demoUrl = 'https://paragraph.xyz/@fredwilson/making-advisors'
-                            const params = new URLSearchParams({ url: demoUrl, pay: 'writercoin', demo: '1' })
+                            const params = new URLSearchParams({ url: demoUrl, pay: 'writercoin' })
                             window.location.href = `/generate?${params.toString()}`
                           }}
                           className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                         >
-                          Try a demo — no wallet needed
+                          Try with a sample article →
                         </button>
                     </div>
                 </ErrorBoundary>
