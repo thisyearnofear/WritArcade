@@ -110,12 +110,23 @@ export function WriterPageClient({
               {total === 0 ? (
                 <div className="text-center py-20 border border-dashed border-gray-300 dark:border-gray-800 rounded-lg">
                   <p className="text-gray-500 dark:text-gray-500 mb-4">No games yet from this writer.</p>
-                  <Link
-                    href={`/generate`}
-                    className="inline-flex items-center gap-2 text-sm text-gray-900 dark:text-white bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 border border-gray-300 dark:border-white/10 rounded-md px-4 py-2 transition-colors"
-                  >
-                    Be the first — generate a game from {writer}&apos;s articles
-                  </Link>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Link
+                      href="/generate"
+                      className="inline-flex items-center gap-2 text-sm text-gray-900 dark:text-white bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 border border-gray-300 dark:border-white/10 rounded-md px-4 py-2 transition-colors"
+                    >
+                      Be the first — generate a game from {writer}&apos;s articles
+                    </Link>
+                    <Link
+                      href="/generate?pay=musd"
+                      className="inline-flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/20 rounded-md px-4 py-2 transition-colors"
+                    >
+                      Generate with MUSD instead →
+                    </Link>
+                  </div>
+                  <p className="mt-4 text-xs text-gray-500 dark:text-gray-500">
+                    Prefer the open remix path? Use MUSD on Mezo to generate from any Paragraph article.
+                  </p>
                 </div>
               ) : (
                 <Suspense fallback={

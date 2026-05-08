@@ -7,14 +7,26 @@ import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
+import type { PaymentPath } from '@/domains/games/components/simple-game-form'
+
+function paymentPathFromParam(value: string | null): PaymentPath | undefined {
+  if (value === 'musd' || value === 'writercoin') {
+    return value
+  }
+  return undefined
+}
 
 function GeneratePageContent() {
   const searchParams = useSearchParams()
   const urlParam = searchParams.get('url')
+  const payParam = paymentPathFromParam(searchParams.get('pay'))
 
   return (
     <ErrorBoundary>
-      <GameGenerator initialUrl={urlParam || undefined} />
+      <GameGenerator
+        initialUrl={urlParam || undefined}
+        initialPaymentPath={payParam}
+      />
     </ErrorBoundary>
   )
 }
@@ -31,7 +43,7 @@ export default function GeneratePage() {
               Generate Your Game
             </h1>
             <p className="text-center text-muted-foreground mb-8 text-sm">
-              Paste a Paragraph.xyz article URL, choose your genre, and pay with Writer Coins to create.
+              Paste a Paragraph.xyz article URL, choose your genre, and pay with Writer Coins or MUSD to create.
             </p>
             <Suspense fallback={
               <div className="flex items-center justify-center py-12">

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useAccount } from 'wagmi'
-import { Coins, Loader2, ChevronDown } from 'lucide-react'
+import { Coins, Loader2, ChevronDown, Sparkles } from 'lucide-react'
 import { WRITER_COINS } from '@/lib/writerCoins'
 import { CopyAddressButton } from '@/components/ui/copy-address-button'
+import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
+import { useMezoBalance } from '@/hooks/useMezoBalance'
+import { getChainInfo, MEZO_TESTNET_CHAIN_ID, type ChainInfo } from '@/lib/chains'
 
 interface BalanceDisplayProps {
   mobileLayout?: boolean
@@ -17,11 +19,21 @@ interface CoinBalanceRow {
   isLoading: boolean
 }
 
-/**
- * Fetch balances for all writer coins by calling the hook per coin.
- * Hooks must be called statically (no dynamic loops), which is fine
- * since the coin list is small and stable.
- */
+interface EcosystemGroup {
+  id: 'base' | 'mezo'
+  label: string
+  chain: ChainInfo
+  rows: Array<{
+    id: string
+    symbol: string
+    address: string
+    value: string
+    isLoading: boolean
+    isZero: boolean
+    accentClass: string
+  }>
+}
+
 function useAllWriterCoinBalances(): CoinBalanceRow[] {
   const avc = useWriterCoinBalance('avc')
   const debbie = useWriterCoinBalance('debbie')
@@ -38,12 +50,10 @@ function useAllWriterCoinBalances(): CoinBalanceRow[] {
   ]
 }
 
-/** Truncate a formatted balance string to a whole number */
 function toWholeNumber(formatted: string): string {
   return formatted.split('.')[0] ?? formatted
 }
 
-/** Abbreviate large numbers: 3.1k, 30k, 300k, 3.1m, etc. */
 function abbreviateBalance(formatted: string): string {
   const num = parseFloat(formatted)
   if (isNaN(num)) return formatted
@@ -60,13 +70,11 @@ function abbreviateBalance(formatted: string): string {
   return b >= 100 ? `${Math.round(b)}b` : `${parseFloat(b.toFixed(1))}b`
 }
 
-/** Pick the "primary" balance to show on the badge — first non-zero, else AVC */
 function getPrimaryBalance(rows: CoinBalanceRow[]) {
   const nonZero = rows.find(r => r.balance && r.balance.formattedBalance !== '0')
-  return nonZero ?? rows[0] // fallback to AVC
+  return nonZero ?? rows[0]
 }
 
-/** Close dropdown on outside click */
 function useClickOutside(ref: React.RefObject<HTMLElement | null>, handler: () => void) {
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -79,28 +87,42 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, handler: () =
   }, [ref, handler])
 }
 
-function BalanceRow({ row, mobileLayout }: { row: CoinBalanceRow; mobileLayout: boolean }) {
-  const isZero = !row.balance || row.balance.formattedBalance === '0'
-
+function BalanceRow({
+  symbol,
+  address,
+  value,
+  isLoading,
+  isZero,
+  mobileLayout,
+  accentClass,
+}: {
+  symbol: string
+  address: string
+  value: string
+  isLoading: boolean
+  isZero: boolean
+  mobileLayout: boolean
+  accentClass: string
+}) {
   return (
     <div className={`flex items-center justify-between gap-3 ${mobileLayout ? 'py-2.5 px-4' : 'py-2 px-3'}`}>
       <div className="flex items-center gap-2.5 min-w-0">
-        <Coins className={`w-4 h-4 shrink-0 ${isZero ? 'text-gray-500' : 'text-purple-400'}`} />
+        <Coins className={`w-4 h-4 shrink-0 ${isZero ? 'text-gray-500' : accentClass}`} />
         <span className={`text-sm font-medium truncate ${isZero ? 'text-gray-500' : 'text-gray-100'}`}>
-          {row.coin.symbol}
+          {symbol}
         </span>
         <CopyAddressButton
-          address={row.coin.address}
+          address={address}
           sizeClass="w-3 h-3"
-          labelPrefix={`Copy ${row.coin.symbol}`}
+          labelPrefix={`Copy ${symbol}`}
         />
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        {row.isLoading ? (
+        {isLoading ? (
           <Loader2 className="w-3.5 h-3.5 text-gray-500 animate-spin" />
         ) : (
           <span className={`text-sm tabular-nums ${isZero ? 'text-gray-600' : 'text-white font-medium'}`}>
-            {row.balance ? toWholeNumber(row.balance.formattedBalance) : '—'}
+            {value}
           </span>
         )}
       </div>
@@ -108,17 +130,65 @@ function BalanceRow({ row, mobileLayout }: { row: CoinBalanceRow; mobileLayout: 
   )
 }
 
-/**
- * Header balance display showing user's writer coin balances.
- * Shows primary balance in a badge; click/tap to expand all token balances.
- * Only visible when wallet is connected.
- */
+function EcosystemSection({
+  group,
+  mobileLayout,
+  isMezoHolder,
+  mezoFormatted,
+}: {
+  group: EcosystemGroup
+  mobileLayout: boolean
+  isMezoHolder: boolean
+  mezoFormatted: string
+}) {
+  return (
+    <div>
+      <div className={`flex items-center justify-between gap-2 border-b border-gray-700/50 ${mobileLayout ? 'px-4 py-2' : 'px-3 py-2'}`}>
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${group.chain.bgColor} ${group.chain.color}`}>
+            {group.label}
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">
+            {group.chain.purpose}
+          </span>
+        </div>
+        {group.id === 'mezo' && isMezoHolder && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+            <Sparkles className="w-3 h-3" />
+            MEZO Holder
+          </span>
+        )}
+      </div>
+
+      {group.rows.map((row) => (
+        <BalanceRow
+          key={row.id}
+          symbol={row.symbol}
+          address={row.address}
+          value={row.value}
+          isLoading={row.isLoading}
+          isZero={row.isZero}
+          mobileLayout={mobileLayout}
+          accentClass={row.accentClass}
+        />
+      ))}
+
+      {group.id === 'mezo' && (
+        <div className={`${mobileLayout ? 'px-4 pb-3' : 'px-3 pb-3'} text-[11px] text-gray-500`}>
+          {isMezoHolder ? `Holder balance: ${mezoFormatted} MEZO` : 'Hold at least 1 MEZO to unlock holder perks.'}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const { isConnected } = useAccount()
   const [mounted, setMounted] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const allBalances = useAllWriterCoinBalances()
+  const { formatted: mezoFormatted, isHolder: isMezoHolder, isLoading: isLoadingMezo } = useMezoBalance()
 
   useEffect(() => {
     setMounted(true)
@@ -127,7 +197,6 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const close = useCallback(() => setIsOpen(false), [])
   useClickOutside(containerRef, close)
 
-  // Close on Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setIsOpen(false)
@@ -145,9 +214,47 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const hasPrimaryBalance = primary.balance && primary.balance.formattedBalance !== '0'
   const nonZeroCount = allBalances.filter(r => r.balance && r.balance.formattedBalance !== '0').length
 
-  const badgeBaseClasses = "flex items-center rounded-lg bg-purple-600/10 border border-purple-500/30 transition-colors"
-  const textClasses = mobileLayout ? "text-base" : "text-sm"
-  const paddingClasses = mobileLayout ? "px-4 py-3" : "px-3 py-2"
+  const ecosystemGroups = useMemo<EcosystemGroup[]>(() => {
+    const baseChain = getChainInfo(primary.coin ? 8453 : 8453)
+    const mezoChain = getChainInfo(MEZO_TESTNET_CHAIN_ID)
+
+    return [
+      {
+        id: 'base',
+        label: 'Base',
+        chain: baseChain,
+        rows: allBalances.map((row) => ({
+          id: row.coin.id,
+          symbol: row.coin.symbol,
+          address: row.coin.address,
+          value: row.balance ? toWholeNumber(row.balance.formattedBalance) : '—',
+          isLoading: row.isLoading,
+          isZero: !row.balance || row.balance.formattedBalance === '0',
+          accentClass: 'text-purple-400',
+        })),
+      },
+      {
+        id: 'mezo',
+        label: 'Mezo',
+        chain: mezoChain,
+        rows: [
+          {
+            id: 'mezo-holder',
+            symbol: 'MEZO',
+            address: '0x7B7c000000000000000000000000000000000001',
+            value: isLoadingMezo ? '—' : toWholeNumber(mezoFormatted),
+            isLoading: isLoadingMezo,
+            isZero: !isMezoHolder && mezoFormatted === '0.00',
+            accentClass: 'text-amber-400',
+          },
+        ],
+      },
+    ]
+  }, [allBalances, isMezoHolder, isLoadingMezo, mezoFormatted, primary.coin])
+
+  const badgeBaseClasses = 'flex items-center rounded-lg bg-purple-600/10 border border-purple-500/30 transition-colors'
+  const textClasses = mobileLayout ? 'text-base' : 'text-sm'
+  const paddingClasses = mobileLayout ? 'px-4 py-3' : 'px-3 py-2'
 
   const toggleButton = (
     <button
@@ -187,8 +294,14 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       aria-label="Token balances"
       className={`divide-y divide-gray-700/50 ${mobileLayout ? '' : 'rounded-lg bg-gray-900/95 border border-gray-700/50 backdrop-blur-lg shadow-xl'}`}
     >
-      {allBalances.map(row => (
-        <BalanceRow key={row.coin.id} row={row} mobileLayout={mobileLayout} />
+      {ecosystemGroups.map((group) => (
+        <EcosystemSection
+          key={group.id}
+          group={group}
+          mobileLayout={mobileLayout}
+          isMezoHolder={isMezoHolder}
+          mezoFormatted={mezoFormatted}
+        />
       ))}
     </div>
   )
@@ -211,7 +324,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       {toggleButton}
       {isOpen && (
         <div
-          className="absolute right-0 top-full mt-1.5 w-56 max-w-[calc(100vw-2rem)] z-50 animate-fade-in"
+          className="absolute right-0 top-full mt-1.5 w-64 max-w-[calc(100vw-2rem)] z-50 animate-fade-in"
         >
           {balanceList}
         </div>

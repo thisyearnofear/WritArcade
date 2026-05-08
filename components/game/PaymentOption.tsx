@@ -17,6 +17,7 @@ interface PaymentOptionProps {
   onPaymentSuccess?: (transactionHash: string) => void
   onPaymentError?: (error: string) => void
   disabled?: boolean
+  initialToken?: PaymentToken
   _optional?: boolean // If true, user can skip payment
   _onSkip?: () => void
 }
@@ -36,12 +37,17 @@ export function PaymentOption({
   onPaymentSuccess,
   onPaymentError,
   disabled = false,
+  initialToken,
   _optional = false,
   _onSkip,
 }: PaymentOptionProps) {
   const { isConnected } = useAccount()
 
-  const [selectedToken, setSelectedToken] = useState<PaymentToken>({ type: 'writercoin', coin: writerCoin })
+  const writerCoinToken = useMemo<{ type: 'writercoin'; coin: WriterCoin }>(
+    () => ({ type: 'writercoin', coin: writerCoin }),
+    [writerCoin]
+  )
+  const [selectedToken, setSelectedToken] = useState<PaymentToken>(initialToken ?? writerCoinToken)
 
   const cost = useMemo(() => {
     return PaymentCostService.calculateCostTokenSync(selectedToken, action)
@@ -73,7 +79,7 @@ export function PaymentOption({
       <PaymentTokenSelector 
         selectedToken={selectedToken}
         onSelectToken={setSelectedToken}
-        writerCoin={{ type: 'writercoin', coin: writerCoin }}
+        writerCoin={writerCoinToken}
       />
 
       {/* Cost Preview */}

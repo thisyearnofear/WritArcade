@@ -14,14 +14,24 @@ import { ErrorCard } from '@/components/error/ErrorCard'
 import { SuccessModal } from '@/components/success/SuccessModal'
 import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
 import { ArticleFidelityReview } from '@/components/game/article-fidelity-review'
-import { type WriterCoin } from '@/lib/writerCoins'
+import { type WriterCoin, WRITER_COINS, validateArticleUrl, type PaymentToken } from '@/lib/writerCoins'
 import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
+import type { PaymentPath } from '@/domains/games/components/simple-game-form'
 
 interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
   initialUrl?: string
+  initialPaymentPath?: PaymentPath
+}
+
+const DEFAULT_WRITER_COIN = WRITER_COINS[0]
+
+function paymentTokenForPath(path: PaymentPath, writerCoin: WriterCoin): PaymentToken {
+  return path === 'musd'
+    ? { type: 'musd', network: 'testnet' }
+    : { type: 'writercoin', coin: writerCoin }
 }
 
 function getGenerationErrorMessage(errorData: { error?: string; code?: string }, status: number, statusText: string): string {
@@ -63,9 +73,7 @@ function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: Gam
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1 }}
         transition={{ duration: 0.25 }}
       >
-        {/* Genre icon for quick recognition */}
         <div className="mt-0.5">
-          {/* Reuse small inline icons for genre */}
           {genre === 'horror' && (
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400 shadow" />
           )}
@@ -88,7 +96,7 @@ function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: Gam
 
 export type ImageQuality = 'fast' | 'quality'
 
-export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGeneratorFormProps) {
+export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath = 'writercoin' }: GameGeneratorFormProps) {
   const { isConnected } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
   const [url, setUrl] = useState(initialUrl || '')
@@ -113,8 +121,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
     imageUrl?: string
   } | null>(null)
   const [showFidelityReview, setShowFidelityReview] = useState(false)
+  const [paymentPath, setPaymentPath] = useState<PaymentPath>(initialPaymentPath)
+  const [selectedCoin, setSelectedCoin] = useState<WriterCoin | null>(initialPaymentPath === 'musd' ? DEFAULT_WRITER_COIN : null)
 
-  // Loading step states
   type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
   type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
@@ -125,22 +134,21 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
     save: 'pending',
   })
 
-  const [selectedCoin, setSelectedCoin] = useState<WriterCoin | null>(null)
-  // writerCoin is guaranteed non-null after the coin-selection gate below
-  const writerCoin = selectedCoin as WriterCoin
+  const writerCoin = selectedCoin ?? DEFAULT_WRITER_COIN
   const isStoryMode = mode === 'story'
+  const isMusdPath = paymentPath === 'musd'
 
   const requiredAmount = useMemo(() => {
-    if (!writerCoin) return 0
+    if (isMusdPath) return 0
     return Number(writerCoin.gameGenerationCost) / 10 ** writerCoin.decimals
-  }, [writerCoin])
+  }, [isMusdPath, writerCoin])
 
-  const { balance, isLoading: isLoadingBalance } = useWriterCoinBalance(writerCoin?.id || 'avc')
+  const { balance, isLoading: isLoadingBalance } = useWriterCoinBalance(writerCoin.id)
 
   const userBalance = useMemo(() => {
-    if (!balance?.formattedBalance) return null
+    if (isMusdPath || !balance?.formattedBalance) return null
     return parseFloat(balance.formattedBalance)
-  }, [balance])
+  }, [balance, isMusdPath])
 
   const handlePaymentSuccess = async (_transactionHash: string) => {
     setPaymentApproved(true)
@@ -155,16 +163,17 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
     try {
       setLoadingStep('validate')
 
-      // Validate input
       if (!url.trim()) {
         throw new Error('Please provide a Paragraph.xyz article URL')
       }
+
+      if (!isMusdPath && !validateArticleUrl(url.trim(), writerCoin.id)) {
+        throw new Error(`This URL does not match ${writerCoin.name}. Pick a matching article or switch to MUSD for any Paragraph article.`)
+      }
+
       setStepStatuses((prev) => ({ ...prev, validate: 'completed' }))
-
       setLoadingStep('extract')
-      // Note: content extraction happens on the server during the fetch call
       setStepStatuses((prev) => ({ ...prev, extract: 'completed' }))
-
       setLoadingStep('generate')
 
       let lastError: Error | null = null
@@ -193,15 +202,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
               ...(isStoryMode && paymentApproved && {
                 payment: {
                   writerCoinId: writerCoin.id,
+                  paymentPath,
                 },
               }),
-              // Add attempt metadata for server-side agentic retry
               _attempt: attempt,
               _maxAttempts: maxAttempts,
             }),
           })
 
-          // Handle network errors
           if (!response.ok) {
             const errorData = await response
               .json()
@@ -210,7 +218,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
 
             lastError = new Error(errorMsg)
 
-            // On validation or schema errors, log for retry insight
             if (response.status === 400) {
               console.warn(`Attempt ${attempt}/${maxAttempts} failed with validation error:`, errorMsg)
             }
@@ -227,19 +234,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
 
           return result
         },
-        2, // Max 2 retries for generation (plus initial attempt = 3 total)
-        2000 // 2 second base delay
+        2,
+        2000
       )
       setStepStatuses((prev) => ({ ...prev, generate: 'completed' }))
 
       setLoadingStep('save')
-      // Game is already saved on server, just mark as complete
       setStepStatuses((prev) => ({ ...prev, save: 'completed' }))
 
-      // NEW: Store generated game and show fidelity review (approval workflow).
-      // BUG FIX: successData was being set HERE (before approval), causing both
-      // ArticleFidelityReview AND SuccessModal to appear simultaneously.
-      // Now successData is only set inside the onApprove callback below.
       const gameData = {
         id: result.data.id,
         slug: result.data.slug,
@@ -251,8 +253,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
       setShowFidelityReview(true)
 
       onGameGenerated?.(result.data)
-
-      // Reset form
       setUrl('')
       setPaymentApproved(false)
       setShowPayment(false)
@@ -261,7 +261,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
       setError(message)
       setPaymentApproved(false)
 
-      // Mark current step as failed
       if (loadingStep) {
         setStepStatuses((prev) => ({ ...prev, [loadingStep]: 'error' }))
       }
@@ -281,26 +280,25 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
       return
     }
 
-    // Story mode always requires payment
     if (isStoryMode && !paymentApproved) {
       setShowPayment(true)
       return
     }
 
-    // Wordle mode is free, generate directly
     await generateGame()
   }
 
-  // Coin selection gate — must pick a writer coin before proceeding
-  if (!selectedCoin) {
+  if (!selectedCoin && !isMusdPath) {
     return (
       <div className="w-full max-w-2xl mx-auto px-4">
-        <WriterCoinSelector onSelect={setSelectedCoin} />
+        <WriterCoinSelector onSelect={(coin) => {
+          setSelectedCoin(coin)
+          setPaymentPath('writercoin')
+        }} />
       </div>
     )
   }
 
-  // Wallet requirement gate
   if (!isConnected) {
     return (
       <div className="w-full max-w-2xl mx-auto px-4">
@@ -315,11 +313,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
           </div>
           <h3 className="text-lg md:text-xl font-semibold text-foreground">Connect Wallet to Create Games</h3>
           <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
-            Game generation requires a connected wallet to pay with Writer Coins and manage your creations.
+            {isMusdPath
+              ? 'Game generation requires a connected wallet to pay with MUSD on Mezo and manage your creations.'
+              : 'Game generation requires a connected wallet to pay with Writer Coins and manage your creations.'}
           </p>
           <div className="bg-card border border-border rounded-lg p-3 md:p-4 text-xs md:text-sm text-muted-foreground">
             <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
-              <span className="flex items-center gap-1">💰 Pay with Writer Coins</span>
+              <span className="flex items-center gap-1">💰 Pay with {isMusdPath ? 'MUSD' : 'Writer Coins'}</span>
               <span className="hidden md:inline">•</span>
               <span className="flex items-center gap-1">🎮 Mint as NFTs</span>
               <span className="hidden md:inline">•</span>
@@ -336,28 +336,83 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {/* Selected coin badge */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/20 text-sm font-black text-purple-400 ring-1 ring-purple-500/30">
-            {writerCoin.symbol.slice(0, 1)}
+      <div className="flex items-center justify-between mb-4 px-1 gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-black ring-1 ${isMusdPath ? 'bg-amber-500/20 text-amber-300 ring-amber-500/30' : 'bg-purple-500/20 text-purple-400 ring-purple-500/30'}`}>
+            {isMusdPath ? 'M' : writerCoin.symbol.slice(0, 1)}
           </div>
           <div>
-            <span className="text-sm font-bold text-white">{writerCoin.name}</span>
-            <span className="ml-2 text-xs text-purple-400">{writerCoin.symbol}</span>
+            <span className="text-sm font-bold text-white">{isMusdPath ? 'MUSD on Mezo' : writerCoin.name}</span>
+            <span className={`ml-2 text-xs ${isMusdPath ? 'text-amber-300' : 'text-purple-400'}`}>{isMusdPath ? 'Any Paragraph article' : writerCoin.symbol}</span>
           </div>
         </div>
         <button
           type="button"
-          onClick={() => { setSelectedCoin(null); setUrl(''); setPaymentApproved(false); setShowPayment(false); setError(null) }}
-          className="text-xs text-purple-400 hover:text-purple-300 underline decoration-dotted"
+          onClick={() => {
+            setPaymentPath(isMusdPath ? 'writercoin' : 'musd')
+            setSelectedCoin(isMusdPath ? null : writerCoin)
+            setPaymentApproved(false)
+            setShowPayment(false)
+            setError(null)
+          }}
+          className={`text-xs underline decoration-dotted ${isMusdPath ? 'text-amber-300 hover:text-amber-200' : 'text-purple-400 hover:text-purple-300'}`}
         >
-          Change coin
+          {isMusdPath ? 'Switch to writer coin' : 'Switch to MUSD'}
         </button>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
-          {/* Game Type Toggle with Arcade Styling */}
+          <div className="flex gap-2 p-1 rounded-lg bg-slate-900/50 border border-purple-500/20">
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentPath('writercoin')
+                setSelectedCoin(writerCoin)
+                setPaymentApproved(false)
+                setShowPayment(false)
+                setError(null)
+              }}
+              className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'writercoin' ? 'bg-purple-600 text-white shadow-lg' : 'text-purple-300 hover:bg-purple-800/50'}`}
+            >
+              Writer coin · Base
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentPath('musd')
+                setSelectedCoin(writerCoin)
+                setPaymentApproved(false)
+                setShowPayment(false)
+                setError(null)
+              }}
+              className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'musd' ? 'bg-orange-600 text-white shadow-lg' : 'text-orange-300 hover:bg-orange-800/50'}`}
+            >
+              MUSD · Mezo
+            </button>
+          </div>
+
+          {!isMusdPath && (
+            <div className="flex items-center justify-between mb-1 px-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">Selected writer</span>
+                <span className="text-xs text-purple-400">{writerCoin.symbol}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCoin(null)
+                  setPaymentApproved(false)
+                  setShowPayment(false)
+                  setError(null)
+                }}
+                className="text-xs text-purple-400 hover:text-purple-300 underline decoration-dotted"
+              >
+                Change coin
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Label className="text-sm font-medium">Game Type</Label>
@@ -383,7 +438,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                 className={`game-type-option ${mode === 'story' ? 'active' : ''}`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
                 <span className="font-semibold">Story (5-panel)</span>
               </motion.button>
@@ -391,7 +446,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                 type="button"
                 onClick={() => {
                   setMode('wordle')
-                  // Wordle is free and does not use genre/difficulty customization yet
                   setShowCustomization(false)
                   setShowPayment(false)
                   setPaymentApproved(false)
@@ -399,7 +453,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                 className={`game-type-option ${mode === 'wordle' ? 'active' : ''}`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
                 <span className="font-semibold">Wordle (beta)</span>
               </motion.button>
@@ -409,7 +463,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
             </p>
           </div>
 
-          {/* Enhanced Customization Section - Redesigned UX */}
           {!isGenerating && isStoryMode && (
             <motion.div
               className="pt-4 border-t border-gray-700"
@@ -443,7 +496,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
                   >
                     <motion.div
                       className="space-y-4"
@@ -494,7 +547,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                         <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={isGenerating} />
                       </div>
 
-                      {/* Image Quality Selector */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-purple-100">
                           Image Quality
@@ -526,7 +578,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                           </button>
                         </div>
                         <p className="text-xs text-purple-300/70">
-                          {imageQuality === 'fast' 
+                          {imageQuality === 'fast'
                             ? 'Optimized for narrative flow - faster generation'
                             : 'Higher-end models - better visual fidelity'
                           }
@@ -559,7 +611,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
             </motion.div>
           )}
 
-          {/* URL Input with Typewriter Styling */}
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Label htmlFor="url" className="text-sm font-medium">
@@ -576,19 +627,25 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                   whileHover={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  Only Paragraph.xyz articles from supported authors are accepted. Check FAQ for full list.
+                  {isMusdPath
+                    ? 'Any public Paragraph.xyz article works with MUSD on Mezo.'
+                    : 'Only Paragraph.xyz articles from the selected writer are accepted.'}
                 </motion.div>
               </motion.div>
             </div>
             <Input
               id="url"
               type="url"
-              placeholder={`${writerCoin.paragraphUrl}article-title`}
+              placeholder={isMusdPath ? 'https://paragraph.xyz/... (any article)' : `${writerCoin.paragraphUrl}article-title`}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             />
-            <p className="text-xs text-gray-400 mt-1 px-1">Tap to enter the full Paragraph.xyz URL</p>
+            <p className="text-xs text-gray-400 mt-1 px-1">
+              {isMusdPath
+                ? 'Paste any public Paragraph.xyz article URL.'
+                : 'Tap to enter the full Paragraph.xyz URL for this writer.'}
+            </p>
           </div>
         </div>
 
@@ -600,13 +657,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
             onDismiss={() => setError(null)}
             suggestions={[
               'Check that your Paragraph.xyz URL is valid and publicly accessible',
-              'Ensure the URL is from a supported author',
+              isMusdPath ? 'Try another public Paragraph article link' : 'Ensure the URL is from the selected writer',
               'Make sure your internet connection is stable',
             ]}
           />
         )}
 
-        {isStoryMode && selectedCoin && balance && !paymentApproved && userBalance !== null && userBalance < requiredAmount && (
+        {isStoryMode && !isMusdPath && balance && !paymentApproved && userBalance !== null && userBalance < requiredAmount && (
           <div className="rounded-lg bg-red-900/20 border border-red-500/50 p-3 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm">
@@ -619,7 +676,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
           </div>
         )}
 
-        {/* Payment Section (shown when customization requested in story mode) */}
         {isStoryMode && showPayment && (
           <div className="space-y-4 p-5 rounded-xl border-2 border-cyan-500/50 bg-gradient-to-br from-slate-950/90 to-cyan-950/60 shadow-xl">
             <div className="flex items-start gap-3">
@@ -634,7 +690,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
               </div>
             </div>
 
-            {/* Show what user selected */}
             <div className="p-4 rounded-lg bg-slate-900/60 border border-cyan-500/30 space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-cyan-100">
                 <span>📋</span>
@@ -671,7 +726,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                 </div>
               </div>
 
-              {/* Preview the style they'll get */}
               <div className="pt-2">
                 <StylePreview genre={genre} difficulty={difficulty} />
               </div>
@@ -679,6 +733,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
 
             <PaymentOption
               writerCoin={writerCoin}
+              initialToken={paymentTokenForPath(paymentPath, writerCoin)}
               action="generate-game"
               onPaymentSuccess={handlePaymentSuccess}
               onPaymentError={(err) => setError(err)}
@@ -694,7 +749,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
         {!showPayment && (
           <motion.div
             whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
           >
             <Button
               type="submit"
@@ -707,7 +762,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Generating Game...
-                  {/* Loading glow effect */}
                   <motion.div
                     className="absolute inset-0 rounded-lg opacity-0"
                     style={{
@@ -742,13 +796,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
       <div className="mt-8 p-4 rounded-lg border border-border bg-card text-card-foreground">
         <h3 className="font-medium mb-2 text-sm">💡 Tips for better games</h3>
         <ul className="list-disc pl-4 text-sm text-muted-foreground space-y-1.5">
-          <li>Paste URLs from Paragraph.xyz articles by supported authors</li>
+          <li>{isMusdPath ? 'Paste any public Paragraph.xyz article to remix with MUSD.' : 'Paste URLs from Paragraph.xyz articles by the selected writer.'}</li>
           <li>Genre and difficulty shape how the AI interprets the article</li>
           <li><a href="/workshop" className="text-primary hover:underline font-medium">Use the Workshop</a> for deeper personalization</li>
         </ul>
       </div>
 
-      {/* Full-screen generation overlay */}
       <GameGenerationOverlay
         isOpen={isGenerating}
         currentStep={loadingStep}
@@ -757,7 +810,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
         difficulty={difficulty}
       />
 
-      {/* NEW: Fidelity Review Modal (approval workflow) */}
       {generatedGame && (
         <ArticleFidelityReview
           isOpen={showFidelityReview}
@@ -771,7 +823,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
           articleUrl={url}
           onApprove={() => {
             setShowFidelityReview(false)
-            // BUG FIX: successData now set ONLY after approval — prevents double modal
             setSuccessData({
               gameSlug: generatedGame.slug,
               title: generatedGame.title,
@@ -786,7 +837,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl }: GameGenerator
         />
       )}
 
-      {/* Success Modal */}
       <SuccessModal
         isOpen={!!successData}
         onClose={() => setSuccessData(null)}
