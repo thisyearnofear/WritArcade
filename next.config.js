@@ -5,14 +5,21 @@ const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.
 
 const nextConfig = {
   output: 'standalone',
+  // ── Mezo Passport compatibility ──────────────────────────────────────────
+  // The Mezo Passport ecosystem ships some packages with raw, untranspiled
+  // TypeScript (`main: "index.ts"`).  `transpilePackages` tells Next/SWC to
+  // transpile them like our own source code, so webpack can consume them.
+  transpilePackages: [
+    '@mezo-org/orangekit-contracts',      // ABI constants, ships raw .ts
+    '@mezo-org/orangekit-smart-account',  // chains/utils ship raw .ts; deep-imported by orangekit dist
+    '@mezo-org/orangekit',                // ESM dist that deep-imports raw .ts above
+  ],
+  // Web3Provider is dynamically imported with `ssr: false` (see
+  // ClientProvidersLoader), so the Mezo Passport graph never runs at
+  // prerender. The list below covers a few packages that other server-side
+  // code might still touch (RainbowKit theme imports, wagmi connectors).
+  // Note: @mezo-org/* must NOT appear here when listed in transpilePackages.
   serverExternalPackages: [
-    // These packages use ESM bare directory imports or bundle their own React copy.
-    // Marking them external prevents SSR prerender crashes.
-    '@mezo-org/passport',
-    '@mezo-org/orangekit',
-    '@mezo-org/orangekit-contracts',
-    '@mezo-org/orangekit-smart-account',
-    '@mezo-org/mezo-clay',
     '@rainbow-me/rainbowkit',
     '@wagmi/connectors',
   ],
@@ -62,14 +69,15 @@ const nextConfig = {
       test: /\.(test|spec)\.(js|ts|mjs)$/,
       loader: 'ignore-loader',
     });
-    
+
     config.module.rules.push({
       test: /node_modules\/(thread-stream|pino)\/.*\.(test|spec|indexes)/,
       loader: 'ignore-loader',
     });
 
-    // Stub out the problematic baseAccount connector since we're not using it
-    // This avoids the ox import compatibility issue
+    // Stub out the problematic baseAccount connector (wagmi/connectors).
+    // We don't use Coinbase Smart Wallet's baseAccount; this avoids the `ox`
+    // import compatibility issue at build time.
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(
         /@wagmi\/connectors\/dist\/esm\/baseAccount\.js$/,
@@ -77,61 +85,15 @@ const nextConfig = {
       )
     );
 
-    if (isServer) {
-      // ── SERVER builds ──────────────────────────────────────────────
-      // Node.js has require(), so commonjs externals are safe here.
-      // These packages use ESM bare directory imports or bundle their own
-      // React copy — externalizing avoids SSR prerender crashes.
-      config.externals = config.externals || [];
-      if (Array.isArray(config.externals)) {
-        config.externals.push(function({ request }, callback) {
-          if (request && (
-            request.includes('@mezo-org/orangekit-contracts') ||
-            request.includes('@mezo-org/orangekit-smart-account') ||
-            request.includes('@mezo-org/orangekit') ||
-            request.includes('@mezo-org/mezo-clay') ||
-            request.includes('@metamask/sdk')
-          )) {
-            return callback(null, 'commonjs ' + request);
-          }
-          callback();
-        });
-      }
-    } else {
-      // ── CLIENT builds ─────────────────────────────────────────────
-      // The browser has no require(). Using "commonjs" externals in the
-      // client bundle generates require() calls → ReferenceError crash.
-      // Instead:
-      //   1. Stub @metamask/sdk so it never enters the bundle (it bundles
-      //      its own React copy causing ReactCurrentOwner errors).
-      //   2. Force a single React instance via resolve.alias so that any
-      //      @mezo-org/* packages that get bundled all use the same React.
-
-      // ① Stub packages that ship untranspiled TypeScript or bundle their
-      //    own React copy, which would crash the client bundle.
-      //    Using resolve.alias (not NormalModuleReplacementPlugin) because
-      //    NormalModuleReplacementPlugin matches resolved absolute paths, not
-      //    bare specifiers, and the pnpm virtual-store layout makes the path
-      //    unpredictable.
-      //
-      //    On the server side these are handled by serverExternalPackages and
-      //    the commonjs externals callback above.
+    if (!isServer) {
+      // ── CLIENT bundle ─────────────────────────────────────────────
+      // Force a single React instance for the entire client bundle so
+      // packages that bundle their own React copy (e.g. @mezo-org/mezo-clay
+      // which ships a vendored baseui) don't end up with two React copies
+      // (the classic ReactCurrentOwner / ReactCurrentDispatcher crash).
       const path = require('path');
       config.resolve.alias = {
         ...config.resolve.alias,
-        // @metamask/sdk bundles its own React → duplicate React → ReactCurrentOwner
-        '@metamask/sdk': require.resolve('./webpack-stubs/metamask-sdk-stub.js'),
-        // @mezo-org/orangekit-contracts ships raw index.ts → webpack can't parse
-        '@mezo-org/orangekit-contracts': require.resolve('./webpack-stubs/orangekit-contracts-stub.js'),
-        // @mezo-org/orangekit-smart-account has untranspiled TS in re-exports
-        '@mezo-org/orangekit-smart-account': require.resolve('./webpack-stubs/orangekit-smart-account-stub.js'),
-        // @mezo-org/orangekit umbrella: must also be stubbed because it uses
-        // deep import paths (e.g. orangekit-smart-account/src/lib/utils/chains)
-        // that bypass the bare-specifier aliases for the sub-packages above.
-        '@mezo-org/orangekit': require.resolve('./webpack-stubs/orangekit-stub.js'),
-        // ② Force a single React instance for the entire client bundle.
-        //    Any remaining packages that get bundled and depend on React
-        //    will use this single copy, preventing duplicate-React errors.
         react: path.resolve(__dirname, 'node_modules/react'),
         'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
       };

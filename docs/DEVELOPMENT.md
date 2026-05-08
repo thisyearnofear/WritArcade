@@ -41,6 +41,28 @@ pnpm db:setup         # Generate client + push schema
 - Production builds use webpack (`next build --webpack`)
 - `pnpm build` runs `prisma db push` before building - ensure `DATABASE_URL` is correct
 
+#### Mezo Passport build configuration
+`@mezo-org/passport` and its `@mezo-org/orangekit*` dependencies were authored
+for Vite/CRA (React 18). To make them work in our Next.js 16 / React 19 stack
+we use three small mechanisms in `next.config.js`:
+
+1. **`transpilePackages`** for `@mezo-org/orangekit`, `@mezo-org/orangekit-smart-account`,
+   and `@mezo-org/orangekit-contracts` — those packages either ship raw `.ts`
+   (`main: "index.ts"`) or deep-import sibling `.ts` files at runtime. SWC
+   transpiles them like first-party source.
+2. **React/`react-dom` aliasing** to `node_modules/react`/`react-dom` so the
+   single React copy is used everywhere. `@mezo-org/mezo-clay` bundles its own
+   vendored baseui that includes a React copy, which causes the classic
+   `ReactCurrentOwner is undefined` crash unless we force a single React.
+3. **`__SECRET_INTERNALS` polyfill** in `lib/react-19-internals-polyfill.ts`
+   (loaded by `ClientProvidersLoader`) — React 19 removed the legacy
+   internals object that baseui (inside mezo-clay) reads from. The polyfill
+   shims it before mezo-clay evaluates.
+
+Web3 providers are mounted via a `dynamic(..., { ssr: false })` boundary in
+`components/providers/ClientProvidersLoader.tsx`, so the Passport graph only
+runs in the browser and never touches the server prerender.
+
 ## Environment Configuration
 
 ### Required Variables
