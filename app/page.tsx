@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
 import { SimpleGameForm, type PaymentPath } from '@/domains/games/components/simple-game-form'
@@ -33,6 +33,24 @@ const steps = [
     chains: ['Base', 'Story'],
   },
 ]
+
+function PathExplainer({ path }: { path: 'writercoin' | 'musd' }) {
+  if (path === 'writercoin') {
+    return (
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        <span className="font-medium text-blue-500">Writer coin · Base</span> — hold a supported writer&apos;s social token on Base to pay. Any Ethereum/Base wallet works.{' '}
+        <a href="/writers" className="underline underline-offset-2 hover:text-foreground transition-colors">See supported writers →</a>
+      </p>
+    )
+  }
+  return (
+    <p className="text-xs text-muted-foreground leading-relaxed">
+      <span className="font-medium text-amber-500">MUSD · Mezo</span> — pay with MUSD stablecoin on Mezo. Requires a Bitcoin wallet (Xverse, Unisat, OKX) via{' '}
+      <a href="https://mezo.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">Mezo Passport</a>.
+      {' '}Any Paragraph article is supported.
+    </p>
+  )
+}
 
 function HowItWorksSection() {
   return (
@@ -154,6 +172,8 @@ export default function HomePage() {
   const { showOnboarding, dismissOnboarding } = useOnboarding()
   const gameCount = useGameCount()
   const [paymentPath, setPaymentPath] = useState<PaymentPath>('writercoin')
+  const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
+  const featuredLoadedRef = useRef(false)
 
   return (
     <ThemeWrapper theme="arcade">
@@ -186,16 +206,16 @@ export default function HomePage() {
               </span>
               </motion.p>
 
-              {gameCount !== null && gameCount > 0 && (
+              {gameCount !== null && gameCount >= 10 && (
               <motion.p
                 className="text-sm text-muted-foreground mb-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
               >
-                {gameCount} {gameCount === 1 ? 'game' : 'games'} generated so far.
+                Join {gameCount} early creators.
               </motion.p>
-              )}              {gameCount === null && <div className="mb-6" />}
+              )}              {(gameCount === null || gameCount < 10) && <div className="mb-6" />}
 
               <motion.div
                 className="max-w-2xl"
@@ -206,6 +226,7 @@ export default function HomePage() {
                 <ErrorBoundary>
                     <div className="p-6 rounded-2xl bg-card border border-border shadow-xl space-y-4">
                         <PaymentPathChip value={paymentPath} onChange={setPaymentPath} />
+                        <PathExplainer path={paymentPath} />
                         <SimpleGameForm
                             paymentPath={paymentPath}
                             onGenerate={(url: string) => {
@@ -220,7 +241,8 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* Featured Works */}
+          {/* Featured Works — only rendered once we know there are featured games */}
+          {hasFeatured !== false && (
           <section className="py-16 px-4 border-t border-border">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
@@ -232,10 +254,20 @@ export default function HomePage() {
                 </a>
               </div>
               <Suspense fallback={<GridSkeleton count={3} columns={3} />}>
-                <GameGrid limit={3} featured={true} />
+                <GameGrid
+                  limit={3}
+                  featured={true}
+                  onLoad={({ count }) => {
+                    if (!featuredLoadedRef.current) {
+                      featuredLoadedRef.current = true
+                      setHasFeatured(count > 0)
+                    }
+                  }}
+                />
               </Suspense>
             </div>
           </section>
+          )}
 
           {/* Recent */}
           <section className="py-16 px-4 border-t border-border">
