@@ -79,7 +79,9 @@
 - ✅ **Simplified form UX** — Wordle mode hidden for clean narrative focus; submit button always visible; success state resets deferred to modal close
 - ✅ **Critial env bug fix** — `NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET` was pointing to MUSD token address instead of the splitter contract
 - ✅ **Hackathon submission doc** — `HACKATHON_SUBMISSION.md` with architecture, contract addresses, flow diagrams
-- ⏳ Goldsky pipeline (optional, for indexed analytics)
+- ✅ **TypeScript fixed** — removed deprecated `ignoreDeprecations`, installed deps, fixed null-check — `tsc --noEmit` passes cleanly
+- ✅ **Wordle revived** — free tier toggle restored alongside Story, Farcaster sharing on win screen, Daily Wordle section on homepage
+- ✅ **Mezo Analytics dashboard** — `/mezo/analytics` page with live on-chain reads from MezoBoostedSplitter (viem → API route → stat cards, boosted ratio, recent activity feed); Goldsky pipeline config updated for v2 contract address
 
 ### Phase 13: Wordle Revival + Farcaster — May 2026
 - ✅ Wordle toggle restored as free tier alongside Story (premium)
