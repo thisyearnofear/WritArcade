@@ -117,6 +117,9 @@
       "@wagmi/core": "2.13.8",
       "@wagmi/connectors": "5.3.9",
       "ox": "0.9.5"
+    },
+    "patchedDependencies": {
+      "@gelatonetwork/relay-sdk@5.7.0": "patches/@gelatonetwork__relay-sdk@5.7.0.patch"
     }
   }
 }

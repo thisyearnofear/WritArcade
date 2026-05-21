@@ -1,0 +1,12 @@
+diff --git a/dist/index.js b/dist/index.js
+index 5247e97de2ca886a2e63f4e0541b53b51a182d08..8032999e8d067e83d25ba3b98a704afdfc24df52 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -45,7 +45,6 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
+ var _GelatoRelay_config, _GelatoRelay_websocketHandler;
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.GelatoRelay = exports.TaskState = exports.ERC2771Type = void 0;
+-console.warn("[@gelatonetwork/relay-sdk] This package is deprecated. Please migrate to @gelatocloud/gasless. See https://www.npmjs.com/package/@gelatocloud/gasless");
+ const library = __importStar(require("./lib"));
+ const types_1 = require("./lib/erc2771/types");
+ Object.defineProperty(exports, "ERC2771Type", { enumerable: true, get: function () { return types_1.ERC2771Type; } });
