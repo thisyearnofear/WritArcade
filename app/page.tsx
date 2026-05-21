@@ -45,11 +45,19 @@ function PathExplainer({ path }: { path: 'writercoin' | 'musd' }) {
     )
   }
   return (
-    <p className="text-xs text-muted-foreground leading-relaxed">
-      <span className="font-medium text-amber-500">MUSD · Mezo</span> — pay with MUSD stablecoin on Mezo. Requires a Bitcoin wallet (Xverse, Unisat, OKX) via{' '}
-      <a href="https://mezo.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">Mezo Passport</a>.
-      {' '}Any Paragraph article is supported.
-    </p>
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        <span className="font-medium text-amber-500">MUSD · Mezo</span> — pay with{' '}
+        <span className="text-amber-400 font-medium">Bitcoin-backed MUSD</span>, the native stablecoin of the Mezo network.
+        {' '}Every payment is split on-chain: writers earn revenue, creators get paid, and{' '}
+        <span className="text-amber-400 font-medium">MEZO holders unlock boosted creator shares</span>.
+      </p>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        <span className="text-amber-500">🔗 Bitcoin-powered</span> — Connect via{' '}
+        <a href="https://mezo.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">Mezo Passport</a>
+        {' '}(Xverse, Unisat, OKX). No writer token needed — any Paragraph article works.
+      </p>
+    </div>
   )
 }
 
@@ -172,7 +180,8 @@ function PaymentPathChip({ value, onChange }: { value: PaymentPath; onChange: (v
 export default function HomePage() {
   const { showOnboarding, dismissOnboarding, startTour } = useOnboarding()
   const gameCount = useGameCount()
-  const [paymentPath, setPaymentPath] = useState<PaymentPath>('writercoin')
+  // Default to MUSD for the Mezo Hackathon submission; users can toggle to writer coins
+  const [paymentPath, setPaymentPath] = useState<PaymentPath>('musd')
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
   const featuredLoadedRef = useRef(false)
 
@@ -235,17 +244,19 @@ export default function HomePage() {
                             }}
                             isGenerating={false}
                         />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const demoUrl = 'https://paragraph.xyz/@fredwilson/making-advisors'
-                            const params = new URLSearchParams({ url: demoUrl, pay: 'writercoin' })
-                            window.location.href = `/generate?${params.toString()}`
-                          }}
-                          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-                        >
-                          Try with a sample article →
-                        </button>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const demoUrl = 'https://paragraph.xyz/@fredwilson/making-advisors'
+                              const params = new URLSearchParams({ url: demoUrl, pay: paymentPath })
+                              window.location.href = `/generate?${params.toString()}`
+                            }}
+                            className="flex-1 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                          >
+                            Try with a sample article → {paymentPath === 'musd' ? '(MUSD)' : '(Writer Coin)'}
+                          </button>
+                        </div>
                     </div>
                 </ErrorBoundary>
               </motion.div>

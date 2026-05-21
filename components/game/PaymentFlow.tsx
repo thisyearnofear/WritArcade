@@ -8,6 +8,7 @@ import { ErrorCard } from '@/components/error/ErrorCard'
 import { getUserMessage, retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { useMezoBalance } from '@/hooks/useMezoBalance'
+import { useMUSDBalance } from '@/hooks/useMUSDBalance'
 import { Loader2, Wallet, Sparkles, ExternalLink, ArrowRight } from 'lucide-react'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
 import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
@@ -56,6 +57,14 @@ export function PaymentFlow({
   // Read MEZO balance only when paying in MUSD.
   const { isHolder: isMezoHolder, formatted: mezoFormatted, balance: rawMezoBalance } = useMezoBalance()
 
+  // Read MUSD balance from on-chain (replaces previously mocked "Available")
+  const {
+    balance: musdBalance,
+    formatted: musdFormatted,
+    isLoading: isMUSDBalanceLoading,
+    error: musdBalanceError,
+  } = useMUSDBalance()
+
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,16 +74,20 @@ export function PaymentFlow({
   }, [config, action])
 
   const userBalance = useMemo(() => {
-    if (isMUSD) return Infinity // mock sufficient balance for MUSD
+    if (isMUSD) {
+      return parseFloat(musdFormatted)
+    }
     if (!balance?.formattedBalance) return null
     return parseFloat(balance.formattedBalance)
-  }, [balance, isMUSD])
+  }, [balance, isMUSD, musdFormatted])
 
   const hasInsufficientBalance = useMemo(() => {
-    if (isMUSD) return false // TODO: Real MUSD balance check
+    if (isMUSD) {
+      return userBalance < requiredAmount
+    }
     if (userBalance === null || isLoadingBalance) return false
     return userBalance < requiredAmount
-  }, [userBalance, requiredAmount, isLoadingBalance, isMUSD])
+  }, [userBalance, requiredAmount, isLoadingBalance, isMUSD, musdFormatted])
 
   const handlePayment = useCallback(async () => {
     if (!walletClient || !userAddress) {
@@ -155,19 +168,33 @@ export function PaymentFlow({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                {isLoadingBalance ? (
+                {isMUSD ? (
+                  // Real on-chain MUSD balance
+                  <>
+                    {isMUSDBalanceLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    ) : musdBalanceError ? (
+                      <span className="text-amber-400/70 text-xs">{musdFormatted} {tokenSymbol}</span>
+                    ) : (
+                      <span className={cn(
+                        "font-bold text-base",
+                        hasInsufficientBalance ? 'text-red-400' : 'text-amber-400'
+                      )}>
+                        {musdFormatted} {tokenSymbol}
+                      </span>
+                    )}
+                  </>
+                ) : isLoadingBalance ? (
                   <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
                 ) : balanceError ? (
                   <span className="text-red-400">Unable to load</span>
                 ) : (
-                  <>
-                    <span className={cn(
-                      "font-bold text-base",
-                      hasInsufficientBalance ? 'text-red-400' : isMUSD ? 'text-amber-400' : 'text-green-400'
-                    )}>
-                      {isMUSD ? 'Available' : (balance ? balance.formattedBalance : '0')} {tokenSymbol}
-                    </span>
-                  </>
+                  <span className={cn(
+                    "font-bold text-base",
+                    hasInsufficientBalance ? 'text-red-400' : 'text-green-400'
+                  )}>
+                    {balance ? balance.formattedBalance : '0'} {tokenSymbol}
+                  </span>
                 )}
               </div>
             </div>
@@ -179,12 +206,12 @@ export function PaymentFlow({
                   Mezo Matsnet Testnet
                 </div>
                 <a 
-                  href="https://mezo.org/bridge" 
+                  href="https://mezo.org/docs/developers/musd/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-[10px] text-amber-500 hover:text-amber-400 transition-colors font-semibold"
                 >
-                  Get MUSD <ExternalLink className="w-2.5 h-2.5" />
+                  MUSD Faucet <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               </div>
             )}

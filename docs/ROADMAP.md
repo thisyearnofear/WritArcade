@@ -65,7 +65,7 @@
 - ✅ Background enrichment (`enrichGameInBackground()` - non-blocking)
 - ✅ Config & schema updates
 
-### Mezo Hackathon Integration (MUSD)
+### Mezo Hackathon Integration (MUSD) — April–May 2026
 - ✅ Mezo Matsnet (testnet) chain config (chainId 31611, RPC `https://rpc.test.mezo.org`)
 - ✅ Multi-chain simulation via Tenderly
 - ✅ MUSD payment architecture (Strategy Pattern) decoupled from Base
@@ -73,7 +73,12 @@
 - ✅ `MUSDStrategy` wired to call `approve` → `payForGeneration` / `payAndMintGame` on the splitter (atomic on-chain platform/creator/writer split)
 - ✅ UI updated for Mezo Passport & MUSD toggles
 - ✅ MEZO touchpoint (Phase 1): on-chain `useMezoBalance` reads from MEZO ERC-20 (`0x7B7c…0001`), "MEZO Holder" badge surfaces in the MUSD payment flow when balance ≥ `MEZO_CONFIG.holderThreshold`
-- ⏳ MEZO touchpoint (Phase 2): extend `MezoPaymentSplitter` → `MezoBoostedSplitter` so the holder discount is enforced atomically on-chain (currently informational only)
+- ✅ **`MezoBoostedSplitter` deployed** at [`0x56Ee5A3f122da00B635DdbB319708e24450aEB89`](https://explorer.test.mezo.org/address/0x56Ee5A3f122da00B635DdbB319708e24450aEB89) — 10% creator share boost for MEZO holders, enforced on-chain
+- ✅ **Real MUSD balance reading** — `useMUSDBalance` hook replaces mocked "Available" with on-chain balance
+- ✅ **One-click payment flow** — removed intermediate "review payment" gate; PaymentOption always visible; pay and generate in one action
+- ✅ **Simplified form UX** — Wordle mode hidden for clean narrative focus; submit button always visible; success state resets deferred to modal close
+- ✅ **Critial env bug fix** — `NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET` was pointing to MUSD token address instead of the splitter contract
+- ✅ **Hackathon submission doc** — `HACKATHON_SUBMISSION.md` with architecture, contract addresses, flow diagrams
 - ⏳ Goldsky pipeline (optional, for indexed analytics)
 
 ## Platform Maturity

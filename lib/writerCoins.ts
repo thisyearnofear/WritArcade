@@ -223,7 +223,7 @@ export function isWhitelistedWriterCoin(address: string): boolean {
  */
 const MEZO_TESTNET_PAYMENT_SPLITTER =
     (process.env.NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET as `0x${string}` | undefined) ||
-    "0x32D0356f533cC429F94Db73f383bBb21a459E16b" // deployed via scripts/deploy-mezo.sh
+    "0x56Ee5A3f122da00B635DdbB319708e24450aEB89" // MezoBoostedSplitter v2 (with MEZO holder boost), deployed via scripts/deploy-mezo.sh
 
 const MEZO_MAINNET_PAYMENT_SPLITTER =
     (process.env.NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_MAINNET as `0x${string}` | undefined) ||

@@ -42,6 +42,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
 | [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Lit, Hypercerts), writer coins |
 | [Roadmap](./docs/ROADMAP.md) | Completed phases, current status, future plans |
+| [Hackathon Submission](./HACKATHON_SUBMISSION.md) | Mezo Hackathon submission — MUSD track, architecture, contracts |
 
 ## Tech stack
 
@@ -64,7 +65,8 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 - **MUSD token**: `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`
 - **MEZO token** (read-only, holder perks): `0x7B7c000000000000000000000000000000000001`
 - Pay 1 MUSD to generate a game; splitter atomically forwards platform / writer / creator shares on-chain.
-- MEZO holders see a "MEZO Holder" badge in the payment flow today; on-chain boosted splits land in `MezoBoostedSplitter` (roadmap).
+- **MezoBoostedSplitter** (v2): [`0x56Ee5A3f122da00B635DdbB319708e24450aEB89`](https://explorer.test.mezo.org/address/0x56Ee5A3f122da00B635DdbB319708e24450aEB89) — deployed May 2026; 10% creator share boost for MEZO holders.
+- MEZO holders see a "MEZO Holder" badge in the payment flow; boosted splits enforced on-chain via MezoBoostedSplitter.
 
 Revenue splits enforced on-chain, configurable per writer coin.
 

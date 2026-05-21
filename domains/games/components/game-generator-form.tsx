@@ -105,7 +105,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy')
   const [imageQuality, setImageQuality] = useState<ImageQuality>('fast')
   const [showCustomization, setShowCustomization] = useState(true)
-  const [showPayment, setShowPayment] = useState(false)
   const [paymentApproved, setPaymentApproved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successData, setSuccessData] = useState<{
@@ -253,9 +252,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       setShowFidelityReview(true)
 
       onGameGenerated?.(result.data)
-      setUrl('')
-      setPaymentApproved(false)
-      setShowPayment(false)
+      // State resets handled in onClose callback to avoid blank form before modal dismisses
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(message)
@@ -280,8 +277,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       return
     }
 
-    if (isStoryMode && !paymentApproved) {
-      setShowPayment(true)
+    // No intermediate "review payment" step — go straight to generation.
+    // Payment is handled inline via PaymentOption; if not yet approved,
+    // the user pays first, then generation continues via handlePaymentSuccess.
+    if (!paymentApproved) {
+      // PaymentOption section is always visible; user pays there
       return
     }
 
@@ -352,7 +352,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             setPaymentPath(isMusdPath ? 'writercoin' : 'musd')
             setSelectedCoin(isMusdPath ? null : writerCoin)
             setPaymentApproved(false)
-            setShowPayment(false)
             setError(null)
           }}
           className={`text-xs underline decoration-dotted ${isMusdPath ? 'text-amber-300 hover:text-amber-200' : 'text-purple-400 hover:text-purple-300'}`}
@@ -370,7 +369,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 setPaymentPath('writercoin')
                 setSelectedCoin(writerCoin)
                 setPaymentApproved(false)
-                setShowPayment(false)
                 setError(null)
               }}
               className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'writercoin' ? 'bg-purple-600 text-white shadow-lg' : 'text-purple-300 hover:bg-purple-800/50'}`}
@@ -383,7 +381,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 setPaymentPath('musd')
                 setSelectedCoin(writerCoin)
                 setPaymentApproved(false)
-                setShowPayment(false)
                 setError(null)
               }}
               className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'musd' ? 'bg-orange-600 text-white shadow-lg' : 'text-orange-300 hover:bg-orange-800/50'}`}
@@ -403,7 +400,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 onClick={() => {
                   setSelectedCoin(null)
                   setPaymentApproved(false)
-                  setShowPayment(false)
                   setError(null)
                 }}
                 className="text-xs text-purple-400 hover:text-purple-300 underline decoration-dotted"
@@ -442,24 +438,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               >
                 <span className="font-semibold">Story (5-panel)</span>
               </motion.button>
-              <motion.button
-                type="button"
-                onClick={() => {
-                  setMode('wordle')
-                  setShowCustomization(false)
-                  setShowPayment(false)
-                  setPaymentApproved(false)
-                }}
-                className={`game-type-option ${mode === 'wordle' ? 'active' : ''}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-              >
-                <span className="font-semibold">Wordle (beta)</span>
-              </motion.button>
+              {/* Wordle temporarily hidden for hackathon submission — focus on the MUSD game generation flow */}
             </div>
             <p className="text-xs text-gray-400">
-              Story creates a 5-panel narrative game. Wordle creates a free article-derived word puzzle.
+              Story creates a 5-panel narrative game with AI-generated artwork, branching choices, and mood tracking.
             </p>
           </div>
 
@@ -676,58 +658,18 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           </div>
         )}
 
-        {isStoryMode && showPayment && (
+        {/* Payment section — always visible when in story mode so users can pay on first action */}
+        {isStoryMode && (
           <div className="space-y-4 p-5 rounded-xl border-2 border-cyan-500/50 bg-gradient-to-br from-slate-950/90 to-cyan-950/60 shadow-xl">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-cyan-500/20 border-2 border-cyan-500 flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-5 h-5 text-cyan-300" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg text-cyan-50 mb-1">Confirm Your Customization</h3>
+                <h3 className="font-semibold text-lg text-cyan-50 mb-1">Pay to Generate</h3>
                 <p className="text-sm text-cyan-100/90 mb-3">
-                  You've selected custom options below. Approve payment to generate with these settings.
+                  Pay with {isMusdPath ? 'MUSD on Mezo' : `${writerCoin.symbol} on Base`} to generate your custom game.
                 </p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-slate-900/60 border border-cyan-500/30 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-cyan-100">
-                <span>📋</span>
-                <span>Your Selections</span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-slate-950/50 border border-indigo-500/40">
-                  <div className="text-xs text-indigo-300 mb-1">Genre</div>
-                  <div className="font-semibold text-white capitalize flex items-center gap-2">
-                    {genre === 'horror' && '🎃'}
-                    {genre === 'comedy' && '😄'}
-                    {genre === 'mystery' && '🔍'}
-                    {genre}
-                  </div>
-                  <div className="text-xs text-purple-300/80 mt-1">
-                    {genre === 'horror' && 'Dark, high stakes'}
-                    {genre === 'comedy' && 'Light, witty beats'}
-                    {genre === 'mystery' && 'Clues and reveals'}
-                  </div>
-                </div>
-                
-                <div className="p-3 rounded-lg bg-slate-950/50 border border-cyan-500/40">
-                  <div className="text-xs text-cyan-300 mb-1">Difficulty</div>
-                  <div className="font-semibold text-white capitalize flex items-center gap-2">
-                    {difficulty === 'easy' && '⚡'}
-                    {difficulty === 'hard' && '🎯'}
-                    {difficulty}
-                  </div>
-                  <div className="text-xs text-purple-300/80 mt-1">
-                    {difficulty === 'easy' && 'Faster progression'}
-                    {difficulty === 'hard' && 'Deeper branches'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <StylePreview genre={genre} difficulty={difficulty} />
               </div>
             </div>
 
@@ -739,14 +681,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               onPaymentError={(err) => setError(err)}
               disabled={isGenerating}
             />
-
-            <p className="text-xs text-purple-300/70 text-center">
-              Payment is required to generate games with custom settings
-            </p>
           </div>
         )}
 
-        {!showPayment && (
+        {/* Submit button — always visible */}
           <motion.div
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 10 }}
@@ -784,13 +722,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                   {isStoryMode
                     ? paymentApproved
                       ? `Generate Custom ${genre.charAt(0).toUpperCase() + genre.slice(1)} Game`
-                      : 'Review Customization & Pay'
+                      : 'Generate Game (Pay Below)'
                     : 'Create Wordle Game (Free)'}
                 </>
               )}
             </Button>
           </motion.div>
-        )}
       </form>
 
       <div className="mt-8 p-4 rounded-lg border border-border bg-card text-card-foreground">
@@ -839,7 +776,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
       <SuccessModal
         isOpen={!!successData}
-        onClose={() => setSuccessData(null)}
+        onClose={() => {
+          setSuccessData(null)
+          setGeneratedGame(null)
+          setUrl('')
+          setPaymentApproved(false)
+        }}
         title="Game Created Successfully! 🎉"
         description="Your AI-generated game is ready to play. Share it with your community and mint it as an NFT."
         gameSlug={successData?.gameSlug}
