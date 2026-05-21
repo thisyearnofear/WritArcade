@@ -44,6 +44,7 @@ const NAV_LINKS = [
   { href: '/games',    label: 'Arcade',      title: 'Browse all generated games' },
   { href: '/writers',  label: 'Writers',     title: 'Explore supported writers and their coins' },
   { href: '/assets',   label: 'Marketplace', title: 'Buy and sell game NFTs' },
+  { href: '/mezo/analytics', label: 'Mezo',  title: 'Live Mezo on-chain analytics' },
   { href: '/my-games', label: 'My Games',    title: 'Games you have generated or own' },
 ]
 

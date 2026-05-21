@@ -11,18 +11,15 @@ transforms:
     sql: >
       SELECT 
         _gs_log_decode(
-          '[{"type":"event","name":"GameMintedAndPaid","inputs":[{"name":"creator","type":"address","indexed":true,"internalType":"address"},{"name":"tokenURI","type":"string","indexed":false,"internalType":"string"},{"name":"metadata","type":"tuple","indexed":false,"internalType":"struct MezoPaymentSplitter.GameMetadata","components":[{"name":"articleUrl","type":"string","internalType":"string"},{"name":"creator","type":"address","internalType":"address"},{"name":"writerCoin","type":"address","internalType":"address"},{"name":"genre","type":"string","internalType":"string"},{"name":"difficulty","type":"string","internalType":"string"},{"name":"createdAt","type":"uint256","internalType":"uint256"},{"name":"gameTitle","type":"string","internalType":"string"}]},{"name":"creatorFee","type":"uint256","indexed":false,"internalType":"uint256"},{"name":"platformFee","type":"uint256","indexed":false,"internalType":"uint256"}],"anonymous":false}]', 
+          '[{"type":"event","name":"GameMintedAndPaid","inputs":[{"name":"creator","type":"address","indexed":true,"internalType":"address"},{"name":"tokenURI","type":"string","indexed":false,"internalType":"string"},{"name":"metadata","type":"tuple","indexed":false,"internalType":"struct MezoBoostedSplitter.GameMetadata","components":[{"name":"articleUrl","type":"string","internalType":"string"},{"name":"creator","type":"address","internalType":"address"},{"name":"writerCoin","type":"address","internalType":"address"},{"name":"genre","type":"string","internalType":"string"},{"name":"difficulty","type":"string","internalType":"string"},{"name":"createdAt","type":"uint256","internalType":"uint256"},{"name":"gameTitle","type":"string","internalType":"string"}]},{"name":"creatorFee","type":"uint256","indexed":false,"internalType":"uint256"},{"name":"platformFee","type":"uint256","indexed":false,"internalType":"uint256"},{"name":"boosted","type":"bool","indexed":false,"internalType":"bool"}],"anonymous":false}]', 
           topics, 
           data
         ) AS decoded,
         block_number, 
         transaction_hash 
       FROM my_raw_logs
-      WHERE address = '0x32d0356f533cc429f94db73f383bbb21a459e16b'
+      WHERE address = '0x56ee5a3f122da00b635ddbb319708e24450aeb89'
 sinks:
-  webhook_sink:
-    type: webhook
+  analytics_dataset:
+    type: dataset
     from: decoded_events
-    url: "https://api.snel.famile.xyz/writersarcade/api/indexer/webhook"
-    headers:
-      x-api-key: "YOUR_WEBHOOK_SECRET"

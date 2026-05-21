@@ -1,28 +1,25 @@
 #!/bin/bash
 # scripts/deploy-goldsky.sh
+# Deploy Goldsky pipeline for MezoBoostedSplitter event indexing
+#
+# Prerequisites:
+#   npx goldsky login
+#
+# Usage:
+#   ./scripts/deploy-goldsky.sh
 
-CONTRACT_ADDRESS=$1
+set -euo pipefail
 
-if [ -z "$CONTRACT_ADDRESS" ]; then
-  echo "❌ Error: Please provide the deployed contract address."
-  echo "Usage: ./scripts/deploy-goldsky.sh 0xYourContractAddress"
-  exit 1
-fi
+echo "🚀 Validating pipeline config..."
+npx goldsky pipeline validate indexer/goldsky-mezo.yaml
 
-echo "📝 Updating indexer/goldsky-mezo.yaml with contract address..."
+echo "🚀 Deploying Goldsky pipeline..."
+npx goldsky pipeline apply indexer/goldsky-mezo.yaml
 
-# Replace the placeholder address with the actual one (works on mac/linux)
-sed -i.bak "s/0xYourMezoContractAddress/$CONTRACT_ADDRESS/g" indexer/goldsky-mezo.yaml
-rm indexer/goldsky-mezo.yaml.bak
-
-echo "🚀 Deploying to Goldsky..."
-
-# Run Goldsky deployment
-npx goldsky subgraph deploy writersarcade-mezo/1.0.0 \
-  --from-abi out/MezoPaymentSplitter.abi.json \
-  --network mezo-testnet \
-  --contract-address $CONTRACT_ADDRESS \
-  --contract-name MezoPaymentSplitter \
-  --start-block 0
-
-echo "✅ Goldsky subgraph deployed."
+echo "✅ Goldsky pipeline deployed."
+echo ""
+echo "To query the analytics dataset:"
+echo "  npx goldsky dataset get writersarcade-mezo"
+echo ""
+echo "To monitor the pipeline:"
+echo "  npx goldsky pipeline monitor writersarcade-mezo"
