@@ -82,12 +82,9 @@ export function PaymentFlow({
   }, [balance, isMUSD, musdFormatted])
 
   const hasInsufficientBalance = useMemo(() => {
-    if (isMUSD) {
-      return userBalance < requiredAmount
-    }
     if (userBalance === null || isLoadingBalance) return false
     return userBalance < requiredAmount
-  }, [userBalance, requiredAmount, isLoadingBalance, isMUSD, musdFormatted])
+  }, [userBalance, requiredAmount, isLoadingBalance])
 
   const handlePayment = useCallback(async () => {
     if (!walletClient || !userAddress) {
