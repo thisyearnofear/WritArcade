@@ -24,6 +24,7 @@ interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
   initialUrl?: string
   initialPaymentPath?: PaymentPath
+  initialMode?: 'story' | 'wordle'
 }
 
 const DEFAULT_WRITER_COIN = WRITER_COINS[0]
@@ -96,11 +97,11 @@ function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: Gam
 
 export type ImageQuality = 'fast' | 'quality'
 
-export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath = 'writercoin' }: GameGeneratorFormProps) {
+export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath = 'writercoin', initialMode }: GameGeneratorFormProps) {
   const { isConnected } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
   const [url, setUrl] = useState(initialUrl || '')
-  const [mode, setMode] = useState<'story' | 'wordle'>('story')
+  const [mode, setMode] = useState<'story' | 'wordle'>(initialMode || 'story')
   const [genre, setGenre] = useState<GameGenre>('horror')
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy')
   const [imageQuality, setImageQuality] = useState<ImageQuality>('fast')
@@ -166,7 +167,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         throw new Error('Please provide a Paragraph.xyz article URL')
       }
 
-      if (!isMusdPath && !validateArticleUrl(url.trim(), writerCoin.id)) {
+      if (mode !== 'wordle' && !isMusdPath && !validateArticleUrl(url.trim(), writerCoin.id)) {
         throw new Error(`This URL does not match ${writerCoin.name}. Pick a matching article or switch to MUSD for any Paragraph article.`)
       }
 
@@ -277,11 +278,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       return
     }
 
-    // No intermediate "review payment" step — go straight to generation.
-    // Payment is handled inline via PaymentOption; if not yet approved,
-    // the user pays first, then generation continues via handlePaymentSuccess.
-    if (!paymentApproved) {
-      // PaymentOption section is always visible; user pays there
+    if (!paymentApproved && isStoryMode) {
       return
     }
 
@@ -438,10 +435,21 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               >
                 <span className="font-semibold">Story (5-panel)</span>
               </motion.button>
-              {/* Wordle temporarily hidden for hackathon submission — focus on the MUSD game generation flow */}
+              <motion.button
+                type="button"
+                onClick={() => setMode('wordle')}
+                className={`game-type-option ${mode === 'wordle' ? 'active' : ''}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+              >
+                <span className="font-semibold">Wordle (Free)</span>
+              </motion.button>
             </div>
             <p className="text-xs text-gray-400">
-              Story creates a 5-panel narrative game with AI-generated artwork, branching choices, and mood tracking.
+              {mode === 'story'
+                ? 'Story creates a 5-panel narrative game with AI-generated artwork, branching choices, and mood tracking.'
+                : 'Wordle creates a free word puzzle derived from your article. No payment needed.'}
             </p>
           </div>
 

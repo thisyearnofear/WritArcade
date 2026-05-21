@@ -81,6 +81,35 @@
 - ✅ **Hackathon submission doc** — `HACKATHON_SUBMISSION.md` with architecture, contract addresses, flow diagrams
 - ⏳ Goldsky pipeline (optional, for indexed analytics)
 
+### Phase 13: Wordle Revival + Farcaster — May 2026
+- ✅ Wordle toggle restored as free tier alongside Story (premium)
+- ✅ Farcaster sharing on Wordle win screen (share results as casts)
+- ✅ Daily Wordle section on homepage
+- ⏳ CDR Hackathon integration (May 27–June 5): store Wordle answers in CDR vaults for provably fair answer gating; programmable reveal conditions via TEEs; combined with Story Protocol IP registration
+
+### CDR Hackathon Strategy (May 27 – June 5, 2026)
+
+**Event:** [CDR (Confidential Data Rails) Hackathon](https://build.usecdr.dev/) by Story Protocol. $3k prizes.
+
+**Integration points for Writersarcade:**
+
+1. **Wordle answer gating with CDR vaults:**
+   - Store the article-derived Wordle answer inside a CDR vault
+   - Programmable condition: *reveal to the player after they submit a guess, but never expose the answer beforehand*
+   - Makes Wordle **provably fair** — not even the developer can see the answer early
+   - Combined with Story Protocol IP registration of the puzzle
+
+2. **Article content vaulting:**
+   - Store scraped article content in a CDR vault
+   - Grant the AI generation service access through the vault (not direct DB access)
+   - Register generated game IP on Story Protocol with a reference back to the vault
+
+3. **Go further:** Agent-to-agent data deals (Wordle answer → agent negotiates with publisher's agent for article text), token-gated premium Wordle puzzles, private game state across sessions.
+
+**Why participate:** Low effort (Wordle is already built, just needs vault wrapping), strong fit for "Best CDR Application" track (polished UX + product thinking), Story Protocol adjacency.
+
+**Timeline:** May 27 workshops → June 3 projects due → June 5 demo day. Focus on Mezo submission first, then pivot.
+
 ## Platform Maturity
 
 | Component | Status | Notes |

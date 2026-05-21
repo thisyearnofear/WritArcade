@@ -16,17 +16,31 @@ function paymentPathFromParam(value: string | null): PaymentPath | undefined {
   return undefined
 }
 
+type GameMode = 'story' | 'wordle'
+
 function GeneratePageContent() {
   const searchParams = useSearchParams()
   const urlParam = searchParams.get('url')
   const payParam = paymentPathFromParam(searchParams.get('pay'))
+  const isWordleMode = searchParams.get('mode') === 'wordle'
 
   return (
     <ErrorBoundary>
-      <GameGenerator
-        initialUrl={urlParam || undefined}
-        initialPaymentPath={payParam}
-      />
+      <div className="max-w-4xl mx-auto px-4">
+        <h1 className="font-serif text-4xl font-bold text-center mb-2 text-foreground">
+          {isWordleMode ? 'Create a Wordle Puzzle' : 'Generate Your Game'}
+        </h1>
+        <p className="text-center text-muted-foreground mb-8 text-sm">
+          {isWordleMode
+            ? 'Paste a Paragraph.xyz article URL to create a free word puzzle. No payment needed.'
+            : 'Paste a Paragraph.xyz article URL, choose your genre, and pay with Writer Coins or MUSD to create.'}
+        </p>
+        <GameGenerator
+          initialUrl={urlParam || undefined}
+          initialPaymentPath={payParam}
+          initialMode={isWordleMode ? 'wordle' : undefined}
+        />
+      </div>
     </ErrorBoundary>
   )
 }
@@ -38,21 +52,15 @@ export default function GeneratePage() {
         <Header />
 
         <main className="flex-1 py-12">
-          <div className="max-w-4xl mx-auto px-4">
-            <h1 className="font-serif text-4xl font-bold text-center mb-2 text-foreground">
-              Generate Your Game
-            </h1>
-            <p className="text-center text-muted-foreground mb-8 text-sm">
-              Paste a Paragraph.xyz article URL, choose your genre, and pay with Writer Coins or MUSD to create.
-            </p>
-            <Suspense fallback={
+          <Suspense fallback={
+            <div className="max-w-4xl mx-auto px-4">
               <div className="flex items-center justify-center py-12">
                 <div className="text-muted-foreground">Loading...</div>
               </div>
-            }>
-              <GeneratePageContent />
-            </Suspense>
-          </div>
+            </div>
+          }>
+            <GeneratePageContent />
+          </Suspense>
         </main>
 
         <Footer />

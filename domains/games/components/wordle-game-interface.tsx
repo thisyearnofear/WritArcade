@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Game } from '../types'
 import { WordleService, type WordleGuessResult, type WordleLetterState } from '../services/wordle.service'
+import { shareGame } from '@/lib/farcaster-sharing.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -168,9 +169,18 @@ export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInt
               </p>
             )}
             {status === 'won' && (
-              <p className="text-green-400 font-medium">
-                Correct! You solved this article Wordle in {guesses.length} guesses.
-              </p>
+              <div className="space-y-2">
+                <p className="text-green-400 font-medium">
+                  Correct! You solved this article Wordle in {guesses.length} guesses.
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => shareGame(game)}
+                  className="bg-sky-600 hover:bg-sky-700 text-xs"
+                >
+                  Share to Farcaster
+                </Button>
+              </div>
             )}
             {status === 'lost' && (
               <p className="text-red-400 font-medium">

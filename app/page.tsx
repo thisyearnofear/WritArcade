@@ -10,7 +10,7 @@ import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal'
 import { useOnboarding } from '@/hooks/useOnboarding'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Puzzle } from 'lucide-react'
 import { GridSkeleton } from '@/components/effects'
 import { WRITER_COINS } from '@/lib/writerCoins'
 
@@ -299,6 +299,29 @@ export default function HomePage() {
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </motion.div>
+            </div>
+          </section>
+
+          {/* Daily Wordle */}
+          <section className="py-16 px-4 border-t border-border bg-gradient-to-r from-amber-500/5 to-purple-500/5">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                  <Puzzle className="w-8 h-8 text-amber-400" />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h2 className="text-lg font-bold text-foreground mb-1">Daily Wordle — Free</h2>
+                  <p className="text-sm text-muted-foreground max-w-lg">
+                    Article-derived word puzzles, free to play. No wallet needed. Guess the word in 6 tries, then share your score on Farcaster.
+                  </p>
+                </div>
+                <a
+                  href="/generate?mode=wordle"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold uppercase tracking-wider transition-colors flex-shrink-0"
+                >
+                  Play Now <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
             </div>
           </section>
 
