@@ -105,7 +105,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [genre, setGenre] = useState<GameGenre>('horror')
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy')
   const [imageQuality, setImageQuality] = useState<ImageQuality>('fast')
-  const [showCustomization, setShowCustomization] = useState(true)
+  const [showCustomization, setShowCustomization] = useState(false)
   const [paymentApproved, setPaymentApproved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successData, setSuccessData] = useState<{

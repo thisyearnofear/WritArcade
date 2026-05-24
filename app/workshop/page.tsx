@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { UndoManager } from '@/lib/undo-manager'
-import { useToastNotification } from '@/hooks/use-toast-notification'
+import { useToast } from '@/components/ui/use-toast'
 import { AssetGenerationResponse } from '@/domains/games/types'
 import { Header } from '@/components/layout/header'
 import { useOnboarding } from '@/hooks/useOnboarding'
@@ -13,7 +13,7 @@ type WorkshopState = 'input' | 'processing' | 'workshop' | 'compiling' | 'mintin
 
 export default function WorkshopPage() {
     const { showOnboarding, currentStep, flowId, startTour, nextStep, dismissOnboarding } = useOnboarding()
-    const { show: showToast } = useToastNotification()
+    const { toast: showToast } = useToast()
     const [url, setUrl] = useState('')
     const [state, setState] = useState<WorkshopState>('input')
     const [assets, setAssets] = useState<AssetGenerationResponse | null>(null)
@@ -71,7 +71,7 @@ export default function WorkshopPage() {
             setAssets(data)
             setState('workshop')
         } catch {
-            showToast('Failed to extract assets. Try a different article URL.', { type: 'error', duration: 6000 })
+            showToast({ description: 'Failed to extract assets. Try a different article URL.', variant: 'destructive', duration: 6000 })
             setState('input')
         }
     }
@@ -85,9 +85,9 @@ export default function WorkshopPage() {
                 body: JSON.stringify({ assets }),
             })
             if (!res.ok) throw new Error('Minting failed')
-            showToast('IP registered successfully!', { type: 'success', duration: 5000 })
+            showToast({ description: 'IP registered successfully!', duration: 5000 })
         } catch {
-            showToast('Failed to register IP. Please try again.', { type: 'error', duration: 6000 })
+            showToast({ description: 'Failed to register IP. Please try again.', variant: 'destructive', duration: 6000 })
         } finally {
             setState('workshop')
         }

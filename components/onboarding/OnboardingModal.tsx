@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, ChevronRight, Lightbulb, BookOpen, Coins, Layers, GitFork } from 'lucide-react'
+import { X, Wand2, Gamepad2, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 
 interface OnboardingModalProps {
   isOpen: boolean
@@ -13,35 +12,28 @@ interface OnboardingModalProps {
 
 export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  
+
   const steps = [
     {
-      title: "Turn articles into games",
-      description: "Paste a Paragraph.xyz article URL — AI transforms it into an interactive comic you can play.",
-      visual: <BookOpen className="w-12 h-12 text-blue-400" />,
-      content: "Choose genre and difficulty to shape the narrative.",
-      tip: "Start with short articles for the best results"
+      icon: Wand2,
+      title: 'Paste an article, get a game',
+      description:
+        'Drop any Paragraph.xyz article URL into the form. AI reads it and generates a unique 5-panel interactive comic you can play.',
+      tip: 'Start with short articles for the best results.',
     },
     {
-      title: "Two ways to pay",
-      description: "Use a writer's coin on Base for the curated arcade, or MUSD on Mezo to remix any article.",
-      visual: <GitFork className="w-12 h-12 text-amber-400" />,
-      content: "Connect any Ethereum/Base wallet for writer coins, or a Bitcoin wallet (Xverse, Unisat, OKX) via Mezo Passport for MUSD. MEZO holders get a boosted writer share — more of your payment goes to the writer.",
-      tip: "Pick your path on the home page — switch any time"
+      icon: Gamepad2,
+      title: 'Play and customise',
+      description:
+        'Make choices that shape the story. Regenerate panels, edit text, and tweak the genre and difficulty to your liking.',
+      tip: null,
     },
     {
-      title: "Play, customize, and own",
-      description: "Experience your unique 5-panel comic story. Regenerate images, edit text, and personalize every detail.",
-      visual: <Layers className="w-12 h-12 text-purple-400" />,
-      content: "Every game is unique — AI generates a story tailored to the article you chose. Your choices shape which panels you see along the way.",
-      tip: "Use the Workshop for deeper customization before generating"
-    },
-    {
-      title: "Mint as on-chain IP",
-      description: "Mint as an NFT on Base. Revenue splits are enforced on-chain — writers earn every time.",
-      visual: <Coins className="w-12 h-12 text-emerald-400" />,
-      content: "Register your creation as IP on Story Protocol. Derivatives earn royalties for the original creator.",
-      tip: null
+      icon: Coins,
+      title: 'Own what you create',
+      description:
+        'Mint your game as an NFT. On-chain revenue splits mean the original writer earns automatically every time.',
+      tip: 'You can play for free with Wordle — no wallet needed.',
     },
   ]
 
@@ -53,99 +45,86 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     }
   }
 
-  const handleSkip = () => {
-    onClose()
-  }
-
   if (!isOpen) return null
 
   const step = steps[currentStep]
-  const progress = ((currentStep + 1) / steps.length) * 100
+  const Icon = step.icon
+  const isLast = currentStep === steps.length - 1
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl">
+      <div className="bg-card border border-border rounded-2xl max-w-sm w-full shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold text-card-foreground">
-            Getting Started
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Welcome
           </h2>
           <button
-            onClick={handleSkip}
+            onClick={onClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Close"
+            aria-label="Close onboarding"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-8 space-y-6">
-          {/* Visual */}
-          <div className="text-center">
-            <div className="text-6xl mb-4">{step.visual}</div>
-            <h3 className="text-2xl font-bold mb-2 text-card-foreground">{step.title}</h3>
-            <p className="text-muted-foreground text-sm">{step.description}</p>
-          </div>
+        <div className="p-6 space-y-5 text-center">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-4"
+          >
+            <div className="w-14 h-14 rounded-xl bg-muted border border-border flex items-center justify-center mx-auto">
+              <Icon className="w-6 h-6 text-primary" />
+            </div>
 
-          {/* Content Details */}
-          <div className="bg-muted border border-border rounded-lg p-4 space-y-3">
-            <p className="text-foreground text-sm">{step.content}</p>
+            <h3 className="text-xl font-bold text-card-foreground">
+              {step.title}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {step.description}
+            </p>
 
-            {/* Pro Tip with micro-interaction */}
             {step.tip && (
-              <motion.div
-                className="p-3 rounded-lg bg-background border border-border text-sm text-muted-foreground flex items-start gap-2"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-              >
-                <Lightbulb className="w-4 h-4 mt-0.5 flex-shrink-0 text-yellow-400" />
-                <span>{step.tip}</span>
-              </motion.div>
+              <p className="text-xs text-muted-foreground bg-muted border border-border rounded-lg p-3 leading-relaxed">
+                {step.tip}
+              </p>
             )}
-          </div>
+          </motion.div>
 
-          {/* Progress Bar */}
-          <ProgressBar
-            value={progress}
-            label={`Step ${currentStep + 1} of ${steps.length}`}
-            percent
-          />
+          {/* Dots */}
+          <div className="flex justify-center gap-2 pt-2">
+            {steps.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentStep(idx)}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  idx === currentStep
+                    ? 'bg-foreground w-6'
+                    : 'bg-muted-foreground/30'
+                }`}
+                aria-label={`Go to step ${idx + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-border">
-          {currentStep >= 2 && (
-            <Button
-              variant="outline"
-              onClick={handleSkip}
-              className="flex-1"
-            >
+        <div className="flex gap-3 p-5 border-t border-border">
+          {!isLast && (
+            <Button variant="outline" onClick={onClose} className="flex-1">
               Skip
             </Button>
           )}
           <Button
             onClick={handleNext}
-            className={`${currentStep >= 2 ? 'flex-1' : 'w-full'} bg-primary text-primary-foreground hover:bg-primary/90 border border-primary flex items-center justify-center gap-2`}
+            className={`${isLast ? 'w-full' : 'flex-1'} flex items-center justify-center gap-2`}
           >
-            {currentStep === steps.length - 1 ? 'Start' : 'Next'}
-            <ChevronRight className="w-4 h-4" />
+            {isLast ? 'Get started' : 'Next'}
           </Button>
-        </div>
-
-        {/* Dots Navigation */}
-        <div className="flex justify-center gap-2 pb-4">
-          {steps.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentStep(idx)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                idx === currentStep ? 'bg-foreground w-6' : 'bg-muted-foreground/30'
-              }`}
-              aria-label={`Go to step ${idx + 1}`}
-            />
-          ))}
         </div>
       </div>
     </div>

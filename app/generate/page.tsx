@@ -27,13 +27,13 @@ function GeneratePageContent() {
   return (
     <ErrorBoundary>
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="font-serif text-4xl font-bold text-center mb-2 text-foreground">
-          {isWordleMode ? 'Create a Wordle Puzzle' : 'Generate Your Game'}
+        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-center mb-2 text-foreground">
+          {isWordleMode ? 'Create a word puzzle' : 'Create your game'}
         </h1>
-        <p className="text-center text-muted-foreground mb-8 text-sm">
+        <p className="text-center text-muted-foreground mb-8 text-sm max-w-md mx-auto">
           {isWordleMode
-            ? 'Paste a Paragraph.xyz article URL to create a free word puzzle. No payment needed.'
-            : 'Paste a Paragraph.xyz article URL, choose your genre, and pay with Writer Coins or MUSD to create.'}
+            ? 'Paste a Paragraph article URL to create a free word puzzle. No wallet needed.'
+            : 'Paste a Paragraph article URL. AI turns it into a playable 5-panel comic.'}
         </p>
         <GameGenerator
           initialUrl={urlParam || undefined}

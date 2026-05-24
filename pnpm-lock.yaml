@@ -14,6 +14,11 @@ overrides:
   '@wagmi/connectors': 5.3.9
   ox: 0.9.5
 
+patchedDependencies:
+  '@gelatonetwork/relay-sdk@5.7.0':
+    hash: f9b20d830735da08b3f1188a536022923d7d5d50dafdf456236fe4de216de81f
+    path: patches/@gelatonetwork__relay-sdk@5.7.0.patch
+
 importers:
 
   .:
@@ -12489,7 +12494,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@gelatonetwork/relay-sdk@5.7.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@gelatonetwork/relay-sdk@5.7.0(patch_hash=f9b20d830735da08b3f1188a536022923d7d5d50dafdf456236fe4de216de81f)(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       axios: 1.13.2
       ethers: 6.13.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -13715,7 +13720,7 @@ snapshots:
 
   '@mezo-org/orangekit-smart-account@1.0.0-beta.24(bufferutil@4.0.9)(utf-8-validate@5.0.10)(viem@2.21.40(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
-      '@gelatonetwork/relay-sdk': 5.7.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@gelatonetwork/relay-sdk': 5.7.0(patch_hash=f9b20d830735da08b3f1188a536022923d7d5d50dafdf456236fe4de216de81f)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@mezo-org/orangekit-contracts': 1.0.0-beta.6
       '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
