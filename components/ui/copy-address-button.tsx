@@ -53,7 +53,7 @@ export function CopyAddressButton({
       }}
       title={copied ? 'Copied!' : `${labelPrefix} ${shortAddress}`}
       aria-label={copied ? 'Copied' : `${labelPrefix} ${shortAddress}`}
-      className="inline-flex items-center justify-center rounded text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+      className="inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors"
     >
       {copied ? (
         <Check className={`${sizeClass} text-green-500`} />

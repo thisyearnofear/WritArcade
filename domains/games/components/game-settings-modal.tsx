@@ -69,13 +69,13 @@ export function GameSettingsModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px] bg-gray-900 text-white border-purple-500/30">
+            <DialogContent className="sm:max-w-[425px] bg-card text-white border-purple-500/30">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Settings className="w-5 h-5 text-purple-400" />
                         Game Settings
                     </DialogTitle>
-                    <DialogDescription className="text-gray-400">
+                    <DialogDescription className="text-muted-foreground">
                         Configure visibility and monetization for "{game?.title}".
                     </DialogDescription>
                 </DialogHeader>
@@ -83,7 +83,7 @@ export function GameSettingsModal({
                 <div className="grid gap-6 py-4">
                     {/* Play Fee Section */}
                     <div className="grid gap-2">
-                        <Label htmlFor="playFee" className="flex items-center gap-2 text-gray-200">
+                        <Label htmlFor="playFee" className="flex items-center gap-2 text-foreground">
                             <DollarSign className="w-4 h-4 text-green-400" />
                             Play Fee ($DONUT)
                         </Label>
@@ -94,26 +94,26 @@ export function GameSettingsModal({
                                 value={playFee}
                                 onChange={handleFeeChange}
                                 placeholder="0.00"
-                                className="bg-gray-800 border-gray-700 text-white pl-8 focus:border-purple-500"
+                                className="bg-muted border-border text-white pl-8 focus:border-purple-500"
                                 step="0.1"
                                 min="0"
                             />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                             Set a fee in $DONUT tokens. 80% goes to you, 10% to original author.
                             Leave 0 for free to play.
                         </p>
                     </div>
 
                     {/* Visibility Toggle */}
-                    <div className="flex items-center justify-between space-x-2 border p-3 rounded-lg border-gray-800 bg-gray-950/50">
+                    <div className="flex items-center justify-between space-x-2 border p-3 rounded-lg border-border bg-muted/50">
                         <div className="flex flex-col space-y-1">
                             <Label htmlFor="visibility" className="flex items-center gap-2 font-medium">
                                 {isPrivate ? <EyeOff className="w-4 h-4 text-red-400" /> : <Eye className="w-4 h-4 text-blue-400" />}
                                 {isPrivate ? 'Private' : 'Public'}
                             </Label>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                                 {isPrivate
                                     ? 'Only visible to you via direct link.'
                                     : 'Visible in the arcade and search.'}
@@ -135,7 +135,7 @@ export function GameSettingsModal({
                                     <Star className="w-4 h-4 fill-current" />
                                     Featured
                                 </Label>
-                                <span className="text-xs text-gray-400">
+                                <span className="text-xs text-muted-foreground">
                                     Promote this game to the homepage.
                                 </span>
                             </div>
@@ -150,7 +150,7 @@ export function GameSettingsModal({
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose} className="border-gray-700 hover:bg-gray-800 hover:text-white">
+                    <Button variant="outline" onClick={onClose} className="border-border hover:bg-muted hover:text-white">
                         Cancel
                     </Button>
                     <Button onClick={handleSave} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700">

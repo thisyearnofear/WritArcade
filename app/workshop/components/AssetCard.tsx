@@ -63,14 +63,14 @@ export function AssetCard({
                     : isRelated
                         ? 'border-writersarcade-primary/50 bg-writersarcade-primary/10'
                         : isFaded
-                            ? 'border-gray-700/30 bg-gray-800/20 opacity-40'
-                            : 'border-gray-700/50 hover:border-writersarcade-primary/30 hover:bg-gray-800/60'
+                            ? 'border-border/30 bg-muted/20 opacity-40'
+                            : 'border-border/50 hover:border-writersarcade-primary/30 hover:bg-muted/60'
             }`}
         >
             {/* Type Badge */}
             <div className="flex justify-between items-start mb-4">
                 <div className="flex-1" />
-                <span className="text-[10px] uppercase font-bold tracking-wider bg-gray-900 text-gray-400 px-2 py-1 rounded flex-shrink-0">
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-card text-muted-foreground px-2 py-1 rounded flex-shrink-0">
                     {type}
                 </span>
             </div>
@@ -87,14 +87,14 @@ export function AssetCard({
                     onTagsChange={onTagsChange}
                 />
                 {sourceSnippet && (
-                    <div className="mt-2 text-[10px] text-gray-500 italic border-l-2 border-gray-700 pl-2">
-                        <span className="font-bold text-gray-400">Provenance:</span> {sourceSnippet}
+                    <div className="mt-2 text-[10px] text-muted-foreground italic border-l-2 border-border pl-2">
+                        <span className="font-bold text-muted-foreground">Provenance:</span> {sourceSnippet}
                     </div>
                 )}
             </div>
 
             {/* Asset-specific content */}
-            <div className="text-gray-300 mb-4">
+            <div className="text-muted-foreground mb-4">
                 {children}
             </div>
 

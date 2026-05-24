@@ -24,14 +24,14 @@ export function CollapsibleSection({
   const [isOpen, setIsOpen] = useState(defaultOpen || hasWarnings)
 
   return (
-    <div className="rounded-xl overflow-hidden border border-gray-700/30 bg-gray-900/20">
+    <div className="rounded-xl overflow-hidden border border-border/30 bg-muted/20">
       {/* Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-900/40 transition-colors"
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/40 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <h3 className="font-bold text-gray-100">{title}</h3>
+          <h3 className="font-bold text-foreground">{title}</h3>
           {hasWarnings && !isOpen && (
             <AlertCircle className="w-4 h-4 text-amber-400 animate-pulse" />
           )}
@@ -40,7 +40,7 @@ export function CollapsibleSection({
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
         >
-          <ChevronDown className="w-5 h-5 text-gray-400" />
+          <ChevronDown className="w-5 h-5 text-muted-foreground" />
         </motion.div>
       </button>
 
@@ -52,7 +52,7 @@ export function CollapsibleSection({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="border-t border-gray-700/30 overflow-hidden"
+            className="border-t border-border/30 overflow-hidden"
           >
             <div className="px-6 py-4">{children}</div>
           </motion.div>

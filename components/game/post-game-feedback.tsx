@@ -57,10 +57,10 @@ export function PostGameFeedback({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8 max-w-md mx-auto"
+          className="bg-gradient-to-br from-card to-muted border border-border rounded-2xl p-8 max-w-md mx-auto"
         >
           <h3 className="text-2xl font-bold text-white mb-2">How was your experience?</h3>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             Would you recommend this game to a friend?
           </p>
 
@@ -77,7 +77,7 @@ export function PostGameFeedback({
                 className={`w-full p-4 rounded-lg border-2 transition-all ${
                   npsScore === score
                     ? `border-purple-500 bg-gradient-to-r ${color} text-white shadow-lg`
-                    : 'border-gray-600 bg-gray-800/50 text-gray-300 hover:border-gray-500'
+                    : 'border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground/50'
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -90,7 +90,7 @@ export function PostGameFeedback({
           <div className="flex gap-3">
             <button
               onClick={handleSkip}
-              className="flex-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white transition-all text-sm font-semibold"
+              className="flex-1 px-4 py-2 rounded-lg border border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-white transition-all text-sm font-semibold"
             >
               Skip
             </button>
@@ -111,10 +111,10 @@ export function PostGameFeedback({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8 max-w-md mx-auto"
+          className="bg-gradient-to-br from-card to-muted border border-border rounded-2xl p-8 max-w-md mx-auto"
         >
           <h3 className="text-2xl font-bold text-white mb-2">Any feedback?</h3>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             Tell us what could improve (optional)
           </p>
 
@@ -122,13 +122,13 @@ export function PostGameFeedback({
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="What did you think? What was missing?"
-            className="w-full h-24 bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none resize-none"
+            className="w-full h-24 bg-muted border border-border rounded-lg px-4 py-3 text-foreground placeholder-muted-foreground focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none resize-none"
           />
 
           <div className="flex gap-3 mt-6">
             <button
               onClick={handleSkip}
-              className="flex-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white transition-all text-sm font-semibold"
+              className="flex-1 px-4 py-2 rounded-lg border border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-white transition-all text-sm font-semibold"
             >
               Skip
             </button>
@@ -157,7 +157,7 @@ export function PostGameFeedback({
             </div>
           </div>
           <h3 className="text-2xl font-bold text-white mb-2">Thanks for playing!</h3>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             Your feedback helps us improve games. Ready for another?
           </p>
           <button

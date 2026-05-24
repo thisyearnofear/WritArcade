@@ -38,15 +38,15 @@ export function AISettingsWrapper() {
   if (!mounted || !initialPreferences) {
     // Render a placeholder during SSR
     return (
-      <div className="bg-gray-900/50 rounded-lg border border-gray-700 p-6">
+      <div className="bg-card rounded-lg border border-border p-6">
         <h2 className="text-xl font-semibold mb-4">AI Provider Settings</h2>
-        <div className="animate-pulse h-24 bg-gray-800 rounded"></div>
+        <div className="animate-pulse h-24 bg-muted rounded"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900/50 rounded-lg border border-gray-700 p-6 mb-6">
+    <div className="bg-card rounded-lg border border-border p-6 mb-6">
       <h2 className="text-xl font-semibold mb-4">AI Provider Settings</h2>
       <AISettingsPanel initialPreferences={initialPreferences} />
     </div>

@@ -64,7 +64,7 @@ export function GameCardEnhanced({
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
-      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 group-hover:border-gray-300 group-hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:group-hover:border-gray-700">
+      <div className="relative overflow-hidden rounded-xl border border-border bg-white shadow-sm transition-all duration-200 group-hover:border-border group-hover:shadow-md dark:bg-card">
         <div
           className="h-1 w-full"
           style={{
@@ -115,28 +115,28 @@ export function GameCardEnhanced({
           {/* Title & Tagline with responsive sizing */}
           <div>
             <motion.h3 
-              className="mb-1 line-clamp-2 text-base font-bold text-gray-900 transition-colors group-hover:text-gray-700 dark:text-white dark:group-hover:text-gray-200 sm:text-lg"
+              className="mb-1 line-clamp-2 text-base font-bold text-foreground transition-colors group-hover:text-muted-foreground sm:text-lg"
               layout
             >
               {game.title}
             </motion.h3>
-            <p className="line-clamp-2 text-xs uppercase italic text-gray-500 dark:text-gray-400 sm:text-sm">
+            <p className="line-clamp-2 text-xs uppercase italic text-muted-foreground sm:text-sm">
               {game.tagline}
             </p>
           </div>
 
           {/* Description with responsive sizing */}
-          <p className="line-clamp-3 text-xs text-gray-600 dark:text-gray-400 sm:text-sm">
+          <p className="line-clamp-3 text-xs text-muted-foreground sm:text-sm">
             {game.description}
           </p>
 
           {/* Meta */}
-          <div className="space-y-1 border-t border-gray-200 pt-3 text-xs text-gray-500 dark:border-gray-800">
+          <div className="space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
             <div className="flex justify-between">
               <span>Created {new Date(game.createdAt).toLocaleDateString()}</span>
-              <span className="text-gray-600 dark:text-gray-400">{game.subgenre}</span>
+              <span className="text-muted-foreground">{game.subgenre}</span>
             </div>
-            <div className="text-gray-600 dark:text-gray-400">
+            <div className="text-muted-foreground">
               Model: {game.promptModel}
             </div>
             {game.hypercertUri && (
@@ -149,14 +149,14 @@ export function GameCardEnhanced({
             <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
               <Link
                 href={`/games/${game.slug}`}
-                className="flex h-9 items-center justify-center gap-2 rounded-md border border-gray-900 bg-gray-900 px-3 text-sm font-medium text-white transition-all duration-200 hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] dark:border-white/15 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 dark:focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900"
+                className="flex h-9 items-center justify-center gap-2 rounded-md border border-foreground bg-foreground px-3 text-sm font-medium text-background transition-all duration-200 hover:bg-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-muted-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98] dark:border-white/15 dark:bg-white dark:text-card dark:hover:bg-border dark:focus-visible:ring-muted-foreground dark:focus-visible:ring-offset-card"
               >
                 <span className="flex items-center gap-2">
                   <Play className="w-4 h-4" />
                   {game.playFee ? (
                     <span className="flex items-center gap-1">
                       Play
-                      <span className="rounded bg-white/20 px-1.5 py-0.5 text-xs font-bold dark:bg-gray-900/15">
+                      <span className="rounded bg-white/20 px-1.5 py-0.5 text-xs font-bold dark:bg-background/15">
                         {game.playFee} $DONUT
                       </span>
                     </span>
@@ -237,7 +237,7 @@ interface ActionButtonProps {
 }
 
 function ActionButton({ onClick, disabled, icon, label, title, ariaLabel, variant = 'default' }: ActionButtonProps) {
-  const baseClasses = "flex items-center gap-2 border-gray-300 text-gray-700 transition-all duration-200 hover:border-gray-400 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-900"
+  const baseClasses = "flex items-center gap-2 border-border text-foreground transition-all duration-200 hover:border-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-muted-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] dark:hover:bg-muted dark:focus-visible:ring-muted-foreground dark:focus-visible:ring-offset-card"
   const variantClasses = variant === 'danger' 
     ? "text-red-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-700/70 dark:hover:bg-red-500/10 dark:hover:text-red-400"
     : ""

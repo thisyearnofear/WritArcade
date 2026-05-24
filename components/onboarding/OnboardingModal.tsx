@@ -64,15 +64,15 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-950 border border-gray-800 rounded-2xl max-w-md w-full shadow-2xl">
+      <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
-          <h2 className="text-lg font-semibold text-white">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-lg font-semibold text-card-foreground">
             Getting Started
           </h2>
           <button
             onClick={handleSkip}
-            className="text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -84,18 +84,18 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
           {/* Visual */}
           <div className="text-center">
             <div className="text-6xl mb-4">{step.visual}</div>
-            <h3 className="text-2xl font-bold mb-2">{step.title}</h3>
-            <p className="text-gray-300 text-sm">{step.description}</p>
+            <h3 className="text-2xl font-bold mb-2 text-card-foreground">{step.title}</h3>
+            <p className="text-muted-foreground text-sm">{step.description}</p>
           </div>
 
           {/* Content Details */}
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-3">
-            <p className="text-gray-200 text-sm">{step.content}</p>
-            
+          <div className="bg-muted border border-border rounded-lg p-4 space-y-3">
+            <p className="text-foreground text-sm">{step.content}</p>
+
             {/* Pro Tip with micro-interaction */}
             {step.tip && (
               <motion.div
-                className="p-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-300 flex items-start gap-2"
+                className="p-3 rounded-lg bg-background border border-border text-sm text-muted-foreground flex items-start gap-2"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.5 }}
@@ -115,19 +115,19 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-gray-800">
+        <div className="flex gap-3 p-6 border-t border-border">
           {currentStep >= 2 && (
             <Button
               variant="outline"
               onClick={handleSkip}
-              className="flex-1 text-gray-300 border-gray-600 hover:bg-gray-800"
+              className="flex-1"
             >
               Skip
             </Button>
           )}
           <Button
             onClick={handleNext}
-            className={`${currentStep >= 2 ? 'flex-1' : 'w-full'} bg-blue-600 text-white hover:bg-blue-500 border border-blue-500 flex items-center justify-center gap-2`}
+            className={`${currentStep >= 2 ? 'flex-1' : 'w-full'} bg-primary text-primary-foreground hover:bg-primary/90 border border-primary flex items-center justify-center gap-2`}
           >
             {currentStep === steps.length - 1 ? 'Start' : 'Next'}
             <ChevronRight className="w-4 h-4" />
@@ -141,7 +141,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
               key={idx}
               onClick={() => setCurrentStep(idx)}
               className={`w-2 h-2 rounded-full transition-all ${
-                idx === currentStep ? 'bg-white w-6' : 'bg-gray-700'
+                idx === currentStep ? 'bg-foreground w-6' : 'bg-muted-foreground/30'
               }`}
               aria-label={`Go to step ${idx + 1}`}
             />

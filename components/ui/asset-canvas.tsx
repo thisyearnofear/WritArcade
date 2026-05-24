@@ -46,7 +46,7 @@ export function AssetCanvas({
         red: 'border-red-500/30 hover:border-red-500/50',
         yellow: 'border-yellow-500/30 hover:border-yellow-500/50',
         purple: 'border-purple-500/30 hover:border-purple-500/50',
-        gray: 'border-gray-600/30 hover:border-gray-500/50'
+        gray: 'border-border/30 hover:border-border/50'
     }
 
     const colorClass = colorMap[sectionColor as keyof typeof colorMap] || colorMap.gray
@@ -57,7 +57,7 @@ export function AssetCanvas({
             {(sectionTitle || onLayoutModeChange) && (
                 <div className="flex justify-between items-center">
                     {sectionTitle && (
-                        <h3 className="text-gray-400 text-sm font-bold tracking-wider uppercase flex items-center gap-2">
+                        <h3 className="text-muted-foreground text-sm font-bold tracking-wider uppercase flex items-center gap-2">
                             <span className={`w-2 h-2 rounded-full bg-${sectionColor}-500`}></span>
                             {sectionTitle}
                         </h3>
@@ -70,7 +70,7 @@ export function AssetCanvas({
                                 className={`p-2 rounded transition-colors ${
                                     layoutMode === 'grid'
                                         ? 'bg-purple-600/20 text-purple-400'
-                                        : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
+                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted/80'
                                 }`}
                             >
                                 <Grid3x3 className="w-4 h-4" />
@@ -81,7 +81,7 @@ export function AssetCanvas({
                                 className={`p-2 rounded transition-colors ${
                                     layoutMode === 'flow'
                                         ? 'bg-purple-600/20 text-purple-400'
-                                        : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
+                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted/80'
                                 }`}
                             >
                                 <Layout className="w-4 h-4" />
@@ -98,7 +98,7 @@ export function AssetCanvas({
                 onReorder={handleReorder}
                 onMouseDown={() => setIsDragging(true)}
                 onMouseUp={() => setIsDragging(false)}
-                className={`space-y-0 p-4 rounded-2xl border-2 ${colorClass} bg-gray-900/20 transition-all ${
+                className={`space-y-0 p-4 rounded-2xl border-2 ${colorClass} bg-muted/20 transition-all ${
                     isDragging ? 'bg-purple-900/10 border-purple-500/50' : ''
                 }`}
             >
@@ -141,8 +141,8 @@ export function AssetCanvas({
 
             {/* Empty state */}
             {localAssets.length === 0 && (
-                <div className="p-8 rounded-2xl border-2 border-dashed border-gray-700/50 text-center">
-                    <p className="text-gray-400 text-sm">No assets in this section. Add some to get started.</p>
+                <div className="p-8 rounded-2xl border-2 border-dashed border-border/50 text-center">
+                    <p className="text-muted-foreground text-sm">No assets in this section. Add some to get started.</p>
                 </div>
             )}
         </div>

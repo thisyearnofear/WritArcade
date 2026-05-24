@@ -38,7 +38,7 @@ export function NetworkIndicator() {
           <Globe className={`w-3.5 h-3.5 ${chainInfo.color}`} />
           <span className={chainInfo.color}>{chainInfo.name}</span>
           {chainInfo.purpose && (
-            <span className="text-gray-400 dark:text-gray-500 hidden sm:inline">
+            <span className="text-muted-foreground hidden sm:inline">
               · {chainInfo.purpose}
             </span>
           )}

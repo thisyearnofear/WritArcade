@@ -34,7 +34,7 @@ function DesktopGate() {
 
                 {/* QR Code placeholder - using a styled div, can be replaced with actual QR component */}
                 <div className="mx-auto w-48 h-48 bg-white rounded-xl p-3 flex items-center justify-center">
-                    <div className="w-full h-full bg-gray-900 rounded flex items-center justify-center">
+                    <div className="w-full h-full bg-card rounded flex items-center justify-center">
                         <svg 
                             className="w-40 h-40 text-white" 
                             viewBox="0 0 100 100"
@@ -72,7 +72,7 @@ function DesktopGate() {
                     </a>
                     <a 
                         href="/"
-                        className="block text-center text-sm text-gray-400 hover:text-white transition-colors"
+                        className="block text-center text-sm text-muted-foreground hover:text-white transition-colors"
                     >
                         Visit Desktop Site →
                     </a>

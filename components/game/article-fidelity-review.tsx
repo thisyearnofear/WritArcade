@@ -97,13 +97,13 @@ export function ArticleFidelityReview({
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               {/* Header */}
-              <div className="sticky top-0 bg-gray-800/95 backdrop-blur border-b border-gray-700 p-6">
+              <div className="sticky top-0 bg-muted/95 backdrop-blur border-b border-border p-6">
                 <h2 className="text-2xl font-bold text-white mb-2">
                   Verify Game Authenticity
                 </h2>
-                <p className="text-gray-400 text-sm">
+                <p className="text-muted-foreground text-sm">
                   Make sure your game truly captures the article's essence
                 </p>
               </div>
@@ -133,10 +133,10 @@ export function ArticleFidelityReview({
                   {/* Game Preview */}
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                       Generated Game
                     </h4>
-                    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 space-y-3">
+                    <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
                       {game.imageUrl && (
                         <img
                           src={game.imageUrl}
@@ -145,16 +145,16 @@ export function ArticleFidelityReview({
                         />
                       )}
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Title</p>
+                        <p className="text-xs text-muted-foreground mb-1">Title</p>
                         <p className="text-white font-medium text-lg">{game.title}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Description</p>
-                        <p className="text-gray-300 text-sm">{game.description}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Description</p>
+                        <p className="text-muted-foreground text-sm">{game.description}</p>
                       </div>
                       {articleUrl && (
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Source Article</p>
+                          <p className="text-xs text-muted-foreground mb-1">Source Article</p>
                           <a
                             href={articleUrl}
                             target="_blank"
@@ -168,12 +168,12 @@ export function ArticleFidelityReview({
                     </div>
                   </div>
 
-                  <div className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-4">
+                  <div className="bg-muted/30 border border-border/50 rounded-lg p-4">
                     <p className="font-semibold text-white text-sm mb-3 flex items-center gap-2">
                       <Zap className="w-4 h-4 text-amber-400" />
                       Quality Check
                     </p>
-                    <ul className="space-y-2 text-sm text-gray-300">
+                    <ul className="space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
                         Game captures article themes
@@ -192,7 +192,7 @@ export function ArticleFidelityReview({
               </div>
 
               {/* Footer Actions */}
-              <div className="sticky bottom-0 bg-gray-800/95 backdrop-blur border-t border-gray-700 p-6 flex gap-3">
+              <div className="sticky bottom-0 bg-muted/95 backdrop-blur border-t border-border p-6 flex gap-3">
                 <button
                   onClick={handleReject}
                   disabled={isRejecting || isLoading}

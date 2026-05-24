@@ -413,9 +413,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 className="relative group"
                 whileHover={{ scale: 1.1 }}
               >
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                 <motion.div
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-100 z-50 pointer-events-none"
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-muted border border-border rounded-lg text-xs text-foreground z-50 pointer-events-none"
                   initial={{ opacity: 0, y: 5 }}
                   whileHover={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
@@ -446,7 +446,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 <span className="font-semibold">Wordle (Free)</span>
               </motion.button>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               {mode === 'story'
                 ? 'Story creates a 5-panel narrative game with AI-generated artwork, branching choices, and mood tracking.'
                 : 'Wordle creates a free word puzzle derived from your article. No payment needed.'}
@@ -455,7 +455,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
           {!isGenerating && isStoryMode && (
             <motion.div
-              className="pt-4 border-t border-gray-700"
+              className="pt-4 border-t border-border"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.5 }}
@@ -610,9 +610,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 className="relative group"
                 whileHover={{ scale: 1.1 }}
               >
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                 <motion.div
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-100 z-50 pointer-events-none"
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-muted border border-border rounded-lg text-xs text-foreground z-50 pointer-events-none"
                   initial={{ opacity: 0, y: 5 }}
                   whileHover={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
@@ -631,7 +631,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               onChange={(e) => setUrl(e.target.value)}
               className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             />
-            <p className="text-xs text-gray-400 mt-1 px-1">
+            <p className="text-xs text-muted-foreground mt-1 px-1">
               {isMusdPath
                 ? 'Paste any public Paragraph.xyz article URL.'
                 : 'Tap to enter the full Paragraph.xyz URL for this writer.'}

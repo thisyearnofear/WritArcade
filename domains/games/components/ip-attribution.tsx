@@ -23,9 +23,9 @@ export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-ex
 
     if (compact) {
         return (
-            <div className="flex flex-wrap items-center gap-2 py-3 px-4 rounded-lg border border-gray-800 bg-gray-900/50 text-xs text-gray-400">
+            <div className="flex flex-wrap items-center gap-2 py-3 px-4 rounded-lg border border-border bg-muted/50 text-xs text-muted-foreground">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="text-gray-500">IP:</span>
+                <span className="text-muted-foreground">IP:</span>
                 {assets.map((asset) => {
                     const isMinted = !!asset.storyRegistration?.storyIpId
                     return isMinted ? (
@@ -40,7 +40,7 @@ export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-ex
                             <ExternalLink className="w-3 h-3" />
                         </a>
                     ) : (
-                        <span key={asset.id} className="text-gray-300">{asset.title}</span>
+                        <span key={asset.id} className="text-muted-foreground">{asset.title}</span>
                     )
                 })}
             </div>
@@ -48,13 +48,13 @@ export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-ex
     }
 
     return (
-        <div className="mt-8 pt-8 border-t border-gray-800">
+        <div className="mt-8 pt-8 border-t border-border">
             <h3 className="text-xl font-bold bg-gradient-to-r from-amber-200 to-yellow-500 bg-clip-text text-transparent mb-4 flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-amber-500" />
                 IP Lineage & Attribution
             </h3>
 
-            <p className="text-sm text-gray-400 mb-6 max-w-2xl">
+            <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
                 This game is a **Derivative Work** composed of the following IP Assets.
                 Royalties and attribution are tracked on-chain via Story Protocol.
             </p>
@@ -69,16 +69,16 @@ export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-ex
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className={`p-4 rounded-xl border ${isMinted ? 'border-amber-500/30 bg-amber-900/10' : 'border-gray-800 bg-gray-900/50'} flex items-center justify-between group hover:border-amber-500/50 transition-colors`}
+                            className={`p-4 rounded-xl border ${isMinted ? 'border-amber-500/30 bg-amber-900/10' : 'border-border bg-muted/50'} flex items-center justify-between group hover:border-amber-500/50 transition-colors`}
                         >
                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${isMinted ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-800 text-gray-200'}`}>
+                                <div className={`p-2 rounded-lg ${isMinted ? 'bg-amber-500/20 text-amber-400' : 'bg-muted text-foreground'}`}>
                                     <Box className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-gray-100">{asset.title}</h4>
+                                    <h4 className="font-bold text-foreground">{asset.title}</h4>
                                     <div className="flex items-center gap-2 text-xs">
-                                        <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-200 capitalize">{asset.type}</span>
+                                        <span className="bg-muted px-2 py-0.5 rounded text-foreground capitalize">{asset.type}</span>
                                         {isMinted && (
                                             <span className="text-green-500 flex items-center gap-1">
                                                 ● On-Chain IP
@@ -93,7 +93,7 @@ export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-ex
                                     href={`${explorerUrl}${asset.storyRegistration!.storyIpId}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                    className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                     title="View on Story Explorer"
                                 >
                                     <ExternalLink className="w-4 h-4" />
@@ -105,7 +105,7 @@ export function IPAttribution({ assets, explorerUrl = "https://aeneid-testnet-ex
             </div>
 
             <div className="mt-6 flex justify-center">
-                <div className="text-xs text-center text-gray-300 font-mono border border-gray-700 bg-gray-800/50 px-4 py-2 rounded-full">
+                <div className="text-xs text-center text-muted-foreground font-mono border border-border bg-muted/50 px-4 py-2 rounded-full">
                     Story Protocol Network: Aeneid Testnet
                 </div>
             </div>

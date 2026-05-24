@@ -20,25 +20,25 @@ export function MobileBottomNav() {
   const isActive = useIsActive();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800 md:hidden z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border md:hidden z-50">
       <div className="flex items-center justify-around py-2 px-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors ${
-                active ? 'text-purple-400' : 'text-gray-400 hover:text-white'
+                active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
               aria-current={active ? 'page' : undefined}
             >
               {active && (
                 <motion.div
                   layoutId="nav-active-pill"
-                  className="absolute inset-0 rounded-lg bg-purple-900/30 border border-purple-500/50"
+                  className="absolute inset-0 rounded-lg bg-primary/10 border border-primary/30"
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}

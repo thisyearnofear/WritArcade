@@ -78,7 +78,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     )
   }
@@ -103,7 +103,7 @@ export default function ProfilePage() {
               />
               <div>
                 <h1 className="text-3xl font-bold">{displayName}</h1>
-                <p className="text-gray-400">
+                <p className="text-muted-foreground">
                   Manage your account, preferences, and game creation settings
                 </p>
               </div>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Preferences Settings */}
             <div className="lg:col-span-1">
-              <div className="bg-gray-900/50 rounded-lg border border-gray-700 p-6 mb-6">
+              <div className="bg-card rounded-lg border border-border p-6 mb-6">
                 <h2 className="text-xl font-semibold mb-4">Game Preferences</h2>
                 <UserPreferencesForm user={user} />
               </div>
@@ -122,21 +122,21 @@ export default function ProfilePage() {
               <AISettingsWrapper />
 
               {/* Stats */}
-              <div className="bg-gray-900/50 rounded-lg border border-gray-700 p-6">
+              <div className="bg-card rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold mb-4">Your Stats</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Wallet</span>
+                    <span className="text-muted-foreground">Wallet</span>
                     <span className="font-medium text-xs font-mono">
                       {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Games Created</span>
+                    <span className="text-muted-foreground">Games Created</span>
                     <span className="font-medium">{userGames.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">AI Model</span>
+                    <span className="text-muted-foreground">AI Model</span>
                     <span className="font-medium">{user.preferredModel}</span>
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
             <div className="lg:col-span-2">
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold mb-2">Your Games</h2>
-                <p className="text-gray-400">
+                <p className="text-muted-foreground">
                   {userGames.length === 0
                     ? "You haven't created any games yet. Start creating!"
                     : `You've created ${userGames.length} game${userGames.length === 1 ? '' : 's'}`
@@ -160,13 +160,13 @@ export default function ProfilePage() {
                   {userGames.map((game) => (
                     <div
                       key={game.id}
-                      className="bg-gray-800/50 rounded-lg border border-gray-700 p-6"
+                      className="bg-muted/50 rounded-lg border border-border p-6"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="text-xl font-semibold mb-2">{game.title}</h3>
-                          <p className="text-gray-400 mb-3">{game.description}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <p className="text-muted-foreground mb-3">{game.description}</p>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                             <span>{game.genre} • {game.subgenre}</span>
                             <span>•</span>
                             <span>{new Date(game.createdAt).toLocaleDateString()}</span>
@@ -187,8 +187,8 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-gray-800/20 rounded-lg border border-gray-700">
-                  <p className="text-gray-400 mb-4">No games created yet</p>
+                <div className="text-center py-12 bg-muted/20 rounded-lg border border-border">
+                  <p className="text-muted-foreground mb-4">No games created yet</p>
                   <a
                     href="/generate"
                     className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded transition-colors"

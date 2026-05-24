@@ -57,17 +57,17 @@ export function UserAttribution({
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <div className={`
-          rounded-full bg-gray-700 animate-pulse
+          rounded-full bg-muted animate-pulse
           ${size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-8 h-8' : 'w-6 h-6'}
         `} />
-        <div className="h-4 bg-gray-700 rounded animate-pulse w-20" />
+        <div className="h-4 bg-muted rounded animate-pulse w-20" />
       </div>
     )
   }
 
   if (!userData) {
     return (
-      <div className={`flex items-center gap-2 text-gray-500 ${className}`}>
+      <div className={`flex items-center gap-2 text-muted-foreground ${className}`}>
         <User className={size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-6 h-6' : 'w-5 h-5'} />
         <span className={size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-base' : 'text-sm'}>
           Unknown {type}
@@ -91,7 +91,7 @@ export function UserAttribution({
   const content = (
     <div className={`flex items-center gap-2 ${className}`}>
       {/* Avatar */}
-      <div className={`${avatarSize} rounded-full overflow-hidden bg-gray-800 flex-shrink-0`}>
+      <div className={`${avatarSize} rounded-full overflow-hidden bg-muted flex-shrink-0`}>
         {('avatar' in userData && userData.avatar) ? (
           <img 
             src={userData.avatar} 
@@ -116,7 +116,7 @@ export function UserAttribution({
           {userData.displayName}
         </div>
         {size !== 'sm' && (
-          <div className="text-xs text-gray-500 truncate">
+          <div className="text-xs text-muted-foreground truncate">
             {type === 'creator' ? 'Game Creator' : 'Article Author'}
           </div>
         )}
@@ -124,7 +124,7 @@ export function UserAttribution({
 
       {/* External link icon */}
       {showLink && linkUrl && (
-        <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+        <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0" />
       )}
     </div>
   )
@@ -175,7 +175,7 @@ export function AttributionPair({
           walletAddress={creatorWallet} 
           size={size}
         />
-        <div className="w-px h-6 bg-gray-600" />
+        <div className="w-px h-6 bg-border" />
         <UserAttribution 
           type="author" 
           paragraphUsername={authorParagraphUsername}

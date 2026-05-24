@@ -251,7 +251,7 @@ export function GameGenerationOverlay({
                           ? 'bg-red-900/20 border-red-500/50'
                           : isActive
                           ? 'bg-purple-900/40 border-purple-400'
-                          : 'bg-gray-900/20 border-gray-700'
+                          : 'bg-muted/20 border-border'
                       }`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -267,7 +267,7 @@ export function GameGenerationOverlay({
                               ? 'bg-red-600/30 border-red-500'
                               : isActive
                               ? 'bg-purple-600/30 border-purple-400'
-                              : 'bg-gray-700/30 border-gray-600'
+                              : 'bg-muted/30 border-border'
                           }`}
                           animate={
                             isActive
@@ -302,14 +302,14 @@ export function GameGenerationOverlay({
                         <div className="flex-1">
                           <h3
                             className={`font-semibold text-lg mb-1 ${
-                              isActive ? 'text-purple-200' : 'text-gray-300'
+                              isActive ? 'text-purple-200' : 'text-muted-foreground'
                             }`}
                           >
                             {config.label}
                           </h3>
                           <p
                             className={`text-sm ${
-                              isActive ? 'text-purple-300' : 'text-gray-400'
+                              isActive ? 'text-purple-300' : 'text-muted-foreground'
                             }`}
                           >
                             {config.description}
@@ -323,7 +323,7 @@ export function GameGenerationOverlay({
                               ? 'bg-green-600/20 border-green-500 text-green-300'
                               : isActive
                               ? 'bg-purple-600/20 border-purple-400 text-purple-200'
-                              : 'bg-gray-700/20 border-gray-600 text-gray-400'
+                              : 'bg-muted/20 border-border text-muted-foreground'
                           }`}
                         >
                           {index + 1}
@@ -400,7 +400,7 @@ export function GameGenerationOverlay({
                 {onCancel && (
                   <button
                     onClick={onCancel}
-                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     aria-label="Cancel game generation"
                   >
                     <X className="w-3.5 h-3.5" />

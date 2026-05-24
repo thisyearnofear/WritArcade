@@ -209,11 +209,11 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                 <Wallet className="h-4 w-4" />
                 Your Signature = Your Ownership
               </h3>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+              <p className="text-sm text-foreground mb-3">
                 When you sign this transaction, <strong>YOU</strong> become the on-chain owner of this IP.
                 Not us. Your wallet. Your IP.
               </p>
-              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1.5">
+              <ul className="text-sm text-muted-foreground space-y-1.5">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <span>Registered on Story Protocol blockchain</span>
@@ -231,10 +231,10 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
             {/* Royalty Distribution Visual */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Royalty Distribution
               </label>
-              <div className="h-4 rounded-full overflow-hidden flex bg-gray-200 dark:bg-gray-700">
+              <div className="h-4 rounded-full overflow-hidden flex bg-muted">
                 <div
                   className="bg-blue-500 h-full flex items-center justify-center"
                   style={{ width: `${ROYALTY_CONFIG.authorShare / 100}%` }}
@@ -246,12 +246,12 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                   title={`Creator: ${ROYALTY_CONFIG.creatorShare / 100}%`}
                 />
                 <div
-                  className="bg-gray-400 h-full flex items-center justify-center"
+                  className="bg-muted-foreground h-full flex items-center justify-center"
                   style={{ width: `${ROYALTY_CONFIG.platformShare / 100}%` }}
                   title={`Platform: ${ROYALTY_CONFIG.platformShare / 100}%`}
                 />
               </div>
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
                   Author 60%
@@ -261,7 +261,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                   You 30%
                 </span>
                 <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-gray-400" />
+                  <div className="w-2 h-2 rounded-full bg-muted-foreground" />
                   Platform 10%
                 </span>
               </div>
@@ -269,7 +269,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
             {/* License Selection */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 License Type
               </label>
               <div className="grid grid-cols-1 gap-2">
@@ -283,7 +283,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                     className={`relative flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
                       license.recommended
                         ? 'border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        : 'border-border hover:border-foreground/20'
                     }`}
                   >
                     <div className="flex items-center h-5">
@@ -292,12 +292,12 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                         name="license"
                         value={license.id}
                         defaultChecked={license.recommended}
-                        className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                        className="h-4 w-4 text-purple-600 border-border focus:ring-purple-500"
                       />
                     </div>
                     <div className="ml-3 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                        <span className="font-medium text-sm text-foreground">
                           {license.name}
                         </span>
                         {license.recommended && (
@@ -306,7 +306,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {license.description}
                       </p>
                     </div>
@@ -384,7 +384,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
               </Button>
             )}
 
-            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-center text-muted-foreground">
               This is optional. You can skip and mint on Base without IP registration.
             </p>
           </>
@@ -408,22 +408,22 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
             {/* IP Asset ID */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Your IP Asset ID
               </label>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                <code className="text-sm font-mono text-gray-900 dark:text-gray-100 flex-1 break-all">
+              <div className="flex items-center gap-2 bg-muted border border-border rounded-lg p-3">
+                <code className="text-sm font-mono text-foreground flex-1 break-all">
                   {result.ipId}
                 </code>
                 <button
                   onClick={() => copyToClipboard(result.ipId, "ipId")}
-                  className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  className="p-1.5 hover:bg-muted/80 rounded transition-colors"
                   title="Copy to clipboard"
                 >
                   {copiedField === "ipId" ? (
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
                   ) : (
-                    <Copy className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                    <Copy className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
               </div>
@@ -431,21 +431,21 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
             {/* Transaction Hash */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Transaction
               </label>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                <code className="text-xs font-mono text-gray-600 dark:text-gray-400 flex-1 truncate">
+              <div className="flex items-center gap-2 bg-muted border border-border rounded-lg p-3">
+                <code className="text-xs font-mono text-muted-foreground flex-1 truncate">
                   {result.txHash}
                 </code>
                 <a
                   href={result.txExplorerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  className="p-1.5 hover:bg-muted/80 rounded transition-colors"
                   title="View on Explorer"
                 >
-                  <ExternalLink className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
               </div>
             </div>

@@ -108,11 +108,11 @@ export default function WorkshopPage() {
         ]
         return (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                <div className="bg-gray-900 border border-purple-500 p-6 rounded-2xl max-w-sm w-full">
+                <div className="bg-card border border-purple-500 p-6 rounded-2xl max-w-sm w-full">
                     <h3 className="text-white font-bold mb-2">Workshop Tour ({currentStep + 1}/{steps.length})</h3>
-                    <p className="text-gray-300 text-sm mb-6">{steps[currentStep]}</p>
+                    <p className="text-muted-foreground text-sm mb-6">{steps[currentStep]}</p>
                     <div className="flex justify-between">
-                        <button onClick={dismissOnboarding} className="text-gray-500 text-sm hover:text-white">Skip</button>
+                        <button onClick={dismissOnboarding} className="text-muted-foreground text-sm hover:text-white">Skip</button>
                         {currentStep < steps.length - 1 ? (
                             <button onClick={nextStep} className="bg-purple-600 px-4 py-2 rounded text-white text-sm">Next</button>
                         ) : (
@@ -138,14 +138,14 @@ export default function WorkshopPage() {
                 <div className="max-w-4xl mx-auto">
                     {/* Simplified UI for demonstration */}
                     {state === 'input' && (
-                        <div className="bg-gray-900/50 p-8 rounded-2xl border border-gray-800">
-                             <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Enter article URL..." className="w-full bg-black border border-gray-700 rounded-lg p-3" />
+                        <div className="bg-muted/50 p-8 rounded-2xl border border-border">
+                             <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Enter article URL..." className="w-full bg-black border border-border rounded-lg p-3" />
                              <button onClick={handleDecompose} className="mt-4 px-6 py-3 bg-purple-600 rounded-lg font-bold">Decompose</button>
                         </div>
                     )}
                     
                     {state === 'workshop' && assets && (
-                        <div className="sticky top-4 z-10 bg-black/80 backdrop-blur p-4 rounded-xl border border-gray-800">
+                        <div className="sticky top-4 z-10 bg-black/80 backdrop-blur p-4 rounded-xl border border-border">
                             <button onClick={handleUndo} disabled={!undoManager.canUndo()} className="mr-2">Undo</button>
                             <button onClick={handleMint} disabled={!allChecklistsPassed} className="bg-green-600 px-4 py-2 rounded">Register IP</button>
                             

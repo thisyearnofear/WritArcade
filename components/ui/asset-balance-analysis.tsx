@@ -162,7 +162,7 @@ export function AssetBalanceAnalysis({
                 {statusIcon[overallStatus]}
                 <div>
                     <h3 className="font-bold text-white">Game Balance Analysis</h3>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                         {overallStatus === 'good'
                             ? 'Your asset composition looks balanced'
                             : overallStatus === 'warning'
@@ -177,10 +177,10 @@ export function AssetBalanceAnalysis({
                 {metrics.map((metric, idx) => (
                     <div
                         key={idx}
-                        className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50"
+                        className="p-3 rounded-lg bg-muted/40 border border-border/50"
                     >
                         <div className="flex justify-between items-center mb-2">
-                            <span className="font-bold text-sm text-gray-200">
+                            <span className="font-bold text-sm text-foreground">
                                 {metric.label}
                             </span>
                             <span
@@ -197,7 +197,7 @@ export function AssetBalanceAnalysis({
                         </div>
 
                         {/* Progress bar */}
-                        <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-2">
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{
@@ -218,29 +218,29 @@ export function AssetBalanceAnalysis({
                         </div>
 
                         {/* Range indicator */}
-                        <p className="text-xs text-gray-400 mb-2">
+                        <p className="text-xs text-muted-foreground mb-2">
                             Recommended: {metric.recommended.min}–{metric.recommended.max}
                         </p>
 
                         {/* Message */}
-                        <p className="text-xs text-gray-300">{metric.message}</p>
+                        <p className="text-xs text-muted-foreground">{metric.message}</p>
                     </div>
                 ))}
             </div>
 
             {/* Overall Recommendations */}
-            <div className="mt-6 pt-6 border-t border-gray-700/50">
-                <h4 className="font-bold text-gray-200 text-sm mb-3 flex items-center gap-2">
+            <div className="mt-6 pt-6 border-t border-border/50">
+                <h4 className="font-bold text-foreground text-sm mb-3 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" />
                     Recommendations
                 </h4>
-                <ul className="space-y-2 text-sm text-gray-300">
+                <ul className="space-y-2 text-sm text-muted-foreground">
                     {metrics
                         .filter(m => m.status !== 'good')
                         .map((metric, idx) => (
                             <li
                                 key={idx}
-                                className="flex items-start gap-2 text-gray-400"
+                                className="flex items-start gap-2 text-muted-foreground"
                             >
                                 <span className="text-lg leading-none mt-0.5">•</span>
                                 <span>{metric.message}</span>

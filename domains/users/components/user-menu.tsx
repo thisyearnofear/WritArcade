@@ -175,9 +175,9 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
           {/* Menu */}
           <div 
             ref={menuRef} 
-            className="absolute right-0 mt-4 w-72 max-w-[calc(100vw-2rem)] bg-gray-900 border border-purple-500/30 rounded-lg shadow-xl shadow-purple-500/10 z-[70] max-h-[80vh] overflow-auto md:right-0 sm:right-auto"
+            className="absolute right-0 mt-4 w-72 max-w-[calc(100vw-2rem)] bg-card border border-purple-500/30 rounded-lg shadow-xl shadow-purple-500/10 z-[70] max-h-[80vh] overflow-auto md:right-0 sm:right-auto"
           >
-            <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/20 to-pink-900/20">
+            <div className="p-4 border-b border-border bg-gradient-to-r from-purple-900/20 to-pink-900/20">
               <div className="flex items-center space-x-3">
                 {profile?.pfpUrl ? (
                   <img
@@ -208,7 +208,7 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                 onClick={() => setIsOpen(false)}
               >
                 <LayoutDashboard className="w-4 h-4 text-amber-500 group-hover:text-amber-400" />
-                <span className="text-gray-300 group-hover:text-white font-bold uppercase tracking-widest text-[10px]">Creator Hub</span>
+                <span className="text-muted-foreground group-hover:text-white font-bold uppercase tracking-widest text-[10px]">Creator Hub</span>
               </Link>
 
               <Link
@@ -217,7 +217,7 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                 onClick={() => setIsOpen(false)}
               >
                 <Settings className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
-                <span className="text-gray-300 group-hover:text-white">Preferences</span>
+                <span className="text-muted-foreground group-hover:text-white">Preferences</span>
               </Link>
 
               <Link
@@ -226,12 +226,12 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                 onClick={() => setIsOpen(false)}
               >
                 <GamepadIcon className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
-                <span className="text-gray-300 group-hover:text-white">My Games</span>
+                <span className="text-muted-foreground group-hover:text-white">My Games</span>
               </Link>
 
               {mounted && (
                 <>
-                  <div className="my-1 border-t border-gray-700/50" />
+                  <div className="my-1 border-t border-border/50" />
                   <button
                     onClick={toggleDarkMode}
                     className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-purple-600/10 transition-colors group text-left"
@@ -241,20 +241,20 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                     ) : (
                       <Sun className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
                     )}
-                    <span className="text-gray-300 group-hover:text-white">
+                    <span className="text-muted-foreground group-hover:text-white">
                       {isDarkMode ? 'Switch to Light' : 'Switch to Dark'}
                     </span>
                   </button>
                 </>
               )}
 
-              <div className="my-1 border-t border-gray-700/50" />
+              <div className="my-1 border-t border-border/50" />
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-red-600/10 transition-colors group text-left"
               >
                 <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-300" />
-                <span className="text-gray-300 group-hover:text-white">Disconnect Wallet</span>
+                <span className="text-muted-foreground group-hover:text-white">Disconnect Wallet</span>
               </button>
             </div>
           </div>

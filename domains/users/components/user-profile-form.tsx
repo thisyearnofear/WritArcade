@@ -71,15 +71,15 @@ export function UserPreferencesForm({ user }: { user: User }) {
                         <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Best Quality)</SelectItem>
                     </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                     This model will be used by default when generating new games.
                 </p>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-gray-700 p-4">
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div className="space-y-0.5">
                     <Label className="text-base">Private Games</Label>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                         Hide your games from public discovery (only accessible via direct link)
                     </p>
                 </div>
@@ -94,7 +94,7 @@ export function UserPreferencesForm({ user }: { user: User }) {
                 {isLoading ? 'Saving...' : 'Save Preferences'}
             </Button>
 
-            <p className="text-xs text-gray-400 text-center">
+            <p className="text-xs text-muted-foreground text-center">
                 Your username and profile are managed by Farcaster
             </p>
         </form>

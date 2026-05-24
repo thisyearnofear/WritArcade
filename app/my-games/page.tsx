@@ -308,7 +308,7 @@ export default function MyGamesPage() {
 
       <main className="flex-1 overflow-y-auto">
         {/* Page Header */}
-        <section className="py-12 px-4 bg-gradient-to-b from-purple-900/20 to-transparent border-b border-gray-800">
+        <section className="py-12 px-4 bg-gradient-to-b from-purple-900/20 to-transparent border-b border-border">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-4xl font-bold">My Games</h1>
@@ -320,7 +320,7 @@ export default function MyGamesPage() {
                 Create New Game
               </Link>
             </div>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               Manage your created games, mint them as NFTs, and register them as IP assets.
             </p>
           </div>
@@ -330,18 +330,18 @@ export default function MyGamesPage() {
         <section className="py-12 px-4">
           <div className="max-w-6xl mx-auto">
             {/* Tab Navigation */}
-            <div className="flex items-center gap-2 mb-8 border-b border-gray-200 dark:border-gray-800">
+            <div className="flex items-center gap-2 mb-8 border-b border-border">
               <button
                 onClick={() => setActiveTab('games')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'games'
                     ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Gamepad2 className="w-4 h-4" />
                 My Games
-                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800">
+                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
                   {games.length}
                 </span>
               </button>
@@ -350,7 +350,7 @@ export default function MyGamesPage() {
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'ip-registrations'
                     ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Shield className="w-4 h-4" />
@@ -364,14 +364,14 @@ export default function MyGamesPage() {
             ) : loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-4">
-                    <div className="h-20 rounded bg-gray-800/70" />
-                    <div className="h-4 rounded bg-gray-800/70 w-2/3" />
-                    <div className="h-3 rounded bg-gray-800/70 w-full" />
-                    <div className="h-3 rounded bg-gray-800/70 w-5/6" />
+                  <div key={i} className="animate-pulse bg-card border border-border rounded-lg p-6 space-y-4">
+                    <div className="h-20 rounded bg-muted" />
+                    <div className="h-4 rounded bg-muted w-2/3" />
+                    <div className="h-3 rounded bg-muted w-full" />
+                    <div className="h-3 rounded bg-muted w-5/6" />
                     <div className="flex gap-2 pt-2">
-                      <div className="h-9 w-24 rounded bg-gray-800/70" />
-                      <div className="h-9 w-20 rounded bg-gray-800/70" />
+                      <div className="h-9 w-24 rounded bg-muted" />
+                      <div className="h-9 w-20 rounded bg-muted" />
                     </div>
                   </div>
                 ))}
@@ -387,9 +387,9 @@ export default function MyGamesPage() {
                 </button>
               </div>
             ) : games.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-lg">
-                <h2 className="text-xl font-semibold text-gray-300 mb-3">No games yet</h2>
-                <p className="text-gray-400 mb-6 max-w-md mx-auto">
+              <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
+                <h2 className="text-xl font-semibold text-foreground mb-3">No games yet</h2>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   Create your first game by pasting a Paragraph.xyz article URL. You can then mint it as an NFT or register it as an IP asset.
                 </p>
                 <Link
@@ -402,7 +402,7 @@ export default function MyGamesPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="text-sm text-gray-400 mb-6">
+                <div className="text-sm text-muted-foreground mb-6">
                   You have <span className="font-semibold text-white">{games.length}</span> game{games.length !== 1 ? 's' : ''}
                 </div>
 
@@ -447,7 +447,7 @@ export default function MyGamesPage() {
                           setLoadingMore(false)
                         }
                       }}
-                      className="px-6 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm"
+                      className="px-6 py-2 rounded bg-muted hover:bg-muted/80 border border-border text-sm"
                       disabled={loadingMore}
                     >
                       {loadingMore ? 'Loading...' : 'Load more'}

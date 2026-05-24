@@ -76,18 +76,18 @@ export function AssetPalette({ isOpen, onClose, onInject }: AssetPaletteProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="fixed bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 z-40 shadow-2xl"
+                className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 shadow-2xl"
             >
                 <div className="max-w-6xl mx-auto p-6">
                     {/* Header */}
                     <div className="flex justify-between items-center mb-4">
                         <div>
                             <h3 className="text-lg font-bold text-white">Marketplace Assets</h3>
-                            <p className="text-xs text-gray-400">Drag or click to add</p>
+                            <p className="text-xs text-muted-foreground">Drag or click to add</p>
                         </div>
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+                            className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg text-sm font-medium transition-colors"
                         >
                             Close
                         </button>
@@ -121,19 +121,19 @@ export function AssetPalette({ isOpen, onClose, onInject }: AssetPaletteProps) {
                                     <motion.div
                                         key={asset.id}
                                         whileHover={{ scale: 1.05 }}
-                                        className="flex-shrink-0 w-64 bg-gray-900 border border-gray-800 hover:border-purple-500/50 rounded-xl p-4 cursor-pointer transition-all group"
+                                        className="flex-shrink-0 w-64 bg-card border border-border hover:border-purple-500/50 rounded-xl p-4 cursor-pointer transition-all group"
                                         onClick={() => onInject(asset)}
                                     >
                                         <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-gray-200 flex-1">{asset.title}</h4>
+                                            <h4 className="font-bold text-foreground flex-1">{asset.title}</h4>
                                             <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded flex-shrink-0 ${getTypeColor(asset.type)}`}>
                                                 {asset.type}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-gray-400 line-clamp-2 mb-3">
+                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                                             {asset.description}
                                         </p>
-                                        <button className="w-full py-2 bg-gray-800 group-hover:bg-purple-600 group-hover:text-white text-gray-300 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2">
+                                        <button className="w-full py-2 bg-muted group-hover:bg-purple-600 group-hover:text-white text-muted-foreground rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2">
                                             <Plus size={14} /> Add
                                         </button>
                                     </motion.div>
@@ -154,7 +154,7 @@ export function AssetPalette({ isOpen, onClose, onInject }: AssetPaletteProps) {
 
                     {assets.length === 0 && !loading && (
                         <div className="text-center py-8">
-                            <p className="text-gray-400 text-sm">No marketplace assets available</p>
+                            <p className="text-muted-foreground text-sm">No marketplace assets available</p>
                         </div>
                     )}
                 </div>
@@ -169,6 +169,6 @@ function getTypeColor(type: string) {
         case 'mechanic': return 'bg-red-900/50 text-red-200'
         case 'visual': return 'bg-purple-900/50 text-purple-200'
         case 'world': return 'bg-green-900/50 text-green-200'
-        default: return 'bg-gray-800 text-gray-400'
+        default: return 'bg-muted text-muted-foreground'
     }
 }

@@ -65,7 +65,7 @@ export function SuccessMoment({ trigger, onComplete }: SuccessMomentProps) {
 
               <div className="text-center">
                 <h2 className="text-3xl font-bold text-white mb-2">Ready to Mint!</h2>
-                <p className="text-gray-300">Your asset composition is complete</p>
+                <p className="text-muted-foreground">Your asset composition is complete</p>
               </div>
 
               {/* Confetti sparkles */}

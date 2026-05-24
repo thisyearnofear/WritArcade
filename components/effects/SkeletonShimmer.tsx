@@ -57,14 +57,14 @@ function ShimmerBox({ className, style }: { className?: string; style?: React.CS
   if (prefersReducedMotion) {
     return (
       <div
-        className={`bg-gray-800 ${className}`}
+        className={`bg-muted ${className}`}
         style={style}
       />
     )
   }
 
   return (
-    <div className={`relative overflow-hidden bg-gray-800 ${className}`} style={style}>
+    <div className={`relative overflow-hidden bg-muted ${className}`} style={style}>
       <motion.div
         className="absolute inset-0"
         style={{
@@ -89,9 +89,9 @@ interface CardSkeletonProps {
 
 export function CardSkeleton({ className = '' }: CardSkeletonProps) {
   return (
-    <div className={`overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 ${className}`}>
+    <div className={`overflow-hidden rounded-xl border border-border bg-card shadow-sm ${className}`}>
       {/* Header shimmer */}
-      <div className="relative h-1 overflow-hidden bg-gray-200 dark:bg-gray-800">
+      <div className="relative h-1 overflow-hidden bg-muted">
         <motion.div
           className="absolute inset-0"
           style={{
@@ -105,16 +105,16 @@ export function CardSkeleton({ className = '' }: CardSkeletonProps) {
       {/* Content shimmer */}
       <div className="space-y-4 p-5 sm:p-6">
         <div className="flex items-start justify-between">
-          <ShimmerBox className="h-5 w-16 rounded-full bg-gray-200 dark:bg-gray-800" />
+          <ShimmerBox className="h-5 w-16 rounded-full bg-muted" />
         </div>
         
-        <ShimmerBox className="h-6 w-3/4 rounded bg-gray-200 dark:bg-gray-800" />
-        <ShimmerBox className="h-4 w-full rounded bg-gray-200 dark:bg-gray-800" />
-        <ShimmerBox className="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-800" />
+        <ShimmerBox className="h-6 w-3/4 rounded bg-muted" />
+        <ShimmerBox className="h-4 w-full rounded bg-muted" />
+        <ShimmerBox className="h-4 w-2/3 rounded bg-muted" />
         
-        <div className="flex gap-2 border-t border-gray-200 pt-4 dark:border-gray-800">
-          <ShimmerBox className="h-9 flex-1 rounded bg-gray-200 dark:bg-gray-800" />
-          <ShimmerBox className="h-9 w-20 rounded bg-gray-200 dark:bg-gray-800" />
+        <div className="flex gap-2 border-t border-border pt-4">
+          <ShimmerBox className="h-9 flex-1 rounded bg-muted" />
+          <ShimmerBox className="h-9 w-20 rounded bg-muted" />
         </div>
       </div>
     </div>

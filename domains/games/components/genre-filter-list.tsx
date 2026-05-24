@@ -42,7 +42,7 @@ export function GenreFilterList({
             className={`flex items-center gap-2 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
               isActive(id)
                 ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50'
-                : 'text-gray-400 bg-gray-900 border border-gray-800 hover:border-gray-600'
+                : 'text-muted-foreground bg-card border border-border hover:border-border'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -63,7 +63,7 @@ export function GenreFilterList({
           className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
             isActive(id)
               ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
-              : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
         >
           <Icon className="w-4 h-4" />

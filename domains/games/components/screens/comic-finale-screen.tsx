@@ -82,8 +82,8 @@ export function ComicFinaleScreen({
         onPanelTextChange={handlePanelTextChange}
       />
       {extractedAssetIds.length > 0 && !derivativeRegistered && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-gray-700 rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">
-          <p className="text-sm text-gray-300 text-center">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">
+          <p className="text-sm text-muted-foreground text-center">
             <span className="font-semibold text-white">{extractedAssetIds.length} asset{extractedAssetIds.length > 1 ? 's' : ''} extracted</span> — register as derivative IP on Story Protocol to establish royalty chains.
           </p>
           {!game.storyIpId ? (
@@ -103,7 +103,7 @@ export function ComicFinaleScreen({
             <Button
               onClick={handleRegisterDerivativeIp}
               disabled={isRegisteringDerivative}
-              className="w-full bg-white text-black hover:bg-gray-100"
+              className="w-full bg-white text-black hover:bg-muted"
             >
               {isRegisteringDerivative ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {isRegisteringDerivative ? 'Registering…' : 'Register Derivative IP on Story'}
@@ -112,7 +112,7 @@ export function ComicFinaleScreen({
         </div>
       )}
       {derivativeRegistered && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-green-700 rounded-xl px-6 py-3 text-green-400 text-sm text-center shadow-2xl">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-green-700 rounded-xl px-6 py-3 text-green-400 text-sm text-center shadow-2xl">
           ✅ Derivative IP registered on Story Protocol
         </div>
       )}

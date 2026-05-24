@@ -7,7 +7,7 @@
      SEMANTICS:
      • :root  = light mode (Sun icon, no .dark class on <html>)
      • .dark  = dark mode  (Moon icon, .dark class added by DarkModeProvider)
-     
+
      CONSOLIDATION: Single source of truth - shadcn/ui CSS variables
      All brand-specific colors use these semantic variables.
      ─────────────────────────────────────────────────────────────────────────── */
@@ -57,5 +57,36 @@
     --popover: 0 0% 7%;
     --popover-foreground: 0 0% 95%;
   }
+
+  /* ─── Base Styles ────────────────────────────────────────────────────────── */
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Focus-visible: only show focus rings on keyboard navigation */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove default focus outline for mouse users */
+  :focus:not(:focus-visible) {
+    @apply outline-none;
+  }
 }
-/* ... rest of globals.css ... */
+
+/* ─── Utility: Skip link ────────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -76,7 +76,7 @@ export function CustomizationStep({
 }: CustomizationStepProps) {
   return (
     <motion.div
-      className="pt-4 border-t border-gray-700"
+      className="pt-4 border-t border-border"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5, duration: 0.5 }}

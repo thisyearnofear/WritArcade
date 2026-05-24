@@ -91,7 +91,7 @@ export function SecretPanel({
         {unlocked ? (
           <Eye className="w-3.5 h-3.5" style={{ color: primaryColor }} />
         ) : (
-          <Lock className="w-3.5 h-3.5 text-gray-500" />
+          <Lock className="w-3.5 h-3.5 text-muted-foreground" />
         )}
       </div>
 
@@ -121,16 +121,16 @@ export function SecretPanel({
                     alt="Secret panel illustration"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
                 </div>
               )}
 
               {/* Narrative */}
               <div className="p-5">
-                <p className="text-gray-100 text-base leading-relaxed font-medium italic">
+                <p className="text-foreground text-base leading-relaxed font-medium italic">
                   &ldquo;{narrative}&rdquo;
                 </p>
-                <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Unlock className="w-3 h-3" />
                   <span>Unlocked by NFT ownership</span>
                 </div>
@@ -152,17 +152,17 @@ export function SecretPanel({
                   className="absolute inset-0 flex items-center justify-center"
                   style={{ zIndex: 2 }}
                 >
-                  <div className="bg-gray-900/80 backdrop-blur-sm rounded-full p-4">
-                    <Lock className="w-8 h-8 text-gray-400" />
+                  <div className="bg-muted/80 backdrop-blur-sm rounded-full p-4">
+                    <Lock className="w-8 h-8 text-muted-foreground" />
                   </div>
                 </div>
-                <div className="h-24 opacity-10 blur-xl bg-gradient-to-r from-transparent via-gray-400 to-transparent" />
+                <div className="h-24 opacity-10 blur-xl bg-gradient-to-r from-transparent via-muted-foreground to-transparent" />
               </div>
 
-              <h3 className="text-lg font-bold text-gray-200 mb-2">
+              <h3 className="text-lg font-bold text-foreground mb-2">
                 A Secret Awaits
               </h3>
-              <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 This game holds a hidden epilogue — an alternate ending only
                 revealed to those who truly own the experience.
               </p>
@@ -194,7 +194,7 @@ export function SecretPanel({
                       )}
                     </button>
                   ) : (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       Connect your wallet to check NFT ownership
                     </p>
                   )}
@@ -210,7 +210,7 @@ export function SecretPanel({
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   This panel will be available after minting
                 </p>
               )}

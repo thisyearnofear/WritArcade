@@ -40,7 +40,7 @@ export function WriterPageClient({
           <div className="max-w-6xl mx-auto px-4 pt-8">
             <Link
               href="/games"
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               The Arcade
@@ -50,15 +50,15 @@ export function WriterPageClient({
           {/* Writer header */}
           <section className="py-12 px-4">
             <div className="max-w-6xl mx-auto">
-              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 border-b border-gray-200 dark:border-gray-800 pb-10">
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 border-b border-border pb-10">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                     Writer
                   </p>
-                  <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
                     {writer}
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed mb-4">
+                  <p className="text-muted-foreground max-w-xl leading-relaxed mb-4">
                     {bio}
                   </p>
                   <div className="flex flex-wrap items-center gap-3">
@@ -66,7 +66,7 @@ export function WriterPageClient({
                       href={paragraphUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-700 hover:border-gray-500 rounded-md px-3 py-1.5 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground border border-border hover:border-border rounded-md px-3 py-1.5 transition-colors"
                     >
                       Read on Paragraph
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -75,7 +75,7 @@ export function WriterPageClient({
                       href={basescanUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors font-mono"
+                      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground transition-colors font-mono"
                     >
                       ${symbol}
                       <ExternalLink className="w-3 h-3" />
@@ -90,8 +90,8 @@ export function WriterPageClient({
                 {/* Stats */}
                 <div className="flex gap-8 shrink-0">
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{total}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wider mt-0.5">
+                    <p className="text-2xl font-bold text-foreground tabular-nums">{total}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
                       {total === 1 ? 'Game' : 'Games'}
                     </p>
                   </div>
@@ -103,17 +103,17 @@ export function WriterPageClient({
           {/* Games from this writer */}
           <section className="py-8 px-4">
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-8">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-8">
                 Games from {writer}&apos;s articles
               </h2>
 
               {total === 0 ? (
-                <div className="text-center py-20 border border-dashed border-gray-300 dark:border-gray-800 rounded-lg">
-                  <p className="text-gray-500 dark:text-gray-500 mb-4">No games yet from this writer.</p>
+                <div className="text-center py-20 border border-dashed border-border rounded-lg">
+                  <p className="text-muted-foreground mb-4">No games yet from this writer.</p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <Link
                       href="/generate"
-                      className="inline-flex items-center gap-2 text-sm text-gray-900 dark:text-white bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 border border-gray-300 dark:border-white/10 rounded-md px-4 py-2 transition-colors"
+                      className="inline-flex items-center gap-2 text-sm text-foreground bg-muted/50 hover:bg-muted border border-border rounded-md px-4 py-2 transition-colors"
                     >
                       Be the first — generate a game from {writer}&apos;s articles
                     </Link>
@@ -124,7 +124,7 @@ export function WriterPageClient({
                       Generate with MUSD instead →
                     </Link>
                   </div>
-                  <p className="mt-4 text-xs text-gray-500 dark:text-gray-500">
+                  <p className="mt-4 text-xs text-muted-foreground">
                     Prefer the open remix path? Use MUSD on Mezo to generate from any Paragraph article.
                   </p>
                 </div>
@@ -132,7 +132,7 @@ export function WriterPageClient({
                 <Suspense fallback={
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {[...Array(12)].map((_, i) => (
-                      <div key={i} className="aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+                      <div key={i} className="aspect-[3/4] bg-muted rounded-lg animate-pulse" />
                     ))}
                   </div>
                 }>

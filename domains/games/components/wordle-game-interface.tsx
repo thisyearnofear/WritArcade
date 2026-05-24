@@ -51,18 +51,18 @@ export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInt
 
   const renderTile = (char: string | null, state: WordleLetterState | null, index: number) => {
     const baseClasses = 'w-10 h-10 md:w-12 md:h-12 border flex items-center justify-center text-lg md:text-2xl font-bold rounded-sm'
-    let stateClasses = 'border-gray-700 bg-black text-white'
+    let stateClasses = 'border-border bg-black text-white'
 
     if (state === 'correct') {
       stateClasses = 'bg-green-600 border-green-500 text-white'
     } else if (state === 'present') {
       stateClasses = 'bg-yellow-500 border-yellow-400 text-black'
     } else if (state === 'absent') {
-      stateClasses = 'bg-gray-800 border-gray-700 text-gray-400'
+      stateClasses = 'bg-muted border-border text-muted-foreground'
     }
 
     return (
-      <div key={index} className={`${baseClasses} ${state ? stateClasses : 'border-gray-700 bg-black text-white'}`}>
+      <div key={index} className={`${baseClasses} ${state ? stateClasses : 'border-border bg-black text-white'}`}>
         {char?.toUpperCase()}
       </div>
     )
@@ -104,7 +104,7 @@ export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInt
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: headingColor }}>
             {game.title}
           </h1>
-          <p className="text-sm text-gray-300 max-w-md mx-auto">
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
             Guess the {wordLength}-letter word inspired by this article.
           </p>
 
@@ -148,7 +148,7 @@ export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInt
                 onChange={(e) => setCurrentGuess(e.target.value)}
                 maxLength={wordLength}
                 disabled={status !== 'in_progress'}
-                className="bg-black border-gray-700 text-white uppercase tracking-[0.2em] text-center"
+                className="bg-black border-border text-white uppercase tracking-[0.2em] text-center"
                 placeholder={`${wordLength}-letter word`}
               />
               <Button
@@ -162,7 +162,7 @@ export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInt
             {error && <p className="text-xs text-red-400">{error}</p>}
           </form>
 
-          <section className="text-xs text-gray-400 space-y-1">
+          <section className="text-xs text-muted-foreground space-y-1">
             {status === 'in_progress' && (
               <p>
                 {attemptsAllowed - guesses.length} guesses remaining.

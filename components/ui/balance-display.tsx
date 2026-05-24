@@ -107,8 +107,8 @@ function BalanceRow({
   return (
     <div className={`flex items-center justify-between gap-3 ${mobileLayout ? 'py-2.5 px-4' : 'py-2 px-3'}`}>
       <div className="flex items-center gap-2.5 min-w-0">
-        <Coins className={`w-4 h-4 shrink-0 ${isZero ? 'text-gray-500' : accentClass}`} />
-        <span className={`text-sm font-medium truncate ${isZero ? 'text-gray-500' : 'text-gray-100'}`}>
+        <Coins className={`w-4 h-4 shrink-0 ${isZero ? 'text-muted-foreground' : accentClass}`} />
+        <span className={`text-sm font-medium truncate ${isZero ? 'text-muted-foreground' : 'text-foreground'}`}>
           {symbol}
         </span>
         <CopyAddressButton
@@ -119,9 +119,9 @@ function BalanceRow({
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {isLoading ? (
-          <Loader2 className="w-3.5 h-3.5 text-gray-500 animate-spin" />
+          <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
         ) : (
-          <span className={`text-sm tabular-nums ${isZero ? 'text-gray-600' : 'text-white font-medium'}`}>
+          <span className={`text-sm tabular-nums ${isZero ? 'text-muted-foreground' : 'text-white font-medium'}`}>
             {value}
           </span>
         )}
@@ -143,12 +143,12 @@ function EcosystemSection({
 }) {
   return (
     <div>
-      <div className={`flex items-center justify-between gap-2 border-b border-gray-700/50 ${mobileLayout ? 'px-4 py-2' : 'px-3 py-2'}`}>
+      <div className={`flex items-center justify-between gap-2 border-b border-border/50 ${mobileLayout ? 'px-4 py-2' : 'px-3 py-2'}`}>
         <div className="flex items-center gap-2">
           <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${group.chain.bgColor} ${group.chain.color}`}>
             {group.label}
           </span>
-          <span className="text-[10px] uppercase tracking-wider text-gray-500">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {group.chain.purpose}
           </span>
         </div>
@@ -174,7 +174,7 @@ function EcosystemSection({
       ))}
 
       {group.id === 'mezo' && (
-        <div className={`${mobileLayout ? 'px-4 pb-3' : 'px-3 pb-3'} text-[11px] text-gray-500`}>
+        <div className={`${mobileLayout ? 'px-4 pb-3' : 'px-3 pb-3'} text-[11px] text-muted-foreground`}>
           {isMezoHolder ? `Holder balance: ${mezoFormatted} MEZO` : 'Hold at least 1 MEZO to unlock holder perks.'}
         </div>
       )}
@@ -267,24 +267,24 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       {primaryIsLoading ? (
         <>
           <Loader2 className={`w-4 h-4 text-purple-400 animate-spin ${mobileLayout ? 'w-5 h-5' : ''}`} />
-          <span className={`text-gray-300 ${textClasses}`}>Loading...</span>
+          <span className={`text-muted-foreground ${textClasses}`}>Loading...</span>
         </>
       ) : hasPrimaryBalance ? (
         <>
           <Coins className={`text-purple-400 ${mobileLayout ? 'w-5 h-5' : 'w-4 h-4'}`} />
           <span className={`text-white font-medium ${textClasses}`}>{abbreviateBalance(primary.balance!.formattedBalance)}</span>
-          <span className={`text-gray-300 ${textClasses}`}>{primary.balance!.symbol}</span>
+          <span className={`text-muted-foreground ${textClasses}`}>{primary.balance!.symbol}</span>
           {nonZeroCount > 1 && (
             <span className={`text-purple-400 ${textClasses}`}>+{nonZeroCount - 1}</span>
           )}
         </>
       ) : (
         <>
-          <Coins className={`text-gray-500 ${mobileLayout ? 'w-5 h-5' : 'w-4 h-4'}`} />
-          <span className={`text-gray-400 ${textClasses}`}>—</span>
+          <Coins className={`text-muted-foreground ${mobileLayout ? 'w-5 h-5' : 'w-4 h-4'}`} />
+          <span className={`text-muted-foreground ${textClasses}`}>—</span>
         </>
       )}
-      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
     </button>
   )
 
@@ -292,7 +292,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
     <div
       role="listbox"
       aria-label="Token balances"
-      className={`divide-y divide-gray-700/50 ${mobileLayout ? '' : 'rounded-lg bg-gray-900/95 border border-gray-700/50 backdrop-blur-lg shadow-xl'}`}
+      className={`divide-y divide-border/50 ${mobileLayout ? '' : 'rounded-lg bg-card border border-border/50 backdrop-blur-lg shadow-xl'}`}
     >
       {ecosystemGroups.map((group) => (
         <EcosystemSection

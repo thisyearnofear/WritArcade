@@ -94,7 +94,7 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full right-0 mt-2 w-80 bg-gray-950 border border-gray-800 rounded-xl shadow-2xl z-50 overflow-hidden"
+                        className="absolute top-full right-0 mt-2 w-80 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden"
                     >
                         <div className="p-4 max-h-96 overflow-y-auto space-y-3">
                             {/* Save new preset */}
@@ -106,20 +106,20 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
                                     <Save className="w-4 h-4" /> Save Current
                                 </button>
                             ) : (
-                                <div className="space-y-2 p-3 bg-gray-900 rounded-lg border border-green-700/30">
+                                <div className="space-y-2 p-3 bg-card rounded-lg border border-green-700/30">
                                     <input
                                         type="text"
                                         placeholder="Preset name"
                                         value={presetName}
                                         onChange={(e) => setPresetName(e.target.value)}
-                                        className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full bg-muted border border-border rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                                         autoFocus
                                     />
                                     <textarea
                                         placeholder="Description (optional)"
                                         value={presetDescription}
                                         onChange={(e) => setPresetDescription(e.target.value)}
-                                        className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none min-h-[50px]"
+                                        className="w-full bg-muted border border-border rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none min-h-[50px]"
                                     />
                                     <div className="flex gap-2">
                                         <button
@@ -130,7 +130,7 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
                                         </button>
                                         <button
                                             onClick={() => setSaveMode(false)}
-                                            className="flex-1 py-1 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-xs font-bold transition-colors"
+                                            className="flex-1 py-1 bg-muted hover:bg-muted/80 text-foreground rounded text-xs font-bold transition-colors"
                                         >
                                             Cancel
                                         </button>
@@ -139,7 +139,7 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
                             )}
 
                             {/* Import/Export */}
-                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-800">
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
                                 <label className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-900/20 hover:bg-blue-900/40 text-blue-300 border border-blue-700/30 rounded-lg text-xs font-medium cursor-pointer transition-colors">
                                     <Upload className="w-3 h-3" /> Import
                                     <input
@@ -165,15 +165,15 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
 
                             {/* Presets list */}
                             {presets.length > 0 && (
-                                <div className="space-y-2 pt-2 border-t border-gray-800">
+                                <div className="space-y-2 pt-2 border-t border-border">
                                     {presets.map((preset) => (
                                         <div
                                             key={preset.id}
-                                            className="p-3 bg-gray-900/50 hover:bg-gray-900 border border-gray-800/50 hover:border-purple-500/30 rounded-lg transition-all group"
+                                            className="p-3 bg-muted/50 hover:bg-muted border border-border/50 hover:border-purple-500/30 rounded-lg transition-all group"
                                         >
-                                            <h4 className="font-bold text-gray-200 text-sm mb-1">{preset.name}</h4>
+                                            <h4 className="font-bold text-foreground text-sm mb-1">{preset.name}</h4>
                                             {preset.description && (
-                                                <p className="text-xs text-gray-400 line-clamp-2 mb-2">
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                                                     {preset.description}
                                                 </p>
                                             )}
@@ -186,7 +186,7 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
                                                 </button>
                                                 <button
                                                     onClick={() => handleExportPreset(preset)}
-                                                    className="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors"
+                                                    className="px-2 py-1 bg-muted hover:bg-muted/80 text-muted-foreground rounded text-xs transition-colors"
                                                     title="Export"
                                                 >
                                                     <Download className="w-3 h-3" />
@@ -205,7 +205,7 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
                             )}
 
                             {presets.length === 0 && !saveMode && (
-                                <p className="text-xs text-gray-400 text-center py-4">No presets saved yet</p>
+                                <p className="text-xs text-muted-foreground text-center py-4">No presets saved yet</p>
                             )}
                         </div>
                     </motion.div>

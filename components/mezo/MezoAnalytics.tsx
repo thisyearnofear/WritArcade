@@ -184,7 +184,7 @@ export function MezoAnalytics() {
           <div className="divide-y divide-border">
             {data.recentActivity.slice(0, 10).map((event) => (
               <div key={event.txHash} className="px-4 py-3 flex items-center gap-3 text-sm">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${event.boosted ? 'bg-cyan-400' : 'bg-gray-500'}`} />
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${event.boosted ? 'bg-cyan-400' : 'bg-muted-foreground'}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground truncate">

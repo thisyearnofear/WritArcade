@@ -102,7 +102,7 @@ export function AssetMintChecklist({
                 )}
                 <div>
                     <h3 className="font-bold text-white">Mint Readiness</h3>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                         {canMint
                             ? 'Your asset pack is ready to mint!'
                             : 'Complete requirements below to enable minting'}
@@ -113,7 +113,7 @@ export function AssetMintChecklist({
             {/* Critical Items */}
             {criticalItems.length > 0 && (
                 <div className="mb-6">
-                    <h4 className="font-bold text-sm text-gray-300 mb-3 flex items-center gap-2">
+                    <h4 className="font-bold text-sm text-muted-foreground mb-3 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-red-500"></span>
                         Required
                     </h4>
@@ -123,7 +123,7 @@ export function AssetMintChecklist({
                                 key={item.id}
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-900/20 transition-colors"
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 transition-colors"
                             >
                                 {item.passed ? (
                                     <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
@@ -134,7 +134,7 @@ export function AssetMintChecklist({
                                     <p className={`text-sm font-medium ${item.passed ? 'text-green-400' : 'text-red-400'}`}>
                                         {item.label}
                                     </p>
-                                    <p className="text-xs text-gray-400">{item.requirement}</p>
+                                    <p className="text-xs text-muted-foreground">{item.requirement}</p>
                                 </div>
                             </motion.div>
                         ))}
@@ -145,7 +145,7 @@ export function AssetMintChecklist({
             {/* Optional Items */}
             {optionalItems.length > 0 && (
                 <div className="mb-6">
-                    <h4 className="font-bold text-sm text-gray-400 mb-3 flex items-center gap-2">
+                    <h4 className="font-bold text-sm text-muted-foreground mb-3 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
                         Recommended
                     </h4>
@@ -155,7 +155,7 @@ export function AssetMintChecklist({
                                 key={item.id}
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-900/20 transition-colors"
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 transition-colors"
                             >
                                 {item.passed ? (
                                     <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
@@ -166,7 +166,7 @@ export function AssetMintChecklist({
                                     <p className={`text-sm font-medium ${item.passed ? 'text-green-400' : 'text-yellow-400'}`}>
                                         {item.label}
                                     </p>
-                                    <p className="text-xs text-gray-400">{item.requirement}</p>
+                                    <p className="text-xs text-muted-foreground">{item.requirement}</p>
                                 </div>
                             </motion.div>
                         ))}
@@ -175,9 +175,9 @@ export function AssetMintChecklist({
             )}
 
             {/* Summary */}
-            <div className="pt-4 border-t border-gray-700/50">
+            <div className="pt-4 border-t border-border/50">
                 <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-muted-foreground">
                         {checklist.filter(item => item.passed).length} of {checklist.length} checks passed
                     </span>
                     {canMint && (

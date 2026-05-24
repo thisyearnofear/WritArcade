@@ -639,7 +639,7 @@ export function ComicBookFinale({
               </button>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold">{gameTitle}</h1>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {genre} • Your Complete Story
                 </p>
               </div>
@@ -689,7 +689,7 @@ export function ComicBookFinale({
                 >
                   {currentPanelIndex + 1}/{totalPanels}
                 </div>
-                <p className="text-xs text-gray-400">Panels</p>
+                <p className="text-xs text-muted-foreground">Panels</p>
               </div>
             )}
           </div>
@@ -726,8 +726,8 @@ export function ComicBookFinale({
                       </div>
                     </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
-                      <p className="text-gray-500">No image available</p>
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-card to-black">
+                      <p className="text-muted-foreground">No image available</p>
                     </div>
                   )}
                 </div>
@@ -735,7 +735,7 @@ export function ComicBookFinale({
                 {/* Model badge and regeneration */}
                 <div className="px-6 py-3 bg-black/40 border-b border-white/10 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">Generated with:</span>
+                    <span className="text-xs text-muted-foreground">Generated with:</span>
                     <span
                       className="text-xs font-mono px-2 py-1 rounded"
                       style={{
@@ -780,7 +780,7 @@ export function ComicBookFinale({
                         <textarea
                           value={editedText}
                           onChange={(e) => setEditedText(e.target.value)}
-                          className="w-full bg-gray-900 border border-purple-500 rounded-lg p-3 text-gray-100 text-base md:text-lg leading-relaxed font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px] resize-y"
+                          className="w-full bg-card border border-purple-500 rounded-lg p-3 text-foreground text-base md:text-lg leading-relaxed font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px] resize-y"
                           autoFocus
                         />
                         <div className="flex justify-end gap-2">
@@ -814,7 +814,7 @@ export function ComicBookFinale({
                           className="flex-1"
                         >
                           {() => (
-                            <div className="text-gray-100 text-base md:text-lg leading-relaxed font-medium min-h-[1.5em]">
+                            <div className="text-foreground text-base md:text-lg leading-relaxed font-medium min-h-[1.5em]">
                               {fontsLoaded ? (
                                 <StreamingTypewriter 
                                   key={`${currentPanel.id}-${currentPanel.narrativeText}`}
@@ -849,8 +849,8 @@ export function ComicBookFinale({
                         borderLeft: `3px solid ${primaryColor}`,
                       }}
                     >
-                      <p className="text-gray-300">
-                        <span className="text-gray-500">Your choice: </span>
+                      <p className="text-muted-foreground">
+                        <span className="text-muted-foreground">Your choice: </span>
                         <span className="font-semibold">{currentPanel.userChoice}</span>
                       </p>
                     </div>
@@ -880,8 +880,8 @@ export function ComicBookFinale({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                          <p className="text-gray-500 text-sm">No image</p>
+                        <div className="w-full h-full flex items-center justify-center bg-card">
+                          <p className="text-muted-foreground text-sm">No image</p>
                         </div>
                       )}
                     </div>
@@ -890,9 +890,9 @@ export function ComicBookFinale({
                         <span className="text-sm font-medium" style={{ color: primaryColor }}>
                           Panel {idx + 1}
                         </span>
-                        <span className="text-xs text-gray-400">{panel.imageModel}</span>
+                        <span className="text-xs text-muted-foreground">{panel.imageModel}</span>
                       </div>
-                      <p className="text-xs text-gray-300 line-clamp-2">
+                      <p className="text-xs text-muted-foreground line-clamp-2">
                         {panel.narrativeText}
                       </p>
                     </div>
@@ -908,7 +908,7 @@ export function ComicBookFinale({
                   <h2 className="text-xl font-bold mb-2" style={{ color: primaryColor }}>
                     📜 Your NFT Comic Preview
                   </h2>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     This is how your comic will appear as an NFT
                   </p>
                 </div>
@@ -923,19 +923,19 @@ export function ComicBookFinale({
                   {/* Comic title header */}
                   <div className="text-center mb-6 pb-4 border-b border-white/20">
                     <h3 className="text-2xl font-bold mb-2">{gameTitle}</h3>
-                    <p className="text-sm text-gray-400 mb-3">{genre} • {totalPanels} Panels</p>
+                    <p className="text-sm text-muted-foreground mb-3">{genre} • {totalPanels} Panels</p>
 
                     {/* Attribution in NFT preview */}
                     <div className="flex items-center justify-center gap-4 text-xs">
-                      <span className="text-gray-500">Created by</span>
+                      <span className="text-muted-foreground">Created by</span>
                       <UserAttribution
                         type="creator"
                         walletAddress={creatorWallet}
                         size="sm"
                         showLink={false}
                       />
-                      <span className="text-gray-500">•</span>
-                      <span className="text-gray-500">Inspired by</span>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-muted-foreground">Inspired by</span>
                       <UserAttribution
                         type="author"
                         paragraphUsername={authorParagraphUsername}
@@ -963,15 +963,15 @@ export function ComicBookFinale({
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
-                              <span className="text-gray-500 text-sm">No image</span>
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-card to-black">
+                              <span className="text-muted-foreground text-sm">No image</span>
                             </div>
                           )}
                         </div>
 
                         {/* Narrative text - centered and full text */}
                         <div className="p-4 bg-black/60">
-                          <p className="text-sm leading-relaxed text-gray-200 text-center">
+                          <p className="text-sm leading-relaxed text-foreground text-center">
                             {panel.narrativeText}
                           </p>
                         </div>
@@ -981,7 +981,7 @@ export function ComicBookFinale({
 
                   {/* NFT metadata footer */}
                   <div className="mt-6 pt-4 border-t border-white/20 text-center">
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       🎨 Generated with writersarcade • Unique Comic NFT
                     </p>
                   </div>
@@ -1032,7 +1032,7 @@ export function ComicBookFinale({
             {/* Summary info for grid/NFT views */}
             {(viewMode === 'grid' || viewMode === 'nft-preview') && (
               <div className="text-center">
-                <p className="text-gray-400 text-sm">
+                <p className="text-muted-foreground text-sm">
                   {viewMode === 'grid' ? 'Click any panel to select it' : 'This is your complete comic story'}
                 </p>
               </div>
@@ -1057,8 +1057,8 @@ export function ComicBookFinale({
                 size="sm"
                 layout="horizontal"
               />
-              <div className="text-xs text-gray-500">
-                {totalPanels} panels • {genre} • Inspired by <a href={articleUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-300 underline">original article</a>
+              <div className="text-xs text-muted-foreground">
+                {totalPanels} panels • {genre} • Inspired by <a href={articleUrl} target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground underline">original article</a>
               </div>
             </div>
 
@@ -1191,7 +1191,7 @@ export function ComicBookFinale({
                 <h3 className="text-sm md:text-base font-semibold text-white flex items-center gap-2 mb-1">
                   <span>📜</span> Register as IP Asset (Optional)
                 </h3>
-                <p className="text-xs md:text-sm text-gray-400">Track ownership & set royalty terms on Story Protocol</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Track ownership & set royalty terms on Story Protocol</p>
               </div>
               <IPRegistration
                 game={{

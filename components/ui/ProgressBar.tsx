@@ -20,11 +20,11 @@ export function ProgressBar({
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-between text-xs text-gray-400">
+      <div className="flex justify-between text-xs text-muted-foreground">
         <span>{label}</span>
         {percent && <span>{displayPercent}%</span>}
       </div>
-      <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
         <div
           className={`bg-gradient-to-r from-purple-500 to-pink-500 h-2 ${
             animated ? 'transition-all duration-300' : ''

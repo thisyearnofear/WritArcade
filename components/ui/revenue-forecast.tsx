@@ -38,22 +38,22 @@ export function RevenueForecast({ writerCoinId, action }: RevenueForecastProps) 
   const formatted = PaymentCostService.formatDistribution(distribution, cost.decimals, cost.writerCoinSymbol);
 
   return (
-    <Card className="border-purple-500/30 bg-gray-900/50">
+    <Card className="border-purple-500/30 bg-muted/50">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-bold text-gray-400 uppercase tracking-wider">Revenue Forecast ({cost.writerCoinSymbol})</CardTitle>
+        <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Revenue Forecast ({cost.writerCoinSymbol})</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-xs text-gray-500">Writer</div>
+            <div className="text-xs text-muted-foreground">Writer</div>
             <div className="text-md font-bold text-green-400">{formatted.writerShare}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500">Creator</div>
+            <div className="text-xs text-muted-foreground">Creator</div>
             <div className="text-md font-bold text-blue-400">{formatted.creatorShare}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500">Platform</div>
+            <div className="text-xs text-muted-foreground">Platform</div>
             <div className="text-md font-bold text-purple-400">{formatted.platformShare}</div>
           </div>
         </div>

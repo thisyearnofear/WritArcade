@@ -114,7 +114,7 @@ export function ShareDropdown({
                 onClick={handleGenericShare}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-white/10 rounded-md transition-colors text-left"
               >
-                <Share2 className="w-4 h-4 text-gray-400" />
+                <Share2 className="w-4 h-4 text-muted-foreground" />
                 <span>Other / Copy Link</span>
               </button>
             </div>

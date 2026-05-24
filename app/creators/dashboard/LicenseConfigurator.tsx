@@ -86,11 +86,11 @@ export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) 
     const buttonDisabled = isSaving || isSwitching || (!isDirty && isConnected && onStoryNetwork);
 
     return (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        <div className="bg-card border border-border rounded-lg p-6">
             <div className="flex justify-between items-start mb-6">
                 <div>
                     <h3 className="text-xl font-bold text-white">License Terms (Story Protocol)</h3>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-muted-foreground text-sm mt-1">
                         Configure how your generated games can be remixed and monetized.
                     </p>
                 </div>
@@ -101,7 +101,7 @@ export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) 
 
             <div className="space-y-6">
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Writer Revenue Share (Royalty)
                     </label>
                     <div className="flex items-center gap-4">
@@ -115,19 +115,19 @@ export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) 
                                 setRoyalty(Number(e.target.value));
                                 setError(null);
                             }}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-purple-500"
                         />
                         <span className="text-2xl font-bold text-purple-400 w-16 text-right">
                             {royalty}%
                         </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                         This percentage is automatically deducted from every game generation and NFT mint.
                     </p>
                 </div>
 
-                <div className="bg-gray-800/50 rounded p-4 text-sm text-gray-300">
-                    <p className="text-xs text-gray-400">
+                <div className="bg-muted/50 rounded p-4 text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                         Saving registers new PIL Commercial Remix terms on Story Protocol (Aeneid testnet) with your wallet.
                         Actual on-chain revenue splits for generation and minting are configured separately per writer coin.
                     </p>
@@ -145,13 +145,13 @@ export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) 
                     </div>
                 )}
 
-                <div className="pt-4 border-t border-gray-800 flex justify-end">
+                <div className="pt-4 border-t border-border flex justify-end">
                     <button
                         onClick={handleSave}
                         disabled={buttonDisabled}
                         className={`px-6 py-2 rounded-lg font-medium transition-colors ${
                             buttonDisabled
-                                ? 'bg-gray-700 text-gray-500 cursor-default'
+                                ? 'bg-muted text-muted-foreground cursor-default'
                                 : !isConnected || !onStoryNetwork
                                 ? 'bg-amber-500 hover:bg-amber-400 text-white'
                                 : 'bg-purple-600 hover:bg-purple-500 text-white'

@@ -9,64 +9,52 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal'
+import { ConceptTooltip } from '@/components/ui/concept-tooltip'
 import { useOnboarding } from '@/hooks/useOnboarding'
-import { ExternalLink, Puzzle } from 'lucide-react'
+import {
+  ExternalLink,
+  Puzzle,
+  ChevronDown,
+  Wand2,
+  Gamepad2,
+  Coins,
+} from 'lucide-react'
 import { GridSkeleton } from '@/components/effects'
 import { WRITER_COINS } from '@/lib/writerCoins'
 
+/* ─── How It Works ──────────────────────────────────────────────────────── */
+
 const steps = [
   {
-    number: '01',
-    title: 'Submit an article',
-    description: 'Paste a Paragraph article URL — any writer for MUSD, supported writers for writer coins.',
-    chains: ['Base', 'Mezo'],
+    icon: Wand2,
+    title: 'Paste an article',
+    description: 'Drop in any Paragraph.xyz article URL. AI reads it and generates a unique 5-panel interactive comic.',
   },
   {
-    number: '02',
-    title: 'Customise & generate',
-    description: 'Shape characters, tone, and narrative. Pay in a writer coin or in MUSD.',
-    chains: ['Base', 'Mezo'],
+    icon: Gamepad2,
+    title: 'Play your story',
+    description: 'Make choices that shape the narrative. Every playthrough is different.',
   },
   {
-    number: '03',
-    title: 'Play & own',
-    description: 'Mint as an NFT with on-chain revenue splits. MEZO holders get a boosted writer share.',
-    chains: ['Base', 'Story'],
+    icon: Coins,
+    title: 'Own and earn',
+    description: (
+      <>
+        <ConceptTooltip term="Mint" explanation="Create a unique digital collectible on the blockchain that proves you own this game.">
+          <span className="underline decoration-dotted underline-offset-2 cursor-help">Mint</span>
+        </ConceptTooltip>{' '}
+        your game and earn from plays. The original writer automatically receives a share of every transaction.
+      </>
+    ),
   },
 ]
-
-function PathExplainer({ path }: { path: 'writercoin' | 'musd' }) {
-  if (path === 'writercoin') {
-    return (
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        <span className="font-medium text-blue-500">Writer coin · Base</span> — hold a supported writer&apos;s social token on Base to pay. Any Ethereum/Base wallet works.{' '}
-        <a href="/writers" className="underline underline-offset-2 hover:text-foreground transition-colors">See supported writers →</a>
-      </p>
-    )
-  }
-  return (
-    <div className="space-y-2">
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        <span className="font-medium text-amber-500">MUSD · Mezo</span> — pay with{' '}
-        <span className="text-amber-400 font-medium">Bitcoin-backed MUSD</span>, the native stablecoin of the Mezo network.
-        {' '}Every payment is split on-chain: writers earn revenue, creators get paid, and{' '}
-        <span className="text-amber-400 font-medium">MEZO holders unlock boosted creator shares</span>.
-      </p>
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        <span className="text-amber-500">🔗 Bitcoin-powered</span> — Connect via{' '}
-        <a href="https://mezo.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">Mezo Passport</a>
-        {' '}(Xverse, Unisat, OKX). No writer token needed — any Paragraph article works.
-      </p>
-    </div>
-  )
-}
 
 function HowItWorksSection() {
   return (
     <section id="how-it-works" className="py-20 px-4 border-t border-border">
       <div className="max-w-4xl mx-auto">
         <motion.h2
-          className="text-sm font-semibold text-foreground mb-12 text-center"
+          className="text-sm font-semibold text-foreground mb-12 text-center uppercase tracking-wider"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -76,40 +64,32 @@ function HowItWorksSection() {
         </motion.h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
-          {steps.map((step, index) => (
-            <motion.div
-              key={step.number}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <p className="text-3xl font-light text-muted-foreground mb-4 tabular-nums">{step.number}</p>
-              <h3 className="text-base font-semibold text-foreground mb-2">{step.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-3">{step.description}</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {step.chains.map((chain) => (
-                  <span
-                    key={chain}
-                    className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${
-                      chain === 'Mezo'
-                        ? 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5'
-                        : chain === 'Story'
-                          ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
-                          : 'border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-500/5'
-                    }`}
-                  >
-                    {chain}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          ))}
+          {steps.map((step, index) => {
+            const Icon = step.icon
+            return (
+              <motion.div
+                key={step.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="text-center"
+              >
+                <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center mx-auto mb-4">
+                  <Icon className="w-5 h-5 text-primary" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+              </motion.div>
+            )
+          })}
         </div>
       </div>
     </section>
   )
 }
+
+/* ─── Hooks ──────────────────────────────────────────────────────────────── */
 
 function useGameCount() {
   const [count, setCount] = useState<number | null>(null)
@@ -121,6 +101,8 @@ function useGameCount() {
   }, [])
   return count
 }
+
+/* ─── Hero Components ────────────────────────────────────────────────────── */
 
 function WriterTicker() {
   const [index, setIndex] = useState(0)
@@ -153,34 +135,95 @@ function WriterTicker() {
   )
 }
 
-function PaymentPathChip({ value, onChange }: { value: PaymentPath; onChange: (v: PaymentPath) => void }) {
-  const base = 'flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors'
+/**
+ * Advanced payment options — hidden by default behind "More options".
+ * Reveals the payment path toggle and detailed explanations for users
+ * who want to choose between Writer Coin (Base) and MUSD (Mezo).
+ */
+function AdvancedPaymentOptions({
+  paymentPath,
+  onChange,
+}: {
+  paymentPath: PaymentPath
+  onChange: (v: PaymentPath) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+
   return (
-    <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border max-w-xl">
+    <div className="space-y-3">
       <button
         type="button"
-        onClick={() => onChange('writercoin')}
-        aria-pressed={value === 'writercoin'}
-        className={`${base} ${value === 'writercoin' ? 'bg-blue-600 text-white shadow' : 'text-muted-foreground hover:text-foreground'}`}
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        aria-expanded={expanded}
       >
-        Writer coin · Base
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        <ConceptTooltip
+          term="Payment options"
+          explanation="Writer coins are social tokens from supported writers on Base. MUSD is a Bitcoin-backed stablecoin on Mezo. Both route payments to the writer automatically."
+        >
+          <span className="underline decoration-dotted underline-offset-2 cursor-help">More options</span>
+        </ConceptTooltip>
       </button>
-      <button
-        type="button"
-        onClick={() => onChange('musd')}
-        aria-pressed={value === 'musd'}
-        className={`${base} ${value === 'musd' ? 'bg-amber-600 text-white shadow' : 'text-muted-foreground hover:text-foreground'}`}
-      >
-        MUSD · Mezo
-      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-3 pt-1">
+              <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border">
+                {(['writercoin', 'musd'] as const).map((path) => (
+                  <button
+                    key={path}
+                    type="button"
+                    onClick={() => onChange(path)}
+                    aria-pressed={paymentPath === path}
+                    className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
+                      paymentPath === path
+                        ? path === 'writercoin'
+                          ? 'bg-blue-600 text-white shadow'
+                          : 'bg-amber-600 text-white shadow'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {path === 'writercoin' ? 'Writer coin' : 'MUSD'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {paymentPath === 'writercoin' ? (
+                  <>
+                    <span className="font-medium text-foreground">Writer coin</span> uses social tokens from supported writers on Base.{' '}
+                    <a href="/writers" className="underline underline-offset-2 hover:text-foreground transition-colors">See supported writers</a>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-medium text-foreground">MUSD</span> is a Bitcoin-backed stablecoin on{' '}
+                    <ConceptTooltip term="Mezo" explanation="A Bitcoin Layer 2 network that enables Bitcoin-backed payments and smart contracts.">
+                      <span className="underline decoration-dotted underline-offset-2 cursor-help">Mezo</span>
+                    </ConceptTooltip>.
+                    No writer token needed — any Paragraph article works.
+                  </>
+                )}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
+/* ─── Main Page ──────────────────────────────────────────────────────────── */
+
 export default function HomePage() {
   const { showOnboarding, dismissOnboarding, startTour } = useOnboarding()
   const gameCount = useGameCount()
-  // Default to MUSD for the Mezo Hackathon submission; users can toggle to writer coins
   const [paymentPath, setPaymentPath] = useState<PaymentPath>('musd')
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
   const featuredLoadedRef = useRef(false)
@@ -191,183 +234,193 @@ export default function HomePage() {
         <Header onOpenOnboarding={() => startTour('app-intro')} />
 
         <main className="flex-1">
-          {/* Hero */}
-          <section className="py-14 px-4">
-            <div className="max-w-3xl mx-auto">
+          {/* Skip nav target */}
+          <div id="main-content" tabIndex={-1} className="sr-only" />
+
+          {/* Hero — single clear CTA above the fold */}
+          <section className="py-20 sm:py-28 px-4" aria-labelledby="hero-heading">
+            <div className="max-w-2xl mx-auto text-center">
               <motion.h1
-              className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground mb-4 leading-tight"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
+                id="hero-heading"
+                className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground mb-5 leading-tight"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
               >
-              Interactive fiction<br />
-              <span className="text-muted-foreground">from </span><WriterTicker />
+                Turn articles into
+                <br />
+                playable games
               </motion.h1>
 
               <motion.p
-              className="text-sm sm:text-base text-muted-foreground mb-6 max-w-xl leading-relaxed"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
+                className="text-base sm:text-lg text-muted-foreground mb-8 max-w-lg mx-auto leading-relaxed"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.6, ease: 'easeOut' }}
               >
-              Paste any Paragraph article → AI generates a{' '}
-              <span className="text-foreground font-medium">5-panel playable comic</span>{' '}
-              → mint it as an NFT with on-chain revenue splits for the writer.
+                Paste a{' '}
+                <ConceptTooltip
+                  term="Paragraph"
+                  explanation="A publishing platform for writers and creators. Many crypto and tech writers publish there."
+                >
+                  <span className="underline decoration-dotted underline-offset-2 cursor-help text-foreground font-medium">Paragraph</span>
+                </ConceptTooltip>{' '}
+                article URL. AI generates a{' '}
+                <span className="text-foreground font-medium">5-panel interactive comic</span>{' '}
+                you can play, customise, and collect.
               </motion.p>
 
               {gameCount !== null && gameCount >= 10 && (
-              <motion.p
-                className="text-sm text-muted-foreground mb-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-              >
-                Join {gameCount} early creators.
-              </motion.p>
-              )}              {(gameCount === null || gameCount < 10) && <div className="mb-6" />}
+                <motion.p
+                  className="text-sm text-muted-foreground mb-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                >
+                  Join {gameCount} early creators
+                </motion.p>
+              )}
 
+              {/* Primary CTA card */}
               <motion.div
-                className="max-w-2xl"
+                className="max-w-xl mx-auto"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.6, ease: 'easeOut' }}
+                transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
               >
                 <ErrorBoundary>
-                    <div className="p-6 rounded-2xl bg-card border border-border shadow-xl space-y-4">
-                        <PaymentPathChip value={paymentPath} onChange={setPaymentPath} />
-                        <PathExplainer path={paymentPath} />
-                        <SimpleGameForm
-                            paymentPath={paymentPath}
-                            onGenerate={(url: string) => {
-                              const params = new URLSearchParams({ url, pay: paymentPath })
-                              window.location.href = `/generate?${params.toString()}`
-                            }}
-                            isGenerating={false}
-                        />
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const demoUrl = 'https://paragraph.xyz/@fredwilson/making-advisors'
-                              const params = new URLSearchParams({ url: demoUrl, pay: paymentPath })
-                              window.location.href = `/generate?${params.toString()}`
-                            }}
-                            className="flex-1 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-                          >
-                            Try with a sample article → {paymentPath === 'musd' ? '(MUSD)' : '(Writer Coin)'}
-                          </button>
-                        </div>
+                  <div className="p-6 rounded-2xl bg-card border border-border shadow-xl space-y-4 text-left">
+                    <SimpleGameForm
+                      paymentPath={paymentPath}
+                      onGenerate={(url: string) => {
+                        const params = new URLSearchParams({ url, pay: paymentPath })
+                        window.location.href = `/generate?${params.toString()}`
+                      }}
+                      isGenerating={false}
+                    />
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const demoUrl = 'https://paragraph.xyz/@fredwilson/making-advisors'
+                          const params = new URLSearchParams({ url: demoUrl, pay: paymentPath })
+                          window.location.href = `/generate?${params.toString()}`
+                        }}
+                        className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                      >
+                        Try with a sample article
+                      </button>
+
+                      <AdvancedPaymentOptions
+                        paymentPath={paymentPath}
+                        onChange={setPaymentPath}
+                      />
                     </div>
+                  </div>
                 </ErrorBoundary>
               </motion.div>
 
-              {/* Trust badges */}
+              {/* Trust badges — subtle, below the fold */}
               <motion.div
-                className="flex flex-wrap items-center gap-3 mt-6"
+                className="flex flex-wrap items-center justify-center gap-3 mt-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
               >
-                <a
-                  href="https://base.org"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-                  Powered by Base
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-                <a
-                  href="https://storyprotocol.xyz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  Story Protocol
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-                <a
-                  href="https://mezo.org"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
-                  Mezo
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                {[
+                  { label: 'Base', color: 'bg-blue-500', href: 'https://base.org' },
+                  { label: 'Story Protocol', color: 'bg-emerald-500', href: 'https://storyprotocol.xyz' },
+                  { label: 'Mezo', color: 'bg-amber-500', href: 'https://mezo.org' },
+                ].map((badge) => (
+                  <a
+                    key={badge.label}
+                    href={badge.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${badge.color} inline-block`} />
+                    {badge.label}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ))}
               </motion.div>
             </div>
           </section>
 
-          {/* Daily Wordle */}
+          {/* Daily Wordle — free, no wallet */}
           <section className="py-16 px-4 border-t border-border bg-gradient-to-r from-amber-500/5 to-purple-500/5">
             <div className="max-w-4xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
                 <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                  <Puzzle className="w-8 h-8 text-amber-400" />
+                  <Puzzle className="w-8 h-8 text-amber-400" aria-hidden="true" />
                 </div>
                 <div className="flex-1 text-center md:text-left">
                   <h2 className="text-lg font-bold text-foreground mb-1">Daily Wordle — Free</h2>
                   <p className="text-sm text-muted-foreground max-w-lg">
-                    Article-derived word puzzles, free to play. No wallet needed. Guess the word in 6 tries, then share your score on Farcaster.
+                    Article-derived word puzzles, free to play. No wallet needed. Guess the word in 6 tries, then share your score.
                   </p>
                 </div>
                 <a
                   href="/generate?mode=wordle"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold uppercase tracking-wider transition-colors flex-shrink-0"
                 >
-                  Play Now <ExternalLink className="w-4 h-4" />
+                  Play Now <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 </a>
               </div>
             </div>
           </section>
 
-          {/* Featured Works — only rendered once we know there are featured games */}
+          {/* Featured Works */}
           {hasFeatured !== false && (
-          <section className="py-16 px-4 border-t border-border">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Featured works
-                </h2>
-                <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  View all →
-                </a>
+            <section className="py-16 px-4 border-t border-border" aria-labelledby="featured-heading">
+              <div className="max-w-6xl mx-auto">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 id="featured-heading" className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                    Featured works
+                  </h2>
+                  <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    View all
+                  </a>
+                </div>
+                <Suspense fallback={<GridSkeleton count={3} columns={3} />}>
+                  <GameGrid
+                    limit={3}
+                    featured={true}
+                    onLoad={({ count }) => {
+                      if (!featuredLoadedRef.current) {
+                        featuredLoadedRef.current = true
+                        setHasFeatured(count > 0)
+                      }
+                    }}
+                  />
+                </Suspense>
               </div>
-              <Suspense fallback={<GridSkeleton count={3} columns={3} />}>
-                <GameGrid
-                  limit={3}
-                  featured={true}
-                  onLoad={({ count }) => {
-                    if (!featuredLoadedRef.current) {
-                      featuredLoadedRef.current = true
-                      setHasFeatured(count > 0)
-                    }
-                  }}
-                />
-              </Suspense>
-            </div>
-          </section>
+            </section>
           )}
 
           {/* Recent */}
-          <section className="py-16 px-4 border-t border-border">
+          <section className="py-16 px-4 border-t border-border" aria-labelledby="recent-heading">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-sm font-semibold text-foreground">
+                <h2 id="recent-heading" className="text-sm font-semibold text-foreground uppercase tracking-wider">
                   Recent
                 </h2>
                 <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  View all →
+                  View all
                 </a>
               </div>
               <Suspense fallback={<GridSkeleton count={4} columns={3} />}>
                 <GameGrid limit={4} />
               </Suspense>
             </div>
+          </section>
+
+          {/* Social proof — writers ticker */}
+          <section className="py-12 px-4 border-t border-border text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">Featuring writers like</p>
+            <WriterTicker />
           </section>
 
           <HowItWorksSection />

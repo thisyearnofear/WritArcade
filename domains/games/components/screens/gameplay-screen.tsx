@@ -86,7 +86,7 @@ export function GameplayScreen({
           <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-4">
               <div className="loading-spinner mx-auto" />
-              <p className="text-gray-400 animate-pulse">Generating your story...</p>
+              <p className="text-muted-foreground animate-pulse">Generating your story...</p>
             </div>
           </div>
         ) : (
@@ -94,10 +94,10 @@ export function GameplayScreen({
             {/* Story Progress Bar */}
             <div className="w-full max-w-5xl mb-8 pb-6 border-b border-white/10">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Story Progress</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Story Progress</p>
                 <div className="flex items-center gap-4">
                   <MoodIndicator mood={worldMood} />
-                  <p className="text-sm text-gray-500">Panel {assistantMessageCount} of {MAX_COMIC_PANELS}</p>
+                  <p className="text-sm text-muted-foreground">Panel {assistantMessageCount} of {MAX_COMIC_PANELS}</p>
                 </div>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -182,7 +182,7 @@ export function GameplayScreen({
                 }}
               >
                 <p className="font-semibold text-white">Story Complete</p>
-                <p className="text-sm text-gray-400 mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   Your {MAX_COMIC_PANELS}-panel adventure has concluded. View and mint your comic as an NFT.
                 </p>
               </div>
@@ -201,7 +201,7 @@ export function GameplayScreen({
 
           <button
             onClick={() => window.history.back()}
-            className="mt-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="mt-4 flex items-center gap-2 text-muted-foreground hover:text-white transition-colors"
           >
             <ChevronDown className="w-4 h-4" />
             <span>Back to Games</span>

@@ -60,7 +60,7 @@ export function ImageLightbox({
         >
           <div className="flex items-center gap-3">
             {panelNumber !== undefined && totalPanels !== undefined && (
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-muted-foreground">
                 Panel {panelNumber} of {totalPanels}
               </span>
             )}
@@ -83,7 +83,7 @@ export function ImageLightbox({
               className="max-w-full max-h-full object-contain"
             />
           ) : (
-            <div className="text-gray-500">No image available</div>
+            <div className="text-muted-foreground">No image available</div>
           )}
         </div>
 
@@ -95,7 +95,7 @@ export function ImageLightbox({
           >
             {imageModel && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Generated with:</span>
+                <span className="text-xs text-muted-foreground">Generated with:</span>
                 <span
                   className="text-xs font-mono px-2 py-1 rounded"
                   style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
@@ -105,7 +105,7 @@ export function ImageLightbox({
               </div>
             )}
             {narrativeText && (
-              <p className="text-sm text-gray-300 leading-relaxed italic">
+              <p className="text-sm text-muted-foreground leading-relaxed italic">
                 {narrativeText}
               </p>
             )}

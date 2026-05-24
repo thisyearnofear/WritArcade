@@ -217,7 +217,7 @@ export function ComicPanelCard({
             >
               {/* P0: Show skeleton until image is confirmed loaded */}
               {(!narrativeImage || isRegenerating) && (
-                <div className="absolute inset-0 bg-gray-900 animate-pulse" />
+                <div className="absolute inset-0 bg-card animate-pulse" />
               )}
               {imageHistory.length > 0 && imageHistory[currentImageIndex]?.url ? (
                 <>
@@ -274,7 +274,7 @@ export function ComicPanelCard({
                           className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md ${
                             canRegenerate 
                               ? 'bg-purple-600/80 hover:bg-purple-500 text-white' 
-                              : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                              : 'bg-muted/50 text-muted-foreground cursor-not-allowed'
                           } backdrop-blur-sm border border-purple-400/30 transition-all disabled:opacity-50`}
                           whileHover={canRegenerate ? { scale: 1.05 } : {}}
                           whileTap={canRegenerate ? { scale: 0.95 } : {}}
@@ -294,7 +294,7 @@ export function ComicPanelCard({
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-lg p-1"
+                        className="bg-card/80 backdrop-blur-sm border border-border rounded-lg p-1"
                       >
                         <select
                           value={currentTheme}
@@ -303,7 +303,7 @@ export function ComicPanelCard({
                           title="Select visual theme"
                         >
                           {availableThemes.map((theme: { value: string, label: string }) => (
-                            <option key={theme.value} value={theme.value} className="bg-gray-800 text-white">
+                            <option key={theme.value} value={theme.value} className="bg-card text-white">
                               {theme.label}
                             </option>
                           ))}
@@ -325,7 +325,7 @@ export function ComicPanelCard({
                         <p className="text-white text-sm font-medium">
                           Generating attempt {regenerationCount + 1}...
                         </p>
-                        <p className="text-gray-300 text-xs">
+                        <p className="text-muted-foreground text-xs">
                           {maxRegenerations - regenerationCount} {maxRegenerations - regenerationCount === 1 ? 'attempt' : 'attempts'} remaining
                         </p>
                       </div>
@@ -363,17 +363,17 @@ export function ComicPanelCard({
                   </div>
                 </>
               ) : showLoadingState ? (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-black relative">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-black relative">
                   <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: primaryColor }} />
-                    <p className="text-gray-400 text-sm">Preparing next panel...</p>
+                    <p className="text-muted-foreground text-sm">Preparing next panel...</p>
                   </div>
                 </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-black relative">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-black relative">
                   <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: primaryColor }} />
-                    <p className="text-gray-400 text-sm">Generating visual...</p>
+                    <p className="text-muted-foreground text-sm">Generating visual...</p>
                   </div>
                 </div>
               )}
@@ -385,7 +385,7 @@ export function ComicPanelCard({
             <div className="border-t border-white/10">
               <button
                 onClick={() => setShowPrompt(!showPrompt)}
-                className="w-full px-4 py-2 flex items-center justify-between text-xs text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-colors"
+                className="w-full px-4 py-2 flex items-center justify-between text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
               >
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-3 h-3" />
@@ -403,7 +403,7 @@ export function ComicPanelCard({
                     className="overflow-hidden"
                   >
                     <div className="px-4 pb-4 space-y-3">
-                      <div className="text-xs text-gray-500 mb-2">
+                      <div className="text-xs text-muted-foreground mb-2">
                         This prompt was used to generate the image. You can modify it and regenerate.
                       </div>
 
@@ -414,7 +414,7 @@ export function ComicPanelCard({
                             setIsCustomPromptMode(false)
                             setCustomPrompt('')
                           }}
-                          className={`px-2 py-1 text-xs rounded ${!isCustomPromptMode ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                          className={`px-2 py-1 text-xs rounded ${!isCustomPromptMode ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                         >
                           Original
                         </button>
@@ -423,7 +423,7 @@ export function ComicPanelCard({
                             setIsCustomPromptMode(true)
                             if (!customPrompt) setCustomPrompt(narrative)
                           }}
-                          className={`px-2 py-1 text-xs rounded ${isCustomPromptMode ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                          className={`px-2 py-1 text-xs rounded ${isCustomPromptMode ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                         >
                           Custom
                         </button>
@@ -433,11 +433,11 @@ export function ComicPanelCard({
                         <textarea
                           value={customPrompt}
                           onChange={(e) => setCustomPrompt(e.target.value)}
-                          className="w-full bg-gray-900 border border-purple-500/50 rounded-lg p-3 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px] resize-y"
+                          className="w-full bg-card border border-purple-500/50 rounded-lg p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px] resize-y"
                           placeholder="Enter your custom prompt..."
                         />
                       ) : (
-                        <div className="bg-gray-900/50 rounded-lg p-3 text-sm text-gray-400 border border-gray-700/50">
+                        <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground border border-border/50">
                           {narrative}
                         </div>
                       )}
@@ -454,7 +454,7 @@ export function ComicPanelCard({
                       {/* AI Prompt Suggestions - Enhanced Feature */}
                       {showAIPromptSuggestions && aiPromptSuggestions && aiPromptSuggestions.length > 0 && (
                         <div className="mt-3 space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Lightbulb className="w-3 h-3 text-yellow-400" />
                             <span>AI Suggestions</span>
                           </div>
@@ -467,7 +467,7 @@ export function ComicPanelCard({
                                   setIsCustomPromptMode(true)
                                   onAIPromptSelect?.(suggestion)
                                 }}
-                                className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 p-2 rounded border border-gray-700 transition-colors text-left line-clamp-2"
+                                className="text-xs bg-muted hover:bg-muted/80 text-muted-foreground p-2 rounded border border-border transition-colors text-left line-clamp-2"
                                 title="Use this AI-generated prompt"
                               >
                                 {suggestion}
@@ -490,7 +490,7 @@ export function ComicPanelCard({
             <div className="flex flex-col min-h-24">
               {/* Subtle label */}
               <div className="mb-3 pb-3 border-b" style={{ borderColor: `${primaryColor}30` }}>
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Scene</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Scene</span>
               </div>
 
             {/* Main narrative - with typewriter reveal */}
@@ -500,7 +500,7 @@ export function ComicPanelCard({
                   <textarea
                     value={editedNarrative}
                     onChange={(e) => setEditedNarrative(e.target.value)}
-                    className="w-full bg-gray-900/80 border border-purple-500/50 rounded-lg p-3 text-sm lg:text-base text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px] resize-y"
+                    className="w-full bg-card border border-purple-500/50 rounded-lg p-3 text-sm lg:text-base text-foreground focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px] resize-y"
                     autoFocus
                   />
                   <div className="flex justify-end gap-2">
@@ -531,7 +531,7 @@ export function ComicPanelCard({
                 </div>
               ) : (
                 <div className="flex items-start gap-4">
-                  <div className="flex-1 font-serif text-base lg:text-lg leading-relaxed text-gray-100">
+                  <div className="flex-1 font-serif text-base lg:text-lg leading-relaxed text-foreground">
                     {fontsLoaded ? (
                       <StreamingTypewriter 
                         key={`${messageId}-${narrative}`}
@@ -547,7 +547,7 @@ export function ComicPanelCard({
                     className="p-2 opacity-0 group-hover/narrative:opacity-100 hover:bg-white/10 rounded-full transition-opacity flex-shrink-0"
                     title="Edit narrative"
                   >
-                    <Pencil className="w-4 h-4 text-gray-400" />
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
               )}
@@ -558,7 +558,7 @@ export function ComicPanelCard({
             {choiceOptions.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="pt-2 border-t" style={{ borderColor: `${primaryColor}30` }}>
-                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
                     Your next move
                   </h4>
 
@@ -602,7 +602,7 @@ export function ComicPanelCard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 border border-white/10 rounded-xl overflow-hidden w-full max-w-5xl max-h-[90vh] flex flex-col"
+              className="bg-card border border-white/10 rounded-xl overflow-hidden w-full max-w-5xl max-h-[90vh] flex flex-col"
             >
               {/* Header */}
               <div className="p-4 border-b border-white/10 bg-black/50">
@@ -610,12 +610,12 @@ export function ComicPanelCard({
                   <h3 className="text-lg font-semibold text-white">Choose Your Image</h3>
                   <button
                     onClick={() => setShowImageComparison(false)}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-muted-foreground hover:text-white transition-colors"
                   >
                     ✕
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {imageHistory.length} version{imageHistory.length !== 1 ? 's' : ''} generated
                 </p>
               </div>
@@ -642,7 +642,7 @@ export function ComicPanelCard({
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                         <div className="text-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <p className="text-white font-semibold">Attempt {idx + 1}</p>
-                          <p className="text-xs text-gray-300 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {idx === 0 ? 'Original' : `Retry ${idx}`}
                           </p>
                         </div>
@@ -666,7 +666,7 @@ export function ComicPanelCard({
               <div className="p-4 border-t border-white/10 bg-black/50 flex gap-3">
                 <button
                   onClick={() => setShowImageComparison(false)}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm font-medium"
+                  className="flex-1 px-4 py-2 bg-muted hover:bg-muted/80 text-white rounded-lg transition-colors text-sm font-medium"
                 >
                   Keep Selected
                 </button>

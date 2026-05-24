@@ -96,8 +96,8 @@ export function GameGrid({ limit = 25, search, genre, writerCoinId, page = 1, fe
       ? `No games in the ${genre} genre yet.`
       : 'No games found yet.'
     return (
-      <div className="text-center py-16 border border-dashed border-gray-800 rounded-lg">
-        <p className="text-gray-500 mb-4">{emptyMessage}</p>
+      <div className="text-center py-16 border border-dashed border-border rounded-lg">
+        <p className="text-muted-foreground mb-4">{emptyMessage}</p>
         <Link
           href="/generate"
           className="inline-flex items-center gap-2 text-sm text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-md px-4 py-2 transition-colors"

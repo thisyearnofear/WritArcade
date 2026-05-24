@@ -111,7 +111,7 @@ export function IPRegistrationFlow({
               </div>
             </CardHeader>
             {!flow.isConnected && (
-              <CardContent className="text-sm text-gray-600 dark:text-gray-400">
+              <CardContent className="text-sm text-muted-foreground">
                 Connect your wallet to proceed with registration
               </CardContent>
             )}
@@ -147,7 +147,7 @@ export function IPRegistrationFlow({
               <CardContent className="space-y-3">
                 {!flow.onStoryNetwork ? (
                   <div className="space-y-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       Switch to Story Aeneid Testnet to register your IP
                     </p>
                     <Button
@@ -193,19 +193,19 @@ export function IPRegistrationFlow({
                 <CardContent className="space-y-2">
                   <div className="flex items-start gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">
+                    <span className="text-foreground">
                       <strong>You own the IP</strong> — registered on Story blockchain
                     </span>
                   </div>
                   <div className="flex items-start gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">
+                    <span className="text-foreground">
                       <strong>Derivatives allowed</strong> — others can license and remix
                     </span>
                   </div>
                   <div className="flex items-start gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">
+                    <span className="text-foreground">
                       <strong>Automatic royalties</strong> — earn from derivative works
                     </span>
                   </div>
@@ -214,19 +214,19 @@ export function IPRegistrationFlow({
 
               {/* Royalty Distribution */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="text-sm font-medium text-foreground">
                   Royalty Distribution
                 </label>
-                <div className="h-4 rounded-full overflow-hidden flex bg-gray-200 dark:bg-gray-700">
+                <div className="h-4 rounded-full overflow-hidden flex bg-muted">
                   <div
                     className="bg-blue-500 h-full"
                     style={{ width: '60%' }}
                     title="Author: 60%"
                   />
                   <div className="bg-purple-500 h-full" style={{ width: '30%' }} title="Creator: 30%" />
-                  <div className="bg-gray-400 h-full" style={{ width: '10%' }} title="Platform: 10%" />
+                  <div className="bg-muted-foreground h-full" style={{ width: '10%' }} title="Platform: 10%" />
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Author 60%</span>
                   <span>You 30%</span>
                   <span>Platform 10%</span>
@@ -281,7 +281,7 @@ export function IPRegistrationFlow({
                 )}
               </Button>
 
-              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-center text-muted-foreground">
                 This transaction will be signed by your wallet. You are registering your creation as IP.
               </p>
             </>
@@ -306,21 +306,21 @@ export function IPRegistrationFlow({
 
               {/* IP Asset ID */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="text-sm font-medium text-foreground">
                   IP Asset ID
                 </label>
-                <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <code className="text-sm font-mono text-gray-900 dark:text-gray-100 flex-1 break-all">
+                <div className="flex items-center gap-2 bg-muted border border-border rounded-lg p-3">
+                  <code className="text-sm font-mono text-foreground flex-1 break-all">
                     {flow.result.ipId}
                   </code>
                   <button
                     onClick={() => copyToClipboard(flow.result!.ipId, 'ipId')}
-                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                    className="p-1.5 hover:bg-muted/80 rounded transition-colors"
                   >
                     {copiedField === 'ipId' ? (
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                     ) : (
-                      <Copy className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      <Copy className="h-4 w-4 text-muted-foreground" />
                     )}
                   </button>
                 </div>
@@ -347,7 +347,7 @@ export function IPRegistrationFlow({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">What's Next?</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
                   <p>
                     • <strong>License for derivatives</strong> — Others can create remixes and earn you royalties
                   </p>

@@ -33,7 +33,7 @@ export function AssetRelationshipViz({
   }
 
   return (
-    <div className="rounded-xl bg-gray-900/20 p-4 border border-gray-700/30 overflow-auto">
+    <div className="rounded-xl bg-muted/20 p-4 border border-border/30 overflow-auto">
       <svg
         width={width}
         height={height}
@@ -50,13 +50,13 @@ export function AssetRelationshipViz({
         <rect x={padding} y={padding} width={width - 2 * padding} height={height - 2 * padding} fill="url(#grid)" opacity="0.1" />
 
         {/* Section labels */}
-        <text x={padding - 10} y={padding + sectionHeight / 2} fontSize="12" fill="#9ca3af" textAnchor="end">
+        <text x={padding - 10} y={padding + sectionHeight / 2} fontSize="12" fill="currentColor" textAnchor="end" className="text-muted-foreground">
           Characters
         </text>
-        <text x={padding - 10} y={padding + sectionHeight * 1.5 + 50} fontSize="12" fill="#9ca3af" textAnchor="end">
+        <text x={padding - 10} y={padding + sectionHeight * 1.5 + 50} fontSize="12" fill="currentColor" textAnchor="end" className="text-muted-foreground">
           Mechanics
         </text>
-        <text x={padding - 10} y={padding + sectionHeight * 2.5 + 100} fontSize="12" fill="#9ca3af" textAnchor="end">
+        <text x={padding - 10} y={padding + sectionHeight * 2.5 + 100} fontSize="12" fill="currentColor" textAnchor="end" className="text-muted-foreground">
           Stories
         </text>
 
@@ -135,7 +135,7 @@ export function AssetRelationshipViz({
         {Object.entries(relationshipColors).map(([type, color]) => (
           <div key={type} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
-            <span className="text-gray-400">{AssetRelationshipService.getRelationshipLabel(type)}</span>
+            <span className="text-muted-foreground">{AssetRelationshipService.getRelationshipLabel(type)}</span>
           </div>
         ))}
       </div>

@@ -91,9 +91,9 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
       <Card className="w-full">
         <CardContent className="pt-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-12 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
+            <div className="h-12 bg-muted rounded"></div>
+            <div className="h-20 bg-muted rounded"></div>
+            <div className="h-20 bg-muted rounded"></div>
           </div>
         </CardContent>
       </Card>
@@ -114,7 +114,7 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
     return (
       <Card className="w-full">
         <CardContent className="pt-6">
-          <p className="text-gray-500">No DAO data available</p>
+          <p className="text-muted-foreground">No DAO data available</p>
         </CardContent>
       </Card>
     );
@@ -127,8 +127,8 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Creator DAO</h1>
-          <p className="text-gray-500 mt-1">For @{data.authorUsername}</p>
+          <h1 className="text-3xl font-bold text-foreground">Creator DAO</h1>
+          <p className="text-muted-foreground mt-1">For @{data.authorUsername}</p>
         </div>
         <Badge className="text-lg px-3 py-1">Active Creator</Badge>
       </div>
@@ -138,12 +138,12 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
         {/* Games Created */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Games Created</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Games Created</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
               <div className="text-3xl font-bold text-blue-600">{data.totalGamesCreated}</div>
-              <p className="text-sm text-gray-500">from your articles</p>
+              <p className="text-sm text-muted-foreground">from your articles</p>
             </div>
           </CardContent>
         </Card>
@@ -151,12 +151,12 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
         {/* Total Royalties Earned */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Your Royalties</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Your Royalties</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
               <div className="text-3xl font-bold text-green-600">{data.totalRoyaltiesEarned.toLocaleString()}</div>
-              <p className="text-sm text-gray-500">tokens earned</p>
+              <p className="text-sm text-muted-foreground">tokens earned</p>
             </div>
           </CardContent>
         </Card>
@@ -164,12 +164,12 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
         {/* Total Ecosystem Volume */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Ecosystem Volume</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ecosystem Volume</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
               <div className="text-3xl font-bold text-purple-600">{totalTokensEarned.toLocaleString()}</div>
-              <p className="text-sm text-gray-500">tokens generated</p>
+              <p className="text-sm text-muted-foreground">tokens generated</p>
             </div>
           </CardContent>
         </Card>
@@ -208,7 +208,7 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
                     {data.totalRoyaltiesEarned.toLocaleString()} tokens
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div className="bg-green-500 h-2 rounded-full" style={{ width: "60%" }}></div>
                 </div>
               </div>
@@ -221,7 +221,7 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
                     {data.totalCreatorEarnings.toLocaleString()} tokens
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div className="bg-blue-500 h-2 rounded-full" style={{ width: "30%" }}></div>
                 </div>
               </div>
@@ -230,12 +230,12 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Platform (10%)</span>
-                  <span className="text-sm font-bold text-gray-600">
+                  <span className="text-sm font-bold text-muted-foreground">
                     {Math.round(totalTokensEarned * 0.1).toLocaleString()} tokens
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-gray-500 h-2 rounded-full" style={{ width: "10%" }}></div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-muted-foreground h-2 rounded-full" style={{ width: "10%" }}></div>
                 </div>
               </div>
             </CardContent>
@@ -254,13 +254,13 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
                   .map((game) => (
                     <div
                       key={game.creatorAddress}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
                         <div>
                           <p className="text-sm font-medium">{game.creatorName || "Unknown"}</p>
-                          <p className="text-xs text-gray-500">{game.creatorAddress.slice(0, 6)}...</p>
+                          <p className="text-xs text-muted-foreground">{game.creatorAddress.slice(0, 6)}...</p>
                         </div>
                       </div>
                       <Badge variant="secondary">{game.estimatedRoyalties} tokens</Badge>
@@ -283,12 +283,12 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
                 {data.recentGames.map((game) => (
                   <div
                     key={game.gameId}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{game.title}</h3>
-                        <p className="text-sm text-gray-500">
+                        <h3 className="font-semibold text-foreground">{game.title}</h3>
+                        <p className="text-sm text-muted-foreground">
                           by {game.creatorName || game.creatorAddress.slice(0, 6)}
                         </p>
                       </div>
@@ -299,17 +299,17 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
 
                     <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
                       <div>
-                        <p className="text-gray-500">Your Royalties</p>
+                        <p className="text-muted-foreground">Your Royalties</p>
                         <p className="font-bold text-green-600">{game.estimatedRoyalties} tokens</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Registered</p>
+                        <p className="text-muted-foreground">Registered</p>
                         <p className="font-bold">
                           {new Date(game.registeredAt * 1000).toLocaleDateString()}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500">NFT</p>
+                        <p className="text-muted-foreground">NFT</p>
                         <p className="font-bold">#{game.baseNFTTokenId || "Unminted"}</p>
                       </div>
                     </div>
@@ -333,37 +333,37 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
               <CardDescription>Stake your royalty tokens to earn additional rewards</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Coming Soon</h3>
-                <p className="text-sm text-blue-800">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Coming Soon</h3>
+                <p className="text-sm text-blue-600 dark:text-blue-400">
                   When Story Protocol launches native yield farming, you'll be able to stake your
                   royalty tokens here to earn additional rewards.
                 </p>
               </div>
 
               <div className="space-y-3">
-                <div className="border border-gray-200 rounded-lg p-4">
+                <div className="border border-border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Royalty Token Staking</h4>
+                    <h4 className="font-medium text-foreground">Royalty Token Staking</h4>
                     <Badge>Coming Q1 2026</Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Stake your {data.totalRoyaltiesEarned} royalty tokens
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Expected APY: 5-10% in STORY token (estimated)
                   </p>
                 </div>
 
-                <div className="border border-gray-200 rounded-lg p-4">
+                <div className="border border-border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Creator DAO Treasury</h4>
+                    <h4 className="font-medium text-foreground">Creator DAO Treasury</h4>
                     <Badge>Coming Q1 2026</Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Pool royalties with other creators for better yields
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Governance token: TBD (Community decides)
                   </p>
                 </div>

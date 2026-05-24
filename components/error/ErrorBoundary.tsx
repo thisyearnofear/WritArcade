@@ -46,15 +46,15 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-black p-4">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-md w-full bg-gray-900 border border-gray-800 rounded-xl p-6 text-center"
+            className="max-w-md w-full bg-card border border-border rounded-xl p-6 text-center"
           >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-900/30 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-red-400"
+                className="w-8 h-8 text-destructive"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -68,8 +68,8 @@ export class ErrorBoundary extends Component<Props, State> {
               </svg>
             </div>
 
-            <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
-            <p className="text-gray-400 mb-4">
+            <h2 className="text-xl font-bold text-card-foreground mb-2">Something went wrong</h2>
+            <p className="text-muted-foreground mb-4">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
 
