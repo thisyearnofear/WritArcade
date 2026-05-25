@@ -96,6 +96,12 @@ const nextConfig = {
         ...config.resolve.alias,
         react: path.resolve(__dirname, 'node_modules/react'),
         'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+        // Stub @mezo-org/mezo-clay: baseui/styletron use React 18 internals
+        // (__SECRET_INTERNALS) and trigger "Rendered more hooks" (#310) under
+        // React 19's concurrent renderer. The app never renders passport's
+        // Dropdown/ConnectedTrigger — it uses its own UserMenu — so these
+        // UI stubs are never actually called at runtime.
+        '@mezo-org/mezo-clay': path.resolve(__dirname, 'webpack-stubs/mezo-clay-stub.js'),
       };
     }
 
