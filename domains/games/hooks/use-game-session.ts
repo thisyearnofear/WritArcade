@@ -47,7 +47,7 @@ export interface GameSessionActions {
   sendMessage: (message: string) => Promise<void>
   handleOptionClick: (optionId: number, optionText: string) => void
   handleImageGenerated: (messageId: string, result: ImageGenerationResult) => void
-  handleImageRegenerate: (messageId: string, narrativeText: string, customPrompt?: string) => Promise<void>
+  handleImageRegenerate: (messageId: string, narrativeText: string, customPrompt?: string, theme?: string) => Promise<void>
   handleImagesReady: () => void
   handlePanelTextChange: (messageId: string, newText: string) => void
   handleImageRating: (messageId: string, rating: number) => void
@@ -424,7 +424,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   /**
    * Regenerate image for a specific panel
    */
-  const handleImageRegenerate = useCallback(async (messageId: string, narrativeText: string, customPrompt?: string) => {
+  const handleImageRegenerate = useCallback(async (messageId: string, narrativeText: string, customPrompt?: string, theme?: string) => {
     setRegeneratingMessageId(messageId)
 
     try {
@@ -436,7 +436,8 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
         style: 'comic_book',
         aspectRatio: 'landscape',
         force: true,
-        preferredModel: preferences?.preferredModel
+        preferredModel: preferences?.preferredModel,
+        theme
       })
       handleImageGenerated(messageId, result)
 

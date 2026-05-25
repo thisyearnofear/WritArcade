@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Loader2, BookOpen, ChevronDown } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
-import { ModelSelector } from '@/components/game/ModelSelector'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 
@@ -23,7 +22,7 @@ interface GameplayScreenProps {
   onUserInputChange: (value: string) => void
   onOptionClick: (option: GameplayOption) => void
   onImagesReady: () => void
-  onImageRegenerate: (messageId: string, narrativeText: string, customPrompt?: string) => Promise<void>
+  onImageRegenerate: (messageId: string, narrativeText: string, customPrompt?: string, theme?: string) => Promise<void>
   onImageRating: (messageId: string, rating: number) => void
   messagesEndRef: React.RefObject<HTMLDivElement>
   responseReady: { text: boolean; images: boolean }
@@ -31,7 +30,6 @@ interface GameplayScreenProps {
   setShowComicFinale: (show: boolean) => void
   // UI Enhancements
   availableThemes: any[]
-  handleThemeSelect: (theme: string) => void
   generateAIPromptSuggestions: (content: string) => string[]
   handleAIPromptSelect: (prompt: string) => void
 }
@@ -55,7 +53,6 @@ export function GameplayScreen({
   isRegenerating,
   setShowComicFinale,
   availableThemes,
-  handleThemeSelect,
   generateAIPromptSuggestions,
   handleAIPromptSelect,
 }: GameplayScreenProps) {
@@ -75,11 +72,6 @@ export function GameplayScreen({
         background: `linear-gradient(135deg, ${game.primaryColor || '#8b5cf6'}05, black)`,
       }}
     >
-      {/* Fixed Settings Button - Top Right */}
-      <div className="fixed top-4 right-4 z-50">
-        <ModelSelector />
-      </div>
-
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
@@ -137,8 +129,8 @@ export function GameplayScreen({
                       isWaiting={isWaitingForResponse}
                       onImageRating={(rating) => onImageRating(message.id, rating)}
                       onImagesReady={onImagesReady}
-                      onImageRegenerate={(narrativeText, customPrompt) =>
-                        onImageRegenerate(message.id, narrativeText, customPrompt)
+                      onImageRegenerate={(narrativeText, customPrompt, theme) =>
+                        onImageRegenerate(message.id, narrativeText, customPrompt, theme)
                       }
                       isRegenerating={isRegenerating === message.id}
                       pendingOptionId={pendingOptionId}
@@ -149,7 +141,6 @@ export function GameplayScreen({
                       showLoadingState={!imageReady && isWaitingForResponse}
                       availableThemes={availableThemes}
                       currentTheme={game.primaryColor || 'default'}
-                      onThemeSelect={handleThemeSelect}
                       aiPromptSuggestions={generateAIPromptSuggestions(message.content)}
                       onAIPromptSelect={handleAIPromptSelect}
                       showAIPromptSuggestions={true}

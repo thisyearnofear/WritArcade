@@ -30,7 +30,7 @@ interface ComicPanelCardProps {
   onImageRating?: (rating: number) => void
   onImagesReady?: () => void
   _onImagesReady?: () => void
-  onImageRegenerate?: (narrativeText: string, customPrompt?: string) => Promise<void>
+  onImageRegenerate?: (narrativeText: string, customPrompt?: string, theme?: string) => Promise<void>
   pendingOptionId?: number | null
   responseReady?: { text: boolean; images: boolean }
   narrativeImage?: string | null
@@ -39,7 +39,6 @@ interface ComicPanelCardProps {
   showLoadingState?: boolean
   isRegenerating?: boolean
   maxRegenerations?: number
-  // Enhanced with theme selection
   availableThemes?: Array<{
     name: string
     value: string
@@ -47,7 +46,6 @@ interface ComicPanelCardProps {
     description: string
   }>
   currentTheme?: string
-  onThemeSelect?: (theme: string) => void
   // Enhanced with AI prompt suggestions
   aiPromptSuggestions?: string[]
   onAIPromptSelect?: (prompt: string) => void
@@ -74,7 +72,6 @@ export function ComicPanelCard({
   maxRegenerations = 3,
   availableThemes,
   currentTheme,
-  onThemeSelect,
   aiPromptSuggestions,
   onAIPromptSelect,
   showAIPromptSuggestions,
@@ -92,6 +89,7 @@ export function ComicPanelCard({
   const [revealAnimation, setRevealAnimation] = useState(false)
   const messageIdRef = useRef(messageId)
 
+  const [localTheme, setLocalTheme] = useState(currentTheme)
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [isEditingNarrative, setIsEditingNarrative] = useState(false)
   const [editedNarrative, setEditedNarrative] = useState(narrative)
@@ -161,7 +159,7 @@ export function ComicPanelCard({
     setIsCustomPromptMode(false)
     
     const promptToUse = customPromptText && customPromptText.trim() ? customPromptText.trim() : undefined
-    await onImageRegenerate(narrative, promptToUse)
+    await onImageRegenerate(narrative, promptToUse, localTheme)
   }
 
   const handleRegenerateWithPrompt = () => {
@@ -288,7 +286,7 @@ export function ComicPanelCard({
                       )}
                   </div>
 
-                  {/* Theme Selector - Enhanced Feature */}
+                  {/* Theme Selector */}
                   {availableThemes && availableThemes.length > 0 && (
                     <div className="absolute top-4 right-4 z-20">
                       <motion.div
@@ -297,8 +295,8 @@ export function ComicPanelCard({
                         className="bg-card/80 backdrop-blur-sm border border-border rounded-lg p-1"
                       >
                         <select
-                          value={currentTheme}
-                          onChange={(e) => onThemeSelect?.(e.target.value)}
+                          value={localTheme}
+                          onChange={(e) => setLocalTheme(e.target.value)}
                           className="bg-transparent text-white text-xs px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                           title="Select visual theme"
                         >

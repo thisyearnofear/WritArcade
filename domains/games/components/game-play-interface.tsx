@@ -57,10 +57,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     { name: 'watercolor', value: 'watercolor', label: 'Watercolor', description: 'Soft brush strokes and artistic feel' }
   ]
 
-  const handleThemeSelect = (theme: string) => {
-    console.log('Theme selected:', theme)
-  }
-
   const generateAIPromptSuggestions = (narrative: string): string[] => {
     const baseSuggestions = [
       `A ${game.genre} style illustration of ${narrative.substring(0, 50)}...`,
@@ -174,7 +170,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       isRegenerating={session.regeneratingMessageId}
       setShowComicFinale={setShowComicFinale}
       availableThemes={availableThemes}
-      handleThemeSelect={handleThemeSelect}
       generateAIPromptSuggestions={generateAIPromptSuggestions}
       handleAIPromptSelect={handleAIPromptSelect}
     />

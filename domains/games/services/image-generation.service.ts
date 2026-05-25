@@ -243,6 +243,7 @@ export class ImageGenerationService {
     aspectRatio?: string
     force?: boolean
     preferredModel?: string // Added
+    theme?: string
   }): Promise<ImageGenerationResult> {
     const cacheKey = `${params.prompt}_${params.genre}_${params.style || 'comic'}`
     
@@ -255,7 +256,8 @@ export class ImageGenerationService {
     try {
       const enhancedPrompt = this.buildNarrativePrompt({
         narrative: params.prompt,
-        genre: params.genre
+        genre: params.genre,
+        theme: params.theme
       })
       
       const provider = this.selectProvider()
@@ -504,6 +506,7 @@ export class ImageGenerationService {
     narrative: string
     genre: string
     primaryColor?: string
+    theme?: string
   }): string {
     const genreComicStyles: Record<string, string> = {
       horror: 'dark comic book panel, bold inking, high contrast shadows, moody lighting, ominous atmosphere, graphic novel style',
@@ -514,7 +517,16 @@ export class ImageGenerationService {
       fantasy: 'magical comic panel, mystical illustration, glowing effects, enchanted atmosphere, fantasy comic style, detailed',
     }
 
-    const style = genreComicStyles[context.genre.toLowerCase()] || 'comic panel illustration, bold lines, digital art style'
+    const themeStyles: Record<string, string> = {
+      cyberpunk: 'Cyberpunk aesthetic, neon lights, holographic displays, futuristic city, high tech, dark urban atmosphere',
+      fantasy: 'Fantasy realm, magical atmosphere, enchanted forest, mystical glowing effects, ethereal, otherworldly',
+      noir: 'Film noir style, dramatic shadows, high contrast, monochrome tones, moody atmosphere, detective aesthetic',
+      watercolor: 'Watercolor painting style, soft brush strokes, artistic wash effect, painterly quality, flowing colors',
+    }
+
+    const genreStyle = genreComicStyles[context.genre.toLowerCase()] || 'comic panel illustration, bold lines, digital art style'
+    const themeModifier = context.theme && context.theme !== 'default' ? themeStyles[context.theme] : ''
+    const style = themeModifier ? `${themeModifier}, ${genreStyle}` : genreStyle
 
     // Extract FIRST coherent scene: take sentences until we have 2-3 sentences or reach ~300 chars
     // This prevents mixing multiple scenes into one image prompt
