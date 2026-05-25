@@ -28,6 +28,11 @@ export function useWriterCoinBalance(coinId = 'avc') {
   const cacheRef = useRef<Map<string, { data: BalanceData; timestamp: number }>>(new Map())
   const CACHE_DURATION = 30000 // 30 seconds cache
 
+  // When no coinId (e.g. MUSD payment path), return no-op state
+  if (!coinId) {
+    return { balance: null, isLoading: false, error: null, refresh: async () => {} }
+  }
+
   const fetchBalance = useCallback(async (wallet: string, coin: string) => {
     const cacheKey = `${wallet}-${coin}`
     const cached = cacheRef.current.get(cacheKey)
