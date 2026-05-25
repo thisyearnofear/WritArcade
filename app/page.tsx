@@ -303,7 +303,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => {
-                          const demoUrl = 'https://paragraph.xyz/@fredwilson/making-advisors'
+                          const demoUrl = 'https://paragraph.com/@papajams/the-infra-problem-defi-struggled-to-solve'
                           const params = new URLSearchParams({ url: demoUrl, pay: paymentPath })
                           window.location.href = `/generate?${params.toString()}`
                         }}

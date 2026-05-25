@@ -116,7 +116,7 @@ function requestKey(prompt, model, provider) {
 async function callPollinationsAPI(prompt) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 50000)
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
     const encodedPrompt = encodeURIComponent(prompt)
     const response = await fetch(`https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true`, { signal: controller.signal })
     clearTimeout(timeoutId)
@@ -139,11 +139,15 @@ async function callVeniceAPI(prompt, model) {
   const apiKey = process.env.VENICE_API_KEY
   if (!apiKey) return { imageUrl: null, success: false }
   try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 20000)
     const response = await fetch('https://api.venice.ai/api/v1/image/generate', {
       method: 'POST',
+      signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ prompt, model, width: 1024, height: 1024, format: 'png' }),
     })
+    clearTimeout(timeoutId)
     if (!response.ok) {
       providerHealth.venice.failures += response.status === 402 ? 10 : 1
       return { imageUrl: null, success: false }
