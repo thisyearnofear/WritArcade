@@ -7,8 +7,7 @@ import { ImageLightbox } from './image-lightbox'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { UserAttribution, AttributionPair } from '@/components/ui/user-attribution'
 import { IPRegistration } from '@/components/story/IPRegistration'
-import { ipfsMetadataService, type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
-import { userIdentityService } from '@/lib/services/user-identity.service'
+import type { GameCreator, GameAuthor } from '@/lib/services/ipfs-metadata.service'
 import { PostGameFeedback } from '@/components/game/post-game-feedback'
 import { VoiceNarrationService } from '../services/voice-narration.service'
 import { StreamingTypewriter, PretextContainer } from '@/components/effects'
@@ -344,45 +343,10 @@ export function ComicBookFinale({
 
   const handleMintWithMetadata = async () => {
     try {
-      // 1. Generate comprehensive metadata
-      const creator = await userIdentityService.getGameCreator(creatorWallet)
-      const author = await userIdentityService.getGameAuthor(authorParagraphUsername, authorWallet)
-
-      const gameData = {
-        title: gameTitle,
-        description: `Interactive ${genre.toLowerCase()} comic created on writersarcade. ${totalPanels} panels of AI-powered storytelling inspired by "${authorParagraphUsername}"'s work.`,
-        genre: genre.toLowerCase(),
-        difficulty: difficulty.toLowerCase(),
-        panels,
-        articleUrl
-      }
-
-      // 2. Upload metadata to IPFS
-      const { nftMetadataUri, gameMetadataUri } = await ipfsMetadataService.uploadGamePackage(
-        gameData,
-        creator,
-        author,
-        userChoices
-      )
-
-      // Store metadata for Story Protocol registration
-      setNftMintedMetadata({ nftMetadataUri, gameMetadataUri, creator, author })
-
-      // 3. Call the original mint function with enhanced data
-      onMint(panels, { nftMetadataUri, gameMetadataUri, creator, author })
-
-      // Show IP registration option after successful mint
-      setShowIPRegistration(true)
-      
-      // NEW: Show feedback modal after successful mint (gated behind completion)
-      setShowFeedback(true)
-
-    } catch (error) {
-      console.error('Error preparing NFT metadata:', error)
-      // Fallback to original mint behavior
       onMint(panels)
-      // Still show feedback after fallback mint
       setShowFeedback(true)
+    } catch (error) {
+      console.error('Mint failed:', error)
     }
   }
 

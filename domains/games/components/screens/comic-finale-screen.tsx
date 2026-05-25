@@ -73,7 +73,7 @@ export function ComicFinaleScreen({
         onBack={() => setShowComicFinale(false)}
         onMint={handleMintComic}
         isMinting={isMinting}
-        creatorWallet={game.creatorWallet || 'Unknown Creator'}
+        creatorWallet={game.creatorWallet || ''}
         articleUrl={game.articleUrl || ''}
         authorParagraphUsername={game.authorParagraphUsername || 'Unknown Author'}
         authorWallet={game.authorWallet}
