@@ -208,7 +208,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               }),
               ...(isStoryMode && paymentApproved && {
                 payment: {
-                  writerCoinId: writerCoin.id,
+                  writerCoinId: isMusdPath ? 'musd-testnet' : writerCoin.id,
                   paymentPath,
                 },
               }),

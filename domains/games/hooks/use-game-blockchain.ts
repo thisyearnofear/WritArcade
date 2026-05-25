@@ -116,7 +116,14 @@ export function useGameBlockchain(game: Game) {
             }
 
             const mintData = await mintResponse.json()
-            const { contractAddress, metadata: apiMetadata } = mintData.data
+            const { contractAddress, metadata: apiMetadata, chainId: targetChainId } = mintData.data
+
+            // 1b. Switch chain if needed
+            if (targetChainId && chainId !== targetChainId) {
+                await switchChain({ chainId: targetChainId })
+                // Give the wallet a moment to process the chain switch
+                await new Promise(r => setTimeout(r, 1000))
+            }
 
             // 2. Build tokenURI as a data URI (no IPFS needed)
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(apiMetadata))}`

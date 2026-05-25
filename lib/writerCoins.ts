@@ -6,11 +6,13 @@
  * a specific Paragraph author/publication.
  */
 
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, MEZO_MAINNET_CHAIN_ID } from './chains'
+
 export interface WriterCoin {
     id: string
     name: string
     symbol: string
-    address: `0x${string}` // ERC-20 contract address on Base
+    address: `0x${string}` // ERC-20 contract address
     writer: string
     paragraphAuthor: string // Used to validate article URLs
     paragraphUrl: string
@@ -20,6 +22,7 @@ export interface WriterCoin {
     decimals: number
     gameNftAddress: `0x${string}` // GameNFT contract address
     paymentContractAddress: `0x${string}` // WriterCoinPayment contract address
+    chainId?: number // Chain ID where this coin lives (defaults to Base mainnet)
 
     // Revenue distribution (percentages, should sum to 100)
     revenueDistribution: {
@@ -229,11 +232,21 @@ const MEZO_MAINNET_PAYMENT_SPLITTER =
     (process.env.NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_MAINNET as `0x${string}` | undefined) ||
     "0x0000000000000000000000000000000000000000" // not yet deployed
 
+const MEZO_TESTNET_GAME_NFT =
+    (process.env.NEXT_PUBLIC_MEZO_GAME_NFT_ADDRESS as `0x${string}` | undefined) ||
+    "0xb6001687e4700843e0a04a442031525f669465e7" // GameNFTMezo, deployed 2026-05-25
+
+const MEZO_MAINNET_GAME_NFT =
+    (process.env.NEXT_PUBLIC_MEZO_GAME_NFT_MAINNET as `0x${string}` | undefined) ||
+    "0x0000000000000000000000000000000000000000" // not yet deployed
+
 export const MUSD_CONFIG = {
     // Mezo Testnet MUSD token (Mezo Matsnet, chainId 31611)
     testnet: {
         address: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503" as `0x${string}`,
         paymentSplitter: MEZO_TESTNET_PAYMENT_SPLITTER,
+        chainId: MEZO_TESTNET_CHAIN_ID,
+        gameNftAddress: MEZO_TESTNET_GAME_NFT,
         decimals: 18,
         symbol: "MUSD",
         name: "Mezo USD",
@@ -245,6 +258,8 @@ export const MUSD_CONFIG = {
     mainnet: {
         address: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186" as `0x${string}`,
         paymentSplitter: MEZO_MAINNET_PAYMENT_SPLITTER,
+        chainId: MEZO_MAINNET_CHAIN_ID,
+        gameNftAddress: MEZO_MAINNET_GAME_NFT,
         decimals: 18,
         symbol: "MUSD",
         name: "Mezo USD",
@@ -282,6 +297,33 @@ export const MEZO_CONFIG = {
 export type PaymentToken = 
     | { type: 'writercoin'; coin: WriterCoin }
     | { type: 'musd'; network: 'testnet' | 'mainnet' }
+
+/**
+ * Mint config lookup: returns the contract address and chain ID for minting
+ * an NFT for a given writerCoinId (e.g. "avc", "papa", "musd-testnet").
+ * Handles both WriterCoin and MUSD payment types.
+ */
+export interface MintConfig {
+    contractAddress: `0x${string}`
+    chainId: number
+}
+
+export function getMintConfig(writerCoinId: string): MintConfig | undefined {
+    if (writerCoinId.startsWith('musd')) {
+        const network = writerCoinId === 'musd-mainnet' ? 'mainnet' : 'testnet'
+        const config = MUSD_CONFIG[network]
+        return {
+            contractAddress: config.gameNftAddress,
+            chainId: config.chainId,
+        }
+    }
+    const coin = getWriterCoinById(writerCoinId)
+    if (!coin) return undefined
+    return {
+        contractAddress: coin.gameNftAddress,
+        chainId: coin.chainId ?? BASE_MAINNET_CHAIN_ID,
+    }
+}
 
 /**
  * Get payment token config by type

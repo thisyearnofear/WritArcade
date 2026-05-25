@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { getWriterCoinById, getMintConfig } from '@/lib/writerCoins'
 import { fetchCoinConfigOnChain } from '@/lib/contracts'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 
@@ -43,11 +43,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify writer coin is valid
-    const coin = getWriterCoinById(writerCoinId)
-    if (!coin) {
+    // Look up mint config (handles both writer coins and MUSD)
+    const mintConfig = getMintConfig(writerCoinId)
+    if (!mintConfig) {
       return NextResponse.json(
-        { error: `Unknown writer coin: ${writerCoinId}` },
+        { error: `Unknown payment type: ${writerCoinId}` },
         { status: 400 }
       )
     }
@@ -96,16 +96,17 @@ export async function POST(request: NextRequest) {
 
     // Return minting payload
     // Frontend will use this to call GameNFT.mintGame() contract function
+    const coin = getWriterCoinById(writerCoinId)
     return NextResponse.json({
       success: true,
       data: {
         gameId,
         wallet,
         metadata,
-        contractAddress: coin.gameNftAddress,
-        chainId: 8453, // Base mainnet
+        contractAddress: mintConfig.contractAddress,
+        chainId: mintConfig.chainId,
         message: 'Prepare minting transaction. Click "Confirm" to mint as NFT.',
-        estimatedCost: coin.mintCost.toString(),
+        estimatedCost: coin ? coin.mintCost.toString() : '0',
       },
     })
   } catch (error) {
@@ -161,16 +162,19 @@ export async function PATCH(request: NextRequest) {
     })
 
     if (!existingPayment) {
-      // Fetch the actual mint cost from the contract rather than using a hardcoded value
       const game = await prisma.game.findUnique({ where: { id: gameId }, select: { writerCoinId: true } })
-      const coin = game?.writerCoinId ? getWriterCoinById(game.writerCoinId) : null
+      const writerCoinId = game?.writerCoinId ?? 'avc'
+      const isMUSD = writerCoinId.startsWith('musd')
       let mintAmount = BigInt(50 * 10 ** 18) // fallback
-      if (coin) {
-        try {
-          const config = await fetchCoinConfigOnChain(coin.address)
-          mintAmount = config.mintCost
-        } catch {
-          mintAmount = coin.mintCost
+      if (!isMUSD) {
+        const coin = getWriterCoinById(writerCoinId)
+        if (coin) {
+          try {
+            const config = await fetchCoinConfigOnChain(coin.address)
+            mintAmount = config.mintCost
+          } catch {
+            mintAmount = coin.mintCost
+          }
         }
       }
       await prisma.payment.create({
@@ -181,7 +185,7 @@ export async function PATCH(request: NextRequest) {
           amount: mintAmount,
           status: 'verified',
           userId: updatedGame.userId,
-          writerCoinId: game?.writerCoinId ?? 'avc',
+          writerCoinId,
           verifiedAt: new Date(),
         },
       })
