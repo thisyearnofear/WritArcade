@@ -63,6 +63,7 @@ export function PaymentFlow({
     formatted: musdFormatted,
     isLoading: isMUSDBalanceLoading,
     error: musdBalanceError,
+    refresh: refreshMUSDBalance,
   } = useMUSDBalance()
 
   const [isProcessing, setIsProcessing] = useState(false)
@@ -117,7 +118,11 @@ export function PaymentFlow({
         2,
         1500
       ).then((txHash) => {
-        if (!isMUSD) refresh()
+        if (isMUSD) {
+          refreshMUSDBalance()
+        } else {
+          refresh()
+        }
         onPaymentSuccess?.(txHash)
       })
     } catch (err) {
