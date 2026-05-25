@@ -225,10 +225,6 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [isOpen])
 
-  if (!mounted || !isConnected) {
-    return null
-  }
-
   const primary = getPrimaryBalance(allBalances)
   const primaryIsLoading = primary.isLoading
   const hasPrimaryBalance = primary.balance && primary.balance.formattedBalance !== '0'
@@ -271,6 +267,10 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
       },
     ]
   }, [allBalances, isMezoHolder, isLoadingMezo, mezoFormatted, primary.coin])
+
+  if (!mounted || !isConnected) {
+    return null
+  }
 
   const badgeBaseClasses = 'flex items-center rounded-lg bg-purple-600/10 border border-purple-500/30 transition-colors'
   const textClasses = mobileLayout ? 'text-base' : 'text-sm'

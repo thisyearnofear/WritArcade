@@ -10,6 +10,7 @@ const ALLOWED_ORIGINS = [
   'https://writersarcade.vercel.app',
   'https://www.writersarcade.com',
   'https://writersarcade.com',
+  'http://localhost:3000',
 ]
 
 const WRITER_COINS = {
@@ -57,6 +58,9 @@ async function fetchWriterCoinBalance(wallet, coinId = 'avc') {
     'https://base.llamarpc.com',
     'https://base-mainnet.public.blastapi.io',
     'https://rpc.ankr.com/base',
+    'https://1rpc.io/base',
+    'https://base.drpc.org',
+    'https://base-pokt.nodies.app',
   ].filter(Boolean)
 
   let client = null

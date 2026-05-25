@@ -48,7 +48,8 @@ export function useWriterCoinBalance(coinId = 'avc') {
       )
 
       if (!response.ok) {
-        throw new Error('Failed to fetch balance')
+        const errorBody = await response.json().catch(() => null)
+        throw new Error(errorBody?.details || `Failed to fetch balance (${response.status})`)
       }
 
       const data = await response.json()
