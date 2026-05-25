@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GameAIService } from '@/domains/games/services/game-ai.service'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
+import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
 import { WordleService } from '@/domains/games/services/wordle.service'
 import type { GameGenerationResponse } from '@/domains/games/types'
@@ -225,10 +226,26 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     }
     console.log('Game saved successfully:', { id: savedGame.id, slug: savedGame.slug })
 
+    // Generate cover image eagerly (non-blocking — saves to DB when ready)
+    const coverImagePromise = savedGame.mode !== 'wordle'
+      ? ImageGenerationService.generateGameImage(savedGame).then(async (result) => {
+          if (result.imageUrl) {
+            await GameDatabaseService.updateGameImage(savedGame.id, result.imageUrl)
+            return result.imageUrl
+          }
+          return null
+        }).catch((err) => {
+          console.error('Cover image generation failed:', err)
+          return null
+        })
+      : Promise.resolve(null)
+
     // Background enrichment: secret panel + hypercert (non-blocking)
     enrichGameInBackground(savedGame.id, savedGame.slug, gameData, processedContent?.text).catch(
       (err) => logger.error('Background enrichment failed', err, { gameId: savedGame.id })
     )
+
+    const coverImageUrl = await coverImagePromise
 
     return NextResponse.json({
       success: true,
@@ -238,6 +255,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
         slug: savedGame.slug,
         createdAt: savedGame.createdAt,
         authorParagraphUsername: savedGame.authorParagraphUsername,
+        imageUrl: coverImageUrl,
       },
     })
 

@@ -156,12 +156,16 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     await generateGame()
   }
 
+  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
   const generateGame = async () => {
     setIsGenerating(true)
     setError(null)
 
     try {
       setLoadingStep('validate')
+      setStepStatuses((prev) => ({ ...prev, validate: 'in-progress' }))
+      await wait(700)
 
       if (!url.trim()) {
         throw new Error('Please provide a Paragraph.xyz article URL')
@@ -173,8 +177,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
       setStepStatuses((prev) => ({ ...prev, validate: 'completed' }))
       setLoadingStep('extract')
+      setStepStatuses((prev) => ({ ...prev, extract: 'in-progress' }))
+      await wait(600)
       setStepStatuses((prev) => ({ ...prev, extract: 'completed' }))
       setLoadingStep('generate')
+      setStepStatuses((prev) => ({ ...prev, generate: 'in-progress' }))
 
       let lastError: Error | null = null
       let attempt = 0
@@ -240,6 +247,8 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       setStepStatuses((prev) => ({ ...prev, generate: 'completed' }))
 
       setLoadingStep('save')
+      setStepStatuses((prev) => ({ ...prev, save: 'in-progress' }))
+      await wait(500)
       setStepStatuses((prev) => ({ ...prev, save: 'completed' }))
 
       const gameData = {

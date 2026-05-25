@@ -15,7 +15,7 @@
  * - Automatic failover: Falls back to Replicate/Netmind if Venice fails
  */
 
-export type ImageProvider = 'venice' | 'replicate' | 'netmind' | 'modal' | 'failed'
+export type ImageProvider = 'fal' | 'venice' | 'replicate' | 'netmind' | 'modal' | 'failed'
 
 export interface ImageGenerationResult {
   imageUrl: string | null
@@ -68,18 +68,21 @@ export class ImageGenerationService {
    * Determine which provider to use based on health status
    * Priority: pollinations (free) -> venice (has credits) -> (netmind/modal if configured)
    */
-  private static selectProvider(): 'pollinations' | 'venice' | 'netmind' | 'modal' {
-    // If we're on the client, default to pollinations and let the API decide
+   private static selectProvider(): 'fal' | 'pollinations' | 'venice' | 'netmind' | 'modal' {
+    // If we're on the client, default to fal and let the API decide
     if (typeof window !== 'undefined') {
-      return 'pollinations'
+      return 'fal'
     }
 
+    const falApiKey = process.env.FAL_API_KEY
     const veniceApiKey = process.env.VENICE_API_KEY
     const netmindApiKey = process.env.NETMIND_API_KEY
     const modalUrl = process.env.MODAL_IMAGE_GEN_URL
     
-    // Primary: Pollinations (free, no API key)
-    // No check needed - always available
+    // Primary: fal.ai (fast, configured with API key)
+    if (falApiKey) {
+      return 'fal'
+    }
     
     // Fallback: Venice (works, has credits)
     if (veniceApiKey) {
@@ -102,7 +105,8 @@ export class ImageGenerationService {
     return 'pollinations'
   }
   
-  private static getRandomModel(provider: 'pollinations' | 'venice' | 'netmind' | 'modal'): string {
+  private static getRandomModel(provider: 'fal' | 'pollinations' | 'venice' | 'netmind' | 'modal'): string {
+    if (provider === 'fal') return 'fast-sdxl'
     if (provider === 'pollinations') return 'flux'
     if (provider === 'modal') return 'sdxl-turbo'
     const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS

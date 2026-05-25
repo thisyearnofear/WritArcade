@@ -135,6 +135,7 @@ export interface GameGenerationResponse {
   // Optional game mode metadata ("story" | "wordle")
   mode?: GameMode
   creatorWallet?: string  // Game creator's wallet (for attribution in NFT)
+  imageUrl?: string | null  // Game cover image URL (generated eagerly)
 }
 
 export interface GameplayOption {
