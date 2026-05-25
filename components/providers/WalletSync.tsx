@@ -16,15 +16,17 @@ export function WalletSync() {
   const prevStatus = useRef(status)
 
   useEffect(() => {
-    // If status changed from loading/unauthenticated -> authenticated (Login)
-    // Or from authenticated -> unauthenticated (Logout)
     if (prevStatus.current !== status) {
       if (status === 'authenticated') {
         console.log('[WalletSync] SIWE Login detected')
-        router.refresh()
+        const timer = setTimeout(() => router.refresh(), 300)
+        prevStatus.current = status
+        return () => clearTimeout(timer)
       } else if (status === 'unauthenticated' && prevStatus.current === 'authenticated') {
         console.log('[WalletSync] Logout detected')
-        router.refresh()
+        const timer = setTimeout(() => router.refresh(), 300)
+        prevStatus.current = status
+        return () => clearTimeout(timer)
       }
       prevStatus.current = status
     }
