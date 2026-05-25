@@ -353,7 +353,15 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       })
 
       if (!response.ok) {
-        throw new Error('Failed to send message')
+        const body = await response.json().catch(() => ({}))
+        if (body.gameComplete) {
+          setMessages(prev => prev.filter(m => m.id !== userMessage.id))
+          setIsWaitingForResponse(false)
+          setPendingOptionId(null)
+          generateEpilogue()
+          return
+        }
+        throw new Error(body.error || 'Failed to send message')
       }
 
       const reader = response.body?.getReader()

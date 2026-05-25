@@ -1,4 +1,4 @@
-export type BackendImageProvider = 'pollinations' | 'venice' | 'netmind' | 'modal' | 'failed'
+export type BackendImageProvider = 'fal' | 'pollinations' | 'venice' | 'netmind' | 'modal' | 'failed'
 
 export interface ImageGenerationPayload {
   prompt: string
@@ -15,6 +15,7 @@ export interface ImageGenerationApiResult {
 
 const IN_FLIGHT = new Map<string, Promise<ImageGenerationApiResult>>()
 const providerHealth = {
+  fal: { failures: 0, lastSuccess: Date.now() },
   pollinations: { failures: 0, lastSuccess: Date.now() },
   venice: { failures: 0, lastSuccess: Date.now() },
   netmind: { failures: 0, lastSuccess: Date.now() },
@@ -123,6 +124,43 @@ async function callNetmindAPI(prompt: string, model: string): Promise<{ imageUrl
   }
 }
 
+async function callFalAIAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
+  const apiKey = process.env.FAL_API_KEY
+  if (!apiKey) return { imageUrl: null, success: false }
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
+    const response = await fetch('https://fal.run/fal-ai/fast-sdxl', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Key ${apiKey}`,
+      },
+      body: JSON.stringify({
+        prompt,
+        image_size: { width: 1024, height: 1024 },
+        num_inference_steps: 4,
+      }),
+    })
+    clearTimeout(timeoutId)
+    if (!response.ok) {
+      providerHealth.fal.failures++
+      return { imageUrl: null, success: false }
+    }
+    const data = await response.json()
+    const imageUrl = data.images?.[0]?.url || null
+    if (imageUrl) {
+      providerHealth.fal.failures = 0
+      providerHealth.fal.lastSuccess = Date.now()
+    }
+    return { imageUrl, success: !!imageUrl }
+  } catch {
+    providerHealth.fal.failures++
+    return { imageUrl: null, success: false }
+  }
+}
+
 async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; success: boolean }> {
   const modalUrl = process.env.MODAL_IMAGE_GEN_URL
   if (!modalUrl) return { imageUrl: null, success: false }
@@ -154,6 +192,7 @@ async function callModalAPI(prompt: string): Promise<{ imageUrl: string | null; 
 }
 
 function selectDefaultProvider() {
+  if (process.env.FAL_API_KEY && providerHealth.fal.failures < 5) return 'fal'
   if (providerHealth.pollinations.failures < 10) return 'pollinations'
   if (process.env.VENICE_API_KEY && providerHealth.venice.failures < 5) return 'venice'
   if (process.env.NETMIND_API_KEY && providerHealth.netmind.failures < 5) return 'netmind'
@@ -162,6 +201,7 @@ function selectDefaultProvider() {
 }
 
 function defaultModelForProvider(provider: string) {
+  if (provider === 'fal') return 'fast-sdxl'
   if (provider === 'pollinations') return 'flux'
   if (provider === 'modal') return 'sdxl-turbo'
   if (provider === 'netmind') return 'black-forest-labs/FLUX.1-schnell'
@@ -183,6 +223,7 @@ export async function generateImage(payload: ImageGenerationPayload): Promise<Im
 
   const upstreamPromise = (async (): Promise<ImageGenerationApiResult> => {
     const callProvider = (providerName: string, providerModel: string) => {
+      if (providerName === 'fal') return callFalAIAPI(prompt)
       if (providerName === 'pollinations') return callPollinationsAPI(prompt)
       if (providerName === 'venice') return callVeniceAPI(prompt, providerModel)
       if (providerName === 'modal') return callModalAPI(prompt)
@@ -195,6 +236,7 @@ export async function generateImage(payload: ImageGenerationPayload): Promise<Im
     }
 
     const fallbackChain = [
+      { provider: 'fal', model: 'fast-sdxl' },
       { provider: 'pollinations', model: 'flux' },
       { provider: 'venice', model: 'venice-sd35' },
       { provider: 'modal', model: 'sdxl-turbo' },
