@@ -24,7 +24,10 @@ fi
 
 MEZO_PRECOMPILE="0x7B7c000000000000000000000000000000000001"
 
-echo "🚀 Deploying MezoBoostedSplitter to Mezo Testnet..."
+echo "🚀 Deploying MezoBoostedSplitter v2 (with payForGeneration) to Mezo Testnet..."
+echo "    MUSD token: $MEZO_TESTNET_MUSD_ADDRESS"
+echo "    MEZO precompile: $MEZO_PRECOMPILE"
+echo "    Platform treasury: $PLATFORM_TREASURY_ADDRESS"
 
 # Use forge to compile and deploy
 forge create contracts/src/MezoBoostedSplitter.sol:MezoBoostedSplitter \

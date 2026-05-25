@@ -106,7 +106,7 @@ export class ImageGenerationService {
   }
   
   private static getRandomModel(provider: 'fal' | 'pollinations' | 'venice' | 'netmind' | 'modal'): string {
-    if (provider === 'fal') return 'fast-sdxl'
+    if (provider === 'fal') return 'flux/schnell'
     if (provider === 'pollinations') return 'flux'
     if (provider === 'modal') return 'sdxl-turbo'
     const models = provider === 'venice' ? this.VENICE_MODELS : this.NETMIND_MODELS

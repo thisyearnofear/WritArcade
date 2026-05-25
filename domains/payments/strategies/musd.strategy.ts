@@ -60,6 +60,11 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
  *   - writerShareBP   → retained for writer claim
  *
  * Splitter source: contracts/src/MezoPaymentSplitter.sol
+ *
+ * NOTE: The deployed MezoBoostedSplitter only has `payAndMintGame`, so for
+ * `generate-game` actions we call `payAndMintGame` with placeholder metadata.
+ * Once the updated contract with `payForGeneration` is redeployed, the code
+ * will switch to the dedicated function.
  */
 export class MUSDStrategy implements PaymentStrategy {
   id = 'musd'
@@ -97,42 +102,29 @@ export class MUSDStrategy implements PaymentStrategy {
     console.log('[MUSDStrategy] Approval tx:', approvalTx)
 
     // 2. Execute splitter call
-    if (action === 'mint-nft') {
-      // payAndMintGame uses a fixed 1 MUSD price encoded in the contract,
-      // but we still pass the user's metadata so the on-chain event captures it.
-      const tokenURI = `ipfs://writersarcade/mezo-demo-${Date.now()}`
-      const metadata = {
-        articleUrl: '',
-        creator: sender,
-        writerCoin: musd, // MUSD acts as the payment identifier on Mezo
-        genre: '',
-        difficulty: '',
-        createdAt: BigInt(Math.floor(Date.now() / 1000)),
-        gameTitle: 'WritersArcade Game',
-      }
-
-      const txHash = await walletClient.writeContract({
-        address: splitter,
-        abi: SPLITTER_PAY_AND_MINT_ABI,
-        functionName: 'payAndMintGame',
-        args: [tokenURI, metadata],
-        account: sender,
-        chain: null,
-      })
-      console.log('[MUSDStrategy] payAndMintGame tx:', txHash)
-      return txHash
+    // For both generate-game and mint-nft, use payAndMintGame since the
+    // currently deployed MezoBoostedSplitter only has that function.
+    // The cost (1 MUSD) is the same for both actions.
+    const tokenURI = `ipfs://writersarcade/mezo-${action}-${Date.now()}`
+    const metadata = {
+      articleUrl: '',
+      creator: sender,
+      writerCoin: musd,
+      genre: '',
+      difficulty: '',
+      createdAt: BigInt(Math.floor(Date.now() / 1000)),
+      gameTitle: action === 'mint-nft' ? 'WritersArcade Game NFT' : 'WritersArcade Game',
     }
 
-    // generate-game / play-wordle → payForGeneration(amount)
     const txHash = await walletClient.writeContract({
       address: splitter,
-      abi: SPLITTER_PAY_FOR_GENERATION_ABI,
-      functionName: 'payForGeneration',
-      args: [amt],
+      abi: SPLITTER_PAY_AND_MINT_ABI,
+      functionName: 'payAndMintGame',
+      args: [tokenURI, metadata],
       account: sender,
       chain: null,
     })
-    console.log('[MUSDStrategy] payForGeneration tx:', txHash)
+    console.log(`[MUSDStrategy] payAndMintGame (${action}) tx:`, txHash)
     return txHash
   }
 }

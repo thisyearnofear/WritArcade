@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
 
+const MEZO_TESTNET_EXPLORER_URL = 'https://explorer.test.mezo.org/tx'
+
 interface PaymentFlowProps {
   paymentToken: PaymentToken
   action: PaymentAction
@@ -68,6 +70,7 @@ export function PaymentFlow({
 
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastTxHash, setLastTxHash] = useState<string | null>(null)
 
   const requiredAmount = useMemo(() => {
     const cost = action === 'generate-game' ? config.gameGenerationCost : config.mintCost
@@ -118,6 +121,7 @@ export function PaymentFlow({
         2,
         1500
       ).then((txHash) => {
+        setLastTxHash(txHash)
         if (isMUSD) {
           refreshMUSDBalance()
         } else {
@@ -305,6 +309,38 @@ export function PaymentFlow({
       </Button>
 
       {error && <ErrorCard error={error} onDismiss={() => setError(null)} />}
+
+      {lastTxHash && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn(
+            "rounded-xl border p-3 text-xs transition-all duration-300 flex items-center gap-3",
+            isMUSD
+              ? "bg-green-900/20 border-green-500/30 text-green-200"
+              : "bg-green-900/20 border-green-500/30 text-green-200"
+          )}
+        >
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+          <span className="flex-1">
+            Transaction confirmed! View on{' '}
+            <a
+              href={`${MEZO_TESTNET_EXPLORER_URL}/${lastTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-semibold hover:text-green-300 transition-colors"
+            >
+              Mezo Explorer <ExternalLink className="w-3 h-3 inline-block" />
+            </a>
+          </span>
+          <button
+            onClick={() => setLastTxHash(null)}
+            className="text-green-400/60 hover:text-green-300 transition-colors"
+          >
+            ✕
+          </button>
+        </motion.div>
+      )}
 
       <div className={cn(
         "rounded-xl p-4 text-xs transition-colors",

@@ -25,7 +25,8 @@
 - **Purpose**: MUSD payment and revenue split contract with native MEZO holder revenue boost
 - **Functions**:
   - `isMezoHolder(address user)` — Check if user holds >= 1 MEZO
-  - `payAndMintGame(string tokenURI, GameMetadata metadata)` — Atomic pay and mint; automatically applies a 10% creator revenue boost for MEZO holders
+  - `payForGeneration(uint256 amount)` — Pay for game generation; splits amount between platform and writer; applies 10% writer boost for MEZO holders
+  - `payAndMintGame(string tokenURI, GameMetadata metadata)` — Atomic pay and mint (1 MUSD fixed price); automatically applies a 10% creator revenue boost for MEZO holders
 
 ### 4. GameNFTMezo.sol 🆕
 - **Chain**: Mezo Matsnet testnet (chainId 31611)

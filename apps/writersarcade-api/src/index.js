@@ -224,7 +224,7 @@ async function callFalAIAPI(prompt) {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 15000)
-    const response = await fetch('https://fal.run/fal-ai/fast-sdxl', {
+    const response = await fetch('https://fal.run/fal-ai/flux/schnell', {
       method: 'POST',
       signal: controller.signal,
       headers: {
@@ -233,7 +233,7 @@ async function callFalAIAPI(prompt) {
       },
       body: JSON.stringify({
         prompt,
-        image_size: { width: 1024, height: 1024 },
+        image_size: { width: 1280, height: 720 },
         num_inference_steps: 4,
       }),
     })
@@ -265,7 +265,7 @@ function selectDefaultProvider() {
 }
 
 function defaultModelForProvider(provider) {
-  if (provider === 'fal') return 'fast-sdxl'
+  if (provider === 'fal') return 'flux/schnell'
   if (provider === 'pollinations') return 'flux'
   if (provider === 'modal') return 'sdxl-turbo'
   if (provider === 'netmind') return 'black-forest-labs/FLUX.1-schnell'
@@ -296,7 +296,7 @@ async function generateImage({ prompt, type, model, provider }) {
     }
 
     const fallbackChain = [
-      { provider: 'fal', model: 'fast-sdxl' },
+      { provider: 'fal', model: 'flux/schnell' },
       { provider: 'venice', model: 'venice-sd35' },
       { provider: 'pollinations', model: 'flux' },
       { provider: 'modal', model: 'sdxl-turbo' },

@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 /**
  * @title MezoBoostedSplitter
- * @dev Extension of MezoPaymentSplitter that incorporates a 10% revenue boost for MEZO token holders.
- * Boosted creator shares are deducted proportionally from the platform treasury share.
+ * @dev MUSD payment and revenue split contract with native MEZO holder revenue boost.
+ * Supports both `payForGeneration` and `payAndMintGame` — MEZO holders get a
+ * 10% creator share boost (funded by reducing platform share).
  */
 
 interface IERC20 {
@@ -37,6 +38,7 @@ contract MezoBoostedSplitter {
         string gameTitle;
     }
 
+    event GameGenerationPaid(address indexed user, uint256 amount, uint256 platformFee, uint256 writerFee, bool boosted);
     event GameMintedAndPaid(address indexed creator, string tokenURI, GameMetadata metadata, uint256 creatorFee, uint256 platformFee, bool boosted);
 
     constructor(address _musdToken, address _mezoToken, address _platformTreasury) {
@@ -50,6 +52,31 @@ contract MezoBoostedSplitter {
      */
     function isMezoHolder(address user) public view returns (bool) {
         return IERC20(mezoToken).balanceOf(user) >= HOLDER_THRESHOLD;
+    }
+
+    /**
+     * @dev Pay for game generation
+     * User pays `amount` in MUSD, split between platform and writer.
+     * MEZO holders get a 10% boost applied to the writer share (funded by platform).
+     */
+    function payForGeneration(uint256 amount) external {
+        uint256 platformFee = (amount * platformShareBP) / 10000;
+        uint256 writerFee = amount - platformFee;
+        bool boosted = false;
+
+        // Apply 10% boost to writer share if holder
+        if (isMezoHolder(msg.sender)) {
+            boosted = true;
+            uint256 boostAmount = (writerFee * BOOST_BP) / 10000;
+            writerFee += boostAmount;
+            platformFee -= boostAmount;
+        }
+
+        IERC20(musdToken).transferFrom(msg.sender, address(this), amount);
+        IERC20(musdToken).transfer(platformTreasury, platformFee);
+        // Writer fee stays in the contract for them to claim (or sent to a pool)
+
+        emit GameGenerationPaid(msg.sender, amount, platformFee, writerFee, boosted);
     }
 
     /**
