@@ -12,8 +12,8 @@ import { WalletErrorBoundary } from '@/components/error/WalletErrorBoundary';
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
-    <WalletErrorBoundary>
-      <Web3Provider>
+    <Web3Provider>
+      <WalletErrorBoundary>
         <ToastProvider>
           <WalletSync />
           <DarkModeProvider>
@@ -27,7 +27,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
             </AuthProvider>
           </DarkModeProvider>
         </ToastProvider>
-      </Web3Provider>
-    </WalletErrorBoundary>
+      </WalletErrorBoundary>
+    </Web3Provider>
   );
 }

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { useAccount } from 'wagmi'
-import { Coins, Loader2, ChevronDown, Sparkles } from 'lucide-react'
+import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import { Coins, Loader2, ChevronDown, Sparkles, ArrowRightLeft } from 'lucide-react'
 import { WRITER_COINS } from '@/lib/writerCoins'
 import { CopyAddressButton } from '@/components/ui/copy-address-button'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
@@ -135,11 +135,17 @@ function EcosystemSection({
   mobileLayout,
   isMezoHolder,
   mezoFormatted,
+  switchToMezo,
+  isSwitching,
+  isOnMezo,
 }: {
   group: EcosystemGroup
   mobileLayout: boolean
   isMezoHolder: boolean
   mezoFormatted: string
+  switchToMezo?: () => void
+  isSwitching?: boolean
+  isOnMezo?: boolean
 }) {
   return (
     <div>
@@ -174,8 +180,20 @@ function EcosystemSection({
       ))}
 
       {group.id === 'mezo' && (
-        <div className={`${mobileLayout ? 'px-4 pb-3' : 'px-3 pb-3'} text-[11px] text-muted-foreground`}>
-          {isMezoHolder ? `Holder balance: ${mezoFormatted} MEZO` : 'Hold at least 1 MEZO to unlock holder perks.'}
+        <div className={`${mobileLayout ? 'px-4 pb-3' : 'px-3 pb-3'} space-y-2`}>
+          <div className="text-[11px] text-muted-foreground">
+            {isMezoHolder ? `Holder balance: ${mezoFormatted} MEZO` : 'Hold at least 1 MEZO to unlock holder perks.'}
+          </div>
+          {switchToMezo && !isOnMezo && (
+            <button
+              onClick={switchToMezo}
+              disabled={isSwitching}
+              className="flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/5 text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50 transition-colors disabled:opacity-50"
+            >
+              <ArrowRightLeft className="w-3 h-3" />
+              {isSwitching ? 'Switching...' : 'Switch to Mezo'}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -184,6 +202,8 @@ function EcosystemSection({
 
 export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const { isConnected } = useAccount()
+  const chainId = useChainId()
+  const { switchChain, isPending: isSwitching } = useSwitchChain()
   const [mounted, setMounted] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -301,6 +321,9 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
           mobileLayout={mobileLayout}
           isMezoHolder={isMezoHolder}
           mezoFormatted={mezoFormatted}
+          switchToMezo={group.id === 'mezo' ? () => switchChain({ chainId: MEZO_TESTNET_CHAIN_ID }) : undefined}
+          isSwitching={isSwitching}
+          isOnMezo={getChainInfo(chainId).ecosystem === 'mezo'}
         />
       ))}
     </div>

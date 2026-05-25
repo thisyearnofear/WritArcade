@@ -2,8 +2,6 @@
 
 import { Component, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
-import { Header } from '@/components/layout/header'
-import { Footer } from '@/components/layout/footer'
 import { Wallet, RefreshCw } from 'lucide-react'
 
 interface Props {
@@ -15,6 +13,13 @@ interface State {
   error: Error | null
 }
 
+/**
+ * Catches runtime errors in the wallet provider subtree.
+ *
+ * IMPORTANT: The fallback renders a minimal UI that does NOT import or use
+ * wagmi / RainbowKit / Mezo Passport hooks.  If the crash was caused by the
+ * wagmi config itself, the fallback must not re-trigger it.
+ */
 export class WalletErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
@@ -37,7 +42,14 @@ export class WalletErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col min-h-screen">
-          <Header />
+          {/* Simple header without wagmi dependencies */}
+          <header className="border-b border-border bg-background/95 backdrop-blur-md">
+            <div className="max-w-6xl mx-auto px-4 h-16 flex items-center">
+              <a href="/" className="flex items-center space-x-2">
+                <img src="/logo.png" alt="writersarcade" className="h-8 w-auto" />
+              </a>
+            </div>
+          </header>
           <main className="flex-1 flex items-center justify-center p-4">
             <div className="max-w-md w-full text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
@@ -58,7 +70,9 @@ export class WalletErrorBoundary extends Component<Props, State> {
               </div>
             </div>
           </main>
-          <Footer />
+          <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+            writersarcade
+          </footer>
         </div>
       )
     }
