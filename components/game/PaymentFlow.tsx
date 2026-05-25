@@ -268,7 +268,7 @@ export function PaymentFlow({
 
       <Button
         onClick={handlePayment}
-        disabled={disabled || isProcessing || !walletClient || !userAddress || !!isLoadingBalance || hasInsufficientBalance || isWrongChain}
+        disabled={disabled || isProcessing || !walletClient || !userAddress || !!isLoadingBalance || hasInsufficientBalance}
         size="lg"
         className={cn(
           "w-full py-7 rounded-xl text-base font-bold transition-all duration-300 shadow-lg group",
