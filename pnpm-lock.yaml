@@ -7,7 +7,7 @@ settings:
 overrides:
   '@base-org/account': 2.4.0
   '@coinbase/wallet-sdk': 3.9.3
-  '@rainbow-me/rainbowkit': 2.1.7
+  '@rainbow-me/rainbowkit': 2.2.11
   viem: 2.48.8
   ox: 0.14.20
 
@@ -2477,7 +2477,7 @@ packages:
   '@mezo-org/orangekit@1.0.0-beta.40':
     resolution: {integrity: sha512-m+HepaqfoyI49Qn7EpdDsflseVuR7gL694XR8wM4aLT/TPIS8+JCICBQ3R5YTAr2ys1N0d33ABqrP07qphAUmw==}
     peerDependencies:
-      '@rainbow-me/rainbowkit': 2.1.7
+      '@rainbow-me/rainbowkit': 2.2.11
       react: '>=18'
       viem: 2.48.8
       wagmi: ^2.5.12
@@ -2485,7 +2485,7 @@ packages:
   '@mezo-org/passport@0.17.2':
     resolution: {integrity: sha512-D8+47FlhH/YAt77QjXc84hXCygZZBhdtEq9jIDB272LX+6pIIsoYw75O5Qdl28D0OgGpuieiOymLj1uPyawaDw==}
     peerDependencies:
-      '@rainbow-me/rainbowkit': 2.1.7
+      '@rainbow-me/rainbowkit': 2.2.11
       '@tanstack/react-query': ^5.28.4
       react: ^18.2.0
       viem: 2.48.8

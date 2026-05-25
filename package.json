@@ -111,7 +111,7 @@
     "overrides": {
       "@base-org/account": "2.4.0",
       "@coinbase/wallet-sdk": "3.9.3",
-      "@rainbow-me/rainbowkit": "2.1.7",
+      "@rainbow-me/rainbowkit": "2.2.11",
       "viem": "2.48.8",
       "ox": "0.14.20"
     },
