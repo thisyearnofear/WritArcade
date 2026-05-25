@@ -73,7 +73,7 @@ function getQueryClient() {
   return queryClient;
 }
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useMemo, createContext, useContext } from 'react';
 import {
   createAuthenticationAdapter,
   RainbowKitAuthenticationProvider,
@@ -90,8 +90,77 @@ export const useWeb3Auth = () => useContext(Web3AuthContext);
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthenticationStatus>('loading');
+
+  // Create adapter synchronously via useMemo — no tree-changing useEffect needed.
+  // The adapter only references window inside its callbacks (which run later), so
+  // it's safe to create during render. This avoids the conditional branch that
+  // previously caused "Rendered more hooks than during the previous render" (React #310).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [authAdapter, setAuthAdapter] = useState<ReturnType<typeof createAuthenticationAdapter> | null>(null);
+  const authAdapter = useMemo(() => createAuthenticationAdapter({
+    getNonce: async () => {
+      try {
+        const response = await fetch('/api/auth/nonce');
+        const data = await response.json();
+        console.log('[SIWE] Nonce fetched:', data.nonce);
+        return data.nonce;
+      } catch (e) {
+        console.error('[SIWE] Failed to fetch nonce:', e);
+        throw e;
+      }
+    },
+
+    createMessage: ({ nonce, address, chainId }) => {
+      console.log('[SIWE] Creating message for:', { address, chainId, nonce });
+      const domain = typeof window !== 'undefined' ? window.location.host : '';
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const message = new SiweMessage({
+        domain,
+        address,
+        statement: 'Sign in to writersarcade.',
+        uri: origin,
+        version: '1',
+        chainId,
+        nonce,
+      });
+      return message.prepareMessage();
+    },
+
+    getMessageBody: ({ message }: { message: unknown }) => {
+      return String(message);
+    },
+
+    verify: async ({ message, signature }) => {
+      console.log('[SIWE] Verifying signature...');
+      try {
+        const messageContent = typeof message === 'object' && message !== null && 'prepareMessage' in message && typeof (message as { prepareMessage?: () => string }).prepareMessage === 'function'
+          ? (message as { prepareMessage?: () => string }).prepareMessage?.()
+          : String(message);
+
+        const verifyRes = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: messageContent, signature }),
+        });
+
+        const success = verifyRes.ok;
+        console.log('[SIWE] Verification result:', success);
+
+        if (success) {
+          setAuthStatus('authenticated');
+        }
+        return success;
+      } catch (e) {
+        console.error('[SIWE] Verification error:', e);
+        return false;
+      }
+    },
+
+    signOut: async () => {
+      setAuthStatus('unauthenticated');
+      await fetch('/api/auth/logout', { method: 'POST' });
+    },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }), []) as any;
 
   useEffect(() => {
     async function checkAuth() {
@@ -105,76 +174,6 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         setAuthStatus('unauthenticated');
       }
     }
-
-    // Create authentication adapter on client side only
-    const adapter = createAuthenticationAdapter({
-      getNonce: async () => {
-        try {
-          const response = await fetch('/api/auth/nonce');
-          const data = await response.json();
-          console.log('[SIWE] Nonce fetched:', data.nonce);
-          return data.nonce;
-        } catch (e) {
-          console.error('[SIWE] Failed to fetch nonce:', e);
-          throw e;
-        }
-      },
-
-      createMessage: ({ nonce, address, chainId }) => {
-        console.log('[SIWE] Creating message for:', { address, chainId, nonce });
-        // Only access window on client
-        const domain = typeof window !== 'undefined' ? window.location.host : '';
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const message = new SiweMessage({
-          domain,
-          address,
-          statement: 'Sign in to writersarcade.',
-          uri: origin,
-          version: '1',
-          chainId,
-          nonce,
-        });
-        return message.prepareMessage();
-      },
-
-      getMessageBody: ({ message }: { message: unknown }) => {
-        return String(message);
-      },
-
-      verify: async ({ message, signature }) => {
-        console.log('[SIWE] Verifying signature...');
-        try {
-          const messageContent = typeof message === 'object' && message !== null && 'prepareMessage' in message && typeof (message as { prepareMessage?: () => string }).prepareMessage === 'function'
-            ? (message as { prepareMessage?: () => string }).prepareMessage?.()
-            : String(message);
-
-          const verifyRes = await fetch('/api/auth/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: messageContent, signature }),
-          });
-
-          const success = verifyRes.ok;
-          console.log('[SIWE] Verification result:', success);
-
-          if (success) {
-            setAuthStatus('authenticated');
-          }
-          return success;
-        } catch (e) {
-          console.error('[SIWE] Verification error:', e);
-          return false;
-        }
-      },
-
-      signOut: async () => {
-        setAuthStatus('unauthenticated');
-        await fetch('/api/auth/logout', { method: 'POST' });
-      },
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setAuthAdapter(adapter as any);
     checkAuth();
   }, []);
 
@@ -188,26 +187,17 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       <WagmiProvider config={getWagmiConfig()}>
         <QueryClientProvider client={getQueryClient()}>
           <PassportProvider environment="testnet">
-            {authAdapter ? (
-              <RainbowKitAuthenticationProvider
-                adapter={authAdapter}
-                status={authStatus}
-              >
-                <RainbowKitProvider
-                  theme={darkTheme()}
-                  modalSize="compact"
-                >
-                  {children}
-                </RainbowKitProvider>
-              </RainbowKitAuthenticationProvider>
-            ) : (
+            <RainbowKitAuthenticationProvider
+              adapter={authAdapter}
+              status={authStatus}
+            >
               <RainbowKitProvider
                 theme={darkTheme()}
                 modalSize="compact"
               >
                 {children}
               </RainbowKitProvider>
-            )}
+            </RainbowKitAuthenticationProvider>
           </PassportProvider>
         </QueryClientProvider>
       </WagmiProvider>
