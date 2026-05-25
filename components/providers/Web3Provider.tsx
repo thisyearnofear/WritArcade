@@ -125,10 +125,6 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       return message.prepareMessage();
     },
 
-    getMessageBody: ({ message }: { message: unknown }) => {
-      return String(message);
-    },
-
     verify: async ({ message, signature }) => {
       console.log('[SIWE] Verifying signature...');
       try {
