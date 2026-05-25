@@ -39,6 +39,7 @@ interface ComicPanelCardProps {
   showLoadingState?: boolean
   isRegenerating?: boolean
   maxRegenerations?: number
+  isEpilogue?: boolean
   availableThemes?: Array<{
     name: string
     value: string
@@ -70,6 +71,7 @@ export function ComicPanelCard({
   showLoadingState = false,
   isRegenerating = false,
   maxRegenerations = 3,
+  isEpilogue = false,
   availableThemes,
   currentTheme,
   aiPromptSuggestions,
@@ -330,35 +332,41 @@ export function ComicPanelCard({
                     </motion.div>
                   )}
 
-                  {/* Rating stars - right side with better mobile touch targets */}
-                  <div className="absolute top-4 right-4 flex gap-1 bg-black/70 px-3 py-1.5 rounded-md backdrop-blur-sm border border-white/10">
-                    {!imageRating ? (
-                      <>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            onClick={() => handleRating(star)}
-                            className="text-lg sm:text-base hover:scale-125 transition-all duration-200 cursor-pointer text-white/50 hover:text-white p-1"
-                            aria-label={`Rate ${star} stars`}
-                          >
-                            ☆
-                          </button>
-                        ))}
-                      </>
-                    ) : (
-                      <>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <span
-                            key={star}
-                            className="text-lg sm:text-base transition-colors duration-300"
-                            style={{ color: star <= imageRating ? primaryColor : 'rgba(64,64,64,0.5)' }}
-                          >
-                            ★
-                          </span>
-                        ))}
-                      </>
-                    )}
-                  </div>
+                  {/* Epilogue badge or Rating stars */}
+                  {isEpilogue ? (
+                    <div className="absolute top-4 right-4 bg-black/70 px-3 py-1.5 rounded-md backdrop-blur-sm border border-white/10">
+                      <span className="text-xs font-semibold text-muted-foreground">Epilogue</span>
+                    </div>
+                  ) : (
+                    <div className="absolute top-4 right-4 flex gap-1 bg-black/70 px-3 py-1.5 rounded-md backdrop-blur-sm border border-white/10">
+                      {!imageRating ? (
+                        <>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              onClick={() => handleRating(star)}
+                              className="text-lg sm:text-base hover:scale-125 transition-all duration-200 cursor-pointer text-white/50 hover:text-white p-1"
+                              aria-label={`Rate ${star} stars`}
+                            >
+                              ☆
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className="text-lg sm:text-base transition-colors duration-300"
+                              style={{ color: star <= imageRating ? primaryColor : 'rgba(64,64,64,0.5)' }}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : showLoadingState ? (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-black relative">
@@ -488,7 +496,9 @@ export function ComicPanelCard({
             <div className="flex flex-col min-h-24">
               {/* Subtle label */}
               <div className="mb-3 pb-3 border-b" style={{ borderColor: `${primaryColor}30` }}>
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Scene</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                  {isEpilogue ? 'What This Means' : 'Scene'}
+                </span>
               </div>
 
             {/* Main narrative - with typewriter reveal */}
@@ -553,7 +563,7 @@ export function ComicPanelCard({
             </div>
 
             {/* Choice Options - Spanning Full Width Below */}
-            {choiceOptions.length > 0 && (
+            {!isEpilogue && choiceOptions.length > 0 && (
               <div className="flex flex-col gap-4">
                 <div className="pt-2 border-t" style={{ borderColor: `${primaryColor}30` }}>
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">

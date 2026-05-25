@@ -34,6 +34,9 @@ export interface GameSessionState {
   assistantMessageCount: number
   canAddMorePanels: boolean
   regeneratingMessageId: string | null
+  // Epilogue
+  isGeneratingEpilogue: boolean
+  epilogueReflection: string | null
   // Mood tracking
   worldMood: {
     tension: number
@@ -72,6 +75,8 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   const [pendingOptionId, setPendingOptionId] = useState<number | null>(null)
   const [userChoices, setUserChoices] = useState<UserChoice[]>([])
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
+  const [isGeneratingEpilogue, setIsGeneratingEpilogue] = useState(false)
+  const [epilogueReflection, setEpilogueReflection] = useState<string | null>(null)
   const [worldMood, setWorldMood] = useState({ tension: 0, chaos: 0, hope: 0 })
 
   // Derived state
@@ -244,6 +249,78 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   }, [game, toast, handleImageGenerated])
 
   /**
+   * Generate epilogue + reflection after game completes
+   */
+  const generateEpilogue = useCallback(async () => {
+    if (!sessionId || isGeneratingEpilogue) return
+
+    setIsGeneratingEpilogue(true)
+
+    try {
+      const response = await fetch('/api/games/epilogue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: game.id,
+          articleContext: game.articleContext,
+          genre: game.genre,
+          gameTitle: game.title,
+          choices: userChoices.map(c => c.choice),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate epilogue')
+      }
+
+      const result = await response.json()
+      const { epilogue, reflection } = result.data
+
+      setEpilogueReflection(reflection)
+
+      // Generate image for epilogue
+      ImageGenerationService.generateImage({
+        prompt: epilogue,
+        genre: game.genre,
+        style: 'comic_book',
+        aspectRatio: 'landscape',
+        preferredModel: preferences?.preferredModel,
+      }).then((imageResult) => {
+        const epilogueMessage: ChatEntry = {
+          id: `epilogue-${sessionId}`,
+          sessionId,
+          gameId: game.id,
+          role: 'assistant',
+          content: epilogue,
+          narrativeImage: imageResult.imageUrl,
+          imageModel: imageResult.model,
+          model: game.promptModel,
+          createdAt: new Date(),
+        }
+
+        setMessages(prev => [...prev, epilogueMessage])
+        setIsGeneratingEpilogue(false)
+      }).catch(err => {
+        console.error('Epilogue image generation error:', err)
+        const epilogueMessage: ChatEntry = {
+          id: `epilogue-${sessionId}`,
+          sessionId,
+          gameId: game.id,
+          role: 'assistant',
+          content: epilogue,
+          model: game.promptModel,
+          createdAt: new Date(),
+        }
+        setMessages(prev => [...prev, epilogueMessage])
+        setIsGeneratingEpilogue(false)
+      })
+    } catch (error) {
+      console.error('Epilogue generation failed:', error)
+      setIsGeneratingEpilogue(false)
+    }
+  }, [sessionId, game, userChoices, isGeneratingEpilogue])
+
+  /**
    * Send message - continues the game conversation
    */
   const sendMessage = useCallback(async (message: string) => {
@@ -390,14 +467,15 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
         error.message?.includes('maximum panels') ||
         error.message?.includes('400')
       )) {
-        console.log('Game completed - this is expected behavior')
+        console.log('Game completed - generating epilogue')
         setMessages(prev => prev.filter(m => m.id !== userMessage.id))
+        generateEpilogue()
       }
     } finally {
       setIsWaitingForResponse(false)
       setPendingOptionId(null)
     }
-  }, [sessionId, game, handleImageGenerated])
+  }, [sessionId, game, handleImageGenerated, generateEpilogue])
 
   /**
    * Handle option click - triggers sendMessage with the option text
@@ -488,6 +566,8 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
     assistantMessageCount,
     canAddMorePanels,
     regeneratingMessageId,
+    isGeneratingEpilogue,
+    epilogueReflection,
     // Actions
     startGame,
     sendMessage,

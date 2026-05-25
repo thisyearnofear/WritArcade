@@ -121,6 +121,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         handleRegisterDerivativeIp={blockchain.handleRegisterDerivativeIp}
         isRegisteringDerivative={blockchain.isRegisteringDerivative}
         maxPanels={MAX_COMIC_PANELS}
+        epilogueReflection={session.epilogueReflection}
       />
     )
   }
@@ -156,6 +157,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       pendingOptionId={session.pendingOptionId}
       assistantMessageCount={session.assistantMessageCount}
       canAddMorePanels={session.canAddMorePanels}
+      isGeneratingEpilogue={session.isGeneratingEpilogue}
       userInput="" // No longer used
       onUserInputChange={() => { }}
       onOptionClick={(option) => {

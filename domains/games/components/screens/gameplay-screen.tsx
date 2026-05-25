@@ -18,6 +18,7 @@ interface GameplayScreenProps {
   pendingOptionId: number | null
   assistantMessageCount: number
   canAddMorePanels: boolean
+  isGeneratingEpilogue: boolean
   userInput: string
   onUserInputChange: (value: string) => void
   onOptionClick: (option: GameplayOption) => void
@@ -42,6 +43,7 @@ export function GameplayScreen({
   pendingOptionId,
   assistantMessageCount,
   canAddMorePanels,
+  isGeneratingEpilogue,
   userInput,
   onUserInputChange,
   onOptionClick,
@@ -106,14 +108,17 @@ export function GameplayScreen({
             {/* Current Comic Panel */}
             <div className="w-full space-y-8">
               {messages.map((message, idx) => {
-                if (message.role !== 'assistant' || !message.options || message.options.length === 0) {
-                  return null
+                if (message.role !== 'assistant') return null
+
+                const isEpilogue = message.id.startsWith('epilogue-')
+
+                // For regular panels, only show the last unanswered one
+                if (!isEpilogue) {
+                  if (!message.options || message.options.length === 0) return null
+                  const remainingMessages = messages.slice(idx + 1)
+                  const hasLaterCompletedPanel = remainingMessages.some(m => m.role === 'assistant' && m.options && m.options.length > 0)
+                  if (hasLaterCompletedPanel) return null
                 }
-
-                const remainingMessages = messages.slice(idx + 1)
-                const hasLaterCompletedPanel = remainingMessages.some(m => m.role === 'assistant' && m.options && m.options.length > 0)
-
-                if (hasLaterCompletedPanel) return null
 
                 const imageReady = message.narrativeImage !== undefined
 
@@ -121,7 +126,7 @@ export function GameplayScreen({
                   <div key={message.id} className="animate-in fade-in duration-700 ease-out">
                     <ComicPanelCard
                       messageId={message.id}
-                      narrativeText={message.content}
+                      narrativeText={isEpilogue ? `Epilogue: ${message.content}` : message.content}
                       genre={game.genre}
                       primaryColor={game.primaryColor || '#8b5cf6'}
                       options={message.options || []}
@@ -143,7 +148,8 @@ export function GameplayScreen({
                       currentTheme={game.primaryColor || 'default'}
                       aiPromptSuggestions={generateAIPromptSuggestions(message.content)}
                       onAIPromptSelect={handleAIPromptSelect}
-                      showAIPromptSuggestions={true}
+                      showAIPromptSuggestions={false}
+                      isEpilogue={isEpilogue}
                     />
                   </div>
                 )
@@ -163,7 +169,7 @@ export function GameplayScreen({
         }}
       >
         <div className="w-full max-w-5xl mx-auto">
-          {!canAddMorePanels && (
+          {!canAddMorePanels && !isGeneratingEpilogue && (
             <div className="space-y-4">
               <div
                 className="p-5 rounded-xl border-2 text-sm"
@@ -174,7 +180,7 @@ export function GameplayScreen({
               >
                 <p className="font-semibold text-white">Story Complete</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Your {MAX_COMIC_PANELS}-panel adventure has concluded. View and mint your comic as an NFT.
+                  Your story has concluded. View your comic and its reflection.
                 </p>
               </div>
               <button
@@ -185,8 +191,23 @@ export function GameplayScreen({
                 }}
               >
                 <BookOpen className="w-5 h-5 mr-2" />
-                View & Mint Comic
+                View Comic
               </button>
+            </div>
+          )}
+          {isGeneratingEpilogue && (
+            <div
+              className="p-5 rounded-xl border-2 text-sm text-center"
+              style={{
+                backgroundColor: `${game.primaryColor || '#8b5cf6'}10`,
+                borderColor: game.primaryColor || '#8b5cf6',
+              }}
+            >
+              <div className="loading-spinner mx-auto mb-3 w-6 h-6" />
+              <p className="font-semibold text-white">Weaving your story's reflection...</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Generating epilogue and connecting your choices to the source article.
+              </p>
             </div>
           )}
 

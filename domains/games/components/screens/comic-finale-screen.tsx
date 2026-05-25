@@ -23,6 +23,7 @@ interface ComicFinaleScreenProps {
   handleRegisterDerivativeIp: () => Promise<void>
   isRegisteringDerivative: boolean
   maxPanels: number
+  epilogueReflection?: string | null
 }
 
 export function ComicFinaleScreen({
@@ -40,12 +41,13 @@ export function ComicFinaleScreen({
   isSwitchingChain,
   handleRegisterDerivativeIp,
   isRegisteringDerivative,
-  maxPanels
+  maxPanels,
+  epilogueReflection,
 }: ComicFinaleScreenProps) {
   const onStoryNetwork = isOnStoryNetwork(chainId)
 
   const buildComicPanels = (): ComicBookFinalePanelData[] => {
-    const assistantMessages = messages.filter(m => m.role === 'assistant').slice(0, maxPanels)
+    const assistantMessages = messages.filter(m => m.role === 'assistant')
 
     return assistantMessages.map((message) => {
       const messageIndex = messages.indexOf(message)
@@ -75,11 +77,13 @@ export function ComicFinaleScreen({
         isMinting={isMinting}
         creatorWallet={game.creatorWallet || ''}
         articleUrl={game.articleUrl || ''}
+        articleTitle={game.articleContext?.replace(/^Article:\s*"([^"]+)".*$/s, '$1') || game.title}
         authorParagraphUsername={game.authorParagraphUsername || 'Unknown Author'}
         authorWallet={game.authorWallet}
         difficulty={game.difficulty || 'medium'}
         userChoices={userChoices}
         onPanelTextChange={handlePanelTextChange}
+        epilogueReflection={epilogueReflection || undefined}
       />
       {extractedAssetIds.length > 0 && !derivativeRegistered && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">
