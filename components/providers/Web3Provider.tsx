@@ -2,15 +2,19 @@
 
 import '@rainbow-me/rainbowkit/styles.css';
 import {
+  getDefaultConfig,
   RainbowKitProvider,
   darkTheme,
 } from '@rainbow-me/rainbowkit';
+import { http } from 'wagmi';
 import {
-  getConfig,
   mezoTestnet,
-  getDefaultWallets,
+  unisatWalletMezoTestnet,
+  okxWalletMezoTestnet,
+  xverseWalletMezoTestnet,
   PassportProvider
 } from '@mezo-org/passport';
+import { walletConnectWallet } from '@rainbow-me/rainbowkit/wallets';
 import { WagmiProvider } from 'wagmi';
 import {
   base,
@@ -49,18 +53,33 @@ const WALLET_CONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT
 const HAS_WC = Boolean(WALLET_CONNECT_PROJECT_ID && WALLET_CONNECT_PROJECT_ID !== 'YOUR_PROJECT_ID');
 
 // Lazy load config to avoid SSR issues
-let config: ReturnType<typeof getConfig> | null = null;
+let config: ReturnType<typeof getDefaultConfig> | null = null;
 let queryClient: QueryClient | null = null;
 
 function getWagmiConfig() {
   if (!config) {
-    const wallets = getDefaultWallets("testnet");
-    config = getConfig({
+    config = getDefaultConfig({
       appName: 'writersarcade',
-      walletConnectProjectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
+      projectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
       chains: [base, baseSepolia, storyAeneid, mezoTestnet],
+      transports: {
+        [base.id]: http(),
+        [baseSepolia.id]: http(),
+        [storyAeneid.id]: http(),
+        [mezoTestnet.id]: http((mezoTestnet.rpcUrls.default.http as string[])[0]),
+      },
+      wallets: [
+        {
+          groupName: 'Bitcoin',
+          wallets: [unisatWalletMezoTestnet, okxWalletMezoTestnet, xverseWalletMezoTestnet],
+        },
+        {
+          groupName: 'Ethereum',
+          wallets: [({ projectId }) => walletConnectWallet({ projectId })],
+        },
+      ],
+      multiInjectedProviderDiscovery: true,
       ssr: true,
-      wallets,
     });
   }
   return config;
