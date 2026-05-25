@@ -3,29 +3,36 @@
 ## Smart Contracts
 
 ### 1. GameNFT.sol
-- **Purpose**: ERC-721 NFT contract for minting generated games
+- **Chain**: Base mainnet (chainId 8453)
+- **Purpose**: ERC-721 NFT contract for minting generated games (uses AccessControl — `MINTER_ROLE`)
 - **Functions**:
-  - `mintGame(to, tokenURI, metadata)` - Mint a new game NFT
-  - `getGameMetadata(tokenId)` - Get metadata for a game
-  - `getCreatorGames(creator)` - Get all games created by a user
-  - `getTotalGamesMinted()` - Get total games minted
-  - `tokenExists(tokenId)` - Check if token exists
+  - `mintGame(to, tokenURI, metadata)` — Mint a new game NFT (requires MINTER_ROLE)
+  - `getGameMetadata(tokenId)` — Get metadata for a game
+  - `getCreatorGames(creator)` — Get all games created by a user
+  - `getTotalGamesMinted()` — Get total games minted
+  - `tokenExists(tokenId)` — Check if token exists
 
 ### 2. WriterCoinPayment.sol
--3. **WriterCoinPayment**: Handles payments and revenue distribution.
-   - Now supports `payForGameplay` (V2) for dynamic creator/writer/platform splits.
-   - Requires `PlatformTreasury` and `CreatorPool` addresses.
-   - Must `setGameNFT` after deployment. to whitelist
-  - `removeCoin(coinAddress)` - Remove a writer coin
-  - `payForGameGeneration(writerCoin, user)` - Process game generation payment
-  - `payForMinting(writerCoin, user)` - Process NFT minting payment
-  - `payAndMintGame(writerCoin, tokenURI, metadata)` - Process payment and mint NFT atomically
+- **Chain**: Base mainnet (chainId 8453)
+- **Purpose**: Handles payments and revenue distribution for writer coins
+- **Functions**:
+  - `payForGameGeneration(writerCoin, user)` — Process game generation payment
+  - `payForMinting(writerCoin, user)` — Process NFT minting payment
+  - `payAndMintGame(writerCoin, tokenURI, metadata)` — Process payment and mint NFT atomically
 
 ### 3. MezoBoostedSplitter.sol
-- **Purpose**: MUSD payment and revenue split contract for the Mezo network with native MEZO holder revenue boost.
+- **Chain**: Mezo Matsnet testnet (chainId 31611)
+- **Purpose**: MUSD payment and revenue split contract with native MEZO holder revenue boost
 - **Functions**:
-  - `isMezoHolder(address user)` - Check if user holds >= 1 MEZO.
-  - `payAndMintGame(string tokenURI, GameMetadata metadata)` - Atomic pay and mint; automatically applies a 10% creator revenue boost for MEZO holders.
+  - `isMezoHolder(address user)` — Check if user holds >= 1 MEZO
+  - `payAndMintGame(string tokenURI, GameMetadata metadata)` — Atomic pay and mint; automatically applies a 10% creator revenue boost for MEZO holders
+
+### 4. GameNFTMezo.sol 🆕
+- **Chain**: Mezo Matsnet testnet (chainId 31611)
+- **Deployed**: `0xb6001687e4700843e0a04a442031525f669465e7`
+- **Purpose**: Open-mint ERC-721 for minting comics directly on Mezo (no `MINTER_ROLE` required). Users pay only gas.
+- **Compiled with**: Foundry + OpenZeppelin v5.6.1 (note: Counters.sol removed in OZ v5 — uses uint256 counter directly)
+- **TokenURI**: base64 data URIs (`data:application/json;base64,...`) — no IPFS dependency
 
 ## Deployment Steps
 
@@ -33,18 +40,33 @@
 
 ### Phase 3: Mezo Matsnet (Testnet)
 
-1. **Deploy MezoBoostedSplitter**
+1. **Install Foundry dependencies** (first time only)
+   ```bash
+   cd contracts
+   forge install OpenZeppelin/openzeppelin-contracts --no-git
+   forge build
+   ```
+
+2. **Deploy GameNFTMezo**
+   ```bash
+   npx tsx scripts/deploy-game-nft-mezo.ts
+   ```
+   - Set `NEXT_PUBLIC_MEZO_GAME_NFT_ADDRESS` in `.env.local` to the deployed address.
+   - Contract is open-mint (no MINTER_ROLE) — any wallet can call `mintGame()`.
+
+3. **Deploy MezoBoostedSplitter**
    ```bash
    # Arguments: MUSD_ADDRESS PRECOMPILE_ADDRESS PLATFORM_TREASURY_ADDRESS
    # PRECOMPILE: 0x7B7c000000000000000000000000000000000001
    ./scripts/deploy-mezo.sh
    ```
 
-2. **Configure Environment**
+4. **Configure Environment**
    - Update `NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET` in `.env.local`.
+   - Update `NEXT_PUBLIC_MEZO_GAME_NFT_ADDRESS` in `.env.local`.
 
-3. **Verify**
-   - Check Mezo Explorer for contract deployment.
+5. **Verify**
+   - Check Mezo Explorer for contract deployments.
 
 ## Safety Checks (MezoBoostedSplitter)
 

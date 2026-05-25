@@ -22,6 +22,8 @@ The entire Mezo/MUSD integration was built during this hackathon (April–May 20
 | **MUSD Payment Flow** | ✅ Live | Pay 1 MUSD to generate a game; atomic on-chain revenue split via smart contract |
 | **MezoPaymentSplitter** | ✅ Deployed | `0x32D0356f533cC429F94Db73f383bBb21a459E16b` — handles MUSD approval + split |
 | **MezoBoostedSplitter** 🆕 | ✅ Deployed | `0x56Ee5A3f122da00B635DdbB319708e24450aEB89` — v2 with 10% creator share boost for MEZO holders |
+| **GameNFTMezo** 🆕 | ✅ Deployed | `0xb6001687e4700843e0a04a442031525f669465e7` — open-mint ERC-721 for minting comic NFTs directly on Mezo (no role required) |
+| **Chain-Aware Minting** | ✅ Live | Mint endpoint returns correct chainId + contract per payment type; frontend auto-switches chains before mint tx |
 | **MEZO Holder Badge** | ✅ Live | On-chain MEZO balance detection; UI badge in payment flow for holders ≥ 1 MEZO |
 | **Mezo Passport SDK** | ✅ Integrated | Bitcoin wallet connections (Xverse, Unisat, OKX) via Mezo Passport |
 | **MUSD Strategy Pattern** | ✅ Live | Decoupled payment architecture — supports both Mezo (MUSD) and Base (writer coins) |
@@ -75,7 +77,7 @@ The entire Mezo/MUSD integration was built during this hackathon (April–May 20
     └─────────────────┘  └─────────────┘  └──────────────────┘
 ```
 
-### MUSD Payment Flow (Detailed)
+### MUSD Payment + Mint Flow (Detailed)
 
 ```
 1. User selects "MUSD · Mezo" on homepage
@@ -89,7 +91,11 @@ The entire Mezo/MUSD integration was built during this hackathon (April–May 20
    └── 25% → Creator Pool
 7. MEZO holders get +10% creator share boost
 8. AI generates 5-panel comic
-9. Mint as NFT → payAndMintGame() enforces splits
+9. Mint as NFT (separate tx, gas only):
+   ├── POST /api/games/mint → returns chainId, contractAddress, metadata
+   ├── Frontend auto-switches to Mezo chain if needed
+   ├── Calls GameNFTMezo.mintGame() with base64 data URI tokenURI
+   └── PATCH /api/games/mint → stores tx hash
 ```
 
 ### Smart Contracts on Mezo Testnet
@@ -100,6 +106,7 @@ The entire Mezo/MUSD integration was built during this hackathon (April–May 20
 | **MEZO Token** (precompile) | `0x7B7c000000000000000000000000000000000001` | [Explorer](https://explorer.test.mezo.org/address/0x7B7c000000000000000000000000000000000001) |
 | **MezoPaymentSplitter** | `0x32D0356f533cC429F94Db73f383bBb21a459E16b` | [Explorer](https://explorer.test.mezo.org/address/0x32D0356f533cC429F94Db73f383bBb21a459E16b) |
 | **MezoBoostedSplitter** 🆕 | `0x56Ee5A3f122da00B635DdbB319708e24450aEB89` | [Explorer](https://explorer.test.mezo.org/address/0x56Ee5A3f122da00B635DdbB319708e24450aEB89) |
+| **GameNFTMezo** 🆕 | `0xb6001687e4700843e0a04a442031525f669465e7` | [Explorer](https://explorer.test.mezo.org/address/0xb6001687e4700843e0a04a442031525f669465e7) |
 
 Deployer: `0xb8CE765cD679ECB958c0D2869d516C386b9d5a85`
 Platform Treasury: `0xb8CE765cD679ECB958c0D2869d516C386b9d5a85`
@@ -148,6 +155,8 @@ Platform Treasury: `0xb8CE765cD679ECB958c0D2869d516C386b9d5a85`
 
 ## 🚀 What's Next
 
+- [x] **GameNFTMezo** — deployed open-mint NFT contract for minting comics directly on Mezo (no IPFS needed, base64 data URIs)
+- [x] **Chain-aware minting** — auto-switch from Base to Mezo before mint tx; mint endpoint returns correct chainId per payment type
 - [ ] Deploy MezoBoostedSplitter to **Mezo Mainnet** (post-hackathon)
 - [ ] Goldsky subgraph live indexing for real-time analytics
 - [ ] Farcaster Mini-App integration with Mezo Passport

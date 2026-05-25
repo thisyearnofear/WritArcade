@@ -150,6 +150,14 @@ WriterCoin
 - Atomic on-chain revenue splits (Platform / Writer / Creator)
 - Native integration with MUSD token (`0x1189...Ac503`)
 
+**MezoBoostedSplitter** 🆕 (`0x56Ee5A3f122da00B635DdbB319708e24450aEB89`)
+- v2 with 10% creator boost for MEZO holders (≥ 1 MEZO)
+
+**GameNFTMezo** 🆕 (`0xb6001687e4700843e0a04a442031525f669465e7`)
+- Open-mint ERC-721 for minting comics directly on Mezo (no MINTER_ROLE required)
+- Users pay gas only; base64 data URI tokenURIs (no IPFS)
+- Compiled with Foundry + OpenZeppelin v5.6.1
+
 ### Revenue Splits (configurable per coin)
 
 **Generation**: 60% Writer / 20% Platform / 20% Creator Pool  
@@ -158,10 +166,13 @@ WriterCoin
 ## Multi-Chain Architecture
 
 **Base Mainnet** (Chain ID: 8453)  
-- Writer Coins (ERC-20), GameNFT minting, revenue distribution
+- Writer Coins (ERC-20), GameNFT minting (access-controlled via MINTER_ROLE), revenue distribution
+- WriterCoinPayment contract handles atomic pay + mint
 
 **Mezo Matsnet** (Chain ID: 31611)
 - MUSD payments, MEZO holder perks, Bitcoin-backed economy
+- GameNFTMezo (open mint — no role check, users pay only gas)
+- Mint endpoint returns chainId dynamically; frontend auto-switches before mint tx
 
 **Story Protocol** (Chain ID: 1516 testnet)  
 - IP Asset Registry, PIL licenses, royalty automation, derivative tracking
