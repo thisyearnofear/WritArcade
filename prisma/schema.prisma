@@ -13,15 +13,15 @@ datasource db {
 model User {
   id            String   @id @default(cuid())
   walletAddress String   @unique // Primary identifier
-  
+
   // Game generation preferences (user-specific settings)
   preferredModel String  @default("gpt-4o-mini")
   private        Boolean @default(false) // Hide games from public discovery
-  
+
   // Role management
   isCreator      Boolean @default(false) // User can create/register IP assets
   isAdmin        Boolean @default(false) // Platform admin access
-  
+
   // Relations
   games    Game[]
   chats    Chat[]
@@ -72,9 +72,12 @@ model Game {
   writerCoinId       String?  // Which writer coin was used (e.g., "avc")
   difficulty         String?  // Game difficulty: "easy" or "hard"
 
-  // Wordle-specific metadata (for article-derived word puzzles)
-  wordleAnswer       String?
-  
+  // Story CDR vault UUID for the Wordle answer (provably fair — answer never stored in plaintext)
+  wordleAnswerVaultUuid String?
+
+  // Story CDR: Vaulted prompt for Confidential IP
+  promptVaultUuid      String? // Story CDR vault UUID for the system prompt
+
   // Source material attribution (preserves original author for Story Protocol & NFT metadata)
   authorParagraphUsername String?  // Original author's Paragraph username (e.g., "fred" from Fred Wilson)
   authorWallet            String?  // Original author's wallet address

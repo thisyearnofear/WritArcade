@@ -16,8 +16,6 @@ function paymentPathFromParam(value: string | null): PaymentPath | undefined {
   return undefined
 }
 
-type GameMode = 'story' | 'wordle'
-
 function GeneratePageContent() {
   const searchParams = useSearchParams()
   const urlParam = searchParams.get('url')

@@ -87,30 +87,43 @@
 - ✅ Wordle toggle restored as free tier alongside Story (premium)
 - ✅ Farcaster sharing on Wordle win screen (share results as casts)
 - ✅ Daily Wordle section on homepage
-- ⏳ CDR Hackathon integration (May 27–June 5): store Wordle answers in CDR vaults for provably fair answer gating; programmable reveal conditions via TEEs; combined with Story Protocol IP registration
+- ✅ CDR Hackathon integration (May 27–June 5): store Wordle answers and secret panels in CDR vaults; lazy-load SDK/WASM; gate secret panels by completed gameplay + minted Game NFT ownership
 
 ### CDR Hackathon Strategy (May 27 – June 5, 2026)
 
 **Event:** [CDR (Confidential Data Rails) Hackathon](https://build.usecdr.dev/) by Story Protocol. $3k prizes.
 
-**Integration points for Writersarcade:**
+**WritersArcade Strategy: From Gated Content to Confidential IP**
 
-1. **Wordle answer gating with CDR vaults:**
-   - Store the article-derived Wordle answer inside a CDR vault
-   - Programmable condition: *reveal to the player after they submit a guess, but never expose the answer beforehand*
-   - Makes Wordle **provably fair** — not even the developer can see the answer early
-   - Combined with Story Protocol IP registration of the puzzle
+We are transitioning our "Secret Panel" logic from Lit Protocol (ERC-721 gating) to **Story Confidential Data Rails (CDR)**. This moves us from simple "access control" to true "Confidential IP" where the source data is protected by TEEs (Trusted Execution Environments).
 
-2. **Article content vaulting:**
-   - Store scraped article content in a CDR vault
-   - Grant the AI generation service access through the vault (not direct DB access)
-   - Register generated game IP on Story Protocol with a reference back to the vault
+**Integration Points:**
 
-3. **Go further:** Agent-to-agent data deals (Wordle answer → agent negotiates with publisher's agent for article text), token-gated premium Wordle puzzles, private game state across sessions.
+1. **TEE-Backed Secret Panels (Vaults):**
+   - **Implemented:** AI-generated hidden epilogues are stored in CDR vaults as `promptVaultUuid`.
+   - **Condition:** CDR `tokenGate` read condition points at the Game NFT contract selected from `writerCoinId`.
+   - **Runtime Gate:** Unlock requires a completed 5-panel story session and exact `nftTokenId` ownership.
+   - **Value:** Turns the story ending into confidential, ownable game IP instead of ordinary app-gated content.
 
-**Why participate:** Low effort (Wordle is already built, just needs vault wrapping), strong fit for "Best CDR Application" track (polished UX + product thinking), Story Protocol adjacency.
+2. **Provably Fair Wordle Answers:**
+   - **Implemented:** Article-derived Wordle answers are stored in a CDR vault instead of plaintext DB fields.
+   - **Current Scope:** Secondary proof point; final demo should emphasize secret panels as the richer CDR flow.
+   - **Future Upgrade:** Add reveal-after-game or give-up conditions for stronger technical judging.
 
-**Timeline:** May 27 workshops → June 3 projects due → June 5 demo day. Focus on Mezo submission first, then pivot.
+3. **Confidential Asset Marketplace:**
+   - Asset creators can upload "Confidential Assets" (high-res textures, original character sketches) that are only revealed to buyers.
+   - CDR handles the dynamic access control based on Story Protocol licensing terms.
+
+**Why we are a Top Candidate:**
+- **Adjacency:** Already live on Story Aeneid; low friction to adopt CDR SDK.
+- **Product-Market Fit:** Enables a "Trade Secret" marketplace where prompt engineering is monetizable without being clonable.
+- **Technical Polish:** Existing Lit Protocol logic provides a perfect "before" case for a "before/after" CDR implementation demo.
+
+**Timeline:**
+- **May 27-29:** Research CDR SDK, integrate SDK, resolve WASM/webpack build issues.
+- **May 30:** Implement CDR vaulted Wordle answers and CDR vaulted secret panels.
+- **May 30:** Add completed-playthrough + exact NFT ownership unlock policy and visible access-policy UI.
+- **June 1-4:** Runtime demo QA, fresh-game demo recording, final submission polish.
 
 ## Platform Maturity
 
@@ -121,6 +134,7 @@
 | NFT Minting | ✅ Production | Base mainnet |
 | Story Protocol IP | ✅ Testnet | Aeneid (not yet on Base mainnet) |
 | Lit Protocol | ✅ Production | NFT-gated secret panels |
+| Story CDR | ✅ Hackathon-ready | Vaulted Wordle answers + token-gated secret panels |
 | Hypercerts | ✅ Production | Impact certificates |
 | Image Generation | ✅ Production | Multi-provider fallback |
 | Payments | ✅ Production | 5 writer coins |

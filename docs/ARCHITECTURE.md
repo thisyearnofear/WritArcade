@@ -25,8 +25,8 @@ Article URL
 **Backend**: Next.js API routes + Prisma + PostgreSQL  
 **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (image generation)  
 **Mezo**: MUSD (Bitcoin-backed stablecoin) for payments; Mezo Matsnet (testnet)
-**IP**: Story Protocol (testnet) + IPFS (Pinata)  
-**Access Control**: Lit Protocol (NFT-gated encryption)  
+**IP**: Story Protocol (testnet) + IPFS (Pinata) + **Story CDR (TEE-backed confidentiality)**
+**Access Control**: Story CDR token-gated vaults for secret panels; Lit Protocol remains legacy support
 **Impact**: Hypercerts (AT Protocol impact certificates)
 
 ### Project Structure
@@ -49,7 +49,7 @@ writarcade/
 ├── lib/                    # Cross-cutting infrastructure
 │   ├── wallet/             # Runtime wallet abstraction
 │   ├── story-protocol.*    # Story Protocol integration
-│   ├── lit-protocol.*      # Lit Protocol encryption
+│   ├── lit-protocol.*      # Legacy Lit Protocol encryption
 │   ├── hypercerts.*        # Impact certificates
 │   └── contracts.ts        # On-chain contract helpers
 ├── contracts/              # Solidity contracts
@@ -96,6 +96,12 @@ writarcade/
 **`lib/lit-protocol.service.ts`** - Decentralized encryption  
 - ERC721 ownership check on Base
 - Server-side encryption, client-side decryption
+
+**`domains/story/services/cdr.service.ts`** - Confidential Data Rails
+- Platform client vaults secret epilogues and Wordle answers on Story Aeneid
+- User client decrypts vaulted data from the browser with wallet-backed CDR access
+- Secret panel read conditions use CDR `tokenGate` against the configured Game NFT contract
+- Runtime unlock additionally verifies exact minted NFT ownership and completed 5-panel gameplay
 
 **`lib/hypercerts.service.ts`** - Impact certificates  
 - AT Protocol (AtpAgent) for PDS record creation
@@ -184,3 +190,4 @@ WriterCoin
 3. **Centralized payments** - All payment logic through `domains/payments`
 4. **Client-side IP ownership** - Users sign Story Protocol transactions with their wallet
 5. **Non-blocking enrichment** - Lit Protocol encryption and Hypercerts run async post-creation
+6. **Confidentiality by Design** - Transitioning to TEE-backed vaults (CDR) to protect **Prompt IP** and **Trade Secrets**. Ensures creator "prompts" are treated as valuable, private intellectual property rather than public metadata.

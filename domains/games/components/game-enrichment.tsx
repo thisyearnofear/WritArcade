@@ -10,15 +10,16 @@ interface GameEnrichmentProps {
   primaryColor: string
   nftTokenId?: string | null
   secretPanelGenerated?: boolean
+  promptVaultUuid?: string | null
   hypercertUri?: string | null
   hypercertCid?: string | null
+  storySessionId?: string | null
+  storyComplete?: boolean
 }
 
 /**
- * Renders the Lit Protocol secret panel + Hypercerts badge
+ * Renders the Story CDR secret panel + Hypercerts badge
  * below the main game interface. Client-only — uses wagmi for wallet state.
- *
- * ENHANCEMENT FIRST: Composes existing components without modifying screens.
  */
 export function GameEnrichment({
   gameId,
@@ -26,8 +27,11 @@ export function GameEnrichment({
   primaryColor,
   nftTokenId,
   secretPanelGenerated,
+  promptVaultUuid,
   hypercertUri,
   hypercertCid,
+  storySessionId,
+  storyComplete,
 }: GameEnrichmentProps) {
   const { address, isConnected } = useAccount()
 
@@ -43,10 +47,12 @@ export function GameEnrichment({
           gameId={gameId}
           gameSlug={gameSlug}
           primaryColor={primaryColor}
-          isEncrypted={true}
-          nftTokenId={nftTokenId}
+          promptVaultUuid={promptVaultUuid}
           isConnected={isConnected}
           walletAddress={address}
+          nftTokenId={nftTokenId}
+          storySessionId={storySessionId}
+          storyComplete={storyComplete}
         />
       )}
 

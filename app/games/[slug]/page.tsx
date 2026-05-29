@@ -6,7 +6,6 @@ import { ImageGenerationService } from '@/domains/games/services/image-generatio
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { IPAttribution } from '@/domains/games/components/ip-attribution'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
-import { GameEnrichment } from '@/domains/games/components/game-enrichment'
 
 // ISR: revalidate game pages every 5 minutes from CDN — eliminates per-request DB hits
 // for read-only story game pages. Wordle answer is stable so this is safe.
@@ -36,34 +35,11 @@ export default async function GamePage({ params }: GamePageProps) {
   }
 
   // Wordle-mode games render a Wordle interface instead of the comic-story interface
+  // The answer is NEVER stored in plaintext — read from CDR vault on the client
   if (game.mode === 'wordle') {
-    let answer = game.wordleAnswer
-
-    // Fallback: derive from article if answer wasn't persisted (backwards compatibility)
-    if (!answer) {
-      if (!game.articleUrl) {
-        notFound()
-      }
-      // BUG FIX: `processed` was referenced but never defined here.
-      // We use the article URL slug tokens as a deterministic word source instead.
-      // Extract meaningful words from the URL path (e.g. "how-to-build-in-public" → ["build","public"])
-      const urlTokens = game.articleUrl!
-        .replace(/https?:\/\/[^/]+/, '')  // strip origin
-        .replace(/[^a-z-]/gi, ' ')         // non-alpha → space
-        .split(/[\s-]+/)
-        .filter(w => w.length >= 4 && w.length <= 8) // Wordle-friendly length
-      const randomSeed = `${game.articleUrl}-${game.id}-${new Date().toISOString().split('T')[0]}`
-      // Use the URL-derived tokens as candidate words with game-specific seed
-      answer = WordleService.deriveAnswerFromText(urlTokens.join(' '), undefined, randomSeed)
-    }
-
-    if (!answer) {
-      notFound()
-    }
-
     return (
       <div className="min-h-screen bg-black">
-        <WordleGameInterface game={game} answer={answer} maxAttempts={WordleService.DEFAULT_MAX_ATTEMPTS} />
+        <WordleGameInterface game={game} maxAttempts={WordleService.DEFAULT_MAX_ATTEMPTS} />
       </div>
     )
   }
@@ -85,15 +61,6 @@ export default async function GamePage({ params }: GamePageProps) {
         <GamePlayInterface game={game} />
       </ErrorBoundary>
 
-      <GameEnrichment
-        gameId={game.id}
-        gameSlug={game.slug}
-        primaryColor={game.primaryColor || '#6366f1'}
-        nftTokenId={game.nftTokenId}
-        secretPanelGenerated={game.secretPanelGenerated}
-        hypercertUri={game.hypercertUri}
-        hypercertCid={game.hypercertCid}
-      />
     </div>
   )
 }

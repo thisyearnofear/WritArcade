@@ -2,43 +2,55 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Lock, Unlock, Eye, Loader2 } from 'lucide-react'
+import { CheckCircle2, Lock, Unlock, Eye, Loader2, ShieldCheck } from 'lucide-react'
+import { useWalletClient } from 'wagmi'
+import type { WalletClient, Transport, Chain, Account } from 'viem'
 
 interface SecretPanelProps {
   gameId: string
   gameSlug: string
   primaryColor: string
-  // Pre-decrypted data (when NFT holder has already unlocked)
-  decryptedNarrative?: string | null
-  decryptedImageUrl?: string | null
-  // Encrypted metadata (for showing locked state)
-  isEncrypted: boolean
-  nftTokenId?: string | null
-  // User's wallet state
+  promptVaultUuid?: string | null
   isConnected: boolean
   walletAddress?: string
+  nftTokenId?: string | null
+  storySessionId?: string | null
+  storyComplete?: boolean
+}
+
+interface AccessPolicy {
+  cdrReadCondition: string
+  nftContract: string
+  nftTokenId: string
+  nftChainId: number
+  completedPanels: number
 }
 
 export function SecretPanel({
-  gameId,
   gameSlug,
   primaryColor,
-  decryptedNarrative,
-  decryptedImageUrl,
-  isEncrypted,
-  nftTokenId,
+  promptVaultUuid,
   isConnected,
   walletAddress,
+  nftTokenId,
+  storySessionId,
+  storyComplete = false,
 }: SecretPanelProps) {
+  const { data: walletClient } = useWalletClient()
   const [isUnlocking, setIsUnlocking] = useState(false)
-  const [unlocked, setUnlocked] = useState(!!decryptedNarrative)
-  const [narrative, setNarrative] = useState<string | null>(decryptedNarrative || null)
-  const [imageUrl, setImageUrl] = useState<string | null>(decryptedImageUrl || null)
+  const [unlocked, setUnlocked] = useState(false)
+  const [panelData, setPanelData] = useState<{ narrative: string, imageUrl?: string } | null>(null)
+  const [accessPolicy, setAccessPolicy] = useState<AccessPolicy | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleUnlock = useCallback(async () => {
-    if (!isConnected || !walletAddress) {
-      setError('Connect your wallet to unlock this panel')
+    if (!isConnected || !walletAddress || !walletClient || !promptVaultUuid) {
+      setError('Wallet or vault configuration missing')
+      return
+    }
+
+    if (!storyComplete || !storySessionId) {
+      setError('Finish all 5 story panels before unlocking the CDR vault.')
       return
     }
 
@@ -49,7 +61,7 @@ export function SecretPanel({
       const response = await fetch(`/api/games/${gameSlug}/secret-panel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress, gameId }),
+        body: JSON.stringify({ walletAddress, sessionId: storySessionId }),
       })
 
       const data = await response.json()
@@ -58,17 +70,31 @@ export function SecretPanel({
         throw new Error(data.error || 'Failed to unlock secret panel')
       }
 
-      if (data.narrative) {
-        setNarrative(data.narrative)
-        setImageUrl(data.imageUrl || null)
-        setUnlocked(true)
+      // Lazy-load the CDR SDK (5.5 MB WASM + Emscripten loader) only when the
+      // user actually clicks Unlock, so it doesn't bloat the initial client bundle.
+      const { createUserCdrClient, readVaultData } = await import('@/domains/story/services/cdr.service')
+
+      const client = await createUserCdrClient(walletClient as unknown as WalletClient<Transport, Chain, Account>)
+      if (!client) {
+        throw new Error('CDR client unavailable. Try again later.')
       }
+
+      const decrypted = await readVaultData(client, Number(promptVaultUuid!))
+      if (!decrypted) {
+        throw new Error('Failed to decrypt vault data')
+      }
+
+      const panel = JSON.parse(decrypted)
+
+      setPanelData(panel)
+      setAccessPolicy(data.accessPolicy ?? null)
+      setUnlocked(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unlock failed')
     } finally {
       setIsUnlocking(false)
     }
-  }, [isConnected, walletAddress, gameSlug, gameId])
+  }, [isConnected, walletAddress, walletClient, gameSlug, promptVaultUuid, storyComplete, storySessionId])
 
   return (
     <motion.div
@@ -93,6 +119,11 @@ export function SecretPanel({
         ) : (
           <Lock className="w-3.5 h-3.5 text-muted-foreground" />
         )}
+        {promptVaultUuid && (
+          <span className="ml-auto text-[10px] font-mono tracking-tight px-1.5 py-0.5 rounded-full border border-emerald-600/40 text-emerald-400 bg-emerald-950/40">
+            Vaulted via CDR
+          </span>
+        )}
       </div>
 
       {/* Panel container */}
@@ -104,7 +135,7 @@ export function SecretPanel({
         }}
       >
         <AnimatePresence mode="wait">
-          {unlocked && narrative ? (
+          {unlocked && panelData ? (
             /* UNLOCKED STATE */
             <motion.div
               key="unlocked"
@@ -113,11 +144,10 @@ export function SecretPanel({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
-              {/* Image */}
-              {imageUrl && (
+              {panelData.imageUrl && (
                 <div className="relative aspect-video w-full overflow-hidden">
                   <img
-                    src={imageUrl}
+                    src={panelData.imageUrl}
                     alt="Secret panel illustration"
                     className="w-full h-full object-cover"
                   />
@@ -125,15 +155,28 @@ export function SecretPanel({
                 </div>
               )}
 
-              {/* Narrative */}
               <div className="p-5">
                 <p className="text-foreground text-base leading-relaxed font-medium italic">
-                  &ldquo;{narrative}&rdquo;
+                  &ldquo;{panelData.narrative}&rdquo;
                 </p>
                 <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Unlock className="w-3 h-3" />
-                  <span>Unlocked by NFT ownership</span>
+                  <span>Unlocked via CDR Vault</span>
                 </div>
+                {accessPolicy && (
+                  <div className="mt-3 grid gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-950/20 p-3 text-[11px] text-emerald-100">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      <span>CDR access policy satisfied</span>
+                    </div>
+                    <div className="font-mono text-emerald-200/80">
+                      {accessPolicy.cdrReadCondition}: {accessPolicy.nftContract.slice(0, 6)}...{accessPolicy.nftContract.slice(-4)}
+                    </div>
+                    <div className="text-emerald-200/70">
+                      NFT #{accessPolicy.nftTokenId} owned on chain {accessPolicy.nftChainId}; {accessPolicy.completedPanels} story panels completed.
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -146,7 +189,6 @@ export function SecretPanel({
               transition={{ duration: 0.4 }}
               className="p-8 text-center"
             >
-              {/* Blurred preview hint */}
               <div className="relative mb-6">
                 <div
                   className="absolute inset-0 flex items-center justify-center"
@@ -163,39 +205,60 @@ export function SecretPanel({
                 A Secret Awaits
               </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-                This game holds a hidden epilogue — an alternate ending only
-                revealed to those who truly own the experience.
+                This game holds a hidden epilogue in a Story CDR vault. Unlock requires the minted game NFT and a completed 5-panel playthrough.
               </p>
 
-              {/* Unlock action */}
-              {isEncrypted && nftTokenId ? (
+              <div className="mb-5 grid gap-2 text-left max-w-sm mx-auto">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {storyComplete ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  ) : (
+                    <Lock className="h-3.5 w-3.5" />
+                  )}
+                  <span>Complete all 5 story panels</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {nftTokenId ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  ) : (
+                    <Lock className="h-3.5 w-3.5" />
+                  )}
+                  <span>Hold the minted Game NFT</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>Decrypt through CDR token-gated read condition</span>
+                </div>
+              </div>
+
+              {promptVaultUuid ? (
                 <div>
                   {isConnected ? (
                     <button
                       onClick={handleUnlock}
-                      disabled={isUnlocking}
+                      disabled={isUnlocking || !storyComplete}
                       className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm transition-all"
                       style={{
                         backgroundColor: primaryColor,
                         color: '#000',
-                        opacity: isUnlocking ? 0.7 : 1,
+                        opacity: isUnlocking || !storyComplete ? 0.7 : 1,
                       }}
                     >
                       {isUnlocking ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Verifying ownership...
+                          Decrypting...
                         </>
                       ) : (
                         <>
                           <Eye className="w-4 h-4" />
-                          Unlock with NFT
+                          Unlock Secure Panel
                         </>
                       )}
                     </button>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Connect your wallet to check NFT ownership
+                      Connect your wallet to access the vault
                     </p>
                   )}
 
@@ -211,7 +274,7 @@ export function SecretPanel({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  This panel will be available after minting
+                  Vault access not available.
                 </p>
               )}
             </motion.div>

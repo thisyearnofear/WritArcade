@@ -1,20 +1,69 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Game } from '../types'
 import { WordleService, type WordleGuessResult, type WordleLetterState } from '../services/wordle.service'
 import { shareGame } from '@/lib/farcaster-sharing.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useWalletClient, useAccount } from 'wagmi'
+import type { WalletClient, Transport, Chain, Account } from 'viem'
 
 interface WordleGameInterfaceProps {
   game: Game
-  answer: string
   maxAttempts?: number
 }
 
-export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInterfaceProps) {
-  const normalizedAnswer = WordleService.normalize(answer)
+export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfaceProps) {
+  const { data: walletClient } = useWalletClient()
+  const { address: walletAddress } = useAccount()
+  const [decryptedAnswer, setDecryptedAnswer] = useState<string | null>(null)
+  const [isDecrypting, setIsDecrypting] = useState(false)
+  const [decryptError, setDecryptError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!decryptedAnswer && game.wordleAnswerVaultUuid && walletClient && walletAddress) {
+      const decrypt = async () => {
+        setIsDecrypting(true)
+        try {
+          const response = await fetch(`/api/games/${game.slug}/answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress }),
+          })
+          const data = await response.json()
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to authorize vault access')
+          }
+
+          if (data.status === 'ready_for_decryption') {
+            // Lazy-load the CDR SDK (5.5 MB WASM + Emscripten loader) only when
+            // we actually need to decrypt, so it doesn't bloat the initial bundle.
+            const { createUserCdrClient, readVaultData } = await import('@/domains/story/services/cdr.service')
+            const client = await createUserCdrClient(walletClient as unknown as WalletClient<Transport, Chain, Account>)
+            if (!client) {
+              throw new Error('CDR client unavailable')
+            }
+            const answer = await readVaultData(client, Number(game.wordleAnswerVaultUuid))
+            if (!answer) {
+              throw new Error('Failed to decrypt answer from vault')
+            }
+            setDecryptedAnswer(answer)
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Decryption failed'
+          console.error('Decryption failed:', msg)
+          setDecryptError(msg)
+        } finally {
+          setIsDecrypting(false)
+        }
+      }
+      decrypt()
+    }
+  }, [game, walletClient, walletAddress, decryptedAnswer])
+
+  const normalizedAnswer = decryptedAnswer ? WordleService.normalize(decryptedAnswer) : ''
   const wordLength = normalizedAnswer.length
   const attemptsAllowed = maxAttempts ?? WordleService.DEFAULT_MAX_ATTEMPTS
 
@@ -22,6 +71,41 @@ export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInt
   const [guesses, setGuesses] = useState<WordleGuessResult[]>([])
   const [status, setStatus] = useState<'in_progress' | 'won' | 'lost'>('in_progress')
   const [error, setError] = useState<string | null>(null)
+
+  if (!game.wordleAnswerVaultUuid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        <div className="text-center space-y-3">
+          <p className="text-amber-400 font-medium">Answer Not Yet Available</p>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            This puzzle's answer will be vaulted via Story CDR after generation is complete.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (decryptError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        <div className="text-center space-y-3">
+          <p className="text-red-400">Failed to unlock game data</p>
+          <p className="text-sm text-muted-foreground">{decryptError}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isDecrypting || !decryptedAnswer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        <div className="text-center space-y-3">
+          <div className="animate-spin w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full mx-auto" />
+          <p className="text-sm text-muted-foreground">Decrypting secure game data from vault...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,11 +179,18 @@ export function WordleGameInterface({ game, answer, maxAttempts }: WordleGameInt
     <div className="min-h-screen flex flex-col items-center justify-start pt-16 px-4 bg-black text-white">
       <div className="w-full max-w-xl space-y-6">
         <header className="space-y-3 text-center">
-          <div
-            className="inline-block px-3 py-1 rounded-full text-xs font-semibold border"
-            style={{ borderColor: headingColor, color: headingColor }}
-          >
-            Wordle • Article Puzzle
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <div
+              className="inline-block px-3 py-1 rounded-full text-xs font-semibold border"
+              style={{ borderColor: headingColor, color: headingColor }}
+            >
+              Wordle • Article Puzzle
+            </div>
+            {game.wordleAnswerVaultUuid && (
+              <span className="text-[10px] font-mono tracking-tight px-1.5 py-0.5 rounded-full border border-emerald-600/40 text-emerald-400 bg-emerald-950/40">
+                Vaulted via CDR
+              </span>
+            )}
           </div>
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: headingColor }}>
             {game.title}

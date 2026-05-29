@@ -102,7 +102,7 @@ export default function MyGamesPage() {
     }
 
     loadGames()
-  }, [address, status, authChecked, sessionAllowed])
+  }, [address, status, authChecked, sessionAllowed, isConnected, toast])
 
   const handleMintClick = async (gameId: string) => {
     if (!address) return

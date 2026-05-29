@@ -36,6 +36,8 @@
 # foundry/forge build artifacts
 contracts/out/
 contracts/cache/
+lib/openzeppelin-contracts/
+cache/
 *.pem
 .AppleDouble
 .LSOverride

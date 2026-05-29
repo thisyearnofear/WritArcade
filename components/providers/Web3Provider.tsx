@@ -114,7 +114,6 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   // The adapter only references window inside its callbacks (which run later), so
   // it's safe to create during render. This avoids the conditional branch that
   // previously caused "Rendered more hooks than during the previous render" (React #310).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const authAdapter = useMemo(() => createAuthenticationAdapter({
     getNonce: async () => {
       try {

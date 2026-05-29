@@ -12,6 +12,7 @@ import { HeroScreen } from './screens/hero-screen'
 import { GameplayScreen } from './screens/gameplay-screen'
 import { ComicFinaleScreen } from './screens/comic-finale-screen'
 import { GameStatusScreens } from './screens/game-status-screens'
+import { GameEnrichment } from './game-enrichment'
 
 interface GamePlayInterfaceProps {
   game: Game
@@ -91,6 +92,22 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     })
   }
 
+  const storyComplete = !!session.epilogueReflection || session.assistantMessageCount >= MAX_COMIC_PANELS
+  const renderEnrichment = () => (
+    <GameEnrichment
+      gameId={game.id}
+      gameSlug={game.slug}
+      primaryColor={game.primaryColor || '#6366f1'}
+      nftTokenId={game.nftTokenId}
+      secretPanelGenerated={game.secretPanelGenerated}
+      promptVaultUuid={game.promptVaultUuid}
+      hypercertUri={game.hypercertUri}
+      hypercertCid={game.hypercertCid}
+      storySessionId={session.sessionId}
+      storyComplete={storyComplete}
+    />
+  )
+
   // NEW: Block gameplay if game not approved
   if (game.approvalStatus === 'rejected' || game.approvalStatus === 'pending') {
     return <GameStatusScreens game={game} />
@@ -99,81 +116,90 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   // COMIC FINALE SCREEN
   if (showComicFinale) {
     return (
-      <ComicFinaleScreen
-        game={game}
-        messages={session.messages}
-        userChoices={session.userChoices}
-        showComicFinale={showComicFinale}
-        setShowComicFinale={setShowComicFinale}
-        isMinting={blockchain.isMinting}
-        handleMintComic={blockchain.handleMintComic}
-        handlePanelTextChange={(idx, text) => {
-          const assistantMessages = session.messages.filter(m => m.role === 'assistant')
-          if (assistantMessages[idx]) {
-            session.handlePanelTextChange(assistantMessages[idx].id, text)
-          }
-        }}
-        extractedAssetIds={blockchain.extractedAssetIds}
-        derivativeRegistered={blockchain.derivativeRegistered}
-        chainId={blockchain.chainId}
-        switchChain={blockchain.switchChain}
-        isSwitchingChain={blockchain.isSwitchingChain}
-        handleRegisterDerivativeIp={blockchain.handleRegisterDerivativeIp}
-        isRegisteringDerivative={blockchain.isRegisteringDerivative}
-        maxPanels={MAX_COMIC_PANELS}
-        epilogueReflection={session.epilogueReflection}
-      />
+      <>
+        <ComicFinaleScreen
+          game={game}
+          messages={session.messages}
+          userChoices={session.userChoices}
+          showComicFinale={showComicFinale}
+          setShowComicFinale={setShowComicFinale}
+          isMinting={blockchain.isMinting}
+          handleMintComic={blockchain.handleMintComic}
+          handlePanelTextChange={(idx, text) => {
+            const assistantMessages = session.messages.filter(m => m.role === 'assistant')
+            if (assistantMessages[idx]) {
+              session.handlePanelTextChange(assistantMessages[idx].id, text)
+            }
+          }}
+          extractedAssetIds={blockchain.extractedAssetIds}
+          derivativeRegistered={blockchain.derivativeRegistered}
+          chainId={blockchain.chainId}
+          switchChain={blockchain.switchChain}
+          isSwitchingChain={blockchain.isSwitchingChain}
+          handleRegisterDerivativeIp={blockchain.handleRegisterDerivativeIp}
+          isRegisteringDerivative={blockchain.isRegisteringDerivative}
+          maxPanels={MAX_COMIC_PANELS}
+          epilogueReflection={session.epilogueReflection}
+        />
+        {renderEnrichment()}
+      </>
     )
   }
 
   // HERO SCREEN
   if (!session.isPlaying) {
     return (
-      <HeroScreen
-        game={game}
-        isStarting={session.isStarting}
-        loadingProgress={session.loadingProgress}
-        messages={session.messages}
-        showPreview={showPreview}
-        showPaymentModal={showPaymentModal}
-        isPaying={blockchain.isPaying}
-        playFee={game.playFee || '0'}
-        onStartClick={handleStartClick}
-        onPreviewApproved={handlePreviewApproved}
-        onPaymentConfirm={onPaymentConfirm}
-        onClosePreview={() => setShowPreview(false)}
-        onClosePayment={() => setShowPaymentModal(false)}
-        generateStoryboardPreview={generateStoryboardPreview}
-      />
+      <>
+        <HeroScreen
+          game={game}
+          isStarting={session.isStarting}
+          loadingProgress={session.loadingProgress}
+          messages={session.messages}
+          showPreview={showPreview}
+          showPaymentModal={showPaymentModal}
+          isPaying={blockchain.isPaying}
+          playFee={game.playFee || '0'}
+          onStartClick={handleStartClick}
+          onPreviewApproved={handlePreviewApproved}
+          onPaymentConfirm={onPaymentConfirm}
+          onClosePreview={() => setShowPreview(false)}
+          onClosePayment={() => setShowPaymentModal(false)}
+          generateStoryboardPreview={generateStoryboardPreview}
+        />
+        {renderEnrichment()}
+      </>
     )
   }
 
   // GAMEPLAY SCREEN
   return (
-    <GameplayScreen
-      game={game}
-      messages={session.messages}
-      isWaitingForResponse={session.isWaitingForResponse}
-      pendingOptionId={session.pendingOptionId}
-      assistantMessageCount={session.assistantMessageCount}
-      canAddMorePanels={session.canAddMorePanels}
-      isGeneratingEpilogue={session.isGeneratingEpilogue}
-      userInput="" // No longer used
-      onUserInputChange={() => { }}
-      onOptionClick={(option) => {
-        session.handleOptionClick(option.id, option.text)
-      }}
-      onImagesReady={session.handleImagesReady}
-      onImageRegenerate={session.handleImageRegenerate}
-      onImageRating={session.handleImageRating}
-      messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-      responseReady={session.responseReady}
-      worldMood={session.worldMood}
-      isRegenerating={session.regeneratingMessageId}
-      setShowComicFinale={setShowComicFinale}
-      availableThemes={availableThemes}
-      generateAIPromptSuggestions={generateAIPromptSuggestions}
-      handleAIPromptSelect={handleAIPromptSelect}
-    />
+    <>
+      <GameplayScreen
+        game={game}
+        messages={session.messages}
+        isWaitingForResponse={session.isWaitingForResponse}
+        pendingOptionId={session.pendingOptionId}
+        assistantMessageCount={session.assistantMessageCount}
+        canAddMorePanels={session.canAddMorePanels}
+        isGeneratingEpilogue={session.isGeneratingEpilogue}
+        userInput="" // No longer used
+        onUserInputChange={() => { }}
+        onOptionClick={(option) => {
+          session.handleOptionClick(option.id, option.text)
+        }}
+        onImagesReady={session.handleImagesReady}
+        onImageRegenerate={session.handleImageRegenerate}
+        onImageRating={session.handleImageRating}
+        messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+        responseReady={session.responseReady}
+        worldMood={session.worldMood}
+        isRegenerating={session.regeneratingMessageId}
+        setShowComicFinale={setShowComicFinale}
+        availableThemes={availableThemes}
+        generateAIPromptSuggestions={generateAIPromptSuggestions}
+        handleAIPromptSelect={handleAIPromptSelect}
+      />
+      {renderEnrichment()}
+    </>
   )
 }

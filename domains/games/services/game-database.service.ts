@@ -20,7 +20,7 @@ export class GameDatabaseService {
       writerCoinId?: string
       difficulty?: string
       articleContext?: string
-      wordleAnswer?: string
+      wordleAnswerVaultUuid?: string
       authorParagraphUsername?: string
       authorWallet?: string
       publicationName?: string
@@ -56,7 +56,6 @@ export class GameDatabaseService {
         promptText: gameData.promptText,
         promptModel: gameData.promptModel,
         articleUrl: miniAppData?.articleUrl,
-        wordleAnswer: miniAppData?.wordleAnswer,
         articleContext: miniAppData?.articleContext,
         writerCoinId: miniAppData?.writerCoinId,
         difficulty: miniAppData?.difficulty,
@@ -69,6 +68,8 @@ export class GameDatabaseService {
         creatorWallet: gameData.creatorWallet,
         private: false,
         userId: userId || null,
+        wordleAnswerVaultUuid: miniAppData?.wordleAnswerVaultUuid,
+        promptVaultUuid: gameData.promptVaultUuid,
       }
 
       // Add asset relations if provided
@@ -358,7 +359,6 @@ export class GameDatabaseService {
       primaryColor: prismaGame.primaryColor || undefined,
       mode: (prismaGame.mode as GameMode | undefined) || 'story',
       promptName: prismaGame.promptName,
-      wordleAnswer: prismaGame.wordleAnswer || undefined,
       promptText: prismaGame.promptText || undefined,
       promptModel: prismaGame.promptModel,
       imageUrl: prismaGame.imageUrl || undefined,
@@ -383,6 +383,8 @@ export class GameDatabaseService {
       nftTokenId: prismaGame.nftTokenId || undefined,
       nftTransactionHash: prismaGame.nftTransactionHash || undefined,
       nftMintedAt: prismaGame.nftMintedAt || undefined,
+      wordleAnswerVaultUuid: prismaGame.wordleAnswerVaultUuid || undefined,
+      promptVaultUuid: (prismaGame as { promptVaultUuid?: string }).promptVaultUuid || undefined,
       private: prismaGame.private,
       userId: prismaGame.userId || undefined,
       // Cast to any because Prisma types are not yet updated in the running process

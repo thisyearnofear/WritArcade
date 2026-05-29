@@ -34,8 +34,11 @@ export interface Game {
   writerCoinId?: string
   difficulty?: string
 
-  // Wordle-specific metadata
-  wordleAnswer?: string
+  // Wordle — answer stored in CDR vault, not plaintext in DB
+  wordleAnswerVaultUuid?: string
+
+  // Story CDR: Vaulted prompt for Confidential IP
+  promptVaultUuid?: string
 
   // Attribution data - preserves source material author
   creatorWallet?: string
@@ -134,8 +137,10 @@ export interface GameGenerationResponse {
   promptText?: string
   // Optional game mode metadata ("story" | "wordle")
   mode?: GameMode
-  creatorWallet?: string  // Game creator's wallet (for attribution in NFT)
-  imageUrl?: string | null  // Game cover image URL (generated eagerly)
+  creatorWallet?: string
+  imageUrl?: string | null
+  wordleAnswerVaultUuid?: string
+  promptVaultUuid?: string
 }
 
 export interface GameplayOption {

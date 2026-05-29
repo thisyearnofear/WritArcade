@@ -16,6 +16,8 @@ module.exports = [
       'test-content-processor.ts',
       'scripts/**',
       'public/client.min.js',
+      'lib/openzeppelin-contracts/**',
+      'apps/**',
     ],
   },
   js.configs.recommended,

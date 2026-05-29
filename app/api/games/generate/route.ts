@@ -4,12 +4,14 @@ import { GameDatabaseService } from '@/domains/games/services/game-database.serv
 import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
 import { WordleService } from '@/domains/games/services/wordle.service'
+import { vaultWordleAnswer } from '@/domains/story/services/cdr.service'
 import type { GameGenerationResponse } from '@/domains/games/types'
 import { optionalAuth } from '@/lib/auth'
 import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 import { config, logger } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
+import { getMintConfig } from '@/lib/writerCoins'
 
 // Request validation schema
 const generateGameSchema = z.object({
@@ -103,7 +105,6 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     }
 
     let gameData: GameGenerationResponse
-    let wordleAnswer: string | undefined
 
     if (mode === 'wordle') {
       if (!processedContent) {
@@ -114,7 +115,9 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       // Combine article URL and current date for varied but reproducible results
       const randomSeed = validatedData.url ? `${validatedData.url}-${new Date().toISOString().split('T')[0]}` : new Date().toISOString()
       const answer = WordleService.deriveAnswerFromText(processedContent.text, undefined, randomSeed)
-      wordleAnswer = answer
+
+      // CDR: Vault the wordle answer (never stored in plaintext)
+      const wordleAnswerVaultUuid = await vaultWordleAnswer(answer)
 
       gameData = {
         title: processedContent.title
@@ -132,6 +135,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
         promptName: 'Wordle-Article-v1',
         promptText: `Article-derived Wordle answer of length ${answer.length}.`,
         mode: 'wordle',
+        wordleAnswerVaultUuid,
       }
 
       console.log('Wordle game generated from article:', {
@@ -186,7 +190,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       articleUrl: validatedData.url,
       difficulty: validatedData.customization?.difficulty,
       writerCoinId: validatedData.payment?.writerCoinId,
-      wordleAnswer,
+      wordleAnswerVaultUuid: gameData.wordleAnswerVaultUuid,
       authorWallet: processedContent.authorWallet,
       authorParagraphUsername: processedContent.author, // Extract from URL parsing
       publicationName: processedContent.publicationName,
@@ -241,7 +245,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       : Promise.resolve(null)
 
     // Background enrichment: secret panel + hypercert (non-blocking)
-    enrichGameInBackground(savedGame.id, savedGame.slug, gameData, processedContent?.text).catch(
+    enrichGameInBackground(savedGame.id, savedGame.slug, gameData, processedContent?.text, validatedData.payment?.writerCoinId).catch(
       (err) => logger.error('Background enrichment failed', err, { gameId: savedGame.id })
     )
 
@@ -316,44 +320,50 @@ async function enrichGameInBackground(
   gameId: string,
   gameSlug: string,
   gameData: GameGenerationResponse,
-  articleText?: string
+  articleText?: string,
+  writerCoinId?: string
 ): Promise<void> {
-  // Generate secret panel + encrypt with Lit Protocol
+  // Generate secret panel + vault with Story CDR
   try {
-    if (config.litProtocol.enabled || config.isDevelopment) {
-      const { encryptSecretPanel } = await import('@/lib/lit-protocol.service')
+    const { vaultSystemPrompt } = await import('@/domains/story/services/cdr.service')
+    const { GameAIService } = await import('@/domains/games/services/game-ai.service')
 
-      const secretPanel = await GameAIService.generateSecretPanel(
-        {
-          title: gameData.title,
-          description: gameData.description,
-          genre: gameData.genre,
-          tagline: gameData.tagline,
-        },
-        articleText?.substring(0, 800)
-      )
+    const secretPanel = await GameAIService.generateSecretPanel(
+      {
+        title: gameData.title,
+        description: gameData.description,
+        genre: gameData.genre,
+        tagline: gameData.tagline,
+      },
+      articleText?.substring(0, 800)
+    )
 
-      const encrypted = await encryptSecretPanel(secretPanel)
+    // Vault the secret panel data using CDR (NFT-gated via condition contract)
+    const nftConfig = writerCoinId ? getMintConfig(writerCoinId) : undefined
+    const promptVaultUuid = await vaultSystemPrompt(
+      JSON.stringify(secretPanel),
+      nftConfig?.contractAddress
+    )
 
-      await prisma.game.update({
-        where: { id: gameId },
-        data: {
-          secretPanelCiphertext: encrypted.ciphertext,
-          secretPanelDataHash: encrypted.dataToEncryptHash,
-          secretPanelImagePrompt: secretPanel.imagePrompt,
-          secretPanelGenerated: true,
-        },
-      })
-
-      logger.litProtocol('Secret panel generated and encrypted', {
-        gameId,
-        slug: gameSlug,
-      })
-    }
-  } catch (err) {
-    logger.error('Secret panel generation failed (non-blocking)', err, {
-      gameId,
+    // Update DB with vault UUID
+    await prisma.game.update({
+      where: { id: gameId },
+      data: {
+        promptVaultUuid,
+        secretPanelImagePrompt: secretPanel.imagePrompt,
+        secretPanelGenerated: true,
+      },
     })
+
+    logger.info('Secret panel vaulted with Story CDR', {
+      gameId,
+      promptVaultUuid,
+      readCondition: nftConfig
+        ? `tokenGate(${nftConfig.contractAddress})`
+        : 'tokenGate(default-game-nft)',
+    })
+  } catch (err) {
+    logger.error('Secret panel vaulting failed', err, { gameId })
   }
 
   // Create hypercert impact certificate

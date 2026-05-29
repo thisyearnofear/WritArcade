@@ -92,6 +92,31 @@ WritersArcade supports the Mezo ecosystem via a dedicated MUSD payment track:
 7. IP registered on-chain with license
 8. Verification: Read IP Asset to confirm
 
+#### Confidential Data Rails (CDR) — *Hackathon Track*
+**Beta Integration**: Story CDR SDK for TEE-backed data vaults.
+
+- **Secret Panel Vaults**: Hidden epilogues are stored in CDR vaults and decrypted client-side only after the player satisfies the unlock policy.
+- **Token-Gated Read Conditions**: Secret panel vaults use CDR `tokenGate` read conditions against the configured Game NFT contract.
+- **Gameplay-Aware Unlock**: The app verifies the player completed all 5 story panels before allowing the CDR decrypt path.
+- **Exact NFT Ownership**: The unlock endpoint verifies ownership of the minted `nftTokenId`, not just any NFT in the collection.
+- **Provable Fairness**: Wordle answers are stored in CDR vaults instead of plaintext database fields.
+- **Bundle Hygiene**: The CDR SDK/WASM graph is lazy-loaded only when vaulted data must be decrypted.
+
+**Secret Panel Flow**:
+```
+Game Generation
+  ↓
+generateSecretPanel()
+  ↓
+vaultSystemPrompt() → Story CDR vault UUID
+  ↓
+Store promptVaultUuid in DB
+  ↓
+Player completes 5 panels + owns minted Game NFT
+  ↓
+Client decrypts CDR vault with wallet-backed CDR client
+```
+
 **Explorer**: https://aeneid-testnet-explorer.story.foundation/
 
 ### Lit Protocol (NFT-Gated Content)
