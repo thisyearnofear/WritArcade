@@ -15,7 +15,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:setup": "prisma generate && prisma db push",
-    "migrate:data": "tsx scripts/migrate-data.ts"
+    "migrate:data": "tsx scripts/migrate-data.ts",
+    "deploy:api": "bash scripts/deploy-writersarcade-api.sh"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.55",

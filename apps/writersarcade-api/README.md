@@ -20,10 +20,52 @@ npm run dev
 ```
 
 ## Deploy
-Recommended server path:
-- `/opt/writersarcade`
+The backend deploys separately from the Next/Vercel app. Use the release-artifact
+script from the repo root:
 
-Run with pm2 using `ecosystem.config.cjs`.
+```bash
+npm run deploy:api -- --dry-run
+npm run deploy:api -- --migrate-pm2
+```
+
+After the first migration, normal deploys are:
+
+```bash
+npm run deploy:api
+```
+
+The script uploads a local artifact to:
+
+```text
+/opt/writersarcade-api/releases/<git-sha>
+```
+
+and flips:
+
+```text
+/opt/writersarcade-api/current -> releases/<git-sha>
+```
+
+PM2 runs with `ecosystem.release.config.cjs`, using:
+
+```text
+cwd: /opt/writersarcade-api/current
+logs: /opt/writersarcade-api/shared/logs
+env: /opt/writersarcade-api/shared/.env
+```
+
+By default the script installs production dependencies inside a Linux Docker
+container (`node:22-bookworm-slim`) before rsyncing. Use `--no-docker` only when
+you are sure the local environment matches the server.
+
+Useful overrides:
+
+```bash
+HOST=snel-bot npm run deploy:api
+npm run deploy:api -- --keep 5
+npm run deploy:api -- --no-docker
+```
 
 ## Env
-Copy `.env.example` to `.env` and fill in provider secrets.
+Server env lives at `/opt/writersarcade-api/shared/.env`. The deploy script will
+copy the legacy env file there on first migration if it does not already exist.
