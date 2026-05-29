@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useAccount } from 'wagmi'
 import { isAdmin } from '@/lib/constants'
 import { HypercertBadge } from './hypercert-badge'
+import { ProtocolLifecycle } from './protocol-lifecycle'
 
 interface GameCardEnhancedProps {
   game: Game
@@ -139,6 +140,7 @@ export function GameCardEnhanced({
             <div className="text-muted-foreground">
               Model: {game.promptModel}
             </div>
+            <ProtocolLifecycle game={game} variant="compact" />
             {game.hypercertUri && (
               <HypercertBadge hypercertUri={game.hypercertUri} compact />
             )}

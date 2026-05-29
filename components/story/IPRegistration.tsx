@@ -5,7 +5,7 @@ import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, CheckCircle2, AlertCircle, Copy, ExternalLink, Wallet, ArrowRightLeft } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Copy, ExternalLink, Wallet, ArrowRightLeft, PenLine } from "lucide-react";
 import {
   createStoryClientFromWallet,
   isOnStoryNetwork,
@@ -35,7 +35,7 @@ export interface GameIPMetadata {
 
 interface IPRegistrationProps {
   game: GameIPMetadata;
-  onRegistrationComplete?: (result: IPRegistrationResult) => void;
+  onRegistrationComplete?: (result: IPRegistrationResult) => void | Promise<void>;
 }
 
 // Royalty configuration (basis points - divide by 100 for percentage)
@@ -155,8 +155,8 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
         licenseTermsId: selectedLicenseId,
       });
 
+      await onRegistrationComplete?.(registrationResult);
       setResult(registrationResult);
-      onRegistrationComplete?.(registrationResult);
 
       console.log("✅ IP Registration complete:", registrationResult.ipId);
     } catch (err) {
@@ -166,7 +166,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
     } finally {
       setIsRegistering(false);
     }
-  }, [walletClient, address, onStoryNetwork, game, onRegistrationComplete]);
+  }, [walletClient, address, onStoryNetwork, game, selectedLicenseId, onRegistrationComplete]);
 
   // Copy to clipboard
   const copyToClipboard = async (text: string, field: string) => {
@@ -291,7 +291,8 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                         type="radio"
                         name="license"
                         value={license.id}
-                        defaultChecked={license.recommended}
+                        checked={selectedLicenseId === BigInt(license.id)}
+                        onChange={() => setSelectedLicenseId(BigInt(license.id))}
                         className="h-4 w-4 text-purple-600 border-border focus:ring-purple-500"
                       />
                     </div>
@@ -378,7 +379,8 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                   </>
                 ) : (
                   <>
-                    🔏 Sign & Register IP
+                    <PenLine className="mr-2 h-4 w-4" />
+                    Sign & Register IP
                   </>
                 )}
               </Button>

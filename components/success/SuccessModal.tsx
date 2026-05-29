@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle, Eye, Copy } from 'lucide-react'
+import { BadgeCheck, CheckCircle, Copy, Eye, LockKeyhole, Network } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -105,6 +105,29 @@ export function SuccessModal({
               >
                 <Copy className="w-4 h-4" />
               </button>
+            </div>
+          )}
+
+          {action === 'generate' && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Protocol next steps</div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded border border-border bg-background/40 p-2">
+                  <BadgeCheck className="mb-1 h-4 w-4 text-green-400" />
+                  <div className="font-medium text-foreground">Mint</div>
+                  <div className="text-muted-foreground">Base NFT</div>
+                </div>
+                <div className="rounded border border-border bg-background/40 p-2">
+                  <Network className="mb-1 h-4 w-4 text-purple-400" />
+                  <div className="font-medium text-foreground">Register</div>
+                  <div className="text-muted-foreground">Story IP</div>
+                </div>
+                <div className="rounded border border-border bg-background/40 p-2">
+                  <LockKeyhole className="mb-1 h-4 w-4 text-amber-400" />
+                  <div className="font-medium text-foreground">Unlock</div>
+                  <div className="text-muted-foreground">CDR vault</div>
+                </div>
+              </div>
             </div>
           )}
 

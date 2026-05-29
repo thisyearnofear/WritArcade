@@ -5,6 +5,7 @@ import { WordleGameInterface } from '@/domains/games/components/wordle-game-inte
 import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { IPAttribution } from '@/domains/games/components/ip-attribution'
+import { ProtocolLifecycle } from '@/domains/games/components/protocol-lifecycle'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 
 // ISR: revalidate game pages every 5 minutes from CDN — eliminates per-request DB hits
@@ -39,6 +40,9 @@ export default async function GamePage({ params }: GamePageProps) {
   if (game.mode === 'wordle') {
     return (
       <div className="min-h-screen bg-black">
+        <div className="mx-auto max-w-4xl px-4 pt-6">
+          <ProtocolLifecycle game={game} />
+        </div>
         <WordleGameInterface game={game} maxAttempts={WordleService.DEFAULT_MAX_ATTEMPTS} />
       </div>
     )
@@ -57,6 +61,9 @@ export default async function GamePage({ params }: GamePageProps) {
           <IPAttribution assets={linkedAssets} compact />
         </div>
       )}
+      <div className="mx-auto max-w-4xl px-4 pt-6">
+        <ProtocolLifecycle game={game} />
+      </div>
       <ErrorBoundary>
         <GamePlayInterface game={game} />
       </ErrorBoundary>

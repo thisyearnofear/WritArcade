@@ -350,6 +350,8 @@ async function enrichGameInBackground(
       where: { id: gameId },
       data: {
         promptVaultUuid,
+        cdrReadConditionType: 'tokenGate',
+        cdrVaultedAt: new Date(),
         secretPanelImagePrompt: secretPanel.imagePrompt,
         secretPanelGenerated: true,
       },

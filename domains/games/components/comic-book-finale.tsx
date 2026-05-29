@@ -22,6 +22,8 @@ export interface ComicBookFinalePanelData {
 }
 
 interface ComicBookFinaleProps {
+  gameId: string
+  gameSlug: string
   gameTitle: string
   genre: string
   primaryColor: string
@@ -48,6 +50,8 @@ interface ComicBookFinaleProps {
 }
 
 export function ComicBookFinale({
+  gameId,
+  gameSlug,
   gameTitle,
   genre,
   primaryColor,
@@ -1202,7 +1206,7 @@ export function ComicBookFinale({
               </div>
               <IPRegistration
                 game={{
-                  gameId: gameTitle,
+                  gameId,
                   title: gameTitle,
                   description: `Interactive ${genre.toLowerCase()} comic with ${totalPanels} panels`,
                   articleUrl: articleUrl,
@@ -1212,6 +1216,20 @@ export function ComicBookFinale({
                   genre: genre.toLowerCase() as 'horror' | 'comedy' | 'mystery',
                   difficulty: difficulty.toLowerCase() as 'easy' | 'hard',
                   gameMetadataUri: nftMintedMetadata.gameMetadataUri,
+                }}
+                onRegistrationComplete={async (result) => {
+                  const response = await fetch(`/api/games/${gameSlug}/story-registration`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      walletAddress: creatorWallet,
+                      storyIpId: result.ipId,
+                      transactionHash: result.txHash,
+                    }),
+                  })
+                  if (!response.ok) {
+                    throw new Error('Story registration succeeded, but saving it to the game failed.')
+                  }
                 }}
               />
             </div>

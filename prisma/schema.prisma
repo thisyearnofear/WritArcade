@@ -94,6 +94,17 @@ model Game {
   nftTokenId       String?  // ERC-721 token ID
   nftTransactionHash String?  // Transaction hash for mint
   nftMintedAt      DateTime?  // When NFT was minted
+  nftContractAddress String? // Contract that minted this game NFT
+  nftChainId       Int?     // Chain where this game NFT was minted
+
+  // Story Protocol registration for the game itself
+  storyIpId        String?  // Story Protocol IP Asset ID
+  storyRegistrationTxHash String?
+  storyRegisteredAt DateTime?
+
+  // CDR policy metadata for judge/user-facing lifecycle display
+  cdrReadConditionType String?
+  cdrVaultedAt     DateTime?
 
   // Payment tracking
   paymentId        String?

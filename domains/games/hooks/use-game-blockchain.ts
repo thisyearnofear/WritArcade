@@ -156,6 +156,8 @@ export function useGameBlockchain(game: Game) {
                     gameId: game.id,
                     transactionHash: tx,
                     wallet: accountAddress,
+                    contractAddress,
+                    chainId: targetChainId,
                 }),
             })
 

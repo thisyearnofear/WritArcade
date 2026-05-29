@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { gameId, transactionHash, nftTokenId, wallet } = body
+    const { gameId, transactionHash, nftTokenId, wallet, contractAddress, chainId } = body
 
     if (!gameId || !transactionHash || !wallet) {
       return NextResponse.json(
@@ -152,6 +152,8 @@ export async function PATCH(request: NextRequest) {
         nftTokenId: nftTokenId?.toString(),
         nftTransactionHash: transactionHash,
         nftMintedAt: new Date(),
+        nftContractAddress: typeof contractAddress === 'string' ? contractAddress : undefined,
+        nftChainId: typeof chainId === 'number' ? chainId : undefined,
       },
     })
 

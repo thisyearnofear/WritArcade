@@ -68,6 +68,8 @@ export function ComicFinaleScreen({
   return (
     <div>
       <ComicBookFinale
+        gameId={game.id}
+        gameSlug={game.slug}
         gameTitle={game.title}
         genre={game.genre}
         primaryColor={game.primaryColor || '#8b5cf6'}

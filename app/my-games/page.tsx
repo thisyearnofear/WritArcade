@@ -9,7 +9,8 @@ import { GameCardEnhanced } from '@/domains/games/components/game-card-enhanced'
 import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
-import { Plus, Gamepad2, Shield } from 'lucide-react'
+import { IPRegistration } from '@/components/story/IPRegistration'
+import { Plus, Gamepad2, Shield, X } from 'lucide-react'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
@@ -27,6 +28,7 @@ export default function MyGamesPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
   const [settingsGame, setSettingsGame] = useState<Game | null>(null)
+  const [registrationGame, setRegistrationGame] = useState<Game | null>(null)
   const [sessionAllowed, setSessionAllowed] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTab, setActiveTab] = useState<'games' | 'ip-registrations'>('games')
@@ -152,26 +154,7 @@ export default function MyGamesPage() {
       const game = games.find(g => g.id === gameId)
       if (!game) throw new Error('Game not found')
 
-      // Story Protocol registration: user signs with wallet on Story chain
-      // to register IP asset and set license terms for derivative royalties
-      console.log('Registering game as IP on Story Protocol:', gameId)
-      
-      // Call the Story Protocol registration endpoint
-      // User's wallet signs the transaction client-side
-      const response = await fetch(`/api/assets/${gameId}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creatorWallet: address })
-      })
-
-      if (!response.ok) throw new Error('Registration failed')
-      
-      const data = await response.json()
-      toast({ 
-        title: 'IP Registered', 
-        description: `Story Protocol IP ID: ${data.registration?.storyIpId}`, 
-        variant: 'default' 
-      })
+      setRegistrationGame(game)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed'
       console.error('Registration error:', err)
@@ -463,6 +446,65 @@ export default function MyGamesPage() {
               onClose={() => setSettingsGame(null)}
               onUpdate={handleSettingsUpdate}
             />
+
+            {registrationGame && address && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+                <div className="w-full max-w-2xl">
+                  <div className="mb-3 flex justify-end">
+                    <button
+                      onClick={() => setRegistrationGame(null)}
+                      className="rounded-full border border-border bg-card p-2 text-muted-foreground hover:text-foreground"
+                      aria-label="Close IP registration"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <IPRegistration
+                    game={{
+                      gameId: registrationGame.id,
+                      title: registrationGame.title,
+                      description: registrationGame.description,
+                      articleUrl: registrationGame.articleUrl || '',
+                      gameCreatorAddress: address,
+                      authorParagraphUsername: registrationGame.authorParagraphUsername || 'Unknown Author',
+                      authorWalletAddress: registrationGame.authorWallet || '0x0000000000000000000000000000000000000000',
+                      genre: ['horror', 'comedy', 'mystery'].includes(registrationGame.genre.toLowerCase())
+                        ? registrationGame.genre.toLowerCase() as 'horror' | 'comedy' | 'mystery'
+                        : 'mystery',
+                      difficulty: registrationGame.difficulty === 'hard' ? 'hard' : 'easy',
+                    }}
+                    onRegistrationComplete={async (result) => {
+                      const response = await fetch(`/api/games/${registrationGame.slug}/story-registration`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          walletAddress: address,
+                          storyIpId: result.ipId,
+                          transactionHash: result.txHash,
+                        }),
+                      })
+                      if (!response.ok) {
+                        throw new Error('Story registration succeeded, but saving it to the game failed.')
+                      }
+                      setGames(prev => prev.map(game => game.id === registrationGame.id
+                        ? {
+                            ...game,
+                            storyIpId: result.ipId,
+                            storyRegistrationTxHash: result.txHash,
+                            storyRegisteredAt: new Date(result.registeredAt * 1000),
+                          }
+                        : game
+                      ))
+                      toast({
+                        title: 'IP Registered',
+                        description: `Story Protocol IP ID: ${result.ipId.slice(0, 10)}...${result.ipId.slice(-6)}`,
+                        variant: 'default',
+                      })
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
