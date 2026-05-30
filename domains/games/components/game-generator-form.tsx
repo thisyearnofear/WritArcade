@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -285,6 +285,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [articlePreview, setArticlePreview] = useState<ArticlePreview | null>(null)
   const [isPreviewingArticle, setIsPreviewingArticle] = useState(false)
   const [previewedUrl, setPreviewedUrl] = useState('')
+  const autoPreviewedUrlRef = useRef<string | null>(null)
 
   type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
   type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
@@ -488,7 +489,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         imageUrl: result.data.imageUrl,
       }
       setGeneratedGame(gameData)
-      setShowFidelityReview(true)
+      setSuccessData({
+        gameSlug: gameData.slug,
+        title: gameData.title,
+        author: undefined,
+      })
       trackEvent('game_generated', {
         mode,
         paymentPath,
@@ -546,6 +551,17 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     await generateGame()
   }
 
+  useEffect(() => {
+    const normalizedUrl = url.trim()
+    if (!initialUrl || !normalizedUrl || autoPreviewedUrlRef.current === normalizedUrl) return
+    if (hasPreviewedCurrentUrl || isPreviewingArticle) return
+
+    autoPreviewedUrlRef.current = normalizedUrl
+    previewArticle()
+    // Run only for URL arrivals; user edits are handled by the explicit preview button.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl, url, hasPreviewedCurrentUrl, isPreviewingArticle])
+
   return (
     <div className="w-full max-w-2xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -555,7 +571,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Step 1</p>
               <h2 className="text-lg font-semibold text-foreground">Paste the article</h2>
               <p className="text-sm text-muted-foreground">
-                Start with the source. Wallet, payment, minting, and IP options come after the article is in place.
+                Start with the source. If you came from the homepage, we will check it automatically.
               </p>
             </div>
 
@@ -701,10 +717,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           {isStoryMode && (
             <div className="rounded-xl border border-border bg-card p-4 space-y-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Step 2</p>
-                <h2 className="text-lg font-semibold text-foreground">Choose generation path</h2>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Default path</p>
+                <h2 className="text-lg font-semibold text-foreground">MUSD works with any article</h2>
                 <p className="text-sm text-muted-foreground">
-                  MUSD works with any Paragraph article. Writer coin mode is curated around supported writers.
+                  Keep the default to move fastest. Switch only if you specifically want a supported writer coin.
                 </p>
               </div>
 
@@ -843,8 +859,8 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                   {showCustomization ? '▼' : '▶'}
                 </motion.span>
                 <Sparkles className="w-4 h-4 text-yellow-300" />
-                <span>Game Customization</span>
-                <span className="text-xs text-purple-300/80 sm:ml-auto">Required • Paid Feature</span>
+                <span>Optional style controls</span>
+                <span className="text-xs text-purple-300/80 sm:ml-auto">Defaults are ready</span>
               </motion.button>
 
               <AnimatePresence>
@@ -864,7 +880,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-purple-100">Preview & Customize</span>
+                          <span className="text-sm font-semibold text-purple-100">Tune the default game style</span>
                           {paymentApproved && (
                             <span className="px-2 py-0.5 bg-green-500/20 border border-green-500/50 rounded-full text-xs text-green-300">
                               ✓ Paid
@@ -1010,10 +1026,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 <Sparkles className="w-5 h-5 text-cyan-300" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80 mb-1">Step 3</p>
-                <h3 className="font-semibold text-lg text-cyan-50 mb-1">Generate full story game</h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80 mb-1">Ready to build</p>
+                <h3 className="font-semibold text-lg text-cyan-50 mb-1">Pay and generate full story game</h3>
                 <p className="text-sm text-cyan-100/90 mb-3">
-                  Create the playable 5-panel game, save it to your arcade, and keep minting/IP options for after generation.
+                  One app action, then your wallet confirmation. Play Now appears as soon as generation finishes.
                 </p>
               </div>
             </div>
@@ -1045,7 +1061,8 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           </div>
         )}
 
-        {/* Submit button — always visible */}
+        {/* Submit button — visible until the paid story payment CTA takes over. */}
+        {(!isStoryMode || !hasPreviewedCurrentUrl) && (
           <motion.div
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 10 }}
@@ -1095,6 +1112,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               )}
             </Button>
           </motion.div>
+        )}
       </form>
 
       <div className="mt-8 p-4 rounded-lg border border-border bg-card text-card-foreground">
@@ -1135,8 +1153,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           }}
           onReject={() => {
             setShowFidelityReview(false)
-            setGeneratedGame(null)
-            setError(generationError('Game rejected. You can regenerate with different settings.'))
+            setSuccessData({
+              gameSlug: generatedGame.slug,
+              title: generatedGame.title,
+              author: undefined,
+            })
           }}
         />
       )}
@@ -1154,6 +1175,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         gameSlug={successData?.gameSlug}
         action="generate"
         authorName={successData?.author}
+        onReviewSource={generatedGame ? () => {
+          setSuccessData(null)
+          setShowFidelityReview(true)
+        } : undefined}
       />
     </div>
   )

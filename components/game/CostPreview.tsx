@@ -45,7 +45,7 @@ export function CostPreview({ paymentToken, action, showBreakdown = true, compac
     return () => { canceled = true }
   }, [paymentToken, action])
 
-  const actionLabel = action === 'generate-game' ? 'Generation Cost' : 'Minting Cost'
+  const actionLabel = action === 'generate-game' ? 'Build cost' : 'Minting cost'
   const config = getPaymentTokenConfig(paymentToken)
   const tokenSymbol = config.symbol
   const decimals = config.decimals

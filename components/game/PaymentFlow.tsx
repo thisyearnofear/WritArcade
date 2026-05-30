@@ -157,7 +157,7 @@ export function PaymentFlow({
 
   const actionLabel =
     action === 'generate-game'
-      ? `Generate Game (${costFormatted} ${tokenSymbol})`
+      ? `Pay ${costFormatted} ${tokenSymbol} and Generate`
       : `Mint as NFT (${costFormatted} ${tokenSymbol})`
 
   const targetChainId = isMUSD ? MEZO_TESTNET_CHAIN_ID : BASE_MAINNET_CHAIN_ID

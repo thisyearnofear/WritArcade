@@ -19,6 +19,7 @@ interface SuccessModalProps {
   action: 'mint' | 'generate'
   genre?: string
   authorName?: string
+  onReviewSource?: () => void
 }
 
 export function SuccessModal({
@@ -31,6 +32,7 @@ export function SuccessModal({
   action,
   genre = 'Adventure',
   authorName,
+  onReviewSource,
 }: SuccessModalProps) {
   const [_copied, setCopied] = useState(false)
   const [twist, setTwist] = useState('')
@@ -131,6 +133,15 @@ export function SuccessModal({
               <p className="mt-1 text-muted-foreground">
                 Try the story before minting or registering IP. When you are ready to preserve ownership, use My Games.
               </p>
+              {onReviewSource && (
+                <button
+                  type="button"
+                  onClick={onReviewSource}
+                  className="mt-3 text-xs font-medium text-green-300 underline decoration-dotted underline-offset-2 hover:text-green-200"
+                >
+                  Review source fidelity
+                </button>
+              )}
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                 <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Mint NFT</span>
                 <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Register IP</span>
