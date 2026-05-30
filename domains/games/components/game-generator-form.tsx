@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAccount } from 'wagmi'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -257,6 +258,7 @@ function articleGamePremise(preview: ArticlePreview, genre: GameGenre) {
 }
 
 export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath = 'musd', initialMode }: GameGeneratorFormProps) {
+  const { isConnected } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
   const [url, setUrl] = useState(initialUrl || '')
   const [mode, setMode] = useState<'story' | 'wordle'>(initialMode || 'story')
@@ -287,6 +289,8 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [isPreviewingArticle, setIsPreviewingArticle] = useState(false)
   const [previewedUrl, setPreviewedUrl] = useState('')
   const autoPreviewedUrlRef = useRef<string | null>(null)
+  const paymentCompletedRef = useRef(false)
+  const paymentPathExposureRef = useRef<string | null>(null)
 
   type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
   type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
@@ -316,6 +320,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   }, [balance, isMusdPath])
 
   const handlePaymentSuccess = async (_transactionHash: string) => {
+    paymentCompletedRef.current = true
     trackEvent('payment_succeeded', {
       paymentPath,
       mode,
@@ -553,6 +558,41 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   }
 
   useEffect(() => {
+    if (!isStoryMode || !hasPreviewedCurrentUrl) return
+
+    const exposureKey = `${previewedUrl}:${paymentPath}:${writerCoin.id}`
+    if (paymentPathExposureRef.current === exposureKey) return
+
+    paymentPathExposureRef.current = exposureKey
+    trackEvent('payment_path_selected', {
+      paymentPath,
+      mode,
+      source: isMusdPath ? 'recommended_default' : 'advanced_writercoin',
+      writerCoinId: isMusdPath ? undefined : writerCoin.id,
+      articlePreviewed: true,
+    })
+  }, [hasPreviewedCurrentUrl, isMusdPath, isStoryMode, mode, paymentPath, previewedUrl, writerCoin.id])
+
+  useEffect(() => {
+    if (!isStoryMode || !hasPreviewedCurrentUrl || paymentApproved || paymentCompletedRef.current) return
+
+    const handlePageHide = () => {
+      trackEvent(
+        isConnected ? 'payment_abandoned_after_wallet_connect' : 'payment_abandoned_before_wallet_connect',
+        {
+          paymentPath,
+          mode,
+          writerCoinId: isMusdPath ? undefined : writerCoin.id,
+          articlePreviewed: true,
+        }
+      )
+    }
+
+    window.addEventListener('pagehide', handlePageHide)
+    return () => window.removeEventListener('pagehide', handlePageHide)
+  }, [hasPreviewedCurrentUrl, isConnected, isMusdPath, isStoryMode, mode, paymentApproved, paymentPath, writerCoin.id])
+
+  useEffect(() => {
     const normalizedUrl = url.trim()
     if (!initialUrl || !normalizedUrl || autoPreviewedUrlRef.current === normalizedUrl) return
     if (hasPreviewedCurrentUrl || isPreviewingArticle) return
@@ -605,9 +645,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 value={url}
                 onChange={(e) => {
                   setUrl(e.target.value)
+                  paymentCompletedRef.current = false
                   setError(null)
                   setArticlePreview(null)
                   setPreviewedUrl('')
+                  paymentPathExposureRef.current = null
                   setPaymentApproved(false)
                 }}
                 className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
@@ -677,6 +719,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 type="button"
                 onClick={() => {
                   setMode('story')
+                  paymentCompletedRef.current = false
                   trackEvent('game_mode_selected', { mode: 'story', paymentPath })
                 }}
                 className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
@@ -694,6 +737,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 type="button"
                 onClick={() => {
                   setMode('wordle')
+                  paymentCompletedRef.current = false
                   trackEvent('game_mode_selected', { mode: 'wordle', paymentPath })
                 }}
                 className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
@@ -752,11 +796,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                       type="button"
                       onClick={() => {
                         setPaymentPath('musd')
+                        paymentCompletedRef.current = false
                         setPaymentApproved(false)
                         setArticlePreview(null)
                         setPreviewedUrl('')
+                        paymentPathExposureRef.current = null
                         setError(null)
-                        trackEvent('payment_path_selected', { paymentPath: 'musd', mode })
+                        trackEvent('payment_path_selected', { paymentPath: 'musd', mode, source: 'recommended_click' })
                       }}
                       className="inline-flex min-h-10 items-center justify-center rounded-md bg-amber-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-amber-500"
                     >
@@ -771,6 +817,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                   type="button"
                   onClick={() => {
                     setShowAdvancedPayment((value) => !value)
+                    if (!showAdvancedPayment) {
+                      trackEvent('payment_path_advanced_opened', {
+                        paymentPath,
+                        mode,
+                        writerCoinId: writerCoin.id,
+                      })
+                    }
                   }}
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                 >
@@ -814,11 +867,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                 type="button"
                                 onClick={() => {
                                   setPaymentPath('writercoin')
+                                  paymentCompletedRef.current = false
                                   setPaymentApproved(false)
                                   setArticlePreview(null)
                                   setPreviewedUrl('')
+                                  paymentPathExposureRef.current = null
                                   setError(null)
-                                  trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, writerCoinId: writerCoin.id })
+                                  trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, source: 'advanced_click', writerCoinId: writerCoin.id })
                                 }}
                                 className="inline-flex min-h-10 items-center justify-center rounded-md border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-xs font-bold uppercase tracking-wider text-purple-100 transition hover:bg-purple-500/20"
                               >
@@ -860,10 +915,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                 >
                                   <WriterCoinSelector onSelect={(coin) => {
                                     setSelectedCoin(coin)
+                                    paymentCompletedRef.current = false
                                     setShowWriterSelector(false)
                                     setPaymentApproved(false)
                                     setArticlePreview(null)
                                     setPreviewedUrl('')
+                                    paymentPathExposureRef.current = null
                                     setError(null)
                                   }} />
                                 </motion.div>
@@ -1252,11 +1309,18 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           setUrl('')
           setPaymentApproved(false)
         }}
-        title="Game Created Successfully!"
-        description="Your AI-generated game is ready to play. Minting and IP registration are optional next steps in My Games."
+        title={successData?.title || 'Game Created Successfully!'}
+        description="Your playable story is ready. Play it now, share it, or make another."
         gameSlug={successData?.gameSlug}
         action="generate"
         authorName={successData?.author}
+        onMakeAnother={() => {
+          setSuccessData(null)
+          setGeneratedGame(null)
+          setUrl('')
+          setPaymentApproved(false)
+          paymentCompletedRef.current = false
+        }}
         onReviewSource={generatedGame ? () => {
           setSuccessData(null)
           setShowFidelityReview(true)

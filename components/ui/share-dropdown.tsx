@@ -8,19 +8,24 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Share2, Twitter, MessageCircle, Linkedin } from 'lucide-react'
 import { socialShareService, type ComicShareData } from '@/lib/services/social-share.service'
+import { trackEvent } from '@/lib/analytics'
 
 interface ShareDropdownProps {
   data: ComicShareData
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'default' | 'sm' | 'lg' | 'icon'
   className?: string
+  buttonClassName?: string
+  surface?: string
 }
 
 export function ShareDropdown({
   data,
   variant = 'outline',
   size = 'default',
-  className = ''
+  className = '',
+  buttonClassName = '',
+  surface,
 }: ShareDropdownProps) {
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -40,21 +45,25 @@ export function ShareDropdown({
   }, [showMenu])
 
   const handleTwitterShare = () => {
+    trackEvent('share_clicked', { surface, channel: 'twitter', url: data.url })
     socialShareService.shareToTwitter(data)
     setShowMenu(false)
   }
 
   const handleFarcasterShare = () => {
+    trackEvent('share_clicked', { surface, channel: 'farcaster', url: data.url })
     socialShareService.shareToFarcaster(data)
     setShowMenu(false)
   }
 
   const handleLinkedInShare = () => {
+    trackEvent('share_clicked', { surface, channel: 'linkedin', url: data.url })
     socialShareService.shareToLinkedIn(data)
     setShowMenu(false)
   }
 
   const handleGenericShare = async () => {
+    trackEvent('share_clicked', { surface, channel: 'native_or_copy', url: data.url })
     const success = await socialShareService.shareGeneric(data)
     if (success) {
       // Could add toast notification here if needed
@@ -67,7 +76,7 @@ export function ShareDropdown({
       <Button
         variant={variant}
         size={size}
-        className="gap-2"
+        className={`gap-2 ${buttonClassName}`}
         onClick={() => setShowMenu(!showMenu)}
         title="Share your comic"
       >

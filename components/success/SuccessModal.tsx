@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle, Copy, Eye, Library, Share2 } from 'lucide-react'
+import { CheckCircle, Copy, Eye, Library, RotateCcw, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -20,6 +20,7 @@ interface SuccessModalProps {
   genre?: string
   authorName?: string
   onReviewSource?: () => void
+  onMakeAnother?: () => void
 }
 
 export function SuccessModal({
@@ -33,9 +34,9 @@ export function SuccessModal({
   genre = 'Adventure',
   authorName,
   onReviewSource,
+  onMakeAnother,
 }: SuccessModalProps) {
   const [_copied, setCopied] = useState(false)
-  const [twist, setTwist] = useState('')
   const router = useRouter()
 
   const gameUrl = gameSlug ? `${window.location.origin}/games/${gameSlug}` : null
@@ -47,7 +48,6 @@ export function SuccessModal({
     title,
     text: `Just ${action === 'mint' ? 'minted' : 'created'} "${title}" on writersarcade!`,
     url: gameUrl || window.location.href,
-    twist: twist.trim() || undefined,
     author: authorName,
   } : null
 
@@ -78,6 +78,15 @@ export function SuccessModal({
     onClose()
   }
 
+  const handleMakeAnother = () => {
+    trackEvent('make_another_clicked', {
+      surface: 'success_modal',
+      gameSlug,
+    })
+    onMakeAnother?.()
+    onClose()
+  }
+
   // Scroll lock effect
   useEffect(() => {
     if (!isOpen) return
@@ -91,31 +100,28 @@ export function SuccessModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
-      <div className="bg-gradient-to-br from-card to-black border border-green-500/50 rounded-xl max-w-md w-full shadow-[0_0_0_1px_rgba(34,197,94,0.35)]">
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-8 h-8 text-green-500 flex-shrink-0" />
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-green-400">{action === 'mint' ? 'Minted!' : 'Game Ready!'}</h2>
-              <p className="text-sm text-muted-foreground">
-                {description || (action === 'mint' ? 'Your NFT is on-chain' : 'Play it first. Ownership options are waiting in My Games.')}
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-3 sm:p-4">
+      <div className="bg-gradient-to-br from-card to-black border border-green-500/50 rounded-xl max-w-lg w-full shadow-[0_0_0_1px_rgba(34,197,94,0.35)] max-h-[92vh] overflow-y-auto">
+        <div className="p-5 sm:p-6 space-y-5">
+          <div className="text-center space-y-3">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500/15 border border-green-500/35">
+              <CheckCircle className="w-7 h-7 text-green-400" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-green-300/80">
+                {action === 'mint' ? 'Mint complete' : 'Game ready'}
+              </p>
+              <h2 className="mt-1 text-2xl font-bold text-green-300">
+                {action === 'mint' ? 'Minted!' : title}
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {description || (action === 'mint' ? 'Your NFT is on-chain.' : 'Your game is ready. Play it now, share it, or make another.')}
               </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground font-medium">Add your twist (optional)</label>
-            <textarea
-              className="w-full bg-muted/50 border border-border rounded p-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-green-500/50 resize-none h-20"
-              placeholder='e.g. "turned the villain into my ex-VC"'
-              value={twist}
-              onChange={(e) => setTwist(e.target.value)}
-            />
-          </div>
-
           {gameUrl && (
-            <div className="flex items-center gap-2 bg-muted/50 rounded p-2 border border-border">
+            <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2 border border-border">
               <code className="text-xs text-foreground flex-1 truncate">{gameUrl}</code>
               <button
                 onClick={() => handleCopy(gameUrl)}
@@ -127,34 +133,11 @@ export function SuccessModal({
             </div>
           )}
 
-          {action === 'generate' && (
-            <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
-              <div className="font-semibold text-foreground">Next best step: play</div>
-              <p className="mt-1 text-muted-foreground">
-                Try the story before minting or registering IP. When you are ready to preserve ownership, use My Games.
-              </p>
-              {onReviewSource && (
-                <button
-                  type="button"
-                  onClick={onReviewSource}
-                  className="mt-3 text-xs font-medium text-green-300 underline decoration-dotted underline-offset-2 hover:text-green-200"
-                >
-                  Review source fidelity
-                </button>
-              )}
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Mint NFT</span>
-                <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Register IP</span>
-                <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Unlock extras</span>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2 pt-2">
+          <div className="space-y-3 pt-1">
             {gameSlug && (
               <Button
                 onClick={handleViewGame}
-                className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 text-base"
+                className="w-full min-h-14 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 text-base font-bold"
                 size="lg"
               >
                 <Eye className="w-4 h-4" />
@@ -162,23 +145,14 @@ export function SuccessModal({
               </Button>
             )}
 
-            <div className="grid grid-cols-2 gap-2">
-              {action === 'generate' && (
-                <Button
-                  variant="outline"
-                  onClick={handleManageOwnership}
-                  className="text-muted-foreground border-border hover:bg-muted flex items-center justify-center gap-2"
-                >
-                  <Library className="w-4 h-4" />
-                  My Games
-                </Button>
-              )}
-
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
               {shareData ? (
                 <ShareDropdown
                   data={shareData}
                   variant="default"
-                  className="hover:shadow-[0_0_0_1px_rgba(34,197,94,0.35)]"
+                  surface="success_modal"
+                  className="w-full hover:shadow-[0_0_0_1px_rgba(34,197,94,0.35)]"
+                  buttonClassName="w-full"
                 />
               ) : (
                 <Button
@@ -190,15 +164,56 @@ export function SuccessModal({
                   Share
                 </Button>
               )}
+              {action === 'generate' && (
+                <Button
+                  variant="outline"
+                  onClick={handleMakeAnother}
+                  className="border-border hover:bg-muted flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Make Another
+                </Button>
+              )}
             </div>
 
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              className="w-full text-muted-foreground hover:bg-muted"
-            >
-              Close
-            </Button>
+            {action === 'generate' && (
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-1 text-xs">
+                <button
+                  type="button"
+                  onClick={handleManageOwnership}
+                  className="inline-flex items-center gap-1.5 text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                >
+                  <Library className="h-3.5 w-3.5" />
+                  My Games
+                </button>
+                {onReviewSource && (
+                  <button
+                    type="button"
+                    onClick={onReviewSource}
+                    className="text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                  >
+                    Review source fidelity
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+
+            {action !== 'generate' && (
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                className="w-full text-muted-foreground hover:bg-muted"
+              >
+                Close
+              </Button>
+            )}
           </div>
         </div>
       </div>

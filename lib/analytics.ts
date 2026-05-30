@@ -4,6 +4,16 @@ export type AnalyticsEventName =
   | 'article_preview_failed'
   | 'game_mode_selected'
   | 'payment_path_selected'
+  | 'payment_path_advanced_opened'
+  | 'payment_wallet_connect_prompt_shown'
+  | 'payment_wallet_connected'
+  | 'payment_abandoned_before_wallet_connect'
+  | 'payment_abandoned_after_wallet_connect'
+  | 'payment_network_switch_prompt_shown'
+  | 'payment_network_switch_started'
+  | 'payment_network_switch_succeeded'
+  | 'payment_network_switch_failed'
+  | 'payment_network_switch_abandoned'
   | 'payment_started'
   | 'payment_succeeded'
   | 'payment_failed'
@@ -12,6 +22,7 @@ export type AnalyticsEventName =
   | 'play_clicked'
   | 'ownership_clicked'
   | 'share_clicked'
+  | 'make_another_clicked'
 
 type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>
 

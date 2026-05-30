@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
 import { type PaymentToken, getPaymentTokenConfig, MEZO_CONFIG } from '@/lib/writerCoins'
 import type { PaymentAction } from '@/domains/payments/types'
@@ -74,6 +74,8 @@ export function PaymentFlow({
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastTxHash, setLastTxHash] = useState<string | null>(null)
+  const networkPromptTrackedRef = useRef<string | null>(null)
+  const networkSwitchCompletedRef = useRef(false)
 
   const requiredAmount = useMemo(() => {
     const cost = action === 'generate-game' ? config.gameGenerationCost : config.mintCost
@@ -100,7 +102,15 @@ export function PaymentFlow({
     }
 
     if (hasInsufficientBalance) {
-      setError(`Insufficient ${tokenSymbol} balance. You need ${requiredAmount} ${tokenSymbol} but have ${userBalance} ${tokenSymbol}.`)
+      const message = `Insufficient ${tokenSymbol} balance. You need ${requiredAmount} ${tokenSymbol} but have ${userBalance} ${tokenSymbol}.`
+      setError(message)
+      trackEvent('payment_failed', {
+        action,
+        token: tokenSymbol,
+        network: isMUSD ? 'mezo' : 'base',
+        amount: requiredAmount,
+        error: message,
+      })
       return
     }
 
@@ -162,6 +172,70 @@ export function PaymentFlow({
 
   const targetChainId = isMUSD ? MEZO_TESTNET_CHAIN_ID : BASE_MAINNET_CHAIN_ID
   const isWrongChain = Boolean(chainId && chainId !== targetChainId)
+  const networkName = isMUSD ? 'mezo' : 'base'
+
+  useEffect(() => {
+    if (!isWrongChain || !userAddress) return
+
+    const promptKey = `${action}-${targetChainId}`
+    if (networkPromptTrackedRef.current !== promptKey) {
+      networkPromptTrackedRef.current = promptKey
+      networkSwitchCompletedRef.current = false
+      trackEvent('payment_network_switch_prompt_shown', {
+        action,
+        token: tokenSymbol,
+        network: networkName,
+        currentChainId: chainId,
+        targetChainId,
+      })
+    }
+
+    const handlePageHide = () => {
+      if (networkSwitchCompletedRef.current) return
+      trackEvent('payment_network_switch_abandoned', {
+        action,
+        token: tokenSymbol,
+        network: networkName,
+        currentChainId: chainId,
+        targetChainId,
+      })
+    }
+
+    window.addEventListener('pagehide', handlePageHide)
+    return () => window.removeEventListener('pagehide', handlePageHide)
+  }, [action, chainId, isWrongChain, networkName, targetChainId, tokenSymbol, userAddress])
+
+  const handleNetworkSwitch = useCallback(async () => {
+    trackEvent('payment_network_switch_started', {
+      action,
+      token: tokenSymbol,
+      network: networkName,
+      currentChainId: chainId,
+      targetChainId,
+    })
+
+    try {
+      await switchChainAsync({ chainId: targetChainId })
+      networkSwitchCompletedRef.current = true
+      trackEvent('payment_network_switch_succeeded', {
+        action,
+        token: tokenSymbol,
+        network: networkName,
+        targetChainId,
+      })
+    } catch (err) {
+      const message = getUserMessage(err)
+      trackEvent('payment_network_switch_failed', {
+        action,
+        token: tokenSymbol,
+        network: networkName,
+        targetChainId,
+        error: message,
+      })
+      setError(message)
+      onPaymentError?.(message)
+    }
+  }, [action, chainId, networkName, onPaymentError, switchChainAsync, targetChainId, tokenSymbol])
 
   return (
     <div className="space-y-4">
@@ -292,7 +366,7 @@ export function PaymentFlow({
       )}
 
       <Button
-        onClick={handlePayment}
+        onClick={isWrongChain ? handleNetworkSwitch : handlePayment}
         disabled={disabled || isProcessing || !walletClient || !userAddress || !!isLoadingBalance || hasInsufficientBalance}
         size="lg"
         className={cn(
@@ -310,10 +384,7 @@ export function PaymentFlow({
             Processing...
           </span>
         ) : isWrongChain ? (
-          <span onClick={(e) => {
-            e.stopPropagation();
-            switchChainAsync({ chainId: targetChainId });
-          }} className="flex items-center justify-center gap-2 text-center">
+          <span className="flex items-center justify-center gap-2 text-center">
             Switch to {isMUSD ? 'Mezo' : 'Base'} and Continue <ArrowRight className="w-4 h-4" />
           </span>
         ) : (

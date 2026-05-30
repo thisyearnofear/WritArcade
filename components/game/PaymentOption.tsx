@@ -6,10 +6,11 @@ import { PaymentFlow } from './PaymentFlow'
 import { CostPreview } from './CostPreview'
 import { WalletConnect } from '@/components/ui/wallet-connect'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PaymentAction } from '@/domains/payments/types'
 import { AlertCircle } from 'lucide-react'
 import { PaymentTokenSelector } from './PaymentTokenSelector'
+import { trackEvent } from '@/lib/analytics'
 
 interface PaymentOptionProps {
   writerCoin: WriterCoin
@@ -44,6 +45,8 @@ export function PaymentOption({
   _onSkip,
 }: PaymentOptionProps) {
   const { isConnected } = useAccount()
+  const walletPromptTrackedRef = useRef(false)
+  const walletConnectedTrackedRef = useRef(false)
 
   const writerCoinToken = useMemo<{ type: 'writercoin'; coin: WriterCoin }>(
     () => ({ type: 'writercoin', coin: writerCoin }),
@@ -54,6 +57,26 @@ export function PaymentOption({
   const cost = useMemo(() => {
     return PaymentCostService.calculateCostTokenSync(selectedToken, action)
   }, [selectedToken, action])
+
+  useEffect(() => {
+    if (isConnected || walletPromptTrackedRef.current) return
+    walletPromptTrackedRef.current = true
+    trackEvent('payment_wallet_connect_prompt_shown', {
+      action,
+      paymentPath: selectedToken.type === 'musd' ? 'musd' : 'writercoin',
+      token: selectedToken.type === 'musd' ? 'MUSD' : selectedToken.coin.symbol,
+    })
+  }, [action, isConnected, selectedToken])
+
+  useEffect(() => {
+    if (!isConnected || walletConnectedTrackedRef.current) return
+    walletConnectedTrackedRef.current = true
+    trackEvent('payment_wallet_connected', {
+      action,
+      paymentPath: selectedToken.type === 'musd' ? 'musd' : 'writercoin',
+      token: selectedToken.type === 'musd' ? 'MUSD' : selectedToken.coin.symbol,
+    })
+  }, [action, isConnected, selectedToken])
 
   if (!isConnected) {
     return (
