@@ -314,7 +314,7 @@ export function PaymentFlow({
             e.stopPropagation();
             switchChainAsync({ chainId: targetChainId });
           }} className="flex items-center justify-center gap-2 text-center">
-            Switch to {isMUSD ? 'Mezo Matsnet' : 'Base'} <ArrowRight className="w-4 h-4" />
+            Switch to {isMUSD ? 'Mezo' : 'Base'} and Continue <ArrowRight className="w-4 h-4" />
           </span>
         ) : (
           <span className="flex items-center justify-center gap-2 text-center">

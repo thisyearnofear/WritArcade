@@ -62,9 +62,9 @@ export function PaymentOption({
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-200 mb-2">Wallet Connection Required</p>
+              <p className="text-sm font-semibold text-amber-200 mb-2">Connect wallet to pay and generate</p>
               <p className="text-sm text-amber-300 mb-3">
-                To proceed with payment and customization, connect your wallet. You will approve the transaction on the selected payment network.
+                This is the only setup step before the wallet confirmation. We will use the selected payment network.
               </p>
               <WalletConnect />
             </div>

@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, X } from 'lucide-react'
+import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, X, ChevronDown } from 'lucide-react'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { PaymentOption } from '@/components/game/PaymentOption'
@@ -282,6 +282,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [paymentPath, setPaymentPath] = useState<PaymentPath>(initialPaymentPath)
   const [selectedCoin, setSelectedCoin] = useState<WriterCoin>(DEFAULT_WRITER_COIN)
   const [showWriterSelector, setShowWriterSelector] = useState(false)
+  const [showAdvancedPayment, setShowAdvancedPayment] = useState(initialPaymentPath === 'writercoin')
   const [articlePreview, setArticlePreview] = useState<ArticlePreview | null>(null)
   const [isPreviewingArticle, setIsPreviewingArticle] = useState(false)
   const [previewedUrl, setPreviewedUrl] = useState('')
@@ -720,80 +721,161 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Default path</p>
                 <h2 className="text-lg font-semibold text-foreground">MUSD works with any article</h2>
                 <p className="text-sm text-muted-foreground">
-                  Keep the default to move fastest. Switch only if you specifically want a supported writer coin.
+                  Recommended for the fastest build. Use Base writer coin only for supported writer-specific articles.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-2 rounded-lg border border-purple-500/20 bg-slate-900/50 p-1 min-[420px]:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentPath('musd')
-                    setPaymentApproved(false)
-                    setArticlePreview(null)
-                    setPreviewedUrl('')
-                    setError(null)
-                    trackEvent('payment_path_selected', { paymentPath: 'musd', mode })
-                  }}
-                  className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'musd' ? 'bg-orange-600 text-white shadow-lg' : 'text-orange-300 hover:bg-orange-800/50'}`}
-                >
-                  Any article · MUSD
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentPath('writercoin')
-                    setPaymentApproved(false)
-                    setArticlePreview(null)
-                    setPreviewedUrl('')
-                    setError(null)
-                    trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, writerCoinId: writerCoin.id })
-                  }}
-                  className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'writercoin' ? 'bg-purple-600 text-white shadow-lg' : 'text-purple-300 hover:bg-purple-800/50'}`}
-                >
-                  Writer coin · Base
-                </button>
-              </div>
-
-              {!isMusdPath && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground">Selected writer</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {writerCoin.writer} · {writerCoin.symbol}
-                      </p>
+              <div className={`rounded-lg border p-4 transition-colors ${
+                isMusdPath
+                  ? 'border-amber-400/50 bg-amber-500/10'
+                  : 'border-border bg-muted/30'
+              }`}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-bold text-foreground">Any article with MUSD</h3>
+                      <span className="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
+                        Recommended
+                      </span>
                     </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Works with any public Paragraph article on Mezo. No writer matching required.
+                    </p>
+                  </div>
+                  {isMusdPath ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Selected
+                    </span>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => setShowWriterSelector((value) => !value)}
-                      className="text-xs text-purple-400 hover:text-purple-300 underline decoration-dotted"
+                      onClick={() => {
+                        setPaymentPath('musd')
+                        setPaymentApproved(false)
+                        setArticlePreview(null)
+                        setPreviewedUrl('')
+                        setError(null)
+                        trackEvent('payment_path_selected', { paymentPath: 'musd', mode })
+                      }}
+                      className="inline-flex min-h-10 items-center justify-center rounded-md bg-amber-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-amber-500"
                     >
-                      {showWriterSelector ? 'Done' : 'Change writer'}
+                      Use recommended
                     </button>
-                  </div>
-
-                  <AnimatePresence>
-                    {showWriterSelector && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <WriterCoinSelector onSelect={(coin) => {
-                          setSelectedCoin(coin)
-                          setShowWriterSelector(false)
-                          setPaymentApproved(false)
-                          setArticlePreview(null)
-                          setPreviewedUrl('')
-                          setError(null)
-                        }} />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  )}
                 </div>
-              )}
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/20">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAdvancedPayment((value) => !value)
+                  }}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                >
+                  <span>
+                    <span className="block text-sm font-semibold text-foreground">Advanced: use writer coin on Base</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      For supported writer-specific articles only. Requires the matching writer coin.
+                    </span>
+                  </span>
+                  <ChevronDown className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${showAdvancedPayment ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showAdvancedPayment && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-4 border-t border-border p-4">
+                        <div className={`rounded-lg border p-3 ${
+                          !isMusdPath
+                            ? 'border-purple-400/50 bg-purple-500/10'
+                            : 'border-purple-500/20 bg-slate-950/30'
+                        }`}>
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-foreground">Writer coin · Base</p>
+                              <p className="text-xs text-muted-foreground">
+                                Best when you already know the article belongs to a supported writer.
+                              </p>
+                            </div>
+                            {!isMusdPath ? (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/15 px-2.5 py-1 text-xs font-semibold text-purple-200">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Selected
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPaymentPath('writercoin')
+                                  setPaymentApproved(false)
+                                  setArticlePreview(null)
+                                  setPreviewedUrl('')
+                                  setError(null)
+                                  trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, writerCoinId: writerCoin.id })
+                                }}
+                                className="inline-flex min-h-10 items-center justify-center rounded-md border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-xs font-bold uppercase tracking-wider text-purple-100 transition hover:bg-purple-500/20"
+                              >
+                                Use writer coin
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {!isMusdPath && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-foreground">Selected writer</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {writerCoin.writer} · {writerCoin.symbol}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setShowWriterSelector((value) => !value)}
+                                className="text-xs text-purple-400 hover:text-purple-300 underline decoration-dotted"
+                              >
+                                {showWriterSelector ? 'Done' : 'Change writer'}
+                              </button>
+                            </div>
+
+                            <div className="rounded-lg border border-purple-500/20 bg-purple-950/20 p-3 text-xs text-purple-100/80">
+                              The article URL must match this writer. If it does not, switch back to MUSD.
+                            </div>
+
+                            <AnimatePresence>
+                              {showWriterSelector && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <WriterCoinSelector onSelect={(coin) => {
+                                    setSelectedCoin(coin)
+                                    setShowWriterSelector(false)
+                                    setPaymentApproved(false)
+                                    setArticlePreview(null)
+                                    setPreviewedUrl('')
+                                    setError(null)
+                                  }} />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           )}
 
