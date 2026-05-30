@@ -609,10 +609,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Step 1</p>
               <h2 className="text-lg font-semibold text-foreground">Paste the article</h2>
               <p className="text-sm text-muted-foreground">
-                Start with the source. If you came from the homepage, we will check it automatically.
+                Start with a public Paragraph article.
               </p>
             </div>
 
@@ -621,22 +620,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 <Label htmlFor="url" className="text-sm font-medium">
                   Paragraph.xyz Article URL
                 </Label>
-                <motion.div
-                  className="relative group"
-                  whileHover={{ scale: 1.1 }}
-                >
-                  <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  <motion.div
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-muted border border-border rounded-lg text-xs text-foreground z-50 pointer-events-none"
-                    initial={{ opacity: 0, y: 5 }}
-                    whileHover={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {isMusdPath
-                      ? 'Any public Paragraph.xyz article works with MUSD on Mezo.'
-                      : 'Writer coin generation validates against the selected writer.'}
-                  </motion.div>
-                </motion.div>
               </div>
               <Input
                 id="url"
@@ -654,9 +637,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 }}
                 className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               />
-              <p className="text-xs text-muted-foreground mt-1 px-1">
-                Wordle is free. Story generation asks for payment only after this URL is ready.
-              </p>
             </div>
 
             {articlePreview && hasPreviewedCurrentUrl && (
@@ -675,9 +655,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     <p className="mt-1 text-xs text-muted-foreground">
                       {articlePreviewMeta(articlePreview)}
                     </p>
-                    {articlePreview.excerpt && (
-                      <p className="mt-2 max-h-10 overflow-hidden text-xs text-muted-foreground">{articlePreview.excerpt}</p>
-                    )}
                   </div>
                 </div>
               </motion.div>
@@ -696,6 +673,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             )}
           </div>
 
+          {!hasPreviewedCurrentUrl && (
           <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <Label className="text-sm font-medium">Game Type</Label>
@@ -758,61 +736,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 : 'Wordle creates a free word puzzle derived from your article. No payment needed.'}
             </p>
           </div>
+          )}
 
-          {isStoryMode && (
-            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Default path</p>
-                <h2 className="text-lg font-semibold text-foreground">MUSD works with any article</h2>
-                <p className="text-sm text-muted-foreground">
-                  Recommended for the fastest build. Use Base writer coin only for supported writer-specific articles.
-                </p>
-              </div>
-
-              <div className={`rounded-lg border p-4 transition-colors ${
-                isMusdPath
-                  ? 'border-amber-400/50 bg-amber-500/10'
-                  : 'border-border bg-muted/30'
-              }`}>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-bold text-foreground">Any article with MUSD</h3>
-                      <span className="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
-                        Recommended
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Works with any public Paragraph article on Mezo. No writer matching required.
-                    </p>
-                  </div>
-                  {isMusdPath ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Selected
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentPath('musd')
-                        paymentCompletedRef.current = false
-                        setPaymentApproved(false)
-                        setArticlePreview(null)
-                        setPreviewedUrl('')
-                        paymentPathExposureRef.current = null
-                        setError(null)
-                        trackEvent('payment_path_selected', { paymentPath: 'musd', mode, source: 'recommended_click' })
-                      }}
-                      className="inline-flex min-h-10 items-center justify-center rounded-md bg-amber-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-amber-500"
-                    >
-                      Use recommended
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-border bg-muted/20">
+          {isStoryMode && hasPreviewedCurrentUrl && (
+            <div className="rounded-xl border border-border bg-card">
                 <button
                   type="button"
                   onClick={() => {
@@ -828,10 +755,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                 >
                   <span>
-                    <span className="block text-sm font-semibold text-foreground">Advanced: use writer coin on Base</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      For supported writer-specific articles only. Requires the matching writer coin.
-                    </span>
+                    <span className="block text-sm font-semibold text-foreground">Advanced payment options</span>
                   </span>
                   <ChevronDown className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${showAdvancedPayment ? 'rotate-180' : ''}`} />
                 </button>
@@ -845,6 +769,49 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                       className="overflow-hidden"
                     >
                       <div className="space-y-4 border-t border-border p-4">
+                        <div className={`rounded-lg border p-3 ${
+                          isMusdPath
+                            ? 'border-amber-400/50 bg-amber-500/10'
+                            : 'border-border bg-muted/30'
+                        }`}>
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-bold text-foreground">MUSD · Mezo</p>
+                                <span className="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
+                                  Recommended
+                                </span>
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Works with any public Paragraph article.
+                              </p>
+                            </div>
+                            {isMusdPath ? (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Selected
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPaymentPath('musd')
+                                  paymentCompletedRef.current = false
+                                  setPaymentApproved(false)
+                                  setArticlePreview(null)
+                                  setPreviewedUrl('')
+                                  paymentPathExposureRef.current = null
+                                  setError(null)
+                                  trackEvent('payment_path_selected', { paymentPath: 'musd', mode, source: 'recommended_click' })
+                                }}
+                                className="inline-flex min-h-10 items-center justify-center rounded-md bg-amber-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-amber-500"
+                              >
+                                Use MUSD
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
                         <div className={`rounded-lg border p-3 ${
                           !isMusdPath
                             ? 'border-purple-400/50 bg-purple-500/10'
@@ -932,7 +899,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
             </div>
           )}
 
@@ -946,9 +912,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 <div className="mt-0.5 rounded-lg bg-cyan-500/20 p-2">
                   <Sparkles className="h-4 w-4 text-cyan-200" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80">
-                    Game preview
+                    Your game
                   </p>
                   <h3 className="mt-1 text-base font-semibold text-foreground">
                     {mode === 'wordle' ? 'Free article Wordle' : '5-panel playable comic'}
@@ -958,17 +924,36 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                       ? `A word puzzle derived from the language and themes in "${articlePreview.title}".`
                       : articleGamePremise(articlePreview, genre)}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-cyan-100">
-                      {mode === 'wordle' ? 'Free' : 'Paid generation'}
-                    </span>
-                    <span className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground">
-                      Source-linked
+                      {mode === 'wordle' ? 'Free' : 'Paid'}
                     </span>
                     {mode === 'story' && (
                       <span className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground">
                         {genre} · {difficulty}
                       </span>
+                    )}
+                    {mode === 'story' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCustomization((value) => !value)}
+                        className="rounded-full border border-cyan-500/30 bg-black/20 px-2.5 py-1 text-cyan-100 transition hover:bg-cyan-500/10"
+                      >
+                        Customize
+                      </button>
+                    )}
+                    {mode === 'story' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('wordle')
+                          paymentCompletedRef.current = false
+                          trackEvent('game_mode_selected', { mode: 'wordle', paymentPath, source: 'post_preview_link' })
+                        }}
+                        className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground transition hover:text-foreground"
+                      >
+                        Make free Wordle instead
+                      </button>
                     )}
                   </div>
                 </div>
@@ -976,34 +961,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             </motion.div>
           )}
 
-          {!isGenerating && isStoryMode && (
+          {!isGenerating && isStoryMode && hasPreviewedCurrentUrl && showCustomization && (
             <motion.div
-              className="pt-4 border-t border-border"
+              className="pt-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.5 }}
             >
-              <motion.button
-                type="button"
-                onClick={() => setShowCustomization(!showCustomization)}
-                className="flex w-full flex-wrap items-center gap-2 text-left text-sm font-medium text-purple-400 hover:text-purple-300"
-                whileHover={{ x: 5 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <motion.span
-                  initial={{ rotate: 0 }}
-                  animate={{ rotate: showCustomization ? 180 : 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {showCustomization ? '▼' : '▶'}
-                </motion.span>
-                <Sparkles className="w-4 h-4 text-yellow-300" />
-                <span>Optional style controls</span>
-                <span className="text-xs text-purple-300/80 sm:ml-auto">Defaults are ready</span>
-              </motion.button>
-
               <AnimatePresence>
-                {showCustomization && (
                   <motion.div
                     className="mt-4 space-y-4 p-5 rounded-xl border-2 border-indigo-500/40 bg-gradient-to-br from-slate-900/80 to-indigo-950/60 shadow-lg"
                     initial={{ opacity: 0, height: 0 }}
@@ -1019,17 +984,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-purple-100">Tune the default game style</span>
-                          {paymentApproved && (
-                            <span className="px-2 py-0.5 bg-green-500/20 border border-green-500/50 rounded-full text-xs text-green-300">
-                              ✓ Paid
-                            </span>
-                          )}
-                          {!paymentApproved && (
-                            <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/50 rounded-full text-xs text-amber-300">
-                              Preview Mode
-                            </span>
-                          )}
+                          <span className="text-sm font-semibold text-purple-100">Customize style</span>
                         </div>
                         <button
                           type="button"
@@ -1108,18 +1063,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                         <div className="space-y-1 text-xs">
                           <div>• <strong>Genre</strong> shapes narrative tone and visual style</div>
                           <div>• <strong>Difficulty</strong> controls branching complexity</div>
-                          <div className="mt-2 pt-2 border-t border-purple-500/20 text-yellow-200">
-                            {paymentApproved ? (
-                              <span className="text-green-300">✓ Payment approved - ready to generate!</span>
-                            ) : (
-                              <span>💳 Payment required to generate Story games</span>
-                            )}
-                          </div>
                         </div>
                       </motion.div>
                     </motion.div>
                   </motion.div>
-                )}
               </AnimatePresence>
             </motion.div>
           )}
@@ -1166,10 +1113,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               </div>
               <div className="flex-1">
                 <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80 mb-1">Ready to build</p>
-                <h3 className="font-semibold text-lg text-cyan-50 mb-1">Pay and generate full story game</h3>
-                <p className="text-sm text-cyan-100/90 mb-3">
-                  One app action, then your wallet confirmation. Play Now appears as soon as generation finishes.
-                </p>
+                <h3 className="font-semibold text-lg text-cyan-50">Pay and generate</h3>
               </div>
             </div>
 
@@ -1184,10 +1128,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               compact
             />
             <details className="rounded-lg border border-cyan-500/20 bg-black/20 p-3 text-xs text-cyan-100/75">
-              <summary className="cursor-pointer font-medium text-cyan-100">Payment details</summary>
+              <summary className="cursor-pointer font-medium text-cyan-100">Details</summary>
               <p className="mt-2 leading-relaxed">
                 {isMusdPath
-                  ? 'MUSD supports any public Paragraph article on Mezo. The original writer still remains part of the attribution flow.'
+                  ? 'MUSD supports any public Paragraph article on Mezo.'
                   : `${writerCoin.symbol} is the curated writer coin path on Base for supported writers.`}
               </p>
             </details>
@@ -1254,14 +1198,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         )}
       </form>
 
-      <div className="mt-8 p-4 rounded-lg border border-border bg-card text-card-foreground">
-        <h3 className="font-medium mb-2 text-sm">💡 Tips for better games</h3>
-        <ul className="list-disc pl-4 text-sm text-muted-foreground space-y-1.5">
+      <details className="mt-8 rounded-lg border border-border bg-card p-4 text-card-foreground">
+        <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Tips for better games</summary>
+        <ul className="mt-3 list-disc pl-4 text-sm text-muted-foreground space-y-1.5">
           <li>{mode === 'wordle' ? 'Wordle works with public Paragraph.xyz articles and does not require payment.' : isMusdPath ? 'Paste any public Paragraph.xyz article to remix with MUSD.' : 'Paste URLs from Paragraph.xyz articles by the selected writer.'}</li>
-          <li>Genre and difficulty shape how the AI interprets the article</li>
-          <li><a href="/workshop" className="text-primary hover:underline font-medium">Use the Workshop</a> for deeper personalization</li>
+          <li>Genre and difficulty shape how the AI interprets the article.</li>
+          <li><a href="/workshop" className="text-primary hover:underline font-medium">Use the Workshop</a> for deeper personalization.</li>
         </ul>
-      </div>
+      </details>
 
       <GameGenerationOverlay
         isOpen={isGenerating}
