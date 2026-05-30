@@ -13,6 +13,7 @@ import { GameplayScreen } from './screens/gameplay-screen'
 import { ComicFinaleScreen } from './screens/comic-finale-screen'
 import { GameStatusScreens } from './screens/game-status-screens'
 import { GameEnrichment } from './game-enrichment'
+import { trackEvent } from '@/lib/analytics'
 
 interface GamePlayInterfaceProps {
   game: Game
@@ -74,7 +75,14 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   /**
    * Orchestration Handlers
    */
-  const handleStartClick = () => setShowPreview(true)
+  const handleStartClick = () => {
+    trackEvent('play_clicked', {
+      surface: 'game_page_hero',
+      gameSlug: game.slug,
+      mode: game.mode || 'story',
+    })
+    setShowPreview(true)
+  }
 
   const handlePreviewApproved = () => {
     setShowPreview(false)

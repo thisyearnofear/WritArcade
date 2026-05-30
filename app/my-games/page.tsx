@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { Header } from '@/components/layout/header'
@@ -10,10 +10,23 @@ import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
 import { IPRegistration } from '@/components/story/IPRegistration'
-import { Plus, Gamepad2, Shield, X } from 'lucide-react'
+import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye } from 'lucide-react'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
+import type { LucideIcon } from 'lucide-react'
+
+function StatTile({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+      </div>
+      <div className="mt-2 text-2xl font-bold text-foreground">{value}</div>
+    </div>
+  )
+}
 
 export default function MyGamesPage() {
   const { toast } = useToast()
@@ -32,6 +45,12 @@ export default function MyGamesPage() {
   const [sessionAllowed, setSessionAllowed] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTab, setActiveTab] = useState<'games' | 'ip-registrations'>('games')
+  const stats = useMemo(() => {
+    const minted = games.filter(game => !!game.nftTokenId).length
+    const registered = games.filter(game => !!game.storyIpId).length
+    const publicGames = games.filter(game => !game.private).length
+    return { minted, registered, publicGames }
+  }, [games])
 
   // Require connection, but wait for status to resolve to avoid false redirects
   // Guard against 'connecting' AND 'reconnecting' — both are transient states
@@ -291,21 +310,31 @@ export default function MyGamesPage() {
 
       <main className="flex-1 overflow-y-auto">
         {/* Page Header */}
-        <section className="py-12 px-4 bg-gradient-to-b from-purple-900/20 to-transparent border-b border-border">
+        <section className="py-10 px-4 border-b border-border">
           <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-4xl font-bold">My Games</h1>
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Library</p>
+                <h1 className="text-3xl sm:text-4xl font-bold">My Games</h1>
+                <p className="mt-3 max-w-2xl text-muted-foreground">
+                  Play your generated games first. Minting, IP registration, sharing, and settings live here when you are ready to manage ownership.
+                </p>
+              </div>
               <Link
                 href="/generate"
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-sm font-medium"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
               >
                 <Plus className="w-4 h-4" />
                 Create New Game
               </Link>
             </div>
-            <p className="text-muted-foreground">
-              Manage your created games, mint them as NFTs, and register them as IP assets.
-            </p>
+
+            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <StatTile icon={Library} label="Games" value={games.length} />
+              <StatTile icon={Eye} label="Public" value={stats.publicGames} />
+              <StatTile icon={BadgeCheck} label="Minted" value={stats.minted} />
+              <StatTile icon={Network} label="IP Registered" value={stats.registered} />
+            </div>
           </div>
         </section>
 
@@ -323,7 +352,7 @@ export default function MyGamesPage() {
                 }`}
               >
                 <Gamepad2 className="w-4 h-4" />
-                My Games
+                Library
                 <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
                   {games.length}
                 </span>
@@ -337,7 +366,7 @@ export default function MyGamesPage() {
                 }`}
               >
                 <Shield className="w-4 h-4" />
-                IP Registrations
+                Ownership History
               </button>
             </div>
 
@@ -370,23 +399,34 @@ export default function MyGamesPage() {
                 </button>
               </div>
             ) : games.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
-                <h2 className="text-xl font-semibold text-foreground mb-3">No games yet</h2>
+              <div className="rounded-xl border border-dashed border-border bg-card/50 px-4 py-16 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-purple-500/10 text-purple-300">
+                  <Gamepad2 className="h-7 w-7" />
+                </div>
+                <h2 className="text-xl font-semibold text-foreground mb-3">Your library is empty</h2>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Create your first game by pasting a Paragraph.xyz article URL. You can then mint it as an NFT or register it as an IP asset.
+                  Paste an article, preview the source, and create your first playable story. Ownership options can wait until after you play.
                 </p>
                 <Link
                   href="/generate"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors font-medium"
+                  className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700"
                 >
                   <Plus className="w-5 h-5" />
-                  Create Your First Game
+                  Create First Game
                 </Link>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-6">
-                  You have <span className="font-semibold text-white">{games.length}</span> game{games.length !== 1 ? 's' : ''}
+                <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Playable Library</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {games.length} game{games.length !== 1 ? 's' : ''} ready to play or manage.
+                    </p>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Primary action is always Play. Ownership actions stay grouped on each card.
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
+import { trackEvent } from '@/lib/analytics'
 
 const MEZO_TESTNET_EXPLORER_URL = 'https://explorer.test.mezo.org/tx'
 
@@ -105,6 +106,12 @@ export function PaymentFlow({
 
     setIsProcessing(true)
     setError(null)
+    trackEvent('payment_started', {
+      action,
+      token: tokenSymbol,
+      network: isMUSD ? 'mezo' : 'base',
+      amount: requiredAmount,
+    })
 
     try {
       await retryWithBackoff(

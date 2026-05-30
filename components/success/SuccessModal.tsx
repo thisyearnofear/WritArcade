@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
+import { trackEvent } from '@/lib/analytics'
 
 interface SuccessModalProps {
   isOpen: boolean
@@ -56,12 +57,21 @@ export function SuccessModal({
 
   const handleViewGame = () => {
     if (gameSlug) {
+      trackEvent('play_clicked', {
+        surface: 'success_modal',
+        gameSlug,
+      })
       router.push(`/games/${gameSlug}`)
       onClose()
     }
   }
 
   const handleManageOwnership = () => {
+    trackEvent('ownership_clicked', {
+      action: 'open_my_games',
+      surface: 'success_modal',
+      gameSlug,
+    })
     router.push('/my-games')
     onClose()
   }

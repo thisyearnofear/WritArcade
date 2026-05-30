@@ -18,6 +18,7 @@ import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import type { PaymentPath } from '@/domains/games/components/simple-game-form'
+import { trackEvent } from '@/lib/analytics'
 
 interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
@@ -185,6 +186,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   }, [balance, isMusdPath])
 
   const handlePaymentSuccess = async (_transactionHash: string) => {
+    trackEvent('payment_succeeded', {
+      paymentPath,
+      mode,
+      articlePreviewed: hasPreviewedCurrentUrl,
+    })
     setPaymentApproved(true)
     setError(null)
     await generateGame()
@@ -200,6 +206,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
     setIsPreviewingArticle(true)
     setError(null)
+    trackEvent('article_preview_started', {
+      paymentPath,
+      mode,
+      writerCoinId: isMusdPath ? undefined : writerCoin.id,
+    })
 
     try {
       const response = await fetch('/api/articles/preview', {
@@ -220,6 +231,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
       setArticlePreview(result.data)
       setPreviewedUrl(url.trim())
+      trackEvent('article_preview_succeeded', {
+        paymentPath,
+        mode,
+        writerCoinId: isMusdPath ? undefined : writerCoin.id,
+        wordCount: result.data?.wordCount,
+        estimatedReadTime: result.data?.estimatedReadTime,
+      })
       return result.data as ArticlePreview
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not preview this article.'
@@ -227,6 +245,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       setPreviewedUrl('')
       setPaymentApproved(false)
       setError(message)
+      trackEvent('article_preview_failed', {
+        paymentPath,
+        mode,
+        writerCoinId: isMusdPath ? undefined : writerCoin.id,
+        error: message,
+      })
       return null
     } finally {
       setIsPreviewingArticle(false)
@@ -335,6 +359,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       }
       setGeneratedGame(gameData)
       setShowFidelityReview(true)
+      trackEvent('game_generated', {
+        mode,
+        paymentPath,
+        gameSlug: gameData.slug,
+        genre,
+        difficulty,
+      })
 
       onGameGenerated?.(result.data)
       // State resets handled in onClose callback to avoid blank form before modal dismisses
@@ -487,7 +518,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 border border-border p-1">
               <motion.button
                 type="button"
-                onClick={() => setMode('story')}
+                onClick={() => {
+                  setMode('story')
+                  trackEvent('game_mode_selected', { mode: 'story', paymentPath })
+                }}
                 className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
                   mode === 'story'
                     ? 'bg-purple-600 text-white shadow'
@@ -501,7 +535,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               </motion.button>
               <motion.button
                 type="button"
-                onClick={() => setMode('wordle')}
+                onClick={() => {
+                  setMode('wordle')
+                  trackEvent('game_mode_selected', { mode: 'wordle', paymentPath })
+                }}
                 className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
                   mode === 'wordle'
                     ? 'bg-amber-600 text-white shadow'
@@ -540,6 +577,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     setArticlePreview(null)
                     setPreviewedUrl('')
                     setError(null)
+                    trackEvent('payment_path_selected', { paymentPath: 'musd', mode })
                   }}
                   className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'musd' ? 'bg-orange-600 text-white shadow-lg' : 'text-orange-300 hover:bg-orange-800/50'}`}
                 >
@@ -553,6 +591,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     setArticlePreview(null)
                     setPreviewedUrl('')
                     setError(null)
+                    trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, writerCoinId: writerCoin.id })
                   }}
                   className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${paymentPath === 'writercoin' ? 'bg-purple-600 text-white shadow-lg' : 'text-purple-300 hover:bg-purple-800/50'}`}
                 >

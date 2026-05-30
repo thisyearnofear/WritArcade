@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Game } from '../types'
-import { Play, Zap, Crown, Trash2, Eye, EyeOff, Settings } from 'lucide-react'
+import { Play, Zap, Crown, Trash2, Eye, EyeOff, Settings, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAccount } from 'wagmi'
 import { isAdmin } from '@/lib/constants'
 import { HypercertBadge } from './hypercert-badge'
 import { ProtocolLifecycle } from './protocol-lifecycle'
+import { trackEvent } from '@/lib/analytics'
 
 interface GameCardEnhancedProps {
   game: Game
@@ -40,6 +41,22 @@ export function GameCardEnhanced({
 
   // Settings visible if owner OR admin
   const showSettings = isUserGame || userIsAdmin
+  const handleShare = async () => {
+    trackEvent('share_clicked', {
+      surface: 'game_card',
+      gameSlug: game.slug,
+    })
+    const url = `${window.location.origin}/games/${game.slug}`
+    if (navigator.share) {
+      await navigator.share({
+        title: game.title,
+        text: game.description,
+        url,
+      }).catch(() => {})
+      return
+    }
+    await navigator.clipboard.writeText(url)
+  }
 
   // Card animation variants
   const cardVariants = {
@@ -146,12 +163,17 @@ export function GameCardEnhanced({
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-4">
-            <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
+          {/* Primary action */}
+          <div className="space-y-3 pt-4">
+            <motion.div whileTap={{ scale: 0.98 }}>
               <Link
                 href={`/games/${game.slug}`}
-                className="flex h-9 items-center justify-center gap-2 rounded-md border border-foreground bg-foreground px-3 text-sm font-medium text-background transition-all duration-200 hover:bg-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-muted-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98] dark:border-white/15 dark:bg-white dark:text-card dark:hover:bg-border dark:focus-visible:ring-muted-foreground dark:focus-visible:ring-offset-card"
+                onClick={() => trackEvent('play_clicked', {
+                  surface: isUserGame ? 'my_games_card' : 'game_card',
+                  gameSlug: game.slug,
+                  mode: game.mode || 'story',
+                })}
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-foreground bg-foreground px-3 text-sm font-semibold text-background transition-all duration-200 hover:bg-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-muted-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98] dark:border-white/15 dark:bg-white dark:text-card dark:hover:bg-border dark:focus-visible:ring-muted-foreground dark:focus-visible:ring-offset-card"
               >
                 <span className="flex items-center gap-2">
                   <Play className="w-4 h-4" />
@@ -170,56 +192,87 @@ export function GameCardEnhanced({
             </motion.div>
 
             {isUserGame && (
-              <>
-                <ActionButton
-                  onClick={onMintClick}
-                  disabled={isLoading}
-                  icon={<Zap className="w-4 h-4" />}
-                  label="Mint"
-                  title="Mint as NFT on Base"
-                />
+              <div className="rounded-lg border border-border bg-muted/30 p-2">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Ownership
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <ActionButton
+                    onClick={() => {
+                      trackEvent('ownership_clicked', {
+                        action: 'mint',
+                        surface: 'my_games_card',
+                        gameSlug: game.slug,
+                      })
+                      onMintClick?.()
+                    }}
+                    disabled={isLoading || !!game.nftTokenId}
+                    icon={<Zap className="w-4 h-4" />}
+                    label={game.nftTokenId ? 'Minted' : 'Mint NFT'}
+                    title={game.nftTokenId ? 'Already minted as NFT' : 'Mint as NFT'}
+                  />
 
-                <ActionButton
-                  onClick={onRegisterClick}
-                  disabled={isLoading}
-                  icon={<Crown className="w-4 h-4" />}
-                  label="Register"
-                  title="Register as IP on Story Protocol"
-                />
+                  <ActionButton
+                    onClick={() => {
+                      trackEvent('ownership_clicked', {
+                        action: 'register_ip',
+                        surface: 'my_games_card',
+                        gameSlug: game.slug,
+                      })
+                      onRegisterClick?.()
+                    }}
+                    disabled={isLoading || !!game.storyIpId}
+                    icon={<Crown className="w-4 h-4" />}
+                    label={game.storyIpId ? 'IP Registered' : 'Register IP'}
+                    title={game.storyIpId ? 'Already registered as IP' : 'Register as IP on Story Protocol'}
+                  />
+                </div>
+              </div>
+            )}
 
+            <div className="flex flex-wrap gap-2">
+              <ActionButton
+                onClick={handleShare}
+                disabled={isLoading}
+                icon={<Share2 className="w-4 h-4" />}
+                label="Share"
+                title="Share game"
+              />
+
+              {isUserGame && (
                 <ActionButton
                   onClick={() => onToggleVisibility?.(!game.private)}
                   disabled={isLoading}
                   icon={game.private ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  label={game.private ? 'Make Public' : 'Make Private'}
+                  label={game.private ? 'Public' : 'Private'}
                   title={game.private ? 'Make public' : 'Make private'}
                   ariaLabel={game.private ? 'Make public' : 'Make private'}
                 />
-              </>
-            )}
+              )}
 
-            {/* Settings Button Separated to be visible for Admins too */}
-            {showSettings && (
-              <ActionButton
-                onClick={onSettingsClick}
-                disabled={isLoading}
-                icon={<Settings className={`w-4 h-4 ${userIsAdmin && !isUserGame ? 'text-yellow-500' : ''}`} />}
-                label=""
-                title="Configure Settings (Fee & Visibility & Featured)"
-              />
-            )}
+              {/* Settings Button Separated to be visible for Admins too */}
+              {showSettings && (
+                <ActionButton
+                  onClick={onSettingsClick}
+                  disabled={isLoading}
+                  icon={<Settings className={`w-4 h-4 ${userIsAdmin && !isUserGame ? 'text-yellow-500' : ''}`} />}
+                  label="Settings"
+                  title="Configure settings"
+                />
+              )}
 
-            {/* Delete for Owner Only */}
-            {isUserGame && (
-              <ActionButton
-                onClick={onDeleteClick}
-                disabled={isLoading}
-                icon={<Trash2 className="w-4 h-4" />}
-                label=""
-                title="Delete game"
-                variant="danger"
-              />
-            )}
+              {/* Delete for Owner Only */}
+              {isUserGame && (
+                <ActionButton
+                  onClick={onDeleteClick}
+                  disabled={isLoading}
+                  icon={<Trash2 className="w-4 h-4" />}
+                  label=""
+                  title="Delete game"
+                  variant="danger"
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -239,7 +292,7 @@ interface ActionButtonProps {
 }
 
 function ActionButton({ onClick, disabled, icon, label, title, ariaLabel, variant = 'default' }: ActionButtonProps) {
-  const baseClasses = "flex items-center gap-2 border-border text-foreground transition-all duration-200 hover:border-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-muted-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] dark:hover:bg-muted dark:focus-visible:ring-muted-foreground dark:focus-visible:ring-offset-card"
+  const baseClasses = "w-full justify-center flex items-center gap-2 border-border text-foreground transition-all duration-200 hover:border-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-muted-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] dark:hover:bg-muted dark:focus-visible:ring-muted-foreground dark:focus-visible:ring-offset-card"
   const variantClasses = variant === 'danger' 
     ? "text-red-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-700/70 dark:hover:bg-red-500/10 dark:hover:text-red-400"
     : ""
@@ -259,7 +312,7 @@ function ActionButton({ onClick, disabled, icon, label, title, ariaLabel, varian
         aria-label={ariaLabel || title}
       >
         {icon}
-        {label && <span className="hidden sm:inline">{label}</span>}
+        {label && <span>{label}</span>}
       </Button>
     </motion.div>
   )
