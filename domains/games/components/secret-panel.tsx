@@ -79,7 +79,7 @@ export function SecretPanel({
         throw new Error('CDR client unavailable. Try again later.')
       }
 
-      const decrypted = await readVaultData(client, Number(promptVaultUuid!))
+      const decrypted = await readVaultData(client, promptVaultUuid!)
       if (!decrypted) {
         throw new Error('Failed to decrypt vault data')
       }

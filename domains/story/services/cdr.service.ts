@@ -9,8 +9,12 @@ const STORY_CHAIN = {
   rpcUrls: { default: { http: [STORY_RPC_URL] } },
 } as const;
 
-// Story-API REST endpoint for DKG state (NOT the EVM RPC)
-export const CDR_REST_URL = process.env.CDR_API_URL || "http://172.192.41.96:1317";
+// Story-API REST endpoint for DKG state (NOT the EVM RPC).
+// NEXT_PUBLIC_ prefix ensures the browser bundle can read this value at runtime.
+export const CDR_REST_URL =
+  process.env.NEXT_PUBLIC_CDR_API_URL ||
+  process.env.CDR_API_URL ||
+  "http://172.192.41.96:1317";
 
 // === WASM Initialization (client-side) ===
 
@@ -49,32 +53,41 @@ export async function createUserCdrClient(walletClient: WalletClient<Transport, 
 
 export async function readVaultData(
   client: CDRClient,
-  uuid: number
+  uuid: string | number | bigint
 ): Promise<string | null> {
   try {
     // accessCDR: reads data stored on-chain via uploadCDR.
     // Returns the decrypted dataKey (which IS our plaintext payload).
+    // Use BigInt() to avoid Number precision loss for large vault UUIDs.
     const { dataKey } = await client.consumer.accessCDR({
-      uuid,
+      uuid: BigInt(uuid),
       accessAuxData: "0x",
     });
     return new TextDecoder().decode(dataKey);
   } catch (err) {
-    console.error('Failed to read vault data:', err);
-    return null;
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Failed to read vault data:', msg)
+    // Surface CDR-specific errors so callers can distinguish protocol
+    // failures (e.g. tokenGate rejection) from generic network errors.
+    if (msg.includes('token') || msg.includes('gate') || msg.includes('condition')) {
+      throw new Error(`CDR access denied — the token-gate condition was not satisfied. (${msg})`)
+    }
+    return null
   }
 }
 
 // === Backend Proxy Vault Operations ===
 // Vaulting happens on the persistent PM2 backend (snel-bot) instead of Vercel
 // serverless, avoiding 5.5 MB WASM cold starts and timeout risks.
+//
+// Uses API_BACKEND_URL (includes /writersarcade prefix) to match the nginx
+// reverse proxy config, consistent with /api/generate-image and other
+// Hetzner-proxied routes in next.config.js rewrites.
 
-function getBackendUrl(): string {
-  if (typeof window === 'undefined') {
-    return process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade';
-  }
-  return '/api/cdr/vault';
-}
+const CDR_BACKEND_BASE =
+  process.env.CDR_BACKEND_URL ||
+  process.env.API_BACKEND_URL ||
+  'https://api.snel.famile.xyz/writersarcade';
 
 /**
  * Proxy a vault operation to the backend server.
@@ -84,8 +97,7 @@ export async function vaultViaBackend(
   data: string,
   options: { readCondition: 'open' | 'tokenGate'; nftContract?: string } = { readCondition: 'open' }
 ): Promise<string> {
-  const backendUrl = getBackendUrl();
-  const url = `${backendUrl}/api/cdr/vault`;
+  const url = `${CDR_BACKEND_BASE}/api/cdr/vault`;
 
   const response = await fetch(url, {
     method: 'POST',

@@ -31,6 +31,7 @@ const nextConfig = {
         { source: '/api/generate-image/:path*', destination: `${API_BACKEND_URL}/api/generate-image/:path*` },
         { source: '/api/generate-audio', destination: `${API_BACKEND_URL}/api/generate-audio` },
         { source: '/api/user/balance', destination: `${API_BACKEND_URL}/api/user/balance` },
+        { source: '/api/cdr/vault', destination: `${API_BACKEND_URL}/api/cdr/vault` },
       ],
       afterFiles: [],
       fallback: [],

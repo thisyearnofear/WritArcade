@@ -492,6 +492,66 @@ async function start() {
     }
   })
 
+  /**
+   * NFT Ownership Verification — proxied from Vercel to avoid cold-starting
+   * a viem publicClient on every serverless invocation.
+   *
+   * Request:  { nftTokenId, walletAddress, contractAddress, chainId }
+   * Response: { verified: boolean, error?: string }
+   */
+  app.post('/api/verify-nft-ownership', async (request, reply) => {
+    try {
+      const { nftTokenId, walletAddress, contractAddress, chainId } = request.body || {}
+
+      if (!nftTokenId || !walletAddress || !contractAddress || !chainId) {
+        return reply.code(400).send({
+          verified: false,
+          error: 'Missing required fields: nftTokenId, walletAddress, contractAddress, chainId',
+        })
+      }
+
+      if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+        return reply.code(400).send({ verified: false, error: 'Invalid wallet address' })
+      }
+
+      const rpcUrl = chainId === 8453
+        ? 'https://mainnet.base.org'
+        : chainId === 31611
+          ? 'https://rpc.test.mezo.org'
+          : 'https://mainnet.base.org'
+
+      const chain = chainId === 8453
+        ? base
+        : { id: chainId, name: '', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpcUrl] } } }
+
+      const publicClient = createPublicClient({ chain, transport: http(rpcUrl) })
+
+      const owner = await publicClient.readContract({
+        address: contractAddress,
+        abi: [{
+          name: 'ownerOf',
+          type: 'function',
+          stateMutability: 'view',
+          inputs: [{ name: 'tokenId', type: 'uint256' }],
+          outputs: [{ name: '', type: 'address' }],
+        }],
+        functionName: 'ownerOf',
+        args: [BigInt(nftTokenId)],
+      })
+
+      const verified = (owner).toLowerCase() === walletAddress.toLowerCase()
+      return reply.send({
+        verified,
+        error: verified ? undefined : 'You do not own the NFT for this game.',
+      })
+    } catch (error) {
+      return reply.send({
+        verified: false,
+        error: 'Could not verify NFT ownership. The token may not exist or the RPC is unavailable.',
+      })
+    }
+  })
+
   await app.listen({ port: PORT, host: '0.0.0.0' })
 }
 

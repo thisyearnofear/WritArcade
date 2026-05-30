@@ -45,7 +45,7 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
             if (!client) {
               throw new Error('CDR client unavailable')
             }
-            const answer = await readVaultData(client, Number(game.wordleAnswerVaultUuid))
+            const answer = await readVaultData(client, game.wordleAnswerVaultUuid)
             if (!answer) {
               throw new Error('Failed to decrypt answer from vault')
             }

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { getMintConfig } from '@/lib/writerCoins'
 import { prisma } from '@/lib/database'
-import { createPublicClient, http } from 'viem'
-import { base } from 'viem/chains'
 
 const GAME_NFT_ABI = [
   {
@@ -31,7 +29,9 @@ function getNftConfig(writerCoinId?: string | null): { contractAddress: `0x${str
 }
 
 /**
- * Verifies the requesting wallet owns the game's NFT.
+ * Verifies NFT ownership via the Hetzner backend to avoid cold-starting
+ * a viem publicClient on every Vercel serverless invocation.
+ * Falls back to direct on-chain check if Hetzner is unreachable.
  */
 async function verifyNftOwnership(
   nftTokenId: string,
@@ -39,7 +39,28 @@ async function verifyNftOwnership(
   contractAddress: `0x${string}`,
   chainId: number
 ): Promise<{ verified: boolean; error?: string }> {
+  const backendUrl = process.env.CDR_BACKEND_URL || process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
+
   try {
+    const response = await fetch(`${backendUrl}/api/verify-nft-ownership`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nftTokenId, walletAddress, contractAddress, chainId }),
+      signal: AbortSignal.timeout(8000),
+    })
+
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // Hetzner unreachable — fall through to direct check
+  }
+
+  // Fallback: direct on-chain verification (original path)
+  try {
+    const { createPublicClient, http } = await import('viem')
+    const { base } = await import('viem/chains')
+
     const rpcUrl = chainId === 8453
       ? 'https://mainnet.base.org'
       : chainId === 31611

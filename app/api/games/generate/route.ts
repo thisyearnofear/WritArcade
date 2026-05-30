@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { GameAIService } from '@/domains/games/services/game-ai.service'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
@@ -244,10 +244,19 @@ Your game MUST authentically interpret this article's core themes. Players shoul
         })
       : Promise.resolve(null)
 
-    // Background enrichment: secret panel + hypercert (non-blocking)
-    enrichGameInBackground(savedGame.id, savedGame.slug, gameData, processedContent?.text, validatedData.payment?.writerCoinId).catch(
-      (err) => logger.error('Background enrichment failed', err, { gameId: savedGame.id })
-    )
+    // after() keeps the serverless function alive until enrichment completes,
+    // even after the response is sent. This prevents Vercel from killing the
+    // function mid-enrichment (which caused silent secret-panel vaulting failures).
+    after(async () => {
+      try {
+        await enrichGameInBackground(
+          savedGame.id, savedGame.slug, gameData,
+          processedContent?.text, validatedData.payment?.writerCoinId
+        )
+      } catch (err) {
+        logger.error('Background enrichment failed', err, { gameId: savedGame.id })
+      }
+    })
 
     const coverImageUrl = await coverImagePromise
 
