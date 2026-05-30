@@ -1,18 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, PenTool, Store, Sparkles, Library } from 'lucide-react';
+import { Gamepad2, PenTool, Sparkles, Library } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useIsActive } from '@/hooks/useIsActive';
 
 // Mobile bottom nav focuses on the primary user journey:
-// Discover → Writers → Create → Marketplace → Own (My Games)
+// Discover → Writers → Create → Own (My Games)
 // CONSOLIDATION: Removed 'Home' (Logo link) and 'Profile' (Header UserMenu) to make room
 const navItems = [
   { href: '/games', label: 'Arcade', icon: Gamepad2 },
   { href: '/writers', label: 'Writers', icon: PenTool },
   { href: '/generate', label: 'Create', icon: Sparkles },
-  { href: '/assets', label: 'Market', icon: Store },
   { href: '/my-games', label: 'My Games', icon: Library },
 ];
 

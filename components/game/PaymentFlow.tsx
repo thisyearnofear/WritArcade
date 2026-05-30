@@ -26,6 +26,7 @@ interface PaymentFlowProps {
   onPaymentSuccess?: (transactionHash: string) => void
   onPaymentError?: (error: string) => void
   disabled?: boolean
+  compact?: boolean
 }
 
 /**
@@ -44,6 +45,7 @@ export function PaymentFlow({
   onPaymentSuccess,
   onPaymentError,
   disabled = false,
+  compact = false,
 }: PaymentFlowProps) {
   const { address: userAddress, chainId } = useAccount()
   const { data: walletClient } = useWalletClient()
@@ -150,7 +152,7 @@ export function PaymentFlow({
   return (
     <div className="space-y-4">
       <AnimatePresence mode="wait">
-        {userAddress && (
+        {userAddress && !compact && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -225,7 +227,7 @@ export function PaymentFlow({
         )}
       </AnimatePresence>
 
-      {isMUSD && userAddress && (
+      {isMUSD && userAddress && !compact && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -342,7 +344,8 @@ export function PaymentFlow({
         </motion.div>
       )}
 
-      <div className={cn(
+      {!compact && (
+        <div className={cn(
         "rounded-xl p-4 text-xs transition-colors",
         isMUSD ? "bg-amber-900/10 text-amber-200/60" : "bg-purple-900/30 text-purple-300"
       )}>
@@ -352,7 +355,8 @@ export function PaymentFlow({
             <span className="font-bold text-white/80">Payment flow:</span> You'll approve the {tokenSymbol} spend in your wallet, then process the transaction on {isMUSD ? 'Mezo' : 'Base'}.
           </span>
         </p>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

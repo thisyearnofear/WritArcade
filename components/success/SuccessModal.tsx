@@ -1,6 +1,6 @@
 'use client'
 
-import { BadgeCheck, CheckCircle, Copy, Eye, LockKeyhole, Network } from 'lucide-react'
+import { CheckCircle, Copy, Eye, Library, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -24,7 +24,7 @@ export function SuccessModal({
   isOpen,
   onClose,
   title,
-  _description,
+  description,
   gameSlug,
   _transactionHash,
   action,
@@ -61,6 +61,11 @@ export function SuccessModal({
     }
   }
 
+  const handleManageOwnership = () => {
+    router.push('/my-games')
+    onClose()
+  }
+
   // Scroll lock effect
   useEffect(() => {
     if (!isOpen) return
@@ -81,7 +86,9 @@ export function SuccessModal({
             <CheckCircle className="w-8 h-8 text-green-500 flex-shrink-0" />
             <div className="flex-1">
               <h2 className="text-xl font-bold text-green-400">{action === 'mint' ? 'Minted!' : 'Game Ready!'}</h2>
-              <p className="text-sm text-muted-foreground">{action === 'mint' ? 'Your NFT is on-chain' : 'Play now or mint as NFT'}</p>
+              <p className="text-sm text-muted-foreground">
+                {description || (action === 'mint' ? 'Your NFT is on-chain' : 'Play it first. Ownership options are waiting in My Games.')}
+              </p>
             </div>
           </div>
 
@@ -109,56 +116,68 @@ export function SuccessModal({
           )}
 
           {action === 'generate' && (
-            <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Protocol next steps</div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="rounded border border-border bg-background/40 p-2">
-                  <BadgeCheck className="mb-1 h-4 w-4 text-green-400" />
-                  <div className="font-medium text-foreground">Mint</div>
-                  <div className="text-muted-foreground">Base NFT</div>
-                </div>
-                <div className="rounded border border-border bg-background/40 p-2">
-                  <Network className="mb-1 h-4 w-4 text-purple-400" />
-                  <div className="font-medium text-foreground">Register</div>
-                  <div className="text-muted-foreground">Story IP</div>
-                </div>
-                <div className="rounded border border-border bg-background/40 p-2">
-                  <LockKeyhole className="mb-1 h-4 w-4 text-amber-400" />
-                  <div className="font-medium text-foreground">Unlock</div>
-                  <div className="text-muted-foreground">CDR vault</div>
-                </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+              <div className="font-semibold text-foreground">Next best step: play</div>
+              <p className="mt-1 text-muted-foreground">
+                Try the story before minting or registering IP. When you are ready to preserve ownership, use My Games.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Mint NFT</span>
+                <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Register IP</span>
+                <span className="rounded-full border border-border bg-background/40 px-2.5 py-1">Unlock extras</span>
               </div>
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          <div className="space-y-2 pt-2">
+            {gameSlug && (
+              <Button
+                onClick={handleViewGame}
+                className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 text-base"
+                size="lg"
+              >
+                <Eye className="w-4 h-4" />
+                Play Now
+              </Button>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              {action === 'generate' && (
+                <Button
+                  variant="outline"
+                  onClick={handleManageOwnership}
+                  className="text-muted-foreground border-border hover:bg-muted flex items-center justify-center gap-2"
+                >
+                  <Library className="w-4 h-4" />
+                  My Games
+                </Button>
+              )}
+
+              {shareData ? (
+                <ShareDropdown
+                  data={shareData}
+                  variant="default"
+                  className="hover:shadow-[0_0_0_1px_rgba(34,197,94,0.35)]"
+                />
+              ) : (
+                <Button
+                  variant="outline"
+                  className="text-muted-foreground border-border hover:bg-muted flex items-center justify-center gap-2"
+                  disabled
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+              )}
+            </div>
+
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={onClose}
-              className="flex-1 text-muted-foreground border-border hover:bg-muted"
+              className="w-full text-muted-foreground hover:bg-muted"
             >
               Close
             </Button>
-
-            {gameSlug && (
-              <>
-                <Button
-                  onClick={handleViewGame}
-                  className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
-                >
-                  <Eye className="w-4 h-4" />
-                  Play
-                </Button>
-
-                {shareData && (
-                  <ShareDropdown
-                    data={shareData}
-                    variant="default"
-                    className="flex-1 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.35)]"
-                  />
-                )}
-              </>
-            )}
           </div>
         </div>
       </div>

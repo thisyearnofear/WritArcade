@@ -21,7 +21,7 @@ export function useOnboarding() {
         // TTL expired — clear and show again
         localStorage.removeItem(ONBOARDING_DISMISSED_KEY)
       }
-      return { showTour: true, currentStep: 0, flowId: 'app-intro' }
+      return { showTour: false, currentStep: 0, flowId: null }
     }
     return { showTour: false, currentStep: 0, flowId: null }
   })

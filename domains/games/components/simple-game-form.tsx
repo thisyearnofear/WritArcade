@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowRight, Loader2, Wallet, ArrowLeftRight } from 'lucide-react'
+import { ArrowRight, Loader2, ArrowLeftRight } from 'lucide-react'
 import { chainForPaymentPath, getChainInfo } from '@/lib/chains'
 
 export type PaymentPath = 'writercoin' | 'musd'
@@ -21,7 +21,7 @@ interface SimpleGameFormProps {
   paymentPath?: PaymentPath
 }
 
-export function SimpleGameForm({ onGenerate, isGenerating, paymentPath = 'writercoin' }: SimpleGameFormProps) {
+export function SimpleGameForm({ onGenerate, isGenerating, paymentPath = 'musd' }: SimpleGameFormProps) {
   const [url, setUrl] = useState('')
   const { isConnected } = useAccount()
   const chainId = useChainId()
@@ -36,7 +36,6 @@ export function SimpleGameForm({ onGenerate, isGenerating, paymentPath = 'writer
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isConnected) return
     onGenerate(url)
   }
 
@@ -53,13 +52,12 @@ export function SimpleGameForm({ onGenerate, isGenerating, paymentPath = 'writer
           onChange={(e) => setUrl(e.target.value)}
           className="h-12"
           required
-          disabled={!isConnected}
         />
         <Button
           type="submit"
-          disabled={isGenerating || !isConnected}
+          disabled={isGenerating}
           className="h-12 px-6 font-bold uppercase tracking-widest"
-          title={!isConnected ? 'Connect wallet to generate games' : 'Generate game'}
+          title="Start from this article"
         >
           {isGenerating ? <Loader2 className="animate-spin" /> : <ArrowRight />}
         </Button>
@@ -69,11 +67,10 @@ export function SimpleGameForm({ onGenerate, isGenerating, paymentPath = 'writer
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 border border-border rounded-lg p-3"
+          className="text-sm text-muted-foreground bg-muted/50 border border-border rounded-lg p-3"
         >
-          <Wallet className="w-4 h-4 flex-shrink-0" />
           <p>
-            <span className="font-medium text-foreground">Connect your wallet</span> to generate games — Ethereum/Base wallets for writer coins, or a Bitcoin wallet (Xverse, Unisat, OKX) via Mezo Passport for MUSD.
+            Paste an article first. Create a free Wordle without a wallet, or connect later when you are ready to generate a paid story game.
           </p>
         </motion.div>
       )}

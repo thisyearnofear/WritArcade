@@ -9,9 +9,10 @@ interface CostPreviewProps {
   paymentToken: PaymentToken
   action: PaymentAction
   showBreakdown?: boolean
+  compact?: boolean
 }
 
-export function CostPreview({ paymentToken, action, showBreakdown = true }: CostPreviewProps) {
+export function CostPreview({ paymentToken, action, showBreakdown = true, compact = false }: CostPreviewProps) {
   const [cost, setCost] = useState(() => PaymentCostService.calculateCostTokenSync(paymentToken, action))
   useEffect(() => {
     let canceled = false
@@ -48,6 +49,17 @@ export function CostPreview({ paymentToken, action, showBreakdown = true }: Cost
   const config = getPaymentTokenConfig(paymentToken)
   const tokenSymbol = config.symbol
   const decimals = config.decimals
+
+  if (compact) {
+    return (
+      <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-cyan-100/80">{actionLabel}</span>
+          <span className="font-bold text-cyan-50">{cost.amountFormatted} {tokenSymbol}</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-xl border border-[color:var(--ia-panel-border)] bg-[color:var(--ia-panel-bg)] p-4 shadow-[0_0_0_1px_var(--ia-outline)]">

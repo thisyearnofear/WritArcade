@@ -43,9 +43,6 @@ function CreatorDashboardLink() {
 const NAV_LINKS = [
   { href: '/games',    label: 'Arcade',      title: 'Browse all generated games' },
   { href: '/writers',  label: 'Writers',     title: 'Explore supported writers and their coins' },
-  { href: '/assets',   label: 'Marketplace', title: 'Buy and sell game NFTs' },
-  { href: '/mezo/analytics', label: 'Mezo',  title: 'Live Mezo on-chain analytics' },
-  { href: '/my-games', label: 'My Games',    title: 'Games you have generated or own' },
 ]
 
 function AnimatedNavLink({ href, label, title, isActive }: { href: string; label: string; title?: string; isActive: boolean }) {
@@ -133,6 +130,16 @@ export function Header({ onOpenOnboarding }: { onOpenOnboarding?: () => void } =
             </button>
           )}
 
+          <Link
+            href="/my-games"
+            className={`text-sm transition-colors ${
+              isActive('/my-games')
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            My Games
+          </Link>
           <CreatorDashboardLink />
           <BalanceDisplay />
           <ThemeToggle />

@@ -18,6 +18,7 @@ interface PaymentOptionProps {
   onPaymentError?: (error: string) => void
   disabled?: boolean
   initialToken?: PaymentToken
+  compact?: boolean
   _optional?: boolean // If true, user can skip payment
   _onSkip?: () => void
 }
@@ -38,6 +39,7 @@ export function PaymentOption({
   onPaymentError,
   disabled = false,
   initialToken,
+  compact = false,
   _optional = false,
   _onSkip,
 }: PaymentOptionProps) {
@@ -62,7 +64,7 @@ export function PaymentOption({
             <div className="flex-1">
               <p className="text-sm font-semibold text-amber-200 mb-2">Wallet Connection Required</p>
               <p className="text-sm text-amber-300 mb-3">
-                To proceed with payment and customization, please connect your wallet. You'll need to approve a transaction on the Base blockchain.
+                To proceed with payment and customization, connect your wallet. You will approve the transaction on the selected payment network.
               </p>
               <WalletConnect />
             </div>
@@ -76,18 +78,20 @@ export function PaymentOption({
   return (
     <div className="space-y-4">
       {/* Network / Token Selection */}
-      <PaymentTokenSelector 
-        selectedToken={selectedToken}
-        onSelectToken={setSelectedToken}
-        writerCoin={writerCoinToken}
-      />
+      {!compact && (
+        <PaymentTokenSelector 
+          selectedToken={selectedToken}
+          onSelectToken={setSelectedToken}
+          writerCoin={writerCoinToken}
+        />
+      )}
 
       {/* Cost Preview */}
-      <CostPreview paymentToken={selectedToken} action={action} showBreakdown={true} />
+      <CostPreview paymentToken={selectedToken} action={action} showBreakdown={!compact} compact={compact} />
 
       {/* Payment Flow */}
       {/* Elevated CTA visuals for stronger contrast */}
-      <div className="rounded-xl border border-[color:var(--ia-panel-border)] bg-[color:var(--ia-panel-bg)] p-3 shadow-[0_0_0_1px_var(--ia-outline)]">
+      <div className={compact ? '' : 'rounded-xl border border-[color:var(--ia-panel-border)] bg-[color:var(--ia-panel-bg)] p-3 shadow-[0_0_0_1px_var(--ia-outline)]'}>
         <PaymentFlow
         paymentToken={selectedToken}
         action={action}
@@ -95,15 +99,18 @@ export function PaymentOption({
         onPaymentSuccess={onPaymentSuccess}
         onPaymentError={onPaymentError}
         disabled={disabled}
+        compact={compact}
       />
      </div>
 
       {/* Info */}
-      <div className="rounded-lg border border-[color:var(--ia-panel-border)] bg-[color:var(--ia-panel-bg)] p-3 text-xs text-purple-100">
+      {!compact && (
+        <div className="rounded-lg border border-[color:var(--ia-panel-border)] bg-[color:var(--ia-panel-bg)] p-3 text-xs text-purple-100">
         <p>
           💡 <span className="font-semibold">Note:</span> Payment is required to generate games. Your payment supports the platform and content creators.
         </p>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
