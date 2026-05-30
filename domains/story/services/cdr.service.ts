@@ -58,9 +58,9 @@ export async function readVaultData(
   try {
     // accessCDR: reads data stored on-chain via uploadCDR.
     // Returns the decrypted dataKey (which IS our plaintext payload).
-    // Use BigInt() to avoid Number precision loss for large vault UUIDs.
+    // The SDK types uuid as number; cast to satisfy TS.
     const { dataKey } = await client.consumer.accessCDR({
-      uuid: BigInt(uuid),
+      uuid: Number(uuid),
       accessAuxData: "0x",
     });
     return new TextDecoder().decode(dataKey);
