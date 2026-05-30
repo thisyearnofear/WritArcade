@@ -74,6 +74,9 @@ For the final demo, generate a new game after this commit so the CDR vault condi
 
 - CDR SDK is lazy-loaded in the browser only when a player unlocks or decrypts vaulted data.
 - The heavy CDR/WASM graph is code-split away from the initial game page bundle.
+- **Vaulting moved to the persistent PM2 backend** (`snel-bot:3800`) to avoid Vercel serverless cold-start costs (5.5 MB WASM + EVM tx waits).
+- Backend uses `uploadCDR()` for on-chain storage (no IPFS dependency for small payloads).
+- Backend has `STORY_PLATFORM_PRIVATE_KEY` configured; WASM initializes lazily on first vault request.
 - Webpack `node:` URI handling is patched in `next.config.js` so the CDR Emscripten loader can compile in the client chunk.
 - Production build renders all 54 static pages successfully.
 
