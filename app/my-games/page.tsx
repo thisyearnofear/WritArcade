@@ -339,13 +339,13 @@ export default function MyGamesPage() {
         </section>
 
         {/* Content */}
-        <section className="py-12 px-4">
+        <section className="px-4 py-8 sm:py-12">
           <div className="max-w-6xl mx-auto">
             {/* Tab Navigation */}
-            <div className="flex items-center gap-2 mb-8 border-b border-border">
+            <div className="mb-8 flex items-center gap-2 overflow-x-auto border-b border-border">
               <button
                 onClick={() => setActiveTab('games')}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
                   activeTab === 'games'
                     ? 'border-purple-500 text-purple-600 dark:text-purple-400'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -359,7 +359,7 @@ export default function MyGamesPage() {
               </button>
               <button
                 onClick={() => setActiveTab('ip-registrations')}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
                   activeTab === 'ip-registrations'
                     ? 'border-purple-500 text-purple-600 dark:text-purple-400'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -399,7 +399,7 @@ export default function MyGamesPage() {
                 </button>
               </div>
             ) : games.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-card/50 px-4 py-16 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-card/50 px-4 py-12 text-center sm:py-16">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-purple-500/10 text-purple-300">
                   <Gamepad2 className="h-7 w-7" />
                 </div>

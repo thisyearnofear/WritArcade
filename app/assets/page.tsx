@@ -104,12 +104,12 @@ export default function AssetsPage() {
     <div className="min-h-screen flex flex-col bg-black">
       <Header />
 
-      <main className="flex-1 py-12 px-4 bg-gradient-to-br from-purple-900/30 to-pink-900/20">
+      <main className="flex-1 px-4 py-8 sm:py-12 bg-gradient-to-br from-purple-900/30 to-pink-900/20">
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
-        <div className="mb-12 flex items-start justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:mb-12 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="font-serif text-4xl font-bold text-foreground mb-2">Asset Marketplace</h1>
+            <h1 className="font-serif text-3xl font-bold text-foreground mb-2 sm:text-4xl">Asset Marketplace</h1>
             <p className="text-sm text-purple-200">Remixable primitives for your games</p>
             <p className="text-slate-300">
               Browse reusable game components. Mix and match to create unique games.
@@ -117,7 +117,7 @@ export default function AssetsPage() {
           </div>
           <Link
             href="/assets/create"
-            className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition whitespace-nowrap shadow-[0_0_0_1px_rgba(168,85,247,0.35)]"
+            className="inline-flex min-h-11 items-center justify-center px-5 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition whitespace-nowrap shadow-[0_0_0_1px_rgba(168,85,247,0.35)] sm:px-6"
           >
             + Create Game
           </Link>

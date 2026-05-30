@@ -350,7 +350,7 @@ export default function HomePage() {
           </section>
 
           {/* Daily Wordle — free, no wallet */}
-          <section className="py-16 px-4 border-t border-border bg-gradient-to-r from-amber-500/5 to-purple-500/5">
+          <section className="px-4 py-12 border-t border-border bg-gradient-to-r from-amber-500/5 to-purple-500/5 sm:py-16">
             <div className="max-w-4xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
                 <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
@@ -364,7 +364,7 @@ export default function HomePage() {
                 </div>
                 <a
                   href="/generate?mode=wordle"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold uppercase tracking-wider transition-colors flex-shrink-0"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-amber-700 sm:w-auto sm:flex-shrink-0"
                 >
                   Play Now <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 </a>

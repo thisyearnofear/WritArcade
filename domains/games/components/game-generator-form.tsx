@@ -5,11 +5,10 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText } from 'lucide-react'
+import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, X } from 'lucide-react'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { PaymentOption } from '@/components/game/PaymentOption'
-import { ErrorCard } from '@/components/error/ErrorCard'
 import { SuccessModal } from '@/components/success/SuccessModal'
 import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
 import { ArticleFidelityReview } from '@/components/game/article-fidelity-review'
@@ -28,6 +27,18 @@ interface GameGeneratorFormProps {
 }
 
 const DEFAULT_WRITER_COIN = WRITER_COINS[0]
+const ARTICLE_PREVIEW_TIMEOUT_MS = 15000
+const GAME_GENERATION_TIMEOUT_MS = 120000
+
+type GenerateErrorPhase = 'article' | 'payment' | 'generation'
+
+interface GenerateErrorState {
+  phase: GenerateErrorPhase
+  title: string
+  message: string
+  retryLabel: string
+  suggestions: string[]
+}
 
 function paymentTokenForPath(path: PaymentPath, writerCoin: WriterCoin): PaymentToken {
   return path === 'musd'
@@ -45,6 +56,73 @@ function getGenerationErrorMessage(errorData: { error?: string; code?: string },
       return 'Your game was generated but failed to save. Please retry to persist it.'
     default:
       return errorData.error || `Generation failed (${status}): ${statusText}`
+  }
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    })
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
+}
+
+function articleError(message: string): GenerateErrorState {
+  const lowerMessage = message.toLowerCase()
+  const isUnsupportedUrl = lowerMessage.includes('url') || lowerMessage.includes('paragraph') || lowerMessage.includes('writer')
+  const isTimeout = lowerMessage.includes('timed out') || lowerMessage.includes('timeout')
+
+  return {
+    phase: 'article',
+    title: isTimeout ? 'Article preview timed out' : isUnsupportedUrl ? 'Article link needs attention' : 'Article preview failed',
+    message,
+    retryLabel: 'Check article again',
+    suggestions: [
+      'Use a public Paragraph.xyz article URL.',
+      'Open the article in a private browser tab to confirm it is accessible.',
+      'If writer coin mode is selected, switch to MUSD for any public Paragraph article.',
+    ],
+  }
+}
+
+function paymentError(message: string): GenerateErrorState {
+  return {
+    phase: 'payment',
+    title: 'Payment did not complete',
+    message,
+    retryLabel: 'Try payment again',
+    suggestions: [
+      'Confirm your wallet is unlocked and connected.',
+      'Check that you are on the requested network before approving.',
+      'Confirm your token balance covers the generation cost and gas.',
+    ],
+  }
+}
+
+function generationError(message: string): GenerateErrorState {
+  const lowerMessage = message.toLowerCase()
+  const isTimeout = lowerMessage.includes('timed out') || lowerMessage.includes('timeout')
+
+  return {
+    phase: 'generation',
+    title: isTimeout ? 'Generation is taking too long' : 'Game generation failed',
+    message,
+    retryLabel: 'Generate again',
+    suggestions: [
+      isTimeout ? 'Retry with Fast image quality if the article is long.' : 'Retry once; model failures are often temporary.',
+      'Try a shorter article or switch to Wordle for a free article-derived result.',
+      'Keep this tab open while generation is running.',
+    ],
   }
 }
 
@@ -95,6 +173,56 @@ function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: Gam
   )
 }
 
+function GenerateErrorPanel({
+  error,
+  onRetry,
+  onDismiss,
+}: {
+  error: GenerateErrorState
+  onRetry: () => void
+  onDismiss: () => void
+}) {
+  return (
+    <div className="rounded-lg border border-red-600/50 bg-red-950/30 p-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-red-300/80">
+                {error.phase}
+              </p>
+              <h3 className="mt-1 text-base font-semibold text-red-100">{error.title}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="rounded-md p-1 text-red-300/70 transition hover:bg-red-500/10 hover:text-red-200"
+              aria-label="Dismiss error"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="mt-2 text-sm text-red-100/85">{error.message}</p>
+          <ul className="mt-3 space-y-1 text-xs text-red-100/70">
+            {error.suggestions.map((suggestion) => (
+              <li key={suggestion}>- {suggestion}</li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20 sm:w-auto"
+          >
+            <RefreshCw className="h-4 w-4" />
+            {error.retryLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export type ImageQuality = 'fast' | 'quality'
 
 interface ArticlePreview {
@@ -137,7 +265,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [imageQuality, setImageQuality] = useState<ImageQuality>('fast')
   const [showCustomization, setShowCustomization] = useState(false)
   const [paymentApproved, setPaymentApproved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<GenerateErrorState | null>(null)
   const [successData, setSuccessData] = useState<{
     gameSlug: string
     title: string
@@ -200,7 +328,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
   const previewArticle = async () => {
     if (!url.trim()) {
-      setError('Please provide a Paragraph.xyz article URL')
+      setError(articleError('Please provide a Paragraph.xyz article URL.'))
       return null
     }
 
@@ -213,7 +341,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     })
 
     try {
-      const response = await fetch('/api/articles/preview', {
+      const response = await fetchWithTimeout('/api/articles/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -221,7 +349,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           paymentPath,
           writerCoinId: isMusdPath ? undefined : writerCoin.id,
         }),
-      })
+      }, ARTICLE_PREVIEW_TIMEOUT_MS)
 
       const result = await response.json().catch(() => ({}))
 
@@ -240,11 +368,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       })
       return result.data as ArticlePreview
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not preview this article.'
+      const message = isAbortError(err)
+        ? 'Article preview timed out. The article host may be slow or blocking extraction.'
+        : err instanceof Error ? err.message : 'Could not preview this article.'
       setArticlePreview(null)
       setPreviewedUrl('')
       setPaymentApproved(false)
-      setError(message)
+      setError(articleError(message))
       trackEvent('article_preview_failed', {
         paymentPath,
         mode,
@@ -290,7 +420,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         async () => {
           attempt++
 
-          const response = await fetch('/api/games/generate', {
+          const response = await fetchWithTimeout('/api/games/generate', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -314,7 +444,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               _attempt: attempt,
               _maxAttempts: maxAttempts,
             }),
-          })
+          }, GAME_GENERATION_TIMEOUT_MS)
 
           if (!response.ok) {
             const errorData = await response
@@ -370,9 +500,19 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       onGameGenerated?.(result.data)
       // State resets handled in onClose callback to avoid blank form before modal dismisses
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred'
-      setError(message)
+      const message = isAbortError(err)
+        ? 'Game generation timed out before the server returned a result.'
+        : err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(generationError(message))
       setPaymentApproved(false)
+      trackEvent('game_generation_failed', {
+        mode,
+        paymentPath,
+        genre,
+        difficulty,
+        loadingStep,
+        error: message,
+      })
 
       if (loadingStep) {
         setStepStatuses((prev) => ({ ...prev, [loadingStep]: 'error' }))
@@ -389,7 +529,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     e.preventDefault()
 
     if (!url.trim()) {
-      setError('Please provide a Paragraph.xyz article URL')
+      setError(articleError('Please provide a Paragraph.xyz article URL.'))
       return
     }
 
@@ -399,7 +539,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     }
 
     if (!paymentApproved && isStoryMode) {
-      setError('Story games are paid. Review the generation options below, connect your wallet if needed, and complete payment to generate. You can switch to Wordle for a free article-derived preview.')
+      setError(paymentError('Story games are paid. Review the generation options below, connect your wallet if needed, and complete payment to generate. You can switch to Wordle for a free article-derived preview.'))
       return
     }
 
@@ -515,7 +655,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 </motion.div>
               </motion.div>
             </div>
-            <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 border border-border p-1">
+            <div className="grid grid-cols-1 gap-2 rounded-lg bg-muted/40 border border-border p-1 min-[420px]:grid-cols-2">
               <motion.button
                 type="button"
                 onClick={() => {
@@ -531,7 +671,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
-                <span className="font-semibold">Story (5-panel)</span>
+                  <span className="font-semibold">Story (5-panel)</span>
               </motion.button>
               <motion.button
                 type="button"
@@ -548,7 +688,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
-                <span className="font-semibold">Wordle (Free)</span>
+                  <span className="font-semibold">Wordle (Free)</span>
               </motion.button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -568,7 +708,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 </p>
               </div>
 
-              <div className="flex gap-2 p-1 rounded-lg bg-slate-900/50 border border-purple-500/20">
+              <div className="grid grid-cols-1 gap-2 rounded-lg border border-purple-500/20 bg-slate-900/50 p-1 min-[420px]:grid-cols-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -691,7 +831,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               <motion.button
                 type="button"
                 onClick={() => setShowCustomization(!showCustomization)}
-                className="w-full text-sm font-medium text-purple-400 hover:text-purple-300 flex items-center gap-2"
+                className="flex w-full flex-wrap items-center gap-2 text-left text-sm font-medium text-purple-400 hover:text-purple-300"
                 whileHover={{ x: 5 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -704,7 +844,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 </motion.span>
                 <Sparkles className="w-4 h-4 text-yellow-300" />
                 <span>Game Customization</span>
-                <span className="ml-auto text-xs text-purple-300/80">Required • Paid Feature</span>
+                <span className="text-xs text-purple-300/80 sm:ml-auto">Required • Paid Feature</span>
               </motion.button>
 
               <AnimatePresence>
@@ -722,8 +862,8 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.1, duration: 0.3 }}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold text-purple-100">Preview & Customize</span>
                           {paymentApproved && (
                             <span className="px-2 py-0.5 bg-green-500/20 border border-green-500/50 rounded-full text-xs text-green-300">
@@ -769,7 +909,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                         <label className="text-sm font-medium text-purple-100">
                           Image Quality
                         </label>
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
                           <button
                             type="button"
                             onClick={() => setImageQuality('fast')}
@@ -780,7 +920,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                 : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
                             }`}
                           >
-                            ⚡ Fast (Turbo)
+                            Fast (Turbo)
                           </button>
                           <button
                             type="button"
@@ -792,7 +932,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                 : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
                             }`}
                           >
-                            ✨ High Quality
+                            High Quality
                           </button>
                         </div>
                         <p className="text-xs text-purple-300/70">
@@ -832,16 +972,20 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         </div>
 
         {error && (
-          <ErrorCard
+          <GenerateErrorPanel
             error={error}
-            context="game generation"
-            onRetry={() => generateGame()}
+            onRetry={() => {
+              if (error.phase === 'article') {
+                previewArticle()
+                return
+              }
+              if (error.phase === 'generation') {
+                generateGame()
+                return
+              }
+              setError(null)
+            }}
             onDismiss={() => setError(null)}
-            suggestions={[
-              'Check that your Paragraph.xyz URL is valid and publicly accessible',
-              isMusdPath ? 'Try another public Paragraph article link' : 'Ensure the URL is from the selected writer',
-              'Make sure your internet connection is stable',
-            ]}
           />
         )}
 
@@ -860,7 +1004,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
         {/* Payment section — appears after the article is ready. */}
         {isStoryMode && hasPreviewedCurrentUrl && (
-          <div className="space-y-4 p-5 rounded-xl border border-cyan-500/40 bg-gradient-to-br from-slate-950/90 to-cyan-950/50 shadow-xl">
+          <div className="space-y-4 rounded-lg border border-cyan-500/40 bg-gradient-to-br from-slate-950/90 to-cyan-950/50 p-4 shadow-xl sm:p-5">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-5 h-5 text-cyan-300" />
@@ -880,7 +1024,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               initialToken={paymentTokenForPath(paymentPath, writerCoin)}
               action="generate-game"
               onPaymentSuccess={handlePaymentSuccess}
-              onPaymentError={(err) => setError(err)}
+              onPaymentError={(err) => setError(paymentError(err))}
               disabled={isGenerating || !url.trim()}
               compact
             />
@@ -909,7 +1053,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             <Button
               type="submit"
               disabled={isGenerating || isPreviewingArticle || (isStoryMode && hasPreviewedCurrentUrl && !paymentApproved)}
-              className="w-full bg-purple-600 text-white hover:bg-purple-700 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 relative overflow-hidden focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
+              className="relative w-full whitespace-normal bg-purple-600 text-white hover:bg-purple-700 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
               size="mobile"
               arcade
             >
@@ -992,7 +1136,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           onReject={() => {
             setShowFidelityReview(false)
             setGeneratedGame(null)
-            setError('Game rejected. You can regenerate with different settings.')
+            setError(generationError('Game rejected. You can regenerate with different settings.'))
           }}
         />
       )}

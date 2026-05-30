@@ -28,7 +28,7 @@ function GeneratePageContent() {
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-center mb-2 text-foreground">
           {isWordleMode ? 'Create a word puzzle' : 'Create your game'}
         </h1>
-        <p className="text-center text-muted-foreground mb-8 text-sm max-w-md mx-auto">
+        <p className="text-center text-muted-foreground mb-6 text-sm max-w-md mx-auto sm:mb-8">
           {isWordleMode
             ? 'Paste a Paragraph article URL to create a free word puzzle. No wallet needed.'
             : 'Paste a Paragraph article URL. AI turns it into a playable 5-panel comic.'}
@@ -49,7 +49,7 @@ export default function GeneratePage() {
       <div className="flex flex-col min-h-screen">
         <Header />
 
-        <main className="flex-1 py-12">
+        <main className="flex-1 py-8 sm:py-12">
           <Suspense fallback={
             <div className="max-w-4xl mx-auto px-4">
               <div className="flex items-center justify-center py-12">

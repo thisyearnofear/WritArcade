@@ -47,19 +47,19 @@ export default function GamesPage() {
 
         <main className="flex-1">
           {/* Page Header */}
-          <div className="py-10 px-4 border-b border-border">
+          <div className="px-4 py-8 border-b border-border sm:py-10">
             <div className="max-w-7xl mx-auto">
-              <h1 className="font-serif text-3xl md:text-4xl font-semibold text-foreground mb-2">
+              <h1 className="font-serif text-3xl md:text-4xl font-semibold text-slate-950 dark:text-foreground mb-2">
                 The Arcade
               </h1>
-              <p className="text-muted-foreground max-w-2xl">
+              <p className="text-slate-600 dark:text-muted-foreground max-w-2xl">
                 Interactive games generated from articles by supported writers. Play, collect, and own the experience.
               </p>
             </div>
           </div>
 
           {/* ── Mobile: search bar + Filter button row ── (hidden on lg+) */}
-          <div className="lg:hidden px-4 pt-4 pb-2 flex gap-2">
+          <div className="lg:hidden px-4 pt-4 pb-2 flex flex-col gap-2 min-[420px]:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -72,7 +72,7 @@ export default function GamesPage() {
             </div>
             <button
               onClick={() => setFilterDrawerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-muted border border-border rounded-lg text-sm text-muted-foreground hover:border-purple-500 transition-colors"
+              className="flex min-h-10 items-center justify-center gap-2 px-4 py-2 bg-muted border border-border rounded-lg text-sm text-muted-foreground hover:border-purple-500 transition-colors min-[420px]:justify-start"
               aria-label="Open genre filters"
             >
               <Filter className="w-4 h-4" />
@@ -90,7 +90,7 @@ export default function GamesPage() {
                 aria-hidden="true"
               />
               {/* Slide-up panel */}
-              <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-card border-t border-border rounded-t-2xl p-6 lg:hidden animate-slide-in-up">
+              <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-card border-t border-border rounded-t-lg p-5 lg:hidden animate-slide-in-up">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
                     <Filter className="w-4 h-4" /> Genres

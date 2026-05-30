@@ -6,7 +6,9 @@ export type AnalyticsEventName =
   | 'payment_path_selected'
   | 'payment_started'
   | 'payment_succeeded'
+  | 'payment_failed'
   | 'game_generated'
+  | 'game_generation_failed'
   | 'play_clicked'
   | 'ownership_clicked'
   | 'share_clicked'
@@ -17,6 +19,12 @@ type AnalyticsWindow = Window & {
   dataLayer?: Array<Record<string, unknown>>
   gtag?: (command: 'event', eventName: string, properties?: AnalyticsProperties) => void
   plausible?: (eventName: string, options?: { props?: AnalyticsProperties }) => void
+  posthog?: {
+    capture?: (eventName: string, properties?: AnalyticsProperties) => void
+  }
+  analytics?: {
+    track?: (eventName: string, properties?: AnalyticsProperties) => void
+  }
 }
 
 export function trackEvent(eventName: AnalyticsEventName, properties: AnalyticsProperties = {}) {
@@ -30,6 +38,29 @@ export function trackEvent(eventName: AnalyticsEventName, properties: AnalyticsP
   analyticsWindow.gtag?.('event', eventName, cleanProperties)
   analyticsWindow.plausible?.(eventName, { props: cleanProperties })
   analyticsWindow.dataLayer?.push({ event: eventName, ...cleanProperties })
+  analyticsWindow.posthog?.capture?.(eventName, cleanProperties)
+  analyticsWindow.analytics?.track?.(eventName, cleanProperties)
+
+  const endpoint = process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT || '/api/analytics'
+  const payload = JSON.stringify({
+    event: eventName,
+    properties: cleanProperties,
+    path: window.location.pathname,
+    ts: new Date().toISOString(),
+  })
+
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(endpoint, new Blob([payload], { type: 'application/json' }))
+  } else {
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    }).catch(() => {
+      // Analytics must never block the product flow.
+    })
+  }
 
   if (process.env.NODE_ENV === 'development') {
     console.debug('[analytics]', eventName, cleanProperties)

@@ -141,6 +141,13 @@ export function PaymentFlow({
     } catch (err) {
       const message = getUserMessage(err)
       setError(message)
+      trackEvent('payment_failed', {
+        action,
+        token: tokenSymbol,
+        network: isMUSD ? 'mezo' : 'base',
+        amount: requiredAmount,
+        error: message,
+      })
       onPaymentError?.(message)
       console.error('[PaymentFlow] Error:', err)
     } finally {
@@ -289,7 +296,7 @@ export function PaymentFlow({
         disabled={disabled || isProcessing || !walletClient || !userAddress || !!isLoadingBalance || hasInsufficientBalance}
         size="lg"
         className={cn(
-          "w-full py-7 rounded-xl text-base font-bold transition-all duration-300 shadow-lg group",
+          "w-full whitespace-normal rounded-lg py-4 text-sm font-bold transition-all duration-300 shadow-lg group sm:py-7 sm:text-base",
           isWrongChain 
             ? "bg-slate-800 hover:bg-slate-700 text-white" 
             : isMUSD 
@@ -306,11 +313,11 @@ export function PaymentFlow({
           <span onClick={(e) => {
             e.stopPropagation();
             switchChainAsync({ chainId: targetChainId });
-          }} className="flex items-center gap-2">
+          }} className="flex items-center justify-center gap-2 text-center">
             Switch to {isMUSD ? 'Mezo Matsnet' : 'Base'} <ArrowRight className="w-4 h-4" />
           </span>
         ) : (
-          <span className="flex items-center gap-2">
+          <span className="flex items-center justify-center gap-2 text-center">
             {actionLabel}
             {!disabled && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
           </span>
