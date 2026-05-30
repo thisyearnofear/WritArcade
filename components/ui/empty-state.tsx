@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -11,7 +12,8 @@ interface EmptyStateProps {
   description?: string
   action?: {
     label: string
-    onClick: () => void
+    onClick?: () => void
+    href?: string
   }
   className?: string
 }
@@ -43,11 +45,15 @@ export function EmptyState({ icon: Icon, title, description, action, className }
         <p className="text-muted-foreground max-w-sm mb-6">{description}</p>
       )}
       
-      {action && (
+      {action?.href ? (
+        <Button asChild animated={false}>
+          <Link href={action.href}>{action.label}</Link>
+        </Button>
+      ) : action ? (
         <Button onClick={action.onClick}>
           {action.label}
         </Button>
-      )}
+      ) : null}
     </motion.div>
   )
 }

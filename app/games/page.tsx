@@ -151,6 +151,7 @@ export default function GamesPage() {
                   genre={selectedGenre}
                   search={searchQuery}
                   onLoad={handleStatsLoad}
+                  emptyActionLabel="Create a game"
                 />
 
                 {/* Pagination */}

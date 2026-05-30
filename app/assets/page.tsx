@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { EmptyState } from '@/components/ui/empty-state'
+import { AlertCircle, PackageOpen, SearchX } from 'lucide-react'
 
 // Asset type mirrored here to avoid importing prisma-dependent service on client
 interface Asset {
@@ -30,11 +32,13 @@ export default function AssetsPage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [totalAssets, setTotalAssets] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
   const ITEMS_PER_PAGE = 12
 
   const loadAssets = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       // P0 FIX: was importing AssetMarketplaceService (Prisma) directly in client component.
       // Now uses the existing GET /api/assets/marketplace API route instead.
@@ -58,6 +62,9 @@ export default function AssetsPage() {
     } catch (error) {
       console.error('Failed to load assets:', error)
       setAssets([])
+      setTotalAssets(0)
+      setHasMore(false)
+      setError('Asset marketplace could not be loaded.')
     } finally {
       setLoading(false)
     }
@@ -83,6 +90,15 @@ export default function AssetsPage() {
     setSelectedType(null)
     setCurrentPage(0)
   }
+
+  const clearFilters = () => {
+    setSearchTerm('')
+    setSelectedType(null)
+    setSelectedGenre(null)
+    setCurrentPage(0)
+  }
+
+  const hasActiveFilters = Boolean(searchTerm || selectedType || selectedGenre)
 
   return (
     <div className="min-h-screen flex flex-col bg-black">
@@ -190,14 +206,40 @@ export default function AssetsPage() {
 
         {/* Asset Grid */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="text-slate-300">Loading assets...</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12" aria-label="Loading assets">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="bg-black/50 border border-purple-700/30 rounded-lg p-4 animate-pulse">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="h-5 w-2/3 rounded bg-slate-700" />
+                  <div className="h-5 w-16 rounded bg-purple-800/60" />
+                </div>
+                <div className="space-y-2 mb-5">
+                  <div className="h-3 rounded bg-slate-800" />
+                  <div className="h-3 w-4/5 rounded bg-slate-800" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-20 rounded bg-slate-800" />
+                  <div className="flex gap-2">
+                    <div className="h-5 w-12 rounded bg-purple-900/60" />
+                    <div className="h-5 w-12 rounded bg-purple-900/60" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+        ) : error ? (
+          <EmptyState
+            icon={AlertCircle}
+            title="Assets did not load"
+            description={error}
+            action={{ label: 'Try again', onClick: loadAssets }}
+            className="border border-red-500/30 rounded-lg bg-red-950/20 text-white"
+          />
         ) : assets.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {assets.map((asset) => (
               <Link href={`/assets/${asset.id}`} key={asset.id}>
-                <div className="bg-black/50 border border-purple-700/40 rounded-xl overflow-hidden hover:bg-black/60 hover:border-purple-500/60 transition cursor-pointer h-full shadow-[0_0_0_1px_rgba(168,85,247,0.25)]">
+                <div className="bg-black/50 border border-purple-700/40 rounded-lg overflow-hidden hover:bg-black/60 hover:border-purple-500/60 transition cursor-pointer h-full shadow-[0_0_0_1px_rgba(168,85,247,0.25)]">
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="text-lg font-bold text-white flex-1">{asset.title}</h3>
@@ -224,9 +266,21 @@ export default function AssetsPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-purple-200/80">No assets found. Try adjusting your filters.</p>
-          </div>
+          <EmptyState
+            icon={hasActiveFilters ? SearchX : PackageOpen}
+            title={hasActiveFilters ? 'No matching assets' : 'No remixable assets yet'}
+            description={
+              hasActiveFilters
+                ? 'Clear the current filters to browse the full marketplace.'
+                : 'Create a game from an article first. Reusable characters, mechanics, worlds, and plot pieces will appear here as the library grows.'
+            }
+            action={
+              hasActiveFilters
+                ? { label: 'Clear filters', onClick: clearFilters }
+                : { label: 'Create from article', href: '/generate' }
+            }
+            className="border border-dashed border-purple-700/50 rounded-lg bg-black/30 text-white"
+          />
         )}
 
         {/* Pagination */}

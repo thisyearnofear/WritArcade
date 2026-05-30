@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Game } from '../types'
 import { GameCard } from '@/components/ui/game-card'
 import { animationConfig } from '@/lib/animations'
 import { CardSkeleton } from '@/components/effects'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Gamepad2, SearchX } from 'lucide-react'
 
 interface GameGridProps {
   limit?: number
@@ -16,9 +17,25 @@ interface GameGridProps {
   page?: number
   featured?: boolean
   onLoad?: (data: { total: number, count: number }) => void
+  emptyTitle?: string
+  emptyDescription?: string
+  emptyActionLabel?: string
+  emptyActionHref?: string
 }
 
-export function GameGrid({ limit = 25, search, genre, writerCoinId, page = 1, featured, onLoad }: GameGridProps) {
+export function GameGrid({
+  limit = 25,
+  search,
+  genre,
+  writerCoinId,
+  page = 1,
+  featured,
+  onLoad,
+  emptyTitle,
+  emptyDescription,
+  emptyActionLabel = 'Create a game',
+  emptyActionHref = '/generate',
+}: GameGridProps) {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -90,21 +107,23 @@ export function GameGrid({ limit = 25, search, genre, writerCoinId, page = 1, fe
   }
 
   if (games.length === 0) {
-    const emptyMessage = search
-      ? `No games matching "${search}".`
-      : genre
-      ? `No games in the ${genre} genre yet.`
-      : 'No games found yet.'
+    const isFiltered = Boolean(search || genre)
+    const title = emptyTitle || (isFiltered ? 'No matching games' : 'No games published yet')
+    const description = emptyDescription || (
+      search
+        ? `No games match "${search}". Clear the search or create one from an article.`
+        : genre
+        ? `No games are tagged ${genre} yet. Try another genre or publish the first one.`
+        : 'Turn a writer article into the first playable experience in the arcade.'
+    )
     return (
-      <div className="text-center py-16 border border-dashed border-border rounded-lg">
-        <p className="text-muted-foreground mb-4">{emptyMessage}</p>
-        <Link
-          href="/generate"
-          className="inline-flex items-center gap-2 text-sm text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-md px-4 py-2 transition-colors"
-        >
-          Generate the first game
-        </Link>
-      </div>
+      <EmptyState
+        icon={isFiltered ? SearchX : Gamepad2}
+        title={title}
+        description={description}
+        action={{ label: emptyActionLabel, href: emptyActionHref }}
+        className="border border-dashed border-border rounded-lg bg-card/30"
+      />
     )
   }
 
