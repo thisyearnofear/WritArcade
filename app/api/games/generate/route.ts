@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     console.log('User AI preferences:', { geminiEnabled: userPreferences.geminiEnabled, preferGemini: userPreferences.preferGemini })
 
     let processedPrompt = validatedData.promptText || ''
-    let processedContent
+    let processedContent: import('@/domains/content/services/content-processor.service').ProcessedContent | undefined
 
     // If URL provided, extract and process content
     if (validatedData.url && ContentProcessorService.isValidUrl(validatedData.url)) {
