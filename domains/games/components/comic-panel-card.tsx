@@ -51,6 +51,7 @@ interface ComicPanelCardProps {
   aiPromptSuggestions?: string[]
   onAIPromptSelect?: (prompt: string) => void
   showAIPromptSuggestions?: boolean
+  storyComplete?: boolean
 }
 
 export function ComicPanelCard({
@@ -77,6 +78,7 @@ export function ComicPanelCard({
   aiPromptSuggestions,
   onAIPromptSelect,
   showAIPromptSuggestions,
+  storyComplete,
 }: ComicPanelCardProps) {
   const { narrative, options: parsedOptions } = parsePanel(narrativeText)
   const [imageRating, setImageRating] = useState<number | null>(null)
@@ -563,34 +565,61 @@ export function ComicPanelCard({
             </div>
 
             {/* Choice Options - Spanning Full Width Below */}
-            {!isEpilogue && choiceOptions.length > 0 && (
-              <div className="flex flex-col gap-4">
-                <div className="pt-2 border-t" style={{ borderColor: `${primaryColor}30` }}>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-                    Your next move
-                  </h4>
+            {(() => {
+              const isTerminal = Boolean(storyComplete)
 
-                  {/* Grid layout - 1 col on mobile, 2 on tablet, 4 on desktop */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {choiceOptions.map((option, idx) => {
-                      const optionId = idx + 1
-                      return (
-                        <AnimatedOptionButton
-                          key={idx}
-                          option={option}
-                          optionId={optionId}
-                          isSelected={pendingOptionId === optionId}
-                          isWaiting={isWaiting}
-                          primaryColor={primaryColor}
-                          disabled={isWaiting}
-                          onClick={() => onOptionSelect({ id: optionId, text: option })}
-                        />
-                      )
-                    })}
+              if (!isEpilogue) {
+                if (isTerminal) {
+                  return (
+                    <div className="flex flex-col gap-4">
+                      <div className="pt-2 border-t" style={{ borderColor: `${primaryColor}30` }}>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                          Final panel
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          This story has reached its last panel. View the complete comic below or return to your games.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                }
+
+                if (choiceOptions.length === 0) {
+                  return null
+                }
+
+                return (
+                  <div className="flex flex-col gap-4">
+                    <div className="pt-2 border-t" style={{ borderColor: `${primaryColor}30` }}>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+                        Your next move
+                      </h4>
+
+                      {/* Grid layout - 1 col on mobile, 2 on tablet, 4 on desktop */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {choiceOptions.map((option, idx) => {
+                          const optionId = idx + 1
+                          return (
+                            <AnimatedOptionButton
+                              key={idx}
+                              option={option}
+                              optionId={optionId}
+                              isSelected={pendingOptionId === optionId}
+                              isWaiting={isWaiting}
+                              primaryColor={primaryColor}
+                              disabled={isWaiting}
+                              onClick={() => onOptionSelect({ id: optionId, text: option })}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                )
+              }
+
+              return null
+            })()}
             </div>
             </div>
             </div>

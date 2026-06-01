@@ -165,7 +165,7 @@ export function GameGenerationOverlay({
 
           {/* Main content */}
           <motion.div
-            className="relative z-10 w-full max-w-2xl mx-4 px-6 sm:px-8 py-8 sm:py-12 bg-gradient-to-br from-purple-950/90 via-indigo-950/90 to-purple-900/90 border-4 border-purple-500/50 rounded-2xl shadow-2xl"
+            className="relative z-10 w-full max-w-2xl mx-4 px-6 sm:px-8 py-5 sm:py-8 bg-gradient-to-br from-purple-950/90 via-indigo-950/90 to-purple-900/90 border-4 border-purple-500/50 rounded-2xl shadow-2xl"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
@@ -235,7 +235,7 @@ export function GameGenerationOverlay({
               </div>
 
               {/* Steps */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {steps.map((step, index) => {
                   const status = stepStatuses[step]
                   const config = stepConfig[step]
@@ -244,7 +244,7 @@ export function GameGenerationOverlay({
                   return (
                     <motion.div
                       key={step}
-                      className={`p-4 rounded-xl border-2 transition-all ${
+                      className={`p-3 rounded-xl border-2 transition-all ${
                         status === 'completed'
                           ? 'bg-green-900/20 border-green-500/50'
                           : status === 'error'
@@ -257,10 +257,10 @@ export function GameGenerationOverlay({
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         {/* Icon/Status indicator */}
                         <motion.div
-                          className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-2xl border-2 ${
+                          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl border-2 ${
                             status === 'completed'
                               ? 'bg-green-600/30 border-green-500'
                               : status === 'error'
@@ -292,23 +292,23 @@ export function GameGenerationOverlay({
                           ) : status === 'error' ? (
                             <span className="text-red-300">✕</span>
                           ) : isActive ? (
-                            <Loader2 className="w-6 h-6 text-purple-300 animate-spin" />
+                            <Loader2 className="w-5 h-5 text-purple-300 animate-spin" />
                           ) : (
                             config.icon
                           )}
                         </motion.div>
 
                         {/* Step info */}
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <h3
-                            className={`font-semibold text-lg mb-1 ${
+                            className={`font-semibold leading-tight ${
                               isActive ? 'text-purple-200' : 'text-muted-foreground'
                             }`}
                           >
                             {config.label}
                           </h3>
                           <p
-                            className={`text-sm ${
+                            className={`text-xs ${
                               isActive ? 'text-purple-300' : 'text-muted-foreground'
                             }`}
                           >
@@ -318,7 +318,7 @@ export function GameGenerationOverlay({
 
                         {/* Step number */}
                         <div
-                          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${
+                          className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${
                             status === 'completed'
                               ? 'bg-green-600/20 border-green-500 text-green-300'
                               : isActive
@@ -335,17 +335,17 @@ export function GameGenerationOverlay({
               </div>
 
               {/* Fun messages & Contextual Tips */}
-              <div className="relative h-24 overflow-hidden">
+              <div className="relative h-20 overflow-hidden">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={tipIndex}
-                    className="absolute inset-0 p-4 rounded-xl bg-purple-900/30 border border-purple-500/30"
+                    className="absolute inset-0 p-3 rounded-xl bg-purple-900/30 border border-purple-500/30"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.5 }}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5">
                       <div className="flex-shrink-0 mt-0.5">
                         {CONTEXTUAL_TIPS[tipIndex].icon}
                       </div>

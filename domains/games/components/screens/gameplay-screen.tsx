@@ -91,70 +91,106 @@ export function GameplayScreen({
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Story Progress</p>
                 <div className="flex items-center gap-4">
                   <MoodIndicator mood={worldMood} />
-                  <p className="text-sm text-muted-foreground">Panel {assistantMessageCount} of {MAX_COMIC_PANELS}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {assistantMessageCount >= MAX_COMIC_PANELS
+                      ? 'Story complete'
+                      : `Panel ${assistantMessageCount} of ${MAX_COMIC_PANELS}`}
+                  </p>
                 </div>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div
                   className="h-full transition-all duration-500 ease-out"
                   style={{
-                    width: `${(assistantMessageCount / MAX_COMIC_PANELS) * 100}%`,
+                    width: `${Math.min((assistantMessageCount / MAX_COMIC_PANELS) * 100, 100)}%`,
                     backgroundColor: game.primaryColor || '#8b5cf6',
                   }}
                 />
               </div>
             </div>
 
-            {/* Current Comic Panel */}
-            <div className="w-full space-y-8">
-              {messages.map((message, idx) => {
-                if (message.role !== 'assistant') return null
-
-                const isEpilogue = message.id.startsWith('epilogue-')
-
-                // For regular panels, only show the last unanswered one
-                if (!isEpilogue) {
-                  if (!message.options || message.options.length === 0) return null
-                  const remainingMessages = messages.slice(idx + 1)
-                  const hasLaterCompletedPanel = remainingMessages.some(m => m.role === 'assistant' && m.options && m.options.length > 0)
-                  if (hasLaterCompletedPanel) return null
-                }
-
-                const imageReady = message.narrativeImage !== undefined
-
-                return (
-                  <div key={message.id} className="animate-in fade-in duration-700 ease-out">
-                    <ComicPanelCard
-                      messageId={message.id}
-                      narrativeText={isEpilogue ? `Epilogue: ${message.content}` : message.content}
-                      genre={game.genre}
-                      primaryColor={game.primaryColor || '#8b5cf6'}
-                      options={message.options || []}
-                      onOptionSelect={onOptionClick}
-                      isWaiting={isWaitingForResponse}
-                      onImageRating={(rating) => onImageRating(message.id, rating)}
-                      onImagesReady={onImagesReady}
-                      onImageRegenerate={(narrativeText, customPrompt, theme) =>
-                        onImageRegenerate(message.id, narrativeText, customPrompt, theme)
-                      }
-                      isRegenerating={isRegenerating === message.id}
-                      pendingOptionId={pendingOptionId}
-                      responseReady={responseReady}
-                      narrativeImage={message.narrativeImage || undefined}
-                      imageModel={message.imageModel}
-                      shouldRevealContent={true}
-                      showLoadingState={!imageReady && isWaitingForResponse}
-                      availableThemes={availableThemes}
-                      currentTheme={game.primaryColor || 'default'}
-                      aiPromptSuggestions={generateAIPromptSuggestions(message.content)}
-                      onAIPromptSelect={handleAIPromptSelect}
-                      showAIPromptSuggestions={false}
-                      isEpilogue={isEpilogue}
-                    />
+            {/* Completion banner when story is finished */}
+            {!canAddMorePanels && !isGeneratingEpilogue && (
+              <div className="w-full max-w-5xl mb-6">
+                <div
+                  className="p-4 rounded-xl border text-sm"
+                  style={{
+                    backgroundColor: `${game.primaryColor || '#8b5cf6'}10`,
+                    borderColor: `${game.primaryColor || '#8b5cf6'}50`,
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-white">5 of 5 panels complete</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your story has reached its final panel. You can view the comic or head back.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowComicFinale(true)}
+                      className="shrink-0 px-4 py-2 rounded-lg font-semibold text-sm text-white transition-all hover:shadow-lg"
+                      style={{
+                        backgroundColor: game.primaryColor || '#8b5cf6',
+                      }}
+                    >
+                      View Comic
+                    </button>
                   </div>
-                )
-              })}
-            </div>
+                </div>
+              </div>
+            )}
+
+            {/* Current Comic Panel */}
+              <div className="w-full space-y-8">
+                {messages.map((message, idx) => {
+                  if (message.role !== 'assistant') return null
+
+                  const isEpilogue = message.id.startsWith('epilogue-')
+
+                  if (!isEpilogue) {
+                    if (!message.options || message.options.length === 0) return null
+                    const remainingMessages = messages.slice(idx + 1)
+                    const hasLaterCompletedPanel = remainingMessages.some(m => m.role === 'assistant' && m.options && m.options.length > 0)
+                    if (hasLaterCompletedPanel) return null
+                  }
+
+                  const isTerminal = !canAddMorePanels
+
+                  const imageReady = message.narrativeImage !== undefined
+
+                  return (
+                    <div key={message.id} className="animate-in fade-in duration-700 ease-out">
+                      <ComicPanelCard
+                        messageId={message.id}
+                        narrativeText={isEpilogue ? `Epilogue: ${message.content}` : message.content}
+                        genre={game.genre}
+                        primaryColor={game.primaryColor || '#8b5cf6'}
+                        options={isTerminal ? [] : (message.options || [])}
+                        onOptionSelect={onOptionClick}
+                        isWaiting={isWaitingForResponse}
+                        onImageRating={(rating) => onImageRating(message.id, rating)}
+                        onImagesReady={onImagesReady}
+                        onImageRegenerate={(narrativeText, customPrompt, theme) =>
+                          onImageRegenerate(message.id, narrativeText, customPrompt, theme)
+                        }
+                        isRegenerating={isRegenerating === message.id}
+                        pendingOptionId={pendingOptionId}
+                        responseReady={responseReady}
+                        narrativeImage={message.narrativeImage || undefined}
+                        imageModel={message.imageModel}
+                        shouldRevealContent={true}
+                        showLoadingState={!imageReady && isWaitingForResponse}
+                        availableThemes={availableThemes}
+                        currentTheme={game.primaryColor || 'default'}
+                        aiPromptSuggestions={generateAIPromptSuggestions(message.content)}
+                        onAIPromptSelect={handleAIPromptSelect}
+                        storyComplete={isTerminal}
+                        isEpilogue={isEpilogue}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
 
             <div ref={messagesEndRef} className="h-8" />
           </div>
@@ -170,54 +206,32 @@ export function GameplayScreen({
       >
         <div className="w-full max-w-5xl mx-auto">
           {!canAddMorePanels && !isGeneratingEpilogue && (
-            <div className="space-y-4">
-              <div
-                className="p-5 rounded-xl border-2 text-sm"
-                style={{
-                  backgroundColor: `${game.primaryColor || '#8b5cf6'}10`,
-                  borderColor: game.primaryColor || '#8b5cf6',
-                }}
-              >
-                <p className="font-semibold text-white">Story Complete</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Your story has concluded. View your comic and its reflection.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowComicFinale(true)}
-                className="w-full h-12 font-semibold transition-all duration-200 hover:shadow-lg bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center justify-center"
-                style={{
-                  backgroundColor: game.primaryColor || '#8b5cf6',
-                }}
-              >
-                <BookOpen className="w-5 h-5 mr-2" />
-                View Comic
-              </button>
-            </div>
-          )}
-          {isGeneratingEpilogue && (
-            <div
-              className="p-5 rounded-xl border-2 text-sm text-center"
-              style={{
-                backgroundColor: `${game.primaryColor || '#8b5cf6'}10`,
-                borderColor: game.primaryColor || '#8b5cf6',
-              }}
-            >
-              <div className="loading-spinner mx-auto mb-3 w-6 h-6" />
-              <p className="font-semibold text-white">Weaving your story's reflection...</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Generating epilogue and connecting your choices to the source article.
-              </p>
+            <div className="p-4 rounded-xl border text-sm" style={{ backgroundColor: `${game.primaryColor || '#8b5cf6'}10`, borderColor: game.primaryColor || '#8b5cf6' }}>
+              <p className="font-semibold text-white">Story Complete</p>
+              <p className="text-sm text-muted-foreground mt-2">Your story has concluded. View your comic and its reflection.</p>
             </div>
           )}
 
-          <button
-            onClick={() => window.history.back()}
-            className="mt-4 flex items-center gap-2 text-muted-foreground hover:text-white transition-colors"
-          >
-            <ChevronDown className="w-4 h-4" />
-            <span>Back to Games</span>
-          </button>
+          {isGeneratingEpilogue && (
+            <div className="p-5 rounded-xl border-2 text-sm text-center" style={{ backgroundColor: `${game.primaryColor || '#8b5cf6'}10`, borderColor: game.primaryColor || '#8b5cf6' }}>
+              <div className="loading-spinner mx-auto mb-3 w-6 h-6" />
+              <p className="font-semibold text-white">Weaving your story's reflection...</p>
+              <p className="text-sm text-muted-foreground mt-1">Generating epilogue and connecting your choices to the source article.</p>
+            </div>
+          )}
+
+          <div className="mt-4 flex items-center justify-between">
+            <button onClick={() => window.history.back()} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronDown className="w-3.5 h-3.5" />
+              Back to Games
+            </button>
+            {!canAddMorePanels && !isGeneratingEpilogue && (
+              <button onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
+                <BookOpen className="w-4 h-4" />
+                View Comic
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
