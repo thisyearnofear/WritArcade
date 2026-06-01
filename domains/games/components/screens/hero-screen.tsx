@@ -193,7 +193,7 @@ export function HeroScreen({
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-card border border-purple-500/30 rounded-xl p-6 max-w-sm w-full shadow-2xl"
+              className="bg-card border border-purple-500/30 rounded-xl p-5 sm:p-6 max-w-sm w-full shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto">

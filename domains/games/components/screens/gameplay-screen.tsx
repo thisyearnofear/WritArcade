@@ -2,11 +2,12 @@
 
 import { useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Loader2, BookOpen, ChevronDown } from 'lucide-react'
+import { Loader2, BookOpen, ChevronDown, Share2 } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
+import { trackEvent } from '@/lib/analytics'
 
 const MAX_COMIC_PANELS = 5
 
@@ -62,6 +63,29 @@ export function GameplayScreen({
   generateAIPromptSuggestions,
   handleAIPromptSelect,
 }: GameplayScreenProps) {
+
+  const handleShare = async () => {
+    trackEvent('share_clicked', {
+      gameSlug: game.slug,
+      panelCount: assistantMessageCount,
+    })
+
+    const shareText = `I just finished a ${game.genre} comic on WritersArcade with ${assistantMessageCount} panels.`
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : undefined
+
+    try {
+      if (navigator?.share) {
+        await navigator.share({ title: game.title, text: shareText, url: shareUrl })
+        return
+      }
+      if (navigator?.clipboard) {
+        await navigator.clipboard.writeText(`${game.title}\n${shareText}\n${shareUrl || ''}`.trim())
+        return
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -242,10 +266,16 @@ export function GameplayScreen({
                 Back to Games
               </button>
               {!canAddMorePanels && !isGeneratingEpilogue ? (
-                <button onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
-                  <BookOpen className="w-4 h-4" />
-                  View Comic
-                </button>
+                <>
+                  <button onClick={handleShare} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-colors">
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </button>
+                  <button onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
+                    <BookOpen className="w-4 h-4" />
+                    View Comic
+                  </button>
+                </>
               ) : null}
             </div>
           </div>
