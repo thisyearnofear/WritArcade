@@ -87,6 +87,14 @@ export function GameplayScreen({
     }
   }
 
+  const handleViewComic = () => {
+    trackEvent('view_comic_clicked', {
+      gameSlug: game.slug,
+      panelCount: assistantMessageCount,
+    })
+    setShowComicFinale(true)
+  }
+
   // Auto-scroll to bottom
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -136,37 +144,6 @@ export function GameplayScreen({
                 />
               </div>
             </div>
-
-            {/* Completion banner when story is finished */}
-            {!canAddMorePanels && !isGeneratingEpilogue && (
-              <div className="w-full max-w-5xl mb-6">
-                <div
-                  className="p-4 rounded-xl border text-sm"
-                  style={{
-                    backgroundColor: `${game.primaryColor || '#8b5cf6'}10`,
-                    borderColor: `${game.primaryColor || '#8b5cf6'}50`,
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-white">5 of 5 panels complete</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Your story has reached its final panel. You can view the comic or head back.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setShowComicFinale(true)}
-                      className="shrink-0 px-4 py-2 rounded-lg font-semibold text-sm text-white transition-all hover:shadow-lg"
-                      style={{
-                        backgroundColor: game.primaryColor || '#8b5cf6',
-                      }}
-                    >
-                      View Comic
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Current Comic Panel */}
               <div className="w-full space-y-8">
@@ -271,7 +248,7 @@ export function GameplayScreen({
                     <Share2 className="w-4 h-4" />
                     Share
                   </button>
-                  <button onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
+                    <button onClick={handleViewComic} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
                     <BookOpen className="w-4 h-4" />
                     View Comic
                   </button>

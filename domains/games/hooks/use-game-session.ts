@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useVisualConfig } from '@/contexts/visual-config.context'
+import { trackEvent } from '@/lib/analytics'
 import { MoodModifierService } from '../services/mood-modifier.service'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'
@@ -260,6 +261,11 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
     if (!sessionId || isGeneratingEpilogueRef.current) return
     isGeneratingEpilogueRef.current = true
 
+    trackEvent('epilogue_opened', {
+      gameSlug: game.slug,
+      panelCount: assistantMessageCount,
+    })
+
     setEpilogueReflection(null)
     setIsGeneratingEpilogue(true)
 
@@ -307,6 +313,10 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
         setMessages(prev => [...prev, epilogueMessage])
         setIsGeneratingEpilogue(false)
         isGeneratingEpilogueRef.current = false
+        trackEvent('epilogue_completed', {
+          gameSlug: game.slug,
+          panelCount: assistantMessageCount,
+        })
       }).catch(err => {
         console.error('Epilogue image generation error:', err)
         const epilogueMessage: ChatEntry = {
@@ -321,12 +331,20 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
         setMessages(prev => [...prev, epilogueMessage])
         setIsGeneratingEpilogue(false)
         isGeneratingEpilogueRef.current = false
+        trackEvent('epilogue_completed', {
+          gameSlug: game.slug,
+          panelCount: assistantMessageCount,
+        })
       })
     } catch (error) {
       console.error('Epilogue generation failed:', error)
       setIsGeneratingEpilogue(false)
       isGeneratingEpilogueRef.current = false
       setEpilogueGenerationFailed(true)
+      trackEvent('epilogue_failed', {
+        gameSlug: game.slug,
+        panelCount: assistantMessageCount,
+      })
     }
   }, [sessionId, game, userChoices, preferences])
 
@@ -368,6 +386,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
           setMessages(prev => prev.filter(m => m.id !== userMessage.id))
           setIsWaitingForResponse(false)
           setPendingOptionId(null)
+          setIsGeneratingEpilogue(true)
           generateEpilogue()
           return
         }
@@ -437,6 +456,12 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
 
                 setResponseReady(prev => ({ ...prev, text: true }))
 
+                trackEvent('panel_completed', {
+                  gameSlug: game.slug,
+                  panelIndex: assistantMessageCount + 1,
+                  totalPanels: MAX_COMIC_PANELS,
+                })
+
                 // Generate image for this panel
                 const { narrative } = parsePanel(currentMessage)
                 const startTime = Date.now()
@@ -487,6 +512,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       )) {
         console.log('Game completed - generating epilogue')
         setMessages(prev => prev.filter(m => m.id !== userMessage.id))
+        setIsGeneratingEpilogue(true)
         generateEpilogue()
       }
     } finally {
