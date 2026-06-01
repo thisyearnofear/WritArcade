@@ -20,11 +20,17 @@ export type AnalyticsEventName =
   | 'game_generated'
   | 'game_generation_failed'
   | 'play_clicked'
-  | 'ownership_clicked'
+  | 'panel_completed'
+  | 'story_completed'
+  | 'epilogue_opened'
+  | 'epilogue_completed'
+  | 'epilogue_failed'
+  | 'view_comic_clicked'
   | 'share_clicked'
   | 'make_another_clicked'
+  | 'ownership_clicked'
 
-type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>
+export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>
 
 type AnalyticsWindow = Window & {
   dataLayer?: Array<Record<string, unknown>>

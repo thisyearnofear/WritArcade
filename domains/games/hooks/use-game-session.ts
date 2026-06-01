@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useVisualConfig } from '@/contexts/visual-config.context'
 import { MoodModifierService } from '../services/mood-modifier.service'
@@ -82,6 +82,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   // Derived state
   const assistantMessageCount = messages.filter(m => m.role === 'assistant').length
   const canAddMorePanels = assistantMessageCount < MAX_COMIC_PANELS
+  const storyComplete = !canAddMorePanels || !!epilogueReflection
 
   /**
    * Handle image generation result - updates the message with the generated image
@@ -251,9 +252,13 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   /**
    * Generate epilogue + reflection after game completes
    */
-  const generateEpilogue = useCallback(async () => {
-    if (!sessionId || isGeneratingEpilogue) return
+  const isGeneratingEpilogueRef = useRef(false)
 
+  const generateEpilogue = useCallback(async () => {
+    if (!sessionId || isGeneratingEpilogueRef.current) return
+    isGeneratingEpilogueRef.current = true
+
+    setEpilogueReflection(null)
     setIsGeneratingEpilogue(true)
 
     try {
@@ -278,7 +283,6 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
 
       setEpilogueReflection(reflection)
 
-      // Generate image for epilogue
       ImageGenerationService.generateImage({
         prompt: epilogue,
         genre: game.genre,
@@ -300,6 +304,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
 
         setMessages(prev => [...prev, epilogueMessage])
         setIsGeneratingEpilogue(false)
+        isGeneratingEpilogueRef.current = false
       }).catch(err => {
         console.error('Epilogue image generation error:', err)
         const epilogueMessage: ChatEntry = {
@@ -313,12 +318,14 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
         }
         setMessages(prev => [...prev, epilogueMessage])
         setIsGeneratingEpilogue(false)
+        isGeneratingEpilogueRef.current = false
       })
     } catch (error) {
       console.error('Epilogue generation failed:', error)
       setIsGeneratingEpilogue(false)
+      isGeneratingEpilogueRef.current = false
     }
-  }, [sessionId, game, userChoices, isGeneratingEpilogue])
+  }, [sessionId, game, userChoices, preferences])
 
   /**
    * Send message - continues the game conversation
@@ -496,7 +503,12 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       timestamp: new Date().toISOString()
     }])
 
-    // Mood shift logic (example)
+    if (!canAddMorePanels) {
+      setPendingOptionId(null)
+      return
+    }
+
+    // Mood shift logic
     const lowerText = optionText.toLowerCase()
     setWorldMood(prev => ({
       tension: prev.tension + (lowerText.includes('fight') || lowerText.includes('run') ? 2 : -1),

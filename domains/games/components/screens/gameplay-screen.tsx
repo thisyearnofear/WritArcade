@@ -29,6 +29,7 @@ interface GameplayScreenProps {
   responseReady: { text: boolean; images: boolean }
   isRegenerating: string | null
   setShowComicFinale: (show: boolean) => void
+  epilogueReflection: string | null
   // UI Enhancements
   availableThemes: any[]
   generateAIPromptSuggestions: (content: string) => string[]
@@ -54,6 +55,7 @@ export function GameplayScreen({
   responseReady,
   isRegenerating,
   setShowComicFinale,
+  epilogueReflection,
   availableThemes,
   generateAIPromptSuggestions,
   handleAIPromptSelect,
@@ -127,8 +129,9 @@ export function GameplayScreen({
                       </p>
                     </div>
                     <button
+                      disabled={!epilogueReflection}
                       onClick={() => setShowComicFinale(true)}
-                      className="shrink-0 px-4 py-2 rounded-lg font-semibold text-sm text-white transition-all hover:shadow-lg"
+                      className="shrink-0 px-4 py-2 rounded-lg font-semibold text-sm text-white transition-all hover:shadow-lg disabled:opacity-50"
                       style={{
                         backgroundColor: game.primaryColor || '#8b5cf6',
                       }}
@@ -205,32 +208,36 @@ export function GameplayScreen({
         }}
       >
         <div className="w-full max-w-5xl mx-auto">
-          {!canAddMorePanels && !isGeneratingEpilogue && (
-            <div className="p-4 rounded-xl border text-sm" style={{ backgroundColor: `${game.primaryColor || '#8b5cf6'}10`, borderColor: game.primaryColor || '#8b5cf6' }}>
-              <p className="font-semibold text-white">Story Complete</p>
-              <p className="text-sm text-muted-foreground mt-2">Your story has concluded. View your comic and its reflection.</p>
-            </div>
-          )}
+            {!canAddMorePanels && !isGeneratingEpilogue && (
+              <div className="p-4 rounded-xl border text-sm sm:text-base" style={{ backgroundColor: `${game.primaryColor || '#8b5cf6'}10`, borderColor: game.primaryColor || '#8b5cf6' }}>
+                <p className="font-semibold text-white">Story Complete</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Your story has concluded. View your comic and its reflection.
+                </p>
+              </div>
+            )}
 
           {isGeneratingEpilogue && (
             <div className="p-5 rounded-xl border-2 text-sm text-center" style={{ backgroundColor: `${game.primaryColor || '#8b5cf6'}10`, borderColor: game.primaryColor || '#8b5cf6' }}>
               <div className="loading-spinner mx-auto mb-3 w-6 h-6" />
               <p className="font-semibold text-white">Weaving your story's reflection...</p>
-              <p className="text-sm text-muted-foreground mt-1">Generating epilogue and connecting your choices to the source article.</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Generating epilogue and connecting your choices to the source article.</p>
             </div>
           )}
 
-          <div className="mt-4 flex items-center justify-between">
-            <button onClick={() => window.history.back()} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <ChevronDown className="w-3.5 h-3.5" />
-              Back to Games
-            </button>
-            {!canAddMorePanels && !isGeneratingEpilogue && (
-              <button onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
-                <BookOpen className="w-4 h-4" />
-                View Comic
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
+            <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
+              <button onClick={() => window.history.back()} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronDown className="w-3.5 h-3.5" />
+                Back to Games
               </button>
-            )}
+              {!canAddMorePanels && !isGeneratingEpilogue ? (
+                <button disabled={!epilogueReflection} onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
+                  <BookOpen className="w-4 h-4" />
+                  View Comic
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

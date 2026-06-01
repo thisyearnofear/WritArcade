@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi'
 import { Game } from '../types'
 import { useGameSession } from '../hooks/use-game-session'
 import { useGameBlockchain } from '../hooks/use-game-blockchain'
+import { trackEvent } from '@/lib/analytics'
 
 // Screen Components
 import { HeroScreen } from './screens/hero-screen'
@@ -13,7 +14,6 @@ import { GameplayScreen } from './screens/gameplay-screen'
 import { ComicFinaleScreen } from './screens/comic-finale-screen'
 import { GameStatusScreens } from './screens/game-status-screens'
 import { GameEnrichment } from './game-enrichment'
-import { trackEvent } from '@/lib/analytics'
 
 interface GamePlayInterfaceProps {
   game: Game
@@ -100,7 +100,22 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     })
   }
 
+  const previouslyIncompleteRef = useRef(true)
   const storyComplete = !!session.epilogueReflection || session.assistantMessageCount >= MAX_COMIC_PANELS
+  if (storyComplete && previouslyIncompleteRef.current) {
+    previouslyIncompleteRef.current = false
+
+    const panelCount = session.assistantMessageCount
+    const completionTimestamp = Date.now()
+
+    trackEvent('story_completed', {
+      gameSlug: game.slug,
+      panelCount,
+      maxPanels: MAX_COMIC_PANELS,
+      completionTimestamp,
+      epilogueGenerated: !!session.epilogueReflection,
+    })
+  }
   const renderEnrichment = () => (
     <GameEnrichment
       gameId={game.id}
@@ -190,6 +205,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         assistantMessageCount={session.assistantMessageCount}
         canAddMorePanels={session.canAddMorePanels}
         isGeneratingEpilogue={session.isGeneratingEpilogue}
+        epilogueReflection={session.epilogueReflection}
         userInput="" // No longer used
         onUserInputChange={() => { }}
         onOptionClick={(option) => {
