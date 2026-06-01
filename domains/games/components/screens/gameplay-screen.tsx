@@ -30,6 +30,7 @@ interface GameplayScreenProps {
   isRegenerating: string | null
   setShowComicFinale: (show: boolean) => void
   epilogueReflection: string | null
+  epilogueGenerationFailed: boolean
   // UI Enhancements
   availableThemes: any[]
   generateAIPromptSuggestions: (content: string) => string[]
@@ -56,6 +57,7 @@ export function GameplayScreen({
   isRegenerating,
   setShowComicFinale,
   epilogueReflection,
+  epilogueGenerationFailed,
   availableThemes,
   generateAIPromptSuggestions,
   handleAIPromptSelect,
@@ -129,9 +131,8 @@ export function GameplayScreen({
                       </p>
                     </div>
                     <button
-                      disabled={!epilogueReflection}
                       onClick={() => setShowComicFinale(true)}
-                      className="shrink-0 px-4 py-2 rounded-lg font-semibold text-sm text-white transition-all hover:shadow-lg disabled:opacity-50"
+                      className="shrink-0 px-4 py-2 rounded-lg font-semibold text-sm text-white transition-all hover:shadow-lg"
                       style={{
                         backgroundColor: game.primaryColor || '#8b5cf6',
                       }}
@@ -225,6 +226,15 @@ export function GameplayScreen({
             </div>
           )}
 
+          {epilogueGenerationFailed && (
+            <div className="p-4 rounded-xl border text-sm" style={{ backgroundColor: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.3)' }}>
+              <p className="font-semibold text-red-300">Reflection unavailable</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Couldn't generate an epilogue this time. Your comic is still ready to view.
+              </p>
+            </div>
+          )}
+
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
               <button onClick={() => window.history.back()} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -232,7 +242,7 @@ export function GameplayScreen({
                 Back to Games
               </button>
               {!canAddMorePanels && !isGeneratingEpilogue ? (
-                <button disabled={!epilogueReflection} onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
+                <button onClick={() => setShowComicFinale(true)} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
                   <BookOpen className="w-4 h-4" />
                   View Comic
                 </button>

@@ -206,6 +206,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         canAddMorePanels={session.canAddMorePanels}
         isGeneratingEpilogue={session.isGeneratingEpilogue}
         epilogueReflection={session.epilogueReflection}
+        epilogueGenerationFailed={session.epilogueGenerationFailed}
         userInput="" // No longer used
         onUserInputChange={() => { }}
         onOptionClick={(option) => {

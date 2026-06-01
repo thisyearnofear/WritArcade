@@ -37,6 +37,7 @@ export interface GameSessionState {
   // Epilogue
   isGeneratingEpilogue: boolean
   epilogueReflection: string | null
+  epilogueGenerationFailed: boolean
   // Mood tracking
   worldMood: {
     tension: number
@@ -77,6 +78,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
   const [isGeneratingEpilogue, setIsGeneratingEpilogue] = useState(false)
   const [epilogueReflection, setEpilogueReflection] = useState<string | null>(null)
+  const [epilogueGenerationFailed, setEpilogueGenerationFailed] = useState(false)
   const [worldMood, setWorldMood] = useState({ tension: 0, chaos: 0, hope: 0 })
 
   // Derived state
@@ -324,6 +326,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       console.error('Epilogue generation failed:', error)
       setIsGeneratingEpilogue(false)
       isGeneratingEpilogueRef.current = false
+      setEpilogueGenerationFailed(true)
     }
   }, [sessionId, game, userChoices, preferences])
 
@@ -588,6 +591,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
     regeneratingMessageId,
     isGeneratingEpilogue,
     epilogueReflection,
+    epilogueGenerationFailed,
     // Actions
     startGame,
     sendMessage,
