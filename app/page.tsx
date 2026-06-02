@@ -14,7 +14,6 @@ import { useOnboarding } from '@/hooks/useOnboarding'
 import {
   ExternalLink,
   Puzzle,
-  ChevronDown,
   Wand2,
   Gamepad2,
   Coins,
@@ -135,96 +134,12 @@ function WriterTicker() {
   )
 }
 
-/**
- * Advanced payment options — hidden by default behind "More options".
- * Reveals the payment path toggle and detailed explanations for users
- * who want to choose between Writer Coin (Base) and MUSD (Mezo).
- */
-function AdvancedPaymentOptions({
-  paymentPath,
-  onChange,
-}: {
-  paymentPath: PaymentPath
-  onChange: (v: PaymentPath) => void
-}) {
-  const [expanded, setExpanded] = useState(false)
-
-  return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        aria-expanded={expanded}
-      >
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-        <ConceptTooltip
-          term="Payment options"
-          explanation="Writer coins are social tokens from supported writers on Base. MUSD is a Bitcoin-backed stablecoin on Mezo. Both route payments to the writer automatically."
-        >
-          <span className="underline decoration-dotted underline-offset-2 cursor-help">More options</span>
-        </ConceptTooltip>
-      </button>
-
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="overflow-hidden"
-          >
-            <div className="space-y-3 pt-1">
-              <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border">
-                {(['writercoin', 'musd'] as const).map((path) => (
-                  <button
-                    key={path}
-                    type="button"
-                    onClick={() => onChange(path)}
-                    aria-pressed={paymentPath === path}
-                    className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
-                      paymentPath === path
-                        ? path === 'writercoin'
-                          ? 'bg-blue-600 text-white shadow'
-                          : 'bg-amber-600 text-white shadow'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {path === 'writercoin' ? 'Writer coin' : 'MUSD'}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {paymentPath === 'writercoin' ? (
-                  <>
-                    <span className="font-medium text-foreground">Writer coin</span> uses social tokens from supported writers on Base.{' '}
-                    <a href="/writers" className="underline underline-offset-2 hover:text-foreground transition-colors">See supported writers</a>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-medium text-foreground">MUSD</span> is a Bitcoin-backed stablecoin on{' '}
-                    <ConceptTooltip term="Mezo" explanation="A Bitcoin Layer 2 network that enables Bitcoin-backed payments and smart contracts.">
-                      <span className="underline decoration-dotted underline-offset-2 cursor-help">Mezo</span>
-                    </ConceptTooltip>.
-                    No writer token needed — any Paragraph article works.
-                  </>
-                )}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
   const { showOnboarding, dismissOnboarding, startTour } = useOnboarding()
   const gameCount = useGameCount()
-  const [paymentPath, setPaymentPath] = useState<PaymentPath>('musd')
+  const [paymentPath] = useState<PaymentPath>('musd')
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
   const featuredLoadedRef = useRef(false)
 
@@ -311,12 +226,7 @@ export default function HomePage() {
                       >
                         Try with a sample article
                       </button>
-
-                      <AdvancedPaymentOptions
-                        paymentPath={paymentPath}
-                        onChange={setPaymentPath}
-                      />
-                    </div>
+</div>
                   </div>
                 </ErrorBoundary>
               </motion.div>
@@ -329,9 +239,9 @@ export default function HomePage() {
                 transition={{ delay: 0.6, duration: 0.5 }}
               >
                 {[
-                  { label: 'Base', color: 'bg-blue-500', href: 'https://base.org' },
                   { label: 'Story Protocol', color: 'bg-emerald-500', href: 'https://storyprotocol.xyz' },
                   { label: 'Mezo', color: 'bg-amber-500', href: 'https://mezo.org' },
+                  { label: 'Base', color: 'bg-blue-500', href: 'https://base.org' },
                 ].map((badge) => (
                   <a
                     key={badge.label}

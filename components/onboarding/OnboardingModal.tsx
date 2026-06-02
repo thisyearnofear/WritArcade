@@ -19,7 +19,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       title: 'Paste an article, get a game',
       description:
         'Drop any Paragraph.xyz article URL into the form. AI reads it and generates a unique 5-panel interactive comic you can play.',
-      tip: 'Start with short articles for the best results.',
+      tip: 'We auto-pick the cheapest chain for your article — start with a short one for the best results.',
     },
     {
       icon: Gamepad2,
