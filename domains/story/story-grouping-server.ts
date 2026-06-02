@@ -72,6 +72,11 @@ export async function ensureGroupForWriter(
   userWalletAddress: string,
   gameIpId: string,
 ): Promise<GroupOperationResult> {
+  if (!process.env.STORY_PLATFORM_PRIVATE_KEY) {
+    console.warn('[grouping] STORY_PLATFORM_PRIVATE_KEY not configured — skipping group creation');
+    return { status: "skipped", reason: "Platform key not configured" };
+  }
+
   try {
     const { client } = getPlatformStoryClient();
 
