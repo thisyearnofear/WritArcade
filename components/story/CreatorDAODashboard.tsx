@@ -14,6 +14,8 @@ interface AuthorCreatorDAO {
   totalRoyaltiesEarned: number;
   totalCreatorEarnings: number;
   recentGames: GameDAORecord[];
+  groupIpId?: string;
+  claimableRewards?: string;
 }
 
 interface GameDAORecord {
@@ -26,6 +28,7 @@ interface GameDAORecord {
   registeredAt: number;
   estimatedRoyalties: number;
   baseNFTTokenId?: number;
+  licenseTokenIds?: number[];
 }
 
 interface CreatorDAODashboardProps {
@@ -216,28 +219,57 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
               {/* Creator Share */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Creators (30%)</span>
+                  <span className="text-sm font-medium">Creators (20%)</span>
                   <span className="text-sm font-bold text-blue-600">
                     {data.totalCreatorEarnings.toLocaleString()} tokens
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: "30%" }}></div>
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: "20%" }}></div>
                 </div>
               </div>
 
-              {/* Platform Share */}
+              {/* Platform / Treasury Share */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Platform (10%)</span>
+                  <span className="text-sm font-medium">Platform Treasury (20%)</span>
                   <span className="text-sm font-bold text-muted-foreground">
-                    {Math.round(totalTokensEarned * 0.1).toLocaleString()} tokens
+                    {Math.round(data.totalRoyaltiesEarned * 0.25).toLocaleString()} tokens
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
-                  <div className="bg-muted-foreground h-2 rounded-full" style={{ width: "10%" }}></div>
+                  <div className="bg-muted-foreground h-2 rounded-full" style={{ width: "20%" }}></div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Group / Royalty Pool Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Royalty Pool</CardTitle>
+              <CardDescription>EvenSplitGroupPool on Story Protocol</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {data.groupIpId ? (
+                <>
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <span className="text-sm font-medium">Group IP</span>
+                    <code className="text-xs text-green-700">{data.groupIpId.slice(0, 10)}...</code>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <span className="text-sm font-medium">Claimable Rewards</span>
+                    <span className="font-bold text-blue-600">
+                      {data.claimableRewards || "0"} tokens
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No royalty pool group established yet. Games created from your articles will be
+                  added to a shared group pool for automated distribution.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -312,6 +344,14 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
                         <p className="text-muted-foreground">NFT</p>
                         <p className="font-bold">#{game.baseNFTTokenId || "Unminted"}</p>
                       </div>
+                      <div>
+                        <p className="text-muted-foreground">License Tokens</p>
+                        <p className="font-bold">
+                          {game.licenseTokenIds?.length
+                            ? game.licenseTokenIds.map((id) => `#${id}`).join(", ")
+                            : "—"}
+                        </p>
+                      </div>
                     </div>
 
                     <Button variant="ghost" size="sm" className="w-full justify-start">
@@ -325,48 +365,59 @@ export function CreatorDAODashboard({ authorUsername, authorWallet }: CreatorDAO
           </Card>
         </TabsContent>
 
-        {/* Yield Farming Tab */}
+        {/* Yield / Royalty Pool Tab */}
         <TabsContent value="yield" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Yield Farming on Story</CardTitle>
-              <CardDescription>Stake your royalty tokens to earn additional rewards</CardDescription>
+              <CardTitle>Royalty Pool & Group IP</CardTitle>
+              <CardDescription>Collective IP management via EvenSplitGroupPool</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Coming Soon</h3>
-                <p className="text-sm text-blue-600 dark:text-blue-400">
-                  When Story Protocol launches native yield farming, you'll be able to stake your
-                  royalty tokens here to earn additional rewards.
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <h3 className="font-semibold text-green-600 dark:text-green-400 mb-2">
+                  Group IP Asset
+                </h3>
+                <p className="text-sm text-green-700 dark:text-green-300 mb-3">
+                  {data.groupIpId
+                    ? `All games are pooled under Group IP ${data.groupIpId.slice(0, 10)}...`
+                    : "No group created yet. Create a game to establish your writer's group pool."}
                 </p>
+                <div className="text-sm text-green-700 dark:text-green-300">
+                  <p className="font-semibold">How it works:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Each game is registered as an individual IP Asset</li>
+                    <li>All game IPs are added to a writer-specific group</li>
+                    <li>Royalties flow into the EvenSplitGroupPool</li>
+                    <li>Rewards are evenly distributed to group members</li>
+                  </ul>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="border border-border rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-foreground">Royalty Token Staking</h4>
-                    <Badge>Coming Q1 2026</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Stake your {data.totalRoyaltiesEarned} royalty tokens
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Expected APY: 5-10% in STORY token (estimated)
-                  </p>
+              <div className="border border-border rounded-lg p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-medium text-foreground">Claim Reward</h4>
+                  <Badge variant="secondary">
+                    {data.claimableRewards || "0"} available
+                  </Badge>
                 </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Claim your share of pooled royalties from the group pool
+                </p>
+                <Button variant="outline" className="w-full" disabled>
+                  Claim from Group Pool
+                </Button>
+              </div>
 
-                <div className="border border-border rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-foreground">Creator DAO Treasury</h4>
-                    <Badge>Coming Q1 2026</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Pool royalties with other creators for better yields
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Governance token: TBD (Community decides)
-                  </p>
+              <div className="border border-border rounded-lg p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-medium text-foreground">Yield Farming (Coming Soon)</h4>
+                  <Badge>Future</Badge>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Stake your royalty tokens via the IP Account (ERC-6551) to earn additional STORY
+                  token rewards. Each IP has its own smart account that can interact with DeFi
+                  protocols autonomously.
+                </p>
               </div>
             </CardContent>
           </Card>

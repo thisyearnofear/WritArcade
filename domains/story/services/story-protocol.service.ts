@@ -42,6 +42,9 @@ export interface IPRegistrationInput {
   nftMetadataUri: string;
   parentIpIds?: string[];
   licenseTermsId?: bigint;
+  platformAddress?: Address;
+  mintLicenseTokens?: boolean;
+  licenseTokenReceiver?: Address;
 }
 
 export interface IPRegistrationResult {
@@ -63,6 +66,8 @@ export interface AssetIPRegistrationInput {
   tags: string[];
   creatorAddress: Address;
   metadataUri: string;
+  platformAddress?: Address;
+  authorWalletAddress?: Address;
 }
 
 export interface TransactionRetryConfig {
@@ -271,7 +276,18 @@ export async function registerGameAsIP(
   const availableTerms = await getAvailableLicenseTerms(client);
   const licenseTermsId = input.licenseTermsId || findCommercialRemixTermsId(availableTerms);
 
-  // 5. Register IP with optional license terms — single transaction
+  // 5. Compute royalty token shares (60% author, 20% creator, 20% platform)
+  const royaltyShares = [
+    { recipient: input.authorWalletAddress, percentage: 60 },
+    { recipient: input.gameCreatorAddress, percentage: 20 },
+  ];
+  if (input.platformAddress) {
+    royaltyShares.push({ recipient: input.platformAddress, percentage: 20 });
+  } else {
+    royaltyShares[1].percentage += 20;
+  }
+
+  // 6. Register IP with license terms and royalty shares — single transaction
   let lastError: unknown;
   let response: any;
 
@@ -295,6 +311,7 @@ export async function registerGameAsIP(
             }),
           },
         ],
+        royaltyShares,
       });
       break;
     } catch (error) {
@@ -321,7 +338,23 @@ export async function registerGameAsIP(
 
   console.log(`✅ Game IP registered: ${ipId} (tx: ${txHash})`);
 
-  // 6. Wait for confirmation
+  // 7. Mint license tokens as tradeable ERC-721s (if requested)
+  if (input.mintLicenseTokens && response.ipId) {
+    const receiver = input.licenseTokenReceiver || input.gameCreatorAddress;
+    try {
+      const licenseResponse = await client.license.mintLicenseTokens({
+        licensorIpId: response.ipId as `0x${string}`,
+        licenseTermsId: licenseTermsIds[0] || licenseTermsId,
+        receiver,
+        amount: 1,
+      });
+      console.log(`🎫 License token minted: ${licenseResponse.txHash}`);
+    } catch (mintError) {
+      console.warn(`⚠️ License token minting failed (non-critical):`, mintError);
+    }
+  }
+
+  // 8. Wait for confirmation
   let blockNumber = 0;
   try {
     const { createPublicClient, http } = await import("viem");
@@ -387,6 +420,8 @@ export async function registerAssetAsIP(
   const availableTerms = await getAvailableLicenseTerms(client);
   const licenseTermsId = findCommercialRemixTermsId(availableTerms);
 
+  const royaltyShares = [{ recipient: input.creatorAddress, percentage: 100 }];
+
   let lastError: unknown;
   let response: any;
 
@@ -410,6 +445,7 @@ export async function registerAssetAsIP(
             }),
           },
         ],
+        royaltyShares,
       });
       break;
     } catch (error) {
@@ -476,34 +512,6 @@ export async function claimRoyalties(
   return {
     txHash: txHash as string,
     claimedAt: Math.floor(Date.now() / 1000),
-  };
-}
-
-// ============================================================================
-// License Functions
-// ============================================================================
-
-export async function mintLicenseTokens(
-  client: StoryClient,
-  licensorIpId: string,
-  licenseTermsId: bigint,
-  receiver: Address,
-  amount: number = 1
-): Promise<{ txHash: string; licenseTokenIds: bigint[] }> {
-  console.log(`🎫 Minting ${amount} license token(s) for IP ${licensorIpId}`);
-
-  const response = await client.license.mintLicenseTokens({
-    licensorIpId: licensorIpId as `0x${string}`,
-    licenseTermsId,
-    receiver: receiver,
-    amount: BigInt(amount),
-  });
-
-  console.log(`✅ License tokens minted: ${response.txHash}`);
-
-  return {
-    txHash: response.txHash as string,
-    licenseTokenIds: response.licenseTokenIds || [],
   };
 }
 
