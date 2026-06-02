@@ -1,11 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi';
 import { type AuthUser } from '@/lib/auth';
 import { type CreatorStats } from '@/domains/creators/stats.service';
 import { WRITER_COINS } from '@/lib/writerCoins';
+import { Badge } from '@/components/ui/badge';
 import { LicenseConfigurator } from './LicenseConfigurator';
 import { useGetCurrentAccount } from '@mezo-org/passport';
+import {
+    createStoryClientFromWallet,
+    isOnStoryNetwork,
+    STORY_CHAIN_ID,
+} from '@/lib/story-sdk-client';
+import { mintLicenseTokens } from '@/lib/story-license.service';
 import { 
     Trophy, 
     Coins, 
@@ -16,7 +24,11 @@ import {
     TrendingUp,
     FileText,
     ChevronRight,
-    Sparkles
+    Sparkles,
+    Loader2,
+    CheckCircle2,
+    AlertCircle,
+    Copy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -29,8 +41,103 @@ interface DashboardClientProps {
 export function DashboardClient({ user, initialStats }: DashboardClientProps) {
     const [stats] = useState(initialStats);
     const { data: mezoAccount } = useGetCurrentAccount();
-    // For license configuration, we use the first writer coin as a reference for now
+    const { address, isConnected } = useAccount();
+    const chainId = useChainId();
+    const { switchChain } = useSwitchChain();
+    const { data: walletClient } = useWalletClient();
+    const [mintingIp, setMintingIp] = useState<string | null>(null);
+    const [mintResult, setMintResult] = useState<{ [ipId: string]: string }>({});
+    const [mintError, setMintError] = useState<string | null>(null);
+    const [claiming, setClaiming] = useState(false);
+    const [claimResult, setClaimResult] = useState<string | null>(null);
+    const [copiedField, setCopiedField] = useState<string | null>(null);
+
+    const onStoryNetwork = isOnStoryNetwork(chainId);
     const activeWriterCoin = WRITER_COINS[0];
+
+    const handleSwitchChain = useCallback(async () => {
+        if (!switchChain) return;
+        try {
+            await switchChain({ chainId: STORY_CHAIN_ID });
+        } catch (err) {
+            console.error('Failed to switch network:', err);
+        }
+    }, [switchChain]);
+
+    const handleMintLicenseTokens = useCallback(async (ipId: string, gameTitle: string) => {
+        if (!walletClient || !address || !onStoryNetwork) {
+            if (!onStoryNetwork) await handleSwitchChain();
+            else setMintError('Connect your wallet first');
+            return;
+        }
+
+        setMintingIp(ipId);
+        setMintError(null);
+
+        try {
+            const storyClient = createStoryClientFromWallet(walletClient);
+            if (!storyClient) throw new Error('Failed to initialize Story client');
+
+            const result = await mintLicenseTokens(storyClient, {
+                licensorIpId: ipId as `0x${string}`,
+                licenseTermsId: 2,
+                receiver: address as `0x${string}`,
+                amount: 1,
+            });
+
+            setMintResult((prev) => ({ ...prev, [ipId]: result.txHash }));
+        } catch (err) {
+            setMintError(err instanceof Error ? err.message : 'Minting failed');
+        } finally {
+            setMintingIp(null);
+        }
+    }, [walletClient, address, onStoryNetwork, handleSwitchChain]);
+
+    const handleClaimFromPool = useCallback(async () => {
+        if (!walletClient || !address || !onStoryNetwork) {
+            if (!onStoryNetwork) await handleSwitchChain();
+            else setMintError('Connect your wallet first');
+            return;
+        }
+
+        setClaiming(true);
+        setClaimResult(null);
+
+        try {
+            const storyClient = createStoryClientFromWallet(walletClient);
+            if (!storyClient) throw new Error('Failed to initialize Story client');
+
+            const { collectAndDistributeGroupRoyalties } = await import('@/lib/story-grouping.service');
+            const memberIpIds = stats.registeredGames
+                .filter((g) => g.storyIpId)
+                .map((g) => g.storyIpId as `0x${string}`);
+
+            if (!stats.storyGroupIpId) throw new Error('No group IP found');
+            if (memberIpIds.length === 0) throw new Error('No registered IPs to distribute');
+
+            const result = await collectAndDistributeGroupRoyalties(
+                storyClient,
+                stats.storyGroupIpId as `0x${string}`,
+                memberIpIds,
+            );
+
+            setClaimResult(result.txHash);
+        } catch (err) {
+            setMintError(err instanceof Error ? err.message : 'Claim failed');
+        } finally {
+            setClaiming(false);
+        }
+    }, [walletClient, address, onStoryNetwork, handleSwitchChain, stats.storyGroupIpId, stats.registeredGames]);
+
+    const copyToClipboard = async (text: string, field: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedField(field);
+            setTimeout(() => setCopiedField(null), 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#0a0a14]">
@@ -213,6 +320,133 @@ export function DashboardClient({ user, initialStats }: DashboardClientProps) {
                                     icon={<ExternalLink className="w-4 h-4" />}
                                 />
                             </div>
+                        </section>
+
+                        {/* Story Protocol IP Assets */}
+                        <section className="bg-white/[0.03] border border-white/5 rounded-[32px] p-8">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-black text-white uppercase tracking-widest italic">Story Protocol</h4>
+                                    <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">IP Assets & Royalty Pool</p>
+                                </div>
+                                <ShieldCheck className="w-5 h-5 text-purple-400" />
+                            </div>
+
+                            {/* Group IP */}
+                            <div className="mb-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Group IP</span>
+                                    <Badge variant="outline" className={`text-[9px] ${stats.storyGroupIpId ? 'text-green-400 border-green-500/30' : 'text-amber-400 border-amber-500/30'}`}>
+                                        {stats.storyGroupIpId ? 'Active' : 'Not Created'}
+                                    </Badge>
+                                </div>
+                                {stats.storyGroupIpId ? (
+                                    <div className="flex items-center gap-2">
+                                        <code className="text-xs font-mono text-purple-300/60 truncate flex-1">{stats.storyGroupIpId}</code>
+                                        <button
+                                            onClick={() => copyToClipboard(stats.storyGroupIpId!, 'groupIp')}
+                                            className="p-1 hover:bg-white/5 rounded transition-colors"
+                                        >
+                                            {copiedField === 'groupIp' ? (
+                                                <CheckCircle2 className="w-3 h-3 text-green-400" />
+                                            ) : (
+                                                <Copy className="w-3 h-3 text-white/40" />
+                                            )}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-[10px] text-white/30 italic">Auto-created on first IP registration</p>
+                                )}
+                            </div>
+
+                            {/* Registered IPs */}
+                            {stats.registeredGames.length > 0 && (
+                                <div className="space-y-2 mb-4">
+                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest block mb-2">
+                                        Registered Games ({stats.registeredGames.length})
+                                    </span>
+                                    {stats.registeredGames.slice(0, 5).map((game) => (
+                                        <div key={game.gameId} className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                                            <div className="flex items-start justify-between gap-2 mb-1">
+                                                <span className="text-xs font-medium text-white/80 truncate">{game.title}</span>
+                                                <Badge variant="outline" className="text-[8px] uppercase tracking-wider">{game.genre}</Badge>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <code className="text-[9px] font-mono text-white/30">{game.storyIpId.slice(0, 10)}...</code>
+                                                {mintResult[game.storyIpId] ? (
+                                                    <div className="flex items-center gap-1 text-[10px] text-green-400">
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                        Minted
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleMintLicenseTokens(game.storyIpId, game.title)}
+                                                        disabled={mintingIp === game.storyIpId || !onStoryNetwork || !isConnected}
+                                                        className="text-[10px] font-bold text-purple-400 hover:text-purple-300 uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                        {mintingIp === game.storyIpId ? (
+                                                            <span className="flex items-center gap-1">
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                                Minting
+                                                            </span>
+                                                        ) : (
+                                                            'Mint License'
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Network Status & Actions */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${onStoryNetwork ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                        <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">
+                                            {onStoryNetwork ? 'Story Aeneid' : 'Switch to Story'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={handleSwitchChain}
+                                        className="text-[10px] font-black text-amber-400 uppercase tracking-widest hover:text-amber-300 transition-colors"
+                                    >
+                                        {onStoryNetwork ? '✓' : 'Switch'}
+                                    </button>
+                                </div>
+
+                                {/* Claim from Group Pool */}
+                                {stats.storyGroupIpId && stats.registeredGames.length > 0 && (
+                                    <button
+                                        onClick={handleClaimFromPool}
+                                        disabled={claiming || !onStoryNetwork || !isConnected}
+                                        className="w-full py-3 px-4 rounded-2xl bg-purple-600/20 border border-purple-500/30 text-purple-300 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-purple-600/30 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                        {claiming ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                Claiming...
+                                            </span>
+                                        ) : claimResult ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                                Claimed
+                                            </span>
+                                        ) : (
+                                            'Claim from Group Pool'
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+
+                            {mintError && (
+                                <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-2">
+                                    <AlertCircle className="w-3 h-3 text-red-400 mt-0.5 shrink-0" />
+                                    <p className="text-[10px] text-red-300">{mintError}</p>
+                                </div>
+                            )}
                         </section>
 
                         {/* Promotion / Note */}

@@ -60,6 +60,15 @@ export async function POST(
       },
     })
 
+    // Fire-and-forget: add the game IP to the writer's group IP Asset
+    try {
+      const { ensureGroupForWriter } = await import('@/domains/story/story-grouping-server')
+      const groupResult = await ensureGroupForWriter(walletAddress, storyIpId)
+      console.log(`[grouping] Result for ${storyIpId}: ${JSON.stringify(groupResult)}`)
+    } catch (groupError) {
+      console.warn(`[grouping] Non-critical failure:`, groupError)
+    }
+
     return NextResponse.json({ success: true, data: updated })
   } catch (error) {
     console.error('Game Story registration persistence failed:', error)

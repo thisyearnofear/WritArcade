@@ -161,3 +161,8 @@ export function getTxExplorerUrl(txHash: string): string {
 }
 
 export { WIP_TOKEN_ADDRESS } from "@story-protocol/core-sdk";
+
+// Platform treasury — receives 20% of royalty shares
+export const PLATFORM_TREASURY_ADDRESS =
+  (process.env.NEXT_PUBLIC_PLATFORM_TREASURY_ADDRESS ||
+    "0x55A5705453Ee82c742274154136Fce8149597058") as `0x${string}`;

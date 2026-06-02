@@ -22,6 +22,9 @@ model User {
   isCreator      Boolean @default(false) // User can create/register IP assets
   isAdmin        Boolean @default(false) // Platform admin access
 
+  // Story Protocol Grouping — EvenSplitGroupPool for pooled royalties
+  storyGroupIpId String? // Group IP Asset ID for this writer's royalty pool
+
   // Relations
   games    Game[]
   chats    Chat[]

@@ -17,6 +17,7 @@ import {
   STORY_CHAIN_ID,
   WIP_TOKEN_ADDRESS,
   ROYALTY_POLICY_LAP,
+  PLATFORM_TREASURY_ADDRESS,
   LICENSE_TERMS_ID_NON_COMMERCIAL,
   LICENSE_TERMS_ID_COMMERCIAL_REMIX,
   getIPAssetExplorerUrl,
@@ -277,15 +278,12 @@ export async function registerGameAsIP(
   const licenseTermsId = input.licenseTermsId || findCommercialRemixTermsId(availableTerms);
 
   // 5. Compute royalty token shares (60% author, 20% creator, 20% platform)
+  const platformAddress = input.platformAddress || PLATFORM_TREASURY_ADDRESS;
   const royaltyShares = [
     { recipient: input.authorWalletAddress, percentage: 60 },
     { recipient: input.gameCreatorAddress, percentage: 20 },
+    { recipient: platformAddress, percentage: 20 },
   ];
-  if (input.platformAddress) {
-    royaltyShares.push({ recipient: input.platformAddress, percentage: 20 });
-  } else {
-    royaltyShares[1].percentage += 20;
-  }
 
   // 6. Register IP with license terms and royalty shares — single transaction
   let lastError: unknown;

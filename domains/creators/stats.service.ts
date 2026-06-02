@@ -12,6 +12,15 @@ export interface CreatorStats {
     }>
     registeredIpAssets: number
     royaltyPercentage: number
+    storyGroupIpId: string | null
+    registeredGames: Array<{
+        gameId: string
+        slug: string
+        title: string
+        genre: string
+        storyIpId: string
+        storyRegisteredAt: string | null
+    }>
 }
 
 /**
@@ -87,12 +96,48 @@ export async function getCreatorStats(userAddress: string): Promise<CreatorStats
         }
     })
 
+    // 5. Get user's Story Protocol group IP
+    const user = await prisma.user.findFirst({
+        where: { walletAddress: { equals: userAddress, mode: 'insensitive' } },
+        select: { storyGroupIpId: true },
+    })
+
+    // 6. Get games with Story Protocol IP registration
+    const registeredGames = await prisma.game.findMany({
+        where: {
+            storyIpId: { not: null },
+            OR: [
+                { creatorWallet: { equals: userAddress, mode: 'insensitive' } },
+                { userWallet: { equals: userAddress, mode: 'insensitive' } },
+            ],
+        },
+        select: {
+            id: true,
+            slug: true,
+            title: true,
+            genre: true,
+            storyIpId: true,
+            storyRegisteredAt: true,
+        },
+        orderBy: { storyRegisteredAt: 'desc' },
+        take: 20,
+    })
+
     return {
         totalRevenueMUSD: totalMusdRevenue,
         totalRevenueWriterCoins: totalBaseRevenue,
         totalGames: gamesCount,
         topArticles,
         registeredIpAssets,
-        royaltyPercentage: 10
+        royaltyPercentage: 10,
+        storyGroupIpId: user?.storyGroupIpId || null,
+        registeredGames: registeredGames.map((g) => ({
+            gameId: g.id,
+            slug: g.slug,
+            title: g.title,
+            genre: g.genre,
+            storyIpId: g.storyIpId!,
+            storyRegisteredAt: g.storyRegisteredAt?.toISOString() || null,
+        })),
     }
 }
