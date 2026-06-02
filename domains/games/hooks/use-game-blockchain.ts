@@ -6,7 +6,7 @@ import { parseEther } from 'viem'
 import { useToast } from '@/components/ui/use-toast'
 import { getWriterCoinById } from '@/lib/writerCoins'
 import { CONTRACT_ABIS } from '@/lib/contracts'
-import { createStoryClientFromWallet, STORY_CHAIN_ID, STORY_SPG_CONTRACT, isOnStoryNetwork } from '@/lib/story-sdk-client'
+import { createStoryClientFromWallet, STORY_CHAIN_ID, STORY_SPG_CONTRACT, isOnStoryNetwork, LICENSE_TERMS_ID_COMMERCIAL_REMIX } from '@/lib/story-sdk-client'
 import { Game } from '../types'
 import { type ComicBookFinalePanelData } from '../components/comic-book-finale'
 import { type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
@@ -192,11 +192,11 @@ export function useGameBlockchain(game: Game) {
             if (!parentIpId) throw new Error('Parent game has no Story Protocol IP ID')
 
             for (const assetId of extractedAssetIds) {
-                await storyClient.ipAsset.mintAndRegisterIpAndMakeDerivative({
-                    spgNftContract: STORY_SPG_CONTRACT,
+                await storyClient.ipAsset.registerDerivativeIpAsset({
+                    nft: { type: "mint", spgNftContract: STORY_SPG_CONTRACT },
                     derivData: {
                         parentIpIds: [parentIpId],
-                        licenseTermsIds: [BigInt(1)],
+                        licenseTermsIds: [LICENSE_TERMS_ID_COMMERCIAL_REMIX],
                     },
                     ipMetadata: {
                         ipMetadataURI: `https://writersarcade.vercel.app/api/assets/${assetId}?ipMetadata=true`,

@@ -8,10 +8,9 @@ import {
     createStoryClientFromWallet,
     isOnStoryNetwork,
     STORY_CHAIN_ID,
+    WIP_TOKEN_ADDRESS,
+    ROYALTY_POLICY_LAP,
 } from '@/lib/story-sdk-client';
-
-// WIP token on Story Aeneid testnet — standard currency for PIL terms
-const WIP_TOKEN = '0x1514000000000000000000000000000000000000' as const;
 
 export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) {
     const [royalty, setRoyalty] = useState(writerCoin.revenueDistribution.writer);
@@ -60,7 +59,8 @@ export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) 
             const terms = PILFlavor.commercialRemix({
                 defaultMintingFee: 0n,
                 commercialRevShare: royalty,
-                currency: WIP_TOKEN,
+                currency: WIP_TOKEN_ADDRESS,
+                royaltyPolicy: ROYALTY_POLICY_LAP,
             });
 
             const response = await storyClient.license.registerPILTerms(terms);

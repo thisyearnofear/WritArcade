@@ -25,6 +25,14 @@ export const STORY_SPG_CONTRACT =
   (process.env.NEXT_PUBLIC_STORY_SPG_CONTRACT ||
     "0xc32A8a0FF3beDDDa58393d022aF433e78739FAbc") as `0x${string}`;
 
+// Royalty Policy LAP — required for commercial license terms
+export const ROYALTY_POLICY_LAP = "0xBe54FB168b3c982b7AaE60dB6CF75Bd8447b390E" as const;
+
+// License Terms IDs known on Aeneid
+export const LICENSE_TERMS_ID_NON_COMMERCIAL = 1n;
+export const LICENSE_TERMS_ID_COMMERCIAL_REMIX = 2n;
+export const LICENSE_TERMS_ID_COMMERCIAL_USE = 3n;
+
 /**
  * Circuit breaker state for RPC failures
  */
@@ -151,3 +159,5 @@ export function getIPAssetExplorerUrl(ipId: string): string {
 export function getTxExplorerUrl(txHash: string): string {
   return `${STORY_EXPLORER_URL}/tx/${txHash}`;
 }
+
+export { WIP_TOKEN_ADDRESS } from "@story-protocol/core-sdk";

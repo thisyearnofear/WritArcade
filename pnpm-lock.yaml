@@ -102,8 +102,8 @@ importers:
         specifier: ^9.1.0
         version: 9.1.0(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@story-protocol/core-sdk':
-        specifier: ^1.4.0
-        version: 1.4.2(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+        specifier: ^1.4.4
+        version: 1.4.4(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@tanstack/react-query':
         specifier: 5.90.10
         version: 5.90.10(react@19.2.2)
@@ -3866,8 +3866,8 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@story-protocol/core-sdk@1.4.2':
-    resolution: {integrity: sha512-A1njTXLXpDUbhxk16gRYFgur923YxG/JW+6M8x4+7qT0deDznXRUN15ns++W54cvQt+IUwK+JGa+RtuTBiTFwA==}
+  '@story-protocol/core-sdk@1.4.4':
+    resolution: {integrity: sha512-YZlNcbVydVnESuAseaBV74/vi8S9/DiYjo18XBQGLoOsrV2tSoaWL1f/zQBscwnK8PFyi5bmS29kTysKwjVfJA==}
 
   '@storybook/blocks@8.6.14':
     resolution: {integrity: sha512-rBMHAfA39AGHgkrDze4RmsnQTMw1ND5fGWobr9pDcJdnDKWQWNRD7Nrlxj0gFlN3n4D9lEZhWGdFrCbku7FVAQ==}
@@ -15988,18 +15988,16 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@story-protocol/core-sdk@1.4.2(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@story-protocol/core-sdk@1.4.4(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@scure/bip32': 1.7.0
       abitype: 0.10.3(typescript@5.9.3)(zod@3.25.76)
-      axios: 1.13.6
       bs58: 6.0.0
       dotenv: 16.6.1
       multiformats: 9.9.0
       viem: 2.48.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
     transitivePeerDependencies:
       - bufferutil
-      - debug
       - typescript
       - utf-8-validate
       - zod

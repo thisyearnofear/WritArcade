@@ -14,7 +14,15 @@ const STORY_CHAIN = {
 export const CDR_REST_URL =
   process.env.NEXT_PUBLIC_CDR_API_URL ||
   process.env.CDR_API_URL ||
-  "http://172.192.41.96:1317";
+  "";
+
+export function ensureCdrUrl(): void {
+  if (!CDR_REST_URL) {
+    throw new Error(
+      "CDR REST URL is not configured. Set NEXT_PUBLIC_CDR_API_URL or CDR_API_URL."
+    );
+  }
+}
 
 // === WASM Initialization (client-side) ===
 

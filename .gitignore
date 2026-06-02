@@ -151,3 +151,4 @@ test-*.js
 
 .junie
 .qwen
+.commandcode/

@@ -3,21 +3,24 @@
  *
  * Handles IP registration for writersarcade games and assets.
  * ALL operations use the user's wallet - THEY sign transactions.
- * 
- * This is the single source of truth for Story Protocol interactions.
- * 
+ *
  * SDK Reference: https://docs.story.foundation/sdk-reference/overview
  */
 
 import { Address } from "viem";
-import { StoryClient, IpMetadata } from "@story-protocol/core-sdk";
-import { computeMetadataHash } from "./ipfs-utils";
+import { StoryClient, PILFlavor } from "@story-protocol/core-sdk";
+import type { IpMetadata } from "@story-protocol/core-sdk";
+import { computeMetadataHash, uploadToIPFS } from "./ipfs-utils";
 import {
   STORY_SPG_CONTRACT,
   STORY_RPC_URL,
+  STORY_CHAIN_ID,
+  WIP_TOKEN_ADDRESS,
+  ROYALTY_POLICY_LAP,
+  LICENSE_TERMS_ID_NON_COMMERCIAL,
+  LICENSE_TERMS_ID_COMMERCIAL_REMIX,
   getIPAssetExplorerUrl,
   getTxExplorerUrl,
-  STORY_CHAIN_ID,
   createStoryClientFromWallet,
   isStoryClientReady,
 } from "./story-sdk-client";
@@ -35,10 +38,10 @@ export interface IPRegistrationInput {
   authorWalletAddress: Address;
   genre: "horror" | "comedy" | "mystery";
   difficulty: "easy" | "hard";
-  gameMetadataUri: string; // IPFS URI pointing to full game JSON
-  nftMetadataUri: string; // IPFS URI pointing to NFT metadata
-  parentIpIds?: string[]; // Optional: Assets this game is derived from
-  licenseTermsId?: bigint; // Optional: License terms ID for registration
+  gameMetadataUri: string;
+  nftMetadataUri: string;
+  parentIpIds?: string[];
+  licenseTermsId?: bigint;
 }
 
 export interface IPRegistrationResult {
@@ -68,7 +71,6 @@ export interface TransactionRetryConfig {
   maxDelayMs: number;
 }
 
-// Default retry config: 3 retries with exponential backoff
 const DEFAULT_RETRY_CONFIG: TransactionRetryConfig = {
   maxRetries: 3,
   baseDelayMs: 1000,
@@ -76,61 +78,110 @@ const DEFAULT_RETRY_CONFIG: TransactionRetryConfig = {
 };
 
 // ============================================================================
+// IPA Metadata Standard Helpers
+// ============================================================================
+
+function buildIPMetadata(input: IPRegistrationInput): IpMetadata {
+  return {
+    title: input.title,
+    description: input.description,
+    createdAt: String(Math.floor(Date.now() / 1000)),
+    image: input.gameMetadataUri,
+    mediaUrl: input.articleUrl,
+    mediaType: "text/html",
+    creators: [
+      {
+        name: input.authorParagraphUsername,
+        address: input.authorWalletAddress,
+        contributionPercent: 100,
+      },
+    ],
+    tags: ["writersarcade", input.genre, "game"],
+    ipType: "Game",
+    attributes: [
+      { key: "GameCreator", value: input.gameCreatorAddress },
+      { key: "Genre", value: input.genre },
+      { key: "Difficulty", value: input.difficulty },
+      { key: "Platform", value: "writersarcade" },
+    ],
+  };
+}
+
+function buildAssetIPMetadata(input: AssetIPRegistrationInput): IpMetadata {
+  return {
+    title: input.title,
+    description: input.description,
+    createdAt: String(Math.floor(Date.now() / 1000)),
+    creators: [
+      {
+        name: input.creatorAddress,
+        address: input.creatorAddress,
+        contributionPercent: 100,
+      },
+    ],
+    tags: ["writersarcade", input.genre, ...input.tags],
+    ipType: input.type.charAt(0).toUpperCase() + input.type.slice(1),
+    attributes: [
+      { key: "Type", value: input.type },
+      { key: "Genre", value: input.genre },
+      { key: "Creator", value: input.creatorAddress },
+      { key: "Platform", value: "writersarcade" },
+    ],
+  };
+}
+
+function buildNFTMetadata(input: IPRegistrationInput): Record<string, unknown> {
+  return {
+    name: input.title,
+    description: input.description,
+    image: input.gameMetadataUri,
+    external_url: input.articleUrl,
+    attributes: [
+      { trait_type: "Genre", value: input.genre },
+      { trait_type: "Difficulty", value: input.difficulty },
+      { trait_type: "Author", value: input.authorParagraphUsername },
+    ],
+  };
+}
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 
-/**
- * Estimate gas for a transaction before signing
- * Helps users know if they have enough ETH
- * 
- * Adds a 15% buffer to account for gas price fluctuations
- */
 async function estimateGasForRegistration(
   walletAddress: Address,
   spgNftContract: Address
 ): Promise<{ estimatedGas: bigint; enoughFunds: boolean; costInEth?: string } | null> {
   try {
-    const { createPublicClient, http, formatEther, parseEther } = await import("viem");
+    const { createPublicClient, http, formatEther } = await import("viem");
 
     const publicClient = createPublicClient({
       chain: { id: STORY_CHAIN_ID, name: "Story Protocol", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [STORY_RPC_URL] } } },
       transport: http(STORY_RPC_URL),
     });
 
-    // Try to estimate gas - this may not work for all contracts
     const baseEstimatedGas = await publicClient.estimateContractGas({
       address: spgNftContract,
       abi: [
         {
-          name: "mintAndRegisterIp",
+          name: "mint",
           type: "function",
           inputs: [],
           outputs: [],
           stateMutability: "payable"
         }
       ],
-      functionName: "mintAndRegisterIp" as any,
+      functionName: "mint" as any,
       args: [] as any,
     });
 
-    // Add 15% buffer to gas estimate for congestion fluctuations
-    // This prevents failures on chains with variable gas prices
     const GAS_BUFFER_PERCENT = 15n;
     const estimatedGas = (baseEstimatedGas * (100n + GAS_BUFFER_PERCENT)) / 100n;
-
-    // Get current gas price
     const gasPrice = await publicClient.getGasPrice();
-
-    // Estimate total cost with buffered gas
     const totalCost = estimatedGas * gasPrice;
-
-    // Get user's balance
     const balance = await publicClient.getBalance({ address: walletAddress });
-
     const enoughFunds = balance >= totalCost;
     const costInEth = formatEther(totalCost);
-
-    console.log(`   Gas estimation: ~${costInEth} ETH (${estimatedGas} gas units, ${GAS_BUFFER_PERCENT}% buffer)`);
 
     return { estimatedGas, enoughFunds, costInEth };
   } catch (error) {
@@ -139,13 +190,9 @@ async function estimateGasForRegistration(
   }
 }
 
-/**
- * Parse transaction error and return user-friendly message
- */
 function parseTransactionError(error: unknown): string {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-
     if (message.includes('user rejected') || message.includes('user denied')) {
       return 'Transaction was rejected. Please approve the transaction in your wallet.';
     }
@@ -155,7 +202,7 @@ function parseTransactionError(error: unknown): string {
     if (message.includes('nonce')) {
       return 'Transaction nonce error. Please try again.';
     }
-    if (message.includes('链条') || message.includes('chain')) {
+    if (message.includes('chain')) {
       return 'Network error. Please switch to Story Network and try again.';
     }
     return `Transaction failed: ${error.message}`;
@@ -163,76 +210,42 @@ function parseTransactionError(error: unknown): string {
   return 'An unexpected error occurred. Please try again.';
 }
 
-/**
- * Sleep utility for retry delays
- */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Get available license terms from the protocol
- * Returns array of available terms with their IDs
- * 
- * Note: In production, this would query the protocol directly.
- * For now, we use known default terms with fallback.
- */
 async function getAvailableLicenseTerms(
   client: StoryClient
-): Promise<{ id: bigint; terms: any }[]> {
-  try {
-    // In the current SDK version, license terms are queried differently
-    // For production, you'd query the license template contract directly
-    // For now, return the known default PIL Commercial Remix terms
-    const knownTerms = [
-      { id: 1n, terms: { flavor: 'non-commercial-social-remixing', name: 'Non-Commercial Social Remixing' } },
-      { id: 2n, terms: { flavor: 'commercial-remix', name: 'Commercial Remix' } },
-      { id: 3n, terms: { flavor: 'commercial-use', name: 'Commercial Use' } },
-    ];
+): Promise<{ id: bigint; terms: Record<string, unknown> }[]> {
+  const knownIds = [
+    { id: LICENSE_TERMS_ID_NON_COMMERCIAL, name: "Non-Commercial Social Remixing" },
+    { id: LICENSE_TERMS_ID_COMMERCIAL_REMIX, name: "Commercial Remix" },
+  ];
 
-    console.log(`   Available license terms: ${knownTerms.length}`);
-    return knownTerms;
-  } catch (error) {
-    console.warn('Could not fetch license terms, using defaults:', error);
-    // Fallback to known terms
-    return [
-      { id: 1n, terms: { flavor: 'non-commercial-social-remixing' } },
-      { id: 2n, terms: { flavor: 'commercial-remix' } },
-    ];
+  const results: { id: bigint; terms: Record<string, unknown> }[] = [];
+  for (const { id, name } of knownIds) {
+    try {
+      const terms = await client.license.getLicenseTerms(id);
+      results.push({ id, terms: { ...terms.terms, name } });
+    } catch {
+      results.push({ id, terms: { name, flavor: id === LICENSE_TERMS_ID_NON_COMMERCIAL ? "non-commercial-social-remixing" : "commercial-remix" } });
+    }
   }
+  return results;
 }
 
-/**
- * Find the Commercial Remix license terms ID
- */
-function findCommercialRemixTermsId(availableTerms: { id: bigint; terms: any }[]): bigint {
-  // Look for commercial-remix in the terms
+function findCommercialRemixTermsId(availableTerms: { id: bigint; terms: Record<string, unknown> }[]): bigint {
   const remixTerms = availableTerms.find(
-    (t) => t.terms?.flavor === 'commercial-remix' || t.terms?.name?.toLowerCase().includes('commercial remix')
+    (t) => String(t.terms?.name ?? "").toLowerCase().includes("commercial remix") ||
+         String(t.terms?.flavor ?? "").includes("commercial-remix")
   );
-
-  // Default to ID 2 for commercial remix if found, otherwise 1
-  return remixTerms?.id || 2n;
+  return remixTerms?.id || LICENSE_TERMS_ID_COMMERCIAL_REMIX;
 }
 
 // ============================================================================
 // Core Registration Functions (Client-Side - User Signs)
 // ============================================================================
 
-/**
- * Register a game as an IP Asset on Story Protocol
- * 
- * USER FLOW:
- * 1. User is on Story Aeneid Testnet (via chain switch)
- * 2. User clicks "Register IP"
- * 3. Wallet prompts for signature
- * 4. Transaction sent from USER'S wallet
- * 5. IP registered with USER as owner
- * 
- * @param client - StoryClient created from user's wallet
- * @param input - Game metadata for IP registration
- * @param retryConfig - Optional retry configuration
- */
 export async function registerGameAsIP(
   client: StoryClient,
   input: IPRegistrationInput,
@@ -241,109 +254,74 @@ export async function registerGameAsIP(
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
 
   console.log(`📝 Registering game IP: ${input.title}`);
-  console.log(`   Creator: ${input.gameCreatorAddress}`);
-  console.log(`   Metadata: ${input.nftMetadataUri}`);
 
-  // 1. Generate IP metadata with attribution
-  const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
-    title: input.title,
-    description: input.description,
-    watermarkImg: input.gameMetadataUri,
-    attributes: [
-      { key: "GameCreator", value: input.gameCreatorAddress },
-      { key: "Author", value: input.authorParagraphUsername },
-      { key: "AuthorWallet", value: input.authorWalletAddress },
-      { key: "Genre", value: input.genre },
-      { key: "Difficulty", value: input.difficulty },
-      { key: "ArticleURL", value: input.articleUrl },
-      { key: "Platform", value: "writersarcade" },
-      { key: "ParentAssets", value: input.parentIpIds?.join(",") || "None" },
-    ],
-  });
+  // 1. Build IPA Metadata Standard-compliant IP metadata
+  const ipMetadata = buildIPMetadata(input);
+  const nftMetadata = buildNFTMetadata(input);
 
-  // 2. Compute metadata hashes for integrity
-  const ipMetadataHash = computeMetadataHash(ipMetadata);
-  const nftMetadataHash = computeMetadataHash({
-    name: input.title,
-    description: input.description,
-  });
+  // 2. Upload both metadata objects to IPFS
+  const ipMetadataUri = input.gameMetadataUri || await uploadToIPFS(ipMetadata);
+  const nftMetadataUri = input.nftMetadataUri || await uploadToIPFS(nftMetadata);
 
-  // 3. Get available license terms dynamically (or use provided license)
+  // 3. Compute hashes for integrity verification
+  const ipMetadataHash = computeMetadataHash(ipMetadata) as `0x${string}`;
+  const nftMetadataHash = computeMetadataHash(nftMetadata) as `0x${string}`;
+
+  // 4. Get license terms
   const availableTerms = await getAvailableLicenseTerms(client);
   const licenseTermsId = input.licenseTermsId || findCommercialRemixTermsId(availableTerms);
-  console.log(`   Using license terms ID: ${licenseTermsId}`);
 
-  // 4. Mint and register IP with retry logic - USER SIGNS THIS TRANSACTION
+  // 5. Register IP with optional license terms — single transaction
   let lastError: unknown;
   let response: any;
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
-      response = await client.ipAsset.mintAndRegisterIp({
-        spgNftContract: STORY_SPG_CONTRACT,
+      response = await client.ipAsset.registerIpAsset({
+        nft: { type: "mint", spgNftContract: STORY_SPG_CONTRACT },
         ipMetadata: {
-          ipMetadataURI: input.nftMetadataUri,
-          ipMetadataHash: ipMetadataHash as `0x${string}`,
-          nftMetadataURI: input.nftMetadataUri,
-          nftMetadataHash: nftMetadataHash as `0x${string}`,
+          ipMetadataURI: ipMetadataUri,
+          ipMetadataHash,
+          nftMetadataURI: nftMetadataUri,
+          nftMetadataHash,
         },
+        licenseTermsData: [
+          {
+            terms: PILFlavor.commercialRemix({
+              defaultMintingFee: 0n,
+              commercialRevShare: 10,
+              currency: WIP_TOKEN_ADDRESS,
+              royaltyPolicy: ROYALTY_POLICY_LAP,
+            }),
+          },
+        ],
       });
-
-      // Success - break out of retry loop
       break;
     } catch (error) {
       lastError = error;
       const errorMessage = parseTransactionError(error);
-
-      // Don't retry on user rejection
-      if (errorMessage.includes('rejected')) {
+      if (errorMessage.includes('rejected') || errorMessage.includes('Insufficient funds')) {
         throw new Error(errorMessage);
       }
-
-      // Don't retry on insufficient funds
-      if (errorMessage.includes('Insufficient funds')) {
-        throw new Error(errorMessage);
-      }
-
       if (attempt < config.maxRetries) {
-        const delayMs = Math.min(
-          config.baseDelayMs * Math.pow(2, attempt),
-          config.maxDelayMs
-        );
-        console.log(`   ⚠️ Attempt ${attempt + 1} failed, retrying in ${delayMs}ms...`);
+        const delayMs = Math.min(config.baseDelayMs * Math.pow(2, attempt), config.maxDelayMs);
         await sleep(delayMs);
       }
     }
   }
 
-  // If we exhausted retries, throw the last error
   if (!response?.ipId) {
     const errorMessage = parseTransactionError(lastError);
-    console.error(`   ❌ Registration failed after ${config.maxRetries + 1} attempts`);
     throw new Error(errorMessage);
   }
 
   const ipId = response.ipId as string;
   const txHash = response.txHash as string;
+  const licenseTermsIds = (response.licenseTermsIds as bigint[]) || [licenseTermsId];
 
-  console.log(`✅ Game IP registered: ${ipId}`);
-  console.log(`   Transaction: ${txHash}`);
+  console.log(`✅ Game IP registered: ${ipId} (tx: ${txHash})`);
 
-  // 5. Attach license terms (allow derivatives with royalties)
-  let licenseTermsIds: bigint[] = [];
-  try {
-    await client.license.attachLicenseTerms({
-      ipId: ipId as `0x${string}`,
-      licenseTermsId, // Use dynamically determined license terms
-    });
-    licenseTermsIds = [licenseTermsId];
-    console.log(`✅ License terms attached (PIL Commercial Remix)`);
-  } catch (licenseError) {
-    console.warn(`⚠️ Could not attach license terms:`, licenseError);
-    // Non-fatal - IP is still registered
-  }
-
-  // 6. Wait for transaction confirmation with polling
+  // 6. Wait for confirmation
   let blockNumber = 0;
   try {
     const { createPublicClient, http } = await import("viem");
@@ -353,24 +331,23 @@ export async function registerGameAsIP(
     });
     const receipt = await publicClient.waitForTransactionReceipt({
       hash: txHash as `0x${string}`,
-      timeout: 60000, // 60 second timeout
+      timeout: 60000,
     });
     blockNumber = Number(receipt.blockNumber);
-    console.log(`✅ Transaction confirmed in block ${blockNumber}`);
-  } catch (waitError) {
-    console.warn(`⚠️ Transaction confirmation wait failed (non-critical):`, waitError);
-    // Non-fatal - IP is still registered, just don't have block number
+  } catch {
+    // Non-fatal
   }
 
-  // 6. Register as derivative if parent assets provided
+  // 7. Register as derivative if parent assets provided
   if (input.parentIpIds?.length) {
-    console.log(`🔗 Linking to ${input.parentIpIds.length} parent asset(s)...`);
     for (const parentId of input.parentIpIds) {
       try {
-        await client.ipAsset.registerDerivative({
-          childIpId: ipId as `0x${string}`,
-          parentIpIds: [parentId as `0x${string}`],
-          licenseTermsIds: [1n],
+        await client.ipAsset.registerDerivativeIpAsset({
+          nft: { type: "minted", nftContract: STORY_SPG_CONTRACT, tokenId: BigInt(ipId) },
+          derivData: {
+            parentIpIds: [parentId as `0x${string}`],
+            licenseTermsIds: [licenseTermsId],
+          },
         });
         console.log(`   ✅ Linked to parent: ${parentId}`);
       } catch (linkError) {
@@ -390,10 +367,6 @@ export async function registerGameAsIP(
   };
 }
 
-/**
- * Register a standalone asset as IP
- * Used for marketplace assets (characters, mechanics, etc.)
- */
 export async function registerAssetAsIP(
   client: StoryClient,
   input: AssetIPRegistrationInput,
@@ -403,81 +376,64 @@ export async function registerAssetAsIP(
 
   console.log(`📝 Registering asset IP: ${input.title} (${input.type})`);
 
-  const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
-    title: input.title,
-    description: input.description,
-    attributes: [
-      { key: "Type", value: input.type },
-      { key: "Genre", value: input.genre },
-      { key: "Tags", value: input.tags.join(",") },
-      { key: "Creator", value: input.creatorAddress },
-      { key: "Platform", value: "writersarcade" },
-    ],
-  });
+  const ipMetadata = buildAssetIPMetadata(input);
+  const ipMetadataUri = input.metadataUri || await uploadToIPFS(ipMetadata);
+  const ipMetadataHash = computeMetadataHash(ipMetadata) as `0x${string}`;
 
-  const ipMetadataHash = computeMetadataHash(ipMetadata);
-  const nftMetadataHash = computeMetadataHash({
-    name: input.title,
-    description: input.description,
-  });
+  const nftMetadata = { name: input.title, description: input.description, image: input.metadataUri };
+  const nftMetadataUri = await uploadToIPFS(nftMetadata);
+  const nftMetadataHash = computeMetadataHash(nftMetadata) as `0x${string}`;
 
-  // Get available license terms dynamically
   const availableTerms = await getAvailableLicenseTerms(client);
   const licenseTermsId = findCommercialRemixTermsId(availableTerms);
 
-  // Execute transaction with retry logic - USER SIGNS THIS TRANSACTION
   let lastError: unknown;
   let response: any;
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
-      response = await client.ipAsset.mintAndRegisterIp({
-        spgNftContract: STORY_SPG_CONTRACT,
+      response = await client.ipAsset.registerIpAsset({
+        nft: { type: "mint", spgNftContract: STORY_SPG_CONTRACT },
         ipMetadata: {
-          ipMetadataURI: input.metadataUri,
-          ipMetadataHash: ipMetadataHash as `0x${string}`,
-          nftMetadataURI: input.metadataUri,
-          nftMetadataHash: nftMetadataHash as `0x${string}`,
+          ipMetadataURI: ipMetadataUri,
+          ipMetadataHash,
+          nftMetadataURI: nftMetadataUri,
+          nftMetadataHash,
         },
+        licenseTermsData: [
+          {
+            terms: PILFlavor.commercialRemix({
+              defaultMintingFee: 0n,
+              commercialRevShare: 10,
+              currency: WIP_TOKEN_ADDRESS,
+              royaltyPolicy: ROYALTY_POLICY_LAP,
+            }),
+          },
+        ],
       });
       break;
     } catch (error) {
       lastError = error;
       const errorMessage = parseTransactionError(error);
-
       if (errorMessage.includes('rejected') || errorMessage.includes('Insufficient funds')) {
         throw new Error(errorMessage);
       }
-
       if (attempt < config.maxRetries) {
         const delayMs = Math.min(config.baseDelayMs * Math.pow(2, attempt), config.maxDelayMs);
-        console.log(`   ⚠️ Attempt ${attempt + 1} failed, retrying in ${delayMs}ms...`);
         await sleep(delayMs);
       }
     }
   }
 
   if (!response?.ipId) {
-    const errorMessage = parseTransactionError(lastError);
-    throw new Error(errorMessage);
+    throw new Error(parseTransactionError(lastError));
   }
 
   const ipId = response.ipId as string;
   const txHash = response.txHash as string;
+  const licenseTermsIds = (response.licenseTermsIds as bigint[]) || [licenseTermsId];
 
-  console.log(`✅ Asset IP registered: ${ipId}`);
-
-  // Attach commercial remix license for derivatives
-  let licenseTermsIds: bigint[] = [];
-  try {
-    await client.license.attachLicenseTerms({
-      ipId: ipId as `0x${string}`,
-      licenseTermsId,
-    });
-    licenseTermsIds = [licenseTermsId];
-  } catch (error) {
-    console.warn(`⚠️ License attachment skipped:`, error);
-  }
+  console.log(`✅ Asset IP registered: ${ipId} (tx: ${txHash})`);
 
   return {
     ipId,
@@ -493,10 +449,6 @@ export async function registerAssetAsIP(
 // Royalty & Revenue Functions
 // ============================================================================
 
-/**
- * Claim royalties from derivative works
- * IP owners can claim revenue generated by derivatives of their IP
- */
 export async function claimRoyalties(
   client: StoryClient,
   ancestorIpId: string,
@@ -531,10 +483,6 @@ export async function claimRoyalties(
 // License Functions
 // ============================================================================
 
-/**
- * Mint license tokens for an IP
- * Required for others to create derivatives
- */
 export async function mintLicenseTokens(
   client: StoryClient,
   licensorIpId: string,
@@ -563,10 +511,6 @@ export async function mintLicenseTokens(
 // Utility Exports
 // ============================================================================
 
-/**
- * Verify IP was actually registered on-chain
- * Performs read-after-write to ensure registration succeeded
- */
 export async function verifyIPRegistration(
   ipId: string,
   txHash?: string
@@ -584,69 +528,52 @@ export async function verifyIPRegistration(
       transport: http(STORY_RPC_URL),
     });
 
-    // IP Asset Registry ABI (simplified for verification)
+    const IP_ASSET_REGISTRY = "0x77319B4031e6eF1250907aa00018B8B1c67a244b";
+
     const ipAssetRegistryAbi = [
-      {
-        name: "ipAssetRegistry",
-        type: "function",
-        inputs: [{ name: "ipId", type: "address" }],
-        outputs: [{ name: "", type: "bool" }],
-        stateMutability: "view"
-      },
       {
         name: "ownerOf",
         type: "function",
         inputs: [{ name: "tokenId", type: "uint256" }],
         outputs: [{ name: "", type: "address" }],
         stateMutability: "view"
+      },
+      {
+        name: "totalSupply",
+        type: "function",
+        inputs: [],
+        outputs: [{ name: "", type: "uint256" }],
+        stateMutability: "view"
       }
     ] as const;
 
-    // Convert IP ID to token ID format (IP ID is address, need to convert)
-    // IP ID format: 0x + 40 hex chars (same as address)
-    const ipIdAddress = ipId.startsWith('0x') ? ipId : `0x${ipId}`;
-
     try {
-      // Try to read owner - if IP doesn't exist, this will revert
-      // IP ID on Story Protocol is actually a token ID (bigint), not an address
-      const ipIdBigInt = BigInt(ipIdAddress);
-
+      const tokenId = BigInt(ipId.startsWith("0x") ? ipId : `0x${ipId}`);
       const owner = await publicClient.readContract({
-        address: STORY_SPG_CONTRACT,
+        address: IP_ASSET_REGISTRY,
         abi: ipAssetRegistryAbi,
         functionName: "ownerOf",
-        args: [ipIdBigInt],
+        args: [tokenId],
       });
 
-      console.log(`✅ IP ${ipId} verified on-chain (owner: ${owner})`);
       return { verified: true, owner: owner as string };
-    } catch (readError) {
-      // If read fails, check if we have a transaction hash to verify
+    } catch {
       if (txHash) {
         try {
           const receipt = await publicClient.getTransactionReceipt({
             hash: txHash as `0x${string}`,
           });
-
           if (receipt.status === 'success') {
-            console.log(`✅ IP ${ipId} verified via transaction receipt (block: ${receipt.blockNumber})`);
             return { verified: true };
-          } else {
-            console.warn(`⚠️ Transaction ${txHash} failed`);
-            return { verified: false, error: 'Transaction failed on-chain' };
           }
-        } catch (txError) {
-          console.warn(`⚠️ Could not verify transaction ${txHash}:`, txError);
+          return { verified: false, error: 'Transaction failed on-chain' };
+        } catch {
           return { verified: false, error: 'Could not verify transaction' };
         }
       }
-
-      // No txHash provided and contract read failed
-      console.warn(`⚠️ Could not verify IP ${ipId}: contract read failed`);
       return { verified: false, error: 'Could not verify IP on-chain' };
     }
   } catch (error) {
-    console.error(`❌ IP verification failed for ${ipId}:`, error);
     return { verified: false, error: error instanceof Error ? error.message : 'Verification failed' };
   }
 }
@@ -654,15 +581,13 @@ export async function verifyIPRegistration(
 export {
   STORY_SPG_CONTRACT,
   getIPAssetExplorerUrl,
-  getTxExplorerUrl
+  getTxExplorerUrl,
+  WIP_TOKEN_ADDRESS,
+  ROYALTY_POLICY_LAP,
 } from "./story-sdk-client";
 
 export { PILFlavor } from "@story-protocol/core-sdk";
 
-/**
- * Estimate gas for IP registration
- * Useful for pre-flight checks before user confirms
- */
 export async function estimateGas(
   walletAddress: Address,
   spgNftContract: Address = STORY_SPG_CONTRACT
