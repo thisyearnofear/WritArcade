@@ -19,7 +19,7 @@ const OWNER_WRITE_CONDITION_ADDR = '0x4C9bFC96d7092b590D497A191826C3dA2277c34B'
 const LICENSE_READ_CONDITION_ADDR = '0xC0640AD4CF2CaA9914C8e5C44234359a9102f7a3'
 const STORY_RPC_URL = process.env.STORY_RPC_URL || 'https://aeneid.storyrpc.io'
 // Story-API REST endpoint for DKG state (NOT the EVM RPC)
-const STORY_REST_URL = process.env.CDR_API_URL || 'http://172.192.41.96:1317'
+const STORY_REST_URL = process.env.CDR_API_URL
 
 const STORY_CHAIN = {
   id: 1315,
