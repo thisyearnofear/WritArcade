@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
 import { SimpleGameForm, type PaymentPath } from '@/domains/games/components/simple-game-form'
@@ -231,30 +232,72 @@ export default function HomePage() {
                 </ErrorBoundary>
               </motion.div>
 
-              {/* Trust badges — subtle, below the fold */}
+              {/* Writer-coin hint — shows the 5 launch writers whose articles
+                  auto-pay with their token. Tapping a pill deep-links to the
+                  writer's page where the reader can see games, copy the
+                  contract address, and read on Paragraph. */}
+              <motion.div
+                className="mt-6 flex flex-col items-center gap-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.45, duration: 0.5 }}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Paste from a launch writer to pay with their coin
+                </span>
+                <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xl">
+                  {WRITER_COINS.map((coin) => (
+                    <a
+                      key={coin.id}
+                      href={`/writers/${coin.id}`}
+                      className="group inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground border border-border/60 hover:border-blue-500/40 rounded-full px-2.5 py-1 transition-colors"
+                      title={`${coin.writer} — ${coin.symbol} on Base`}
+                    >
+                      <span className="font-mono text-blue-600 dark:text-blue-400">{coin.symbol}</span>
+                      <span className="hidden sm:inline truncate max-w-[8rem]">{coin.writer}</span>
+                    </a>
+                  ))}
+                  <a
+                    href="/writers"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                  >
+                    All writers →
+                  </a>
+                </div>
+              </motion.div>
+
+              {/* Trust badges — subtle, below the fold. Now link to /learn/chains
+                  so the user gets a real explanation rather than an external site. */}
               <motion.div
                 className="flex flex-wrap items-center justify-center gap-3 mt-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
               >
-                {[
-                  { label: 'Story Protocol', color: 'bg-emerald-500', href: 'https://storyprotocol.xyz' },
-                  { label: 'Mezo', color: 'bg-amber-500', href: 'https://mezo.org' },
-                  { label: 'Base', color: 'bg-blue-500', href: 'https://base.org' },
-                ].map((badge) => (
-                  <a
-                    key={badge.label}
-                    href={badge.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${badge.color} inline-block`} />
-                    {badge.label}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ))}
+                <Link
+                  href="/learn/chains"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                  Story Protocol
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+                <Link
+                  href="/learn/chains"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                  Mezo
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+                <Link
+                  href="/learn/chains"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                  Base
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
               </motion.div>
             </div>
           </section>

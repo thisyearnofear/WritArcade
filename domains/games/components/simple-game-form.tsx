@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { ArrowRight, Loader2, ArrowLeftRight, CheckCircle2 } from 'lucide-react'
 import { chainForPaymentPath, getChainInfo } from '@/lib/chains'
 import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
+import { trackEvent } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
 
 export type PaymentPath = 'writercoin' | 'musd'
@@ -38,6 +39,38 @@ export function SimpleGameForm({ onGenerate, isGenerating, paymentPath: defaultP
   // The path the form will actually use to pay.
   const activePath: PaymentPath = explicitPath ?? (detectedCoin ? 'writercoin' : defaultPath)
   const isAutoMatched = Boolean(detectedCoin) && explicitPath === null
+
+  // Track the moment a URL matches a known writer's coin. Fires once per
+  // writer per typing session (not on every keystroke that keeps matching
+  // the same writer). This measures the bet that auto-detect drives
+  // writer-coin usage.
+  const lastTrackedWriterRef = useRef<string | null>(null)
+  useEffect(() => {
+    const writerId = detectedCoin?.id ?? null
+    if (writerId && writerId !== lastTrackedWriterRef.current) {
+      lastTrackedWriterRef.current = writerId
+      trackEvent('payment_path_auto_detected', {
+        writer: writerId,
+        symbol: detectedCoin?.symbol,
+        path: 'writercoin',
+      })
+    } else if (!writerId) {
+      lastTrackedWriterRef.current = null
+    }
+  }, [detectedCoin])
+
+  /**
+   * Wraps `setExplicitPath` to fire `payment_path_user_override` exactly
+   * once per override. The detected writer is the implicit "from" target.
+   */
+  const overrideTo = (next: PaymentPath) => {
+    setExplicitPath(next)
+    trackEvent('payment_path_user_override', {
+      from: 'writercoin', // user is overriding the auto-detected coin
+      to: next,
+      writer: detectedCoin?.id,
+    })
+  }
 
   const targetChainId = chainForPaymentPath(activePath)
   const targetChain = getChainInfo(targetChainId)
@@ -93,7 +126,7 @@ export function SimpleGameForm({ onGenerate, isGenerating, paymentPath: defaultP
           </div>
           <button
             type="button"
-            onClick={() => setExplicitPath('musd')}
+            onClick={() => overrideTo('musd')}
             className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 hover:text-amber-500 transition-colors"
           >
             Use MUSD instead
@@ -108,7 +141,15 @@ export function SimpleGameForm({ onGenerate, isGenerating, paymentPath: defaultP
           <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5">
             <button
               type="button"
-              onClick={() => setExplicitPath(detectedCoin ? 'writercoin' : null)}
+              onClick={() => {
+                if (!detectedCoin) return
+                setExplicitPath('writercoin')
+                trackEvent('payment_path_user_override', {
+                  from: 'musd',
+                  to: 'writercoin',
+                  writer: detectedCoin.id,
+                })
+              }}
               disabled={!detectedCoin}
               className={cn(
                 'px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider transition-colors',
@@ -135,7 +176,14 @@ export function SimpleGameForm({ onGenerate, isGenerating, paymentPath: defaultP
           {detectedCoin && explicitPath === 'musd' && (
             <button
               type="button"
-              onClick={() => setExplicitPath(null)}
+              onClick={() => {
+                setExplicitPath(null)
+                trackEvent('payment_path_user_override', {
+                  from: 'musd',
+                  to: 'writercoin',
+                  writer: detectedCoin.id,
+                })
+              }}
               className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors"
             >
               Use writer coin

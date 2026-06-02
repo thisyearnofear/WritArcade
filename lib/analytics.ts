@@ -5,6 +5,8 @@ export type AnalyticsEventName =
   | 'game_mode_selected'
   | 'payment_path_selected'
   | 'payment_path_advanced_opened'
+  | 'payment_path_auto_detected'
+  | 'payment_path_user_override'
   | 'payment_wallet_connect_prompt_shown'
   | 'payment_wallet_connected'
   | 'payment_abandoned_before_wallet_connect'
