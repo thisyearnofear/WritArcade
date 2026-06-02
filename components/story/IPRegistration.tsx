@@ -408,6 +408,21 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
               </p>
             </div>
 
+            {/* Royalty Pool Info */}
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+              <div className="flex gap-2 mb-1">
+                <span className="text-sm">🏦</span>
+                <h4 className="font-semibold text-purple-900 dark:text-purple-100 text-sm">
+                  Royalty Pool Created
+                </h4>
+              </div>
+              <p className="text-xs text-purple-700 dark:text-purple-300">
+                Your IP has been added to your writer royalty pool. All future games you register will be
+                pooled together — royalties from derivatives flow here and are distributed evenly.
+                Claim anytime from your <strong>Dashboard</strong>.
+              </p>
+            </div>
+
             {/* IP Asset ID */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">

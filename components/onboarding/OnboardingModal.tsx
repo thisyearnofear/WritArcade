@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Wand2, Gamepad2, Coins } from 'lucide-react'
+import { X, Wand2, Gamepad2, Coins, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface OnboardingModalProps {
@@ -32,8 +32,15 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       icon: Coins,
       title: 'Own what you create',
       description:
-        'Mint your game as an NFT. On-chain revenue splits mean the original writer earns automatically every time.',
+        'Mint your game as an NFT. Register as IP on Story Protocol — your works are pooled into a royalty group so you earn automatically every time.',
       tip: 'You can play for free with Wordle — no wallet needed.',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Your royalty pool',
+      description:
+        'Every IP you register joins your writer royalty pool. When derivatives earn revenue, royalties flow into the pool and are distributed evenly across all your games.',
+      tip: 'Claim anytime from your creator dashboard.',
     },
   ]
 
