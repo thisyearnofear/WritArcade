@@ -30,6 +30,10 @@ const generateGameSchema = z.object({
   promptName: z.string().optional(),
   private: z.boolean().optional(),
   assetIds: z.array(z.string()).optional(), // New: Link to parent assets
+  // Connected wallet at generate time. Becomes the canonical creatorWallet so
+  // that the same wallet can mint later (SIWE login is optional and not all
+  // users log in before generating).
+  wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
 }).refine(
   (data) => data.promptText || data.url,
   "Either promptText or url must be provided"
@@ -202,9 +206,11 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     } : undefined
 
     // Enhance game data with attribution
+    // Priority for creatorWallet: request body wallet (the paying wallet) > SIWE user wallet
+    // This ensures the wallet that pays can also mint, even without SIWE login.
     const enhancedGameData = {
       ...gameData,
-      creatorWallet: user?.walletAddress,
+      creatorWallet: validatedData.wallet || user?.walletAddress,
     }
 
     console.log('About to save game to database:', {

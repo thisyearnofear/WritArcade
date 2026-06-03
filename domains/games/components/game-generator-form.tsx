@@ -259,7 +259,7 @@ function articleGamePremise(preview: ArticlePreview, genre: GameGenre) {
 }
 
 export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath = 'musd', initialMode }: GameGeneratorFormProps) {
-  const { isConnected } = useAccount()
+  const { isConnected, address: accountAddress } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
   const [url, setUrl] = useState(initialUrl || '')
   const [mode, setMode] = useState<'story' | 'wordle'>(initialMode || 'story')
@@ -440,6 +440,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             body: JSON.stringify({
               url: url.trim(),
               mode,
+              wallet: accountAddress || undefined,
               ...(isStoryMode && showCustomization && paymentApproved && {
                 customization: {
                   genre,

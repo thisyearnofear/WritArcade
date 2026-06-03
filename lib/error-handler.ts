@@ -190,6 +190,21 @@ function categorizeError(message: string, context?: string): ErrorInfo {
     }
   }
 
+  // Wallet mismatch / not the game owner
+  if (
+    lowerMessage.includes('do not own this game') ||
+    lowerMessage.includes('unauthorized') ||
+    lowerMessage.includes('not the owner')
+  ) {
+    return {
+      type: 'WALLET_ERROR',
+      message,
+      userMessage:
+        'The connected wallet doesn\'t match the wallet that generated this game. Switch to the original wallet in your wallet app and try again.',
+      retryable: true,
+    }
+  }
+
   // Insufficient gas / funds for transaction
   if (
     lowerMessage.includes('insufficient funds for gas') ||
