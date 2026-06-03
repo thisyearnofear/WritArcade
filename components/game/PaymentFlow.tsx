@@ -395,6 +395,15 @@ export function PaymentFlow({
         )}
       </Button>
 
+      {isWrongChain && !error && (
+        <p className="text-xs text-muted-foreground text-center">
+          You&apos;re on {chainId === BASE_MAINNET_CHAIN_ID ? 'Base' : chainId === MEZO_TESTNET_CHAIN_ID ? 'Mezo' : `chain ${chainId}`}.
+          {isMUSD
+            ? ' Switch to Mezo to pay with MUSD, or change the payment token to use your current chain.'
+            : ' Switch to Base to pay with Writer Coin, or change the payment token to use MUSD on Mezo.'}
+        </p>
+      )}
+
       {error && <ErrorCard error={error} onDismiss={() => setError(null)} />}
 
       {lastTxHash && (

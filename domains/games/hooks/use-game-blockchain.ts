@@ -258,7 +258,7 @@ export function useGameBlockchain(game: Game) {
                 }
             }
 
-            toast({ title: '🎉 NFT minted!', description: `Your comic has been minted on ${isBase ? 'Base' : 'Mezo'}.` })
+            toast({ title: '🎉 NFT minted!', description: `Your game NFT is on ${isBase ? 'Base' : 'Mezo'}. ${isBase ? 'You can switch back to Mezo to generate more games.' : 'You can generate more games on Mezo with MUSD.'}` })
         } catch (error) {
             console.error('Mint failed:', error)
             toast({ title: 'Minting failed', description: error instanceof Error ? error.message : 'Failed to mint comic. Please try again.', variant: 'destructive' })

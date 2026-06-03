@@ -15,6 +15,7 @@ import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
 import { ArticleFidelityReview } from '@/components/game/article-fidelity-review'
 import { type WriterCoin, WRITER_COINS, validateArticleUrl, type PaymentToken } from '@/lib/writerCoins'
 import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
+import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
 import { retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import type { PaymentPath } from '@/domains/games/components/simple-game-form'
@@ -291,6 +292,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const autoPreviewedUrlRef = useRef<string | null>(null)
   const paymentCompletedRef = useRef(false)
   const paymentPathExposureRef = useRef<string | null>(null)
+
+  // Auto-detect writer coin from URL
+  const detectedCoin = useMemo(() => detectWriterCoinFromUrl(url), [url])
+  const isAutoDetected = Boolean(detectedCoin) && paymentPath === 'musd' && !showAdvancedPayment
 
   type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
   type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
@@ -638,6 +643,51 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               />
             </div>
+
+            {/* Auto-detected writer coin recommendation */}
+            {isAutoDetected && detectedCoin && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-4 py-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold uppercase tracking-wider text-purple-300">
+                        {detectedCoin.symbol} detected
+                      </p>
+                      <span className="rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-200">
+                        Writer Coin
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-purple-200/70">
+                      This article is by {detectedCoin.name}. Pay with {detectedCoin.symbol} on Base to support them directly.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentPath('writercoin')
+                      setSelectedCoin(detectedCoin)
+                      setShowAdvancedPayment(true)
+                      paymentCompletedRef.current = false
+                      setPaymentApproved(false)
+                      trackEvent('payment_path_auto_detected', {
+                        writer: detectedCoin.id,
+                        symbol: detectedCoin.symbol,
+                        path: 'writercoin',
+                        source: 'auto_detect_banner',
+                      })
+                    }}
+                    className="flex-shrink-0 inline-flex items-center gap-1 rounded-md bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-500 transition-colors"
+                  >
+                    Use {detectedCoin.symbol}
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
             {articlePreview && hasPreviewedCurrentUrl && (
               <motion.div

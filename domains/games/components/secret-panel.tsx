@@ -273,6 +273,21 @@ export function SecretPanel({
                 This game holds a hidden epilogue in a Story CDR vault. Unlock requires the minted game NFT and a completed 5-panel playthrough.
               </p>
 
+              {/* CDR Encryption indicator — visible to judges even before unlock */}
+              {promptVaultUuid && (
+                <div className="mb-5 mx-auto max-w-sm rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3">
+                  <div className="flex items-center gap-2 text-xs text-emerald-300">
+                    <Lock className="h-3.5 w-3.5" />
+                    <span className="font-semibold">Encrypted via Story CDR</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono text-emerald-400/70">
+                    <span>Vault: {promptVaultUuid.length > 14 ? `${promptVaultUuid.slice(0, 8)}…${promptVaultUuid.slice(-4)}` : promptVaultUuid}</span>
+                    <span className="text-emerald-600">·</span>
+                    <span>Story Aeneid (1315)</span>
+                  </div>
+                </div>
+              )}
+
               <div className="mb-5 grid gap-2 text-left max-w-sm mx-auto">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {storyComplete ? (
@@ -345,14 +360,6 @@ export function SecretPanel({
                     >
                       {error}
                     </motion.p>
-                  )}
-
-                  {promptVaultUuid && (
-                    <p className="mt-4 text-[10px] font-mono text-muted-foreground/70 break-all">
-                      vault: {promptVaultUuid.length > 18 ? `${promptVaultUuid.slice(0, 10)}…${promptVaultUuid.slice(-6)}` : promptVaultUuid}
-                      <span className="mx-1">·</span>
-                      Story Aeneid (1315)
-                    </p>
                   )}
                 </div>
               ) : (
