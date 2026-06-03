@@ -15,6 +15,8 @@ interface ComicFinaleScreenProps {
   isMinting: boolean
   handleMintComic: (panelData: ComicBookFinalePanelData[], metadata?: any) => Promise<void>
   handlePanelTextChange: (panelIndex: number, newText: string) => void
+  handlePanelImageChange?: (panelIndex: number, customPrompt?: string) => void
+  regeneratingMessageId?: string | null
   extractedAssetIds: string[]
   derivativeRegistered: boolean
   chainId: number
@@ -34,6 +36,8 @@ export function ComicFinaleScreen({
   isMinting,
   handleMintComic,
   handlePanelTextChange,
+  handlePanelImageChange,
+  regeneratingMessageId,
   extractedAssetIds,
   derivativeRegistered,
   chainId,
@@ -85,6 +89,8 @@ export function ComicFinaleScreen({
         difficulty={game.difficulty || 'medium'}
         userChoices={userChoices}
         onPanelTextChange={handlePanelTextChange}
+        onPanelImageChange={handlePanelImageChange}
+        regeneratingMessageId={regeneratingMessageId}
         epilogueReflection={epilogueReflection || undefined}
       />
       {extractedAssetIds.length > 0 && !derivativeRegistered && (

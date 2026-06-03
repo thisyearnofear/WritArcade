@@ -154,6 +154,14 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
               session.handlePanelTextChange(assistantMessages[idx].id, text)
             }
           }}
+          handlePanelImageChange={(idx, customPrompt) => {
+            const assistantMessages = session.messages.filter(m => m.role === 'assistant')
+            const message = assistantMessages[idx]
+            if (message) {
+              session.handleImageRegenerate(message.id, message.content, customPrompt)
+            }
+          }}
+          regeneratingMessageId={session.regeneratingMessageId}
           extractedAssetIds={blockchain.extractedAssetIds}
           derivativeRegistered={blockchain.derivativeRegistered}
           chainId={blockchain.chainId}

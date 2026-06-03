@@ -43,6 +43,8 @@ interface ComicBookFinaleProps {
   onPanelTextChange?: (panelIndex: number, newText: string) => void
   // Image editing callback
   onPanelImageChange?: (panelIndex: number, customPrompt?: string) => void
+  // Whether the current panel is being regenerated (driven by the session hook)
+  regeneratingMessageId?: string | null
   // Audio editing callback - persists audio to panel data
   onPanelAudioChange?: (panelIndex: number, audioUrl: string | null) => void
   // Epilogue reflection
@@ -68,6 +70,7 @@ export function ComicBookFinale({
   userChoices = [],
   onPanelTextChange,
   onPanelImageChange,
+  regeneratingMessageId,
   onPanelAudioChange,
   epilogueReflection,
 }: ComicBookFinaleProps) {
@@ -719,16 +722,19 @@ export function ComicBookFinale({
                       {currentPanel.imageModel}
                     </span>
                   </div>
-                  {currentPanel.imageUrl && onPanelImageChange && (
+                  {onPanelImageChange && (
                     <Button
-                      onClick={() => {
-                        const input = prompt('Enter custom prompt for regeneration (optional):')
-                        onPanelImageChange(currentPanelIndex, input || undefined)
-                      }}
+                      onClick={() => onPanelImageChange(currentPanelIndex)}
+                      disabled={regeneratingMessageId === currentPanel.id}
                       size="sm"
                       className="bg-white/10 hover:bg-white/20 border-white/20 hover:border-white/30 text-white transition-all"
+                      title={currentPanel.imageUrl ? 'Regenerate with a fresh visual' : 'Retry image generation'}
                     >
-                      🔄 Regenerate Image
+                      {regeneratingMessageId === currentPanel.id
+                        ? '⏳ Regenerating…'
+                        : currentPanel.imageUrl
+                          ? '🔄 New Image'
+                          : '⚠️ Retry Image'}
                     </Button>
                   )}
                 </div>

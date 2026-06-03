@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ZoomIn, Loader2, RefreshCw, ChevronDown, ChevronUp, Sparkles, Lightbulb, Pencil, X, Check } from 'lucide-react'
+import { ZoomIn, Loader2, RefreshCw, ChevronDown, ChevronUp, Sparkles, Lightbulb, Pencil, X, Check, AlertCircle } from 'lucide-react'
 import { GameplayOption } from '../types'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationResult } from '../services/image-generation.service'
@@ -155,6 +155,18 @@ export function ComicPanelCard({
   }
 
   const canRegenerate = regenerationCount < maxRegenerations
+
+  /**
+   * Image generation failed: no image, last history entry is a failure, and
+   * we are not currently generating. Without this, the spinner below would
+   * stay forever after an /api/generate-image 500.
+   */
+  const imageFailed = Boolean(
+    !narrativeImage &&
+    imageHistory.length > 0 &&
+    imageHistory[imageHistory.length - 1]?.model === 'failed' &&
+    !isRegenerating
+  )
 
   const handleImageRegeneration = async (customPromptText?: string) => {
     if (!canRegenerate || !onImageRegenerate) return
@@ -375,6 +387,25 @@ export function ComicPanelCard({
                   <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: primaryColor }} />
                     <p className="text-muted-foreground text-sm">Preparing next panel...</p>
+                  </div>
+                </div>
+              ) : imageFailed && onImageRegenerate ? (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-950/30 to-black relative">
+                  <div className="text-center px-4 space-y-3">
+                    <AlertCircle className="w-10 h-10 mx-auto text-red-400" />
+                    <p className="text-foreground text-sm font-semibold">Image generation failed</p>
+                    <p className="text-muted-foreground text-xs max-w-[260px] mx-auto">
+                      The image service didn&apos;t return a visual. You can retry with the same prompt or move on.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleRegenerateQuick}
+                      disabled={!canRegenerate}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      {canRegenerate ? 'Try Again' : `Max retries (${maxRegenerations}) used`}
+                    </button>
                   </div>
                 </div>
               ) : (
