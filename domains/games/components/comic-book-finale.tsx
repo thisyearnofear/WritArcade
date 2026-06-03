@@ -81,6 +81,8 @@ export function ComicBookFinale({
   const [nftMintedMetadata, setNftMintedMetadata] = useState<{ nftMetadataUri: string; gameMetadataUri: string; creator: GameCreator; author: GameAuthor } | null>(null)
   const [isEditingText, setIsEditingText] = useState(false)
   const [editedText, setEditedText] = useState('')
+  const [showCustomPrompt, setShowCustomPrompt] = useState(false)
+  const [customPrompt, setCustomPrompt] = useState('')
   const [showFeedback, setShowFeedback] = useState(false) // Show feedback modal after gameplay
   
   // Audio narration state
@@ -709,33 +711,61 @@ export function ComicBookFinale({
                 </div>
 
                 {/* Model badge and regeneration */}
-                <div className="px-6 py-3 bg-black/40 border-b border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Generated with:</span>
-                    <span
-                      className="text-xs font-mono px-2 py-1 rounded"
-                      style={{
-                        backgroundColor: `${primaryColor}20`,
-                        color: primaryColor,
-                      }}
-                    >
-                      {currentPanel.imageModel}
-                    </span>
+                <div className="px-6 py-3 bg-black/40 border-b border-white/10 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-muted-foreground shrink-0">Generated with:</span>
+                      <span
+                        className="text-xs font-mono px-2 py-1 rounded truncate"
+                        style={{
+                          backgroundColor: `${primaryColor}20`,
+                          color: primaryColor,
+                        }}
+                      >
+                        {currentPanel.imageModel}
+                      </span>
+                    </div>
+                    {onPanelImageChange && (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomPrompt(v => !v)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded transition-colors"
+                          title="Use a custom prompt instead of regenerating with the narrative"
+                        >
+                          {showCustomPrompt ? '← Use narrative' : '✏️ Custom prompt'}
+                        </button>
+                        <Button
+                          onClick={() => onPanelImageChange(
+                            currentPanelIndex,
+                            showCustomPrompt ? customPrompt.trim() || undefined : undefined
+                          )}
+                          disabled={regeneratingMessageId === currentPanel.id || (showCustomPrompt && !customPrompt.trim())}
+                          size="sm"
+                          className="bg-white/10 hover:bg-white/20 border-white/20 hover:border-white/30 text-white transition-all"
+                          title={currentPanel.imageUrl ? 'Regenerate with a fresh visual' : 'Retry image generation'}
+                        >
+                          {regeneratingMessageId === currentPanel.id
+                            ? '⏳ Regenerating…'
+                            : currentPanel.imageUrl
+                              ? '🔄 New Image'
+                              : '⚠️ Retry Image'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  {onPanelImageChange && (
-                    <Button
-                      onClick={() => onPanelImageChange(currentPanelIndex)}
-                      disabled={regeneratingMessageId === currentPanel.id}
-                      size="sm"
-                      className="bg-white/10 hover:bg-white/20 border-white/20 hover:border-white/30 text-white transition-all"
-                      title={currentPanel.imageUrl ? 'Regenerate with a fresh visual' : 'Retry image generation'}
-                    >
-                      {regeneratingMessageId === currentPanel.id
-                        ? '⏳ Regenerating…'
-                        : currentPanel.imageUrl
-                          ? '🔄 New Image'
-                          : '⚠️ Retry Image'}
-                    </Button>
+                  {showCustomPrompt && onPanelImageChange && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+                        Custom image prompt
+                      </label>
+                      <textarea
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="Describe the visual you want for this panel…"
+                        className="w-full bg-card border border-purple-500/40 rounded-lg p-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[64px] resize-y"
+                      />
+                    </div>
                   )}
                 </div>
 
@@ -809,8 +839,9 @@ export function ComicBookFinale({
                         {onPanelTextChange && (
                           <button
                             onClick={handleStartEdit}
-                            className="p-2 opacity-0 group-hover/text:opacity-100 hover:bg-purple-600/20 rounded text-purple-400 transition-opacity flex-shrink-0"
+                            className="p-2 md:opacity-0 md:group-hover/text:opacity-100 hover:bg-purple-600/20 rounded text-purple-400 transition-opacity flex-shrink-0"
                             title="Edit narrative text"
+                            aria-label="Edit narrative text"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
