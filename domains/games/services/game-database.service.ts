@@ -27,6 +27,9 @@ export class GameDatabaseService {
       publicationSummary?: string
       subscriberCount?: number
       articlePublishedAt?: Date
+      ownerWallet?: string
+      ownershipSource?: string
+      paymentId?: string
     },
     assetIds?: string[] // Links to parent assets (Workshop Packs)
   ): Promise<Game> {
@@ -65,7 +68,10 @@ export class GameDatabaseService {
         publicationSummary: miniAppData?.publicationSummary,
         subscriberCount: miniAppData?.subscriberCount,
         articlePublishedAt: miniAppData?.articlePublishedAt,
+        ownerWallet: miniAppData?.ownerWallet || gameData.ownerWallet,
+        ownershipSource: miniAppData?.ownershipSource || gameData.ownershipSource,
         creatorWallet: gameData.creatorWallet,
+        paymentId: miniAppData?.paymentId || gameData.paymentId,
         private: false,
         userId: userId || null,
         wordleAnswerVaultUuid: miniAppData?.wordleAnswerVaultUuid,
@@ -373,6 +379,8 @@ export class GameDatabaseService {
       writerCoinId: prismaGame.writerCoinId || undefined,
       difficulty: prismaGame.difficulty || undefined,
       // Attribution data - preserves source material author for NFT & Story Protocol
+      ownerWallet: (prismaGame as { ownerWallet?: string | null }).ownerWallet || undefined,
+      ownershipSource: (prismaGame as { ownershipSource?: Game['ownershipSource'] | null }).ownershipSource || undefined,
       creatorWallet: prismaGame.creatorWallet || undefined,
       authorWallet: prismaGame.authorWallet || undefined,
       authorParagraphUsername: prismaGame.authorParagraphUsername || undefined,
@@ -394,6 +402,7 @@ export class GameDatabaseService {
       promptVaultUuid: (prismaGame as { promptVaultUuid?: string }).promptVaultUuid || undefined,
       private: prismaGame.private,
       userId: prismaGame.userId || undefined,
+      paymentId: (prismaGame as { paymentId?: string | null }).paymentId || undefined,
       // Cast to any because Prisma types are not yet updated in the running process
       playFee: (prismaGame as { playFee?: string }).playFee || undefined,
       featured: (prismaGame as { featured?: boolean }).featured || false,

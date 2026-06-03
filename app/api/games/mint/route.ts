@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getWriterCoinById, getMintConfig } from '@/lib/writerCoins'
 import { fetchCoinConfigOnChain } from '@/lib/contracts'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
+import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
 
 interface MintRequest {
   gameId: string
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate wallet format
-    if (!wallet.match(/^0x[a-fA-F0-9]{40}$/)) {
+    if (!isWalletAddress(wallet)) {
       return NextResponse.json(
         { error: 'Invalid wallet address format' },
         { status: 400 }
@@ -55,7 +56,10 @@ export async function POST(request: NextRequest) {
     // Fetch game from database
     const game = await prisma.game.findUnique({
       where: { id: gameId },
-      include: { user: true },
+      include: {
+        user: true,
+        payment: { include: { user: true } },
+      },
     })
 
     if (!game) {
@@ -65,33 +69,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user ownership (wallet matches game creator)
-    // Accept either the SIWE-linked wallet or the creatorWallet stored at game creation.
-    // Fallback: if creatorWallet is null (e.g. legacy game generated without wallet in body),
-    // accept the wallet that paid the 'generate-game' action for this game.
-    const ownerWallet = (game.user?.walletAddress || game.creatorWallet || '').toLowerCase()
-    const walletLc = wallet.toLowerCase()
-    let authorized = ownerWallet.length > 0 && ownerWallet === walletLc
-
-    if (!authorized && game.paymentId) {
-      // The generate-game payment is stored on the game record. If the
-      // connected wallet paid, they're the de facto creator.
-      const payment = await prisma.payment.findUnique({
-        where: { id: game.paymentId },
-        include: { user: true },
-      })
-      if (
-        payment?.action === 'generate-game' &&
-        payment.status === 'verified' &&
-        payment.user?.walletAddress?.toLowerCase() === walletLc
-      ) {
-        authorized = true
-      }
-    }
-
-    if (!authorized) {
+    const ownership = authorizeGameOwner({ game, wallet })
+    if (!ownership.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized: You do not own this game' },
+        { error: ownershipError() },
         { status: 403 }
       )
     }
@@ -166,6 +147,36 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    if (!isWalletAddress(wallet)) {
+      return NextResponse.json(
+        { error: 'Invalid wallet address format' },
+        { status: 400 }
+      )
+    }
+
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        user: true,
+        payment: { include: { user: true } },
+      },
+    })
+
+    if (!game) {
+      return NextResponse.json(
+        { error: 'Game not found' },
+        { status: 404 }
+      )
+    }
+
+    const ownership = authorizeGameOwner({ game, wallet })
+    if (!ownership.authorized) {
+      return NextResponse.json(
+        { error: ownershipError() },
+        { status: 403 }
+      )
+    }
+
     // Update game with NFT details
     const updatedGame = await prisma.game.update({
       where: { id: gameId },
@@ -187,8 +198,7 @@ export async function PATCH(request: NextRequest) {
     })
 
     if (!existingPayment) {
-      const game = await prisma.game.findUnique({ where: { id: gameId }, select: { writerCoinId: true } })
-      const writerCoinId = game?.writerCoinId ?? 'avc'
+      const writerCoinId = game.writerCoinId ?? 'avc'
       const isMUSD = writerCoinId.startsWith('musd')
       let mintAmount = BigInt(50 * 10 ** 18) // fallback
       if (!isMUSD) {
@@ -210,6 +220,8 @@ export async function PATCH(request: NextRequest) {
           amount: mintAmount,
           status: 'verified',
           userId: updatedGame.userId,
+          walletAddress: wallet,
+          chainId: typeof chainId === 'number' ? chainId : null,
           writerCoinId,
           verifiedAt: new Date(),
         },

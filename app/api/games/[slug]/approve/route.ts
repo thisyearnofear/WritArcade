@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { optionalAuth } from '@/lib/auth'
+import { isAdmin } from '@/lib/constants'
+import { authorizeGameOwner } from '@/domains/games/services/game-ownership.service'
 import { z } from 'zod'
 
 const approvalSchema = z.object({
@@ -26,6 +28,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Find game by slug
     const game = await prisma.game.findUnique({
       where: { slug },
+      include: {
+        user: true,
+        payment: { include: { user: true } },
+      },
     })
 
     if (!game) {
@@ -35,8 +41,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Only the game creator or admin can approve
-    if (game.userId && user?.id !== game.userId) {
+    // Only the game owner or admin can approve
+    const ownership = authorizeGameOwner({ game, user })
+    const isUserAdmin = user?.walletAddress ? isAdmin(user.walletAddress) : false
+    if (!ownership.authorized && !isUserAdmin) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 403 }

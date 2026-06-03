@@ -129,6 +129,25 @@ export class MUSDStrategy implements PaymentStrategy {
       chain: null,
     })
     console.log(`[MUSDStrategy] payAndMintGame (${action}) tx:`, txHash)
+
+    step('Verifying on-chain…')
+    const verifyResponse = await fetch('/api/payments/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transactionHash: txHash,
+        writerCoinId: token.network === 'mainnet' ? 'musd-mainnet' : 'musd-testnet',
+        action,
+        userAddress,
+        chainId: this.chainId,
+      }),
+    })
+
+    if (!verifyResponse.ok) {
+      const errorData = await verifyResponse.json().catch(() => ({}))
+      throw new Error(errorData.error || `Failed to verify payment (${verifyResponse.status})`)
+    }
+
     step('Payment complete!')
     return txHash
   }

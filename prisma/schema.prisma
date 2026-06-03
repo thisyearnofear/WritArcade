@@ -89,8 +89,10 @@ model Game {
   subscriberCount         Int?     // Original publication subscriber count
   articlePublishedAt      DateTime?  // Original article publication date
   
-  // Creator attribution (user who generated the game)
-  creatorWallet           String?  // Game creator's wallet address (legacy/alternate)
+  // Ownership and creator attribution
+  ownerWallet             String?  // Canonical wallet allowed to manage/mint the game
+  ownershipSource         String?  // 'payment_wallet' | 'siwe_user' | 'legacy_creator_wallet'
+  creatorWallet           String?  // Public creator attribution / legacy owner fallback
   userWallet              String?  // Connected wallet for IP registration purposes
 
   // NFT minting fields
@@ -290,6 +292,8 @@ model Payment {
   action           String   // 'generate-game' or 'mint-nft'
   amount           BigInt   // Amount in token smallest unit
   status           String   @default("pending")  // 'pending' | 'verified' | 'failed'
+  walletAddress    String?  // Wallet that sent the verified transaction
+  chainId          Int?
   
   // Relations
   userId           String?

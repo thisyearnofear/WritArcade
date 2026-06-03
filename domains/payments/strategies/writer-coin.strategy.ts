@@ -116,6 +116,8 @@ export class WriterCoinStrategy implements PaymentStrategy {
         transactionHash: txHash,
         writerCoinId: writerCoin.id,
         action,
+        userAddress,
+        chainId: this.chainId,
       }),
     })
 

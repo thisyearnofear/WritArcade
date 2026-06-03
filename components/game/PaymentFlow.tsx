@@ -5,7 +5,7 @@ import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
 import { type PaymentToken, getPaymentTokenConfig, MEZO_CONFIG } from '@/lib/writerCoins'
 import type { PaymentAction } from '@/domains/payments/types'
 import { ErrorCard } from '@/components/error/ErrorCard'
-import { getUserMessage, retryWithBackoff } from '@/lib/error-handler'
+import { getUserMessage } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { useMezoBalance } from '@/hooks/useMezoBalance'
 import { useMUSDBalance } from '@/hooks/useMUSDBalance'
@@ -131,32 +131,25 @@ export function PaymentFlow({
     })
 
     try {
-      await retryWithBackoff(
-        async () => {
-          const strategy = isMUSD ? new MUSDStrategy() : new WriterCoinStrategy()
-          const amount = (action === 'generate-game' ? config.gameGenerationCost : config.mintCost).toString()
-
-          return strategy.executePayment({
-            walletClient,
-            userAddress,
-            token: paymentToken,
-            action,
-            amount,
-            onStep: setCurrentStep,
-          })
-        },
-        2,
-        1500
-      ).then((txHash) => {
-        setLastTxHash(txHash)
-        setCurrentStep(null)
-        if (isMUSD) {
-          refreshMUSDBalance()
-        } else {
-          refresh()
-        }
-        onPaymentSuccess?.(txHash)
+      const strategy = isMUSD ? new MUSDStrategy() : new WriterCoinStrategy()
+      const amount = (action === 'generate-game' ? config.gameGenerationCost : config.mintCost).toString()
+      const txHash = await strategy.executePayment({
+        walletClient,
+        userAddress,
+        token: paymentToken,
+        action,
+        amount,
+        onStep: setCurrentStep,
       })
+
+      setLastTxHash(txHash)
+      setCurrentStep(null)
+      if (isMUSD) {
+        refreshMUSDBalance()
+      } else {
+        refresh()
+      }
+      onPaymentSuccess?.(txHash)
     } catch (err) {
       const message = getUserMessage(err)
       setError(message)

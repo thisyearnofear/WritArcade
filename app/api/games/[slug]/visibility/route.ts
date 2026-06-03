@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
 
 /**
  * PATCH /api/games/[slug]/visibility
@@ -26,7 +27,7 @@ export async function PATCH(
     }
 
     // Validate wallet format
-    if (!wallet.match(/^0x[a-fA-F0-9]{40}$/)) {
+    if (!isWalletAddress(wallet)) {
       return NextResponse.json(
         { error: 'Invalid wallet address format' },
         { status: 400 }
@@ -36,7 +37,10 @@ export async function PATCH(
     // Fetch game
     const game = await prisma.game.findUnique({
       where: { slug },
-      include: { user: true },
+      include: {
+        user: true,
+        payment: { include: { user: true } },
+      },
     })
 
     if (!game) {
@@ -46,10 +50,10 @@ export async function PATCH(
       )
     }
 
-    // Verify ownership
-    if ((game.user?.walletAddress || '').localeCompare(wallet, undefined, { sensitivity: 'accent' }) !== 0) {
+    const ownership = authorizeGameOwner({ game, wallet })
+    if (!ownership.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized: You do not own this game' },
+        { error: ownershipError() },
         { status: 403 }
       )
     }

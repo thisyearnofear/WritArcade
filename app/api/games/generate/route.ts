@@ -25,6 +25,7 @@ const generateGameSchema = z.object({
   }).optional(),
   payment: z.object({
     writerCoinId: z.string().optional(),
+    transactionHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/).optional(),
   }).optional(),
   model: z.string().optional(),
   promptName: z.string().optional(),
@@ -189,6 +190,32 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       return undefined
     }
 
+    const generationPayment = validatedData.payment?.transactionHash
+      ? await prisma.payment.findUnique({
+        where: { transactionHash: validatedData.payment.transactionHash },
+        select: {
+          id: true,
+          action: true,
+          status: true,
+          walletAddress: true,
+          user: { select: { walletAddress: true } },
+        },
+      })
+      : null
+
+    const paymentOwnerWallet =
+      generationPayment?.action === 'generate-game' && generationPayment.status === 'verified'
+        ? generationPayment.walletAddress || generationPayment.user?.walletAddress || undefined
+        : undefined
+    const ownerWallet = paymentOwnerWallet || user?.walletAddress || validatedData.wallet
+    const ownershipSource: GameGenerationResponse['ownershipSource'] = paymentOwnerWallet
+      ? 'payment_wallet'
+      : user?.walletAddress
+        ? 'siwe_user'
+        : validatedData.wallet
+          ? 'legacy_creator_wallet'
+          : undefined
+
     // Save to database using enhanced database service
     const miniAppData = processedContent ? {
       articleUrl: validatedData.url,
@@ -201,16 +228,20 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       publicationSummary: processedContent.publicationSummary,
       subscriberCount: normalizeSubscriberCount(processedContent.subscriberCount),
       articlePublishedAt: normalizePublishedAt(processedContent.publishedAt),
+      ownerWallet,
+      ownershipSource,
+      paymentId: generationPayment?.id,
       // Include comprehensive article context for authentic game narrative continuity
       articleContext: `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nPublication: ${processedContent.publicationName || 'Unknown'}\n\nCore Themes:\n${ContentProcessorService.extractArticleThemes(processedContent.text, processedContent.title)}\n\nKey excerpt:\n${processedContent.text.substring(0, 800)}...`,
     } : undefined
 
     // Enhance game data with attribution
-    // Priority for creatorWallet: request body wallet (the paying wallet) > SIWE user wallet
-    // This ensures the wallet that pays can also mint, even without SIWE login.
     const enhancedGameData = {
       ...gameData,
-      creatorWallet: validatedData.wallet || user?.walletAddress,
+      ownerWallet,
+      ownershipSource,
+      creatorWallet: ownerWallet,
+      paymentId: generationPayment?.id,
     }
 
     console.log('About to save game to database:', {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
 
 function isAddress(value: unknown): value is string {
   return typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value)
@@ -32,16 +33,19 @@ export async function POST(
 
     const game = await prisma.game.findUnique({
       where: { slug },
-      include: { user: true },
+      include: {
+        user: true,
+        payment: { include: { user: true } },
+      },
     })
 
     if (!game) {
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const ownerWallet = game.user?.walletAddress || game.creatorWallet || ''
-    if (ownerWallet.toLowerCase() !== walletAddress.toLowerCase()) {
-      return NextResponse.json({ error: 'Unauthorized: You do not own this game' }, { status: 403 })
+    const ownership = authorizeGameOwner({ game, wallet: walletAddress })
+    if (!ownership.authorized) {
+      return NextResponse.json({ error: ownershipError() }, { status: 403 })
     }
 
     const updated = await prisma.game.update({

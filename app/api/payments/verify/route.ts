@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { createPublicClient, http, type Chain } from 'viem'
 import { prisma } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth'
 import { logger } from '@/lib/config'
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
 
 /**
  * Unified Payment Verification Endpoint
@@ -18,7 +21,88 @@ const verifyPaymentSchema = z.object({
   transactionHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/, 'Invalid transaction hash'),
   writerCoinId: z.string().min(1, 'Writer coin ID is required'),
   action: z.enum(['generate-game', 'mint-nft']),
+  userAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid user address'),
+  chainId: z.number().int().positive(),
 })
+
+function getExpectedPaymentContract(writerCoinId: string): string | null {
+  if (writerCoinId.startsWith('musd')) {
+    const network = writerCoinId === 'musd-mainnet' ? 'mainnet' : 'testnet'
+    return MUSD_CONFIG[network].paymentSplitter
+  }
+
+  const writerCoin = getWriterCoinById(writerCoinId)
+  return process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS || writerCoin?.paymentContractAddress || null
+}
+
+function getPaymentAmount(writerCoinId: string, action: 'generate-game' | 'mint-nft') {
+  if (writerCoinId.startsWith('musd')) {
+    const network = writerCoinId === 'musd-mainnet' ? 'mainnet' : 'testnet'
+    const config = MUSD_CONFIG[network]
+    return action === 'generate-game' ? config.gameGenerationCost : config.mintCost
+  }
+
+  const writerCoin = getWriterCoinById(writerCoinId)
+  if (!writerCoin) {
+    throw new Error(`Writer coin "${writerCoinId}" is not configured`)
+  }
+
+  return action === 'generate-game' ? writerCoin.gameGenerationCost : writerCoin.mintCost
+}
+
+function getRpcUrl(chainId: number) {
+  if (chainId === BASE_MAINNET_CHAIN_ID) return process.env.BASE_RPC_URL || 'https://mainnet.base.org'
+  if (chainId === MEZO_TESTNET_CHAIN_ID) return process.env.NEXT_PUBLIC_MEZO_TESTNET_RPC || 'https://rpc.test.mezo.org'
+  return null
+}
+
+function createReceiptClient(chainId: number) {
+  const rpcUrl = getRpcUrl(chainId)
+  if (!rpcUrl) return null
+
+  const chain = {
+    id: chainId,
+    name: `Chain ${chainId}`,
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    rpcUrls: { default: { http: [rpcUrl] } },
+  } as Chain
+
+  return createPublicClient({ chain, transport: http(rpcUrl, { timeout: 15000 }) })
+}
+
+async function verifyTransactionReceipt(params: {
+  transactionHash: `0x${string}`
+  writerCoinId: string
+  userAddress: string
+  chainId: number
+}) {
+  const expectedContract = getExpectedPaymentContract(params.writerCoinId)
+  if (!expectedContract) {
+    throw new Error(`Payment contract is not configured for ${params.writerCoinId}`)
+  }
+
+  const client = createReceiptClient(params.chainId)
+  if (!client) {
+    throw new Error(`Unsupported payment chain: ${params.chainId}`)
+  }
+
+  const [receipt, transaction] = await Promise.all([
+    client.getTransactionReceipt({ hash: params.transactionHash }),
+    client.getTransaction({ hash: params.transactionHash }),
+  ])
+
+  if (receipt.status !== 'success') {
+    throw new Error('Transaction did not succeed')
+  }
+
+  if (transaction.from.toLowerCase() !== params.userAddress.toLowerCase()) {
+    throw new Error('Payment sender does not match connected wallet')
+  }
+
+  if (transaction.to?.toLowerCase() !== expectedContract.toLowerCase()) {
+    throw new Error('Transaction was not sent to the expected payment contract')
+  }
+}
 
 /**
  * POST: Initiate async payment verification
@@ -29,16 +113,38 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser()
     const body = await request.json()
     const validatedData = verifyPaymentSchema.parse(body)
+    await verifyTransactionReceipt({
+      transactionHash: validatedData.transactionHash as `0x${string}`,
+      writerCoinId: validatedData.writerCoinId,
+      userAddress: validatedData.userAddress,
+      chainId: validatedData.chainId,
+    })
+    const amount = getPaymentAmount(validatedData.writerCoinId, validatedData.action)
 
-    // Store payment record in DB with pending status
-    const payment = await prisma.payment.create({
-      data: {
+    // Store the verified payment wallet directly. SIWE is optional during
+    // creation, so userId can be null while walletAddress remains canonical.
+    const payment = await prisma.payment.upsert({
+      where: { transactionHash: validatedData.transactionHash },
+      update: {
+        action: validatedData.action,
+        writerCoinId: validatedData.writerCoinId,
+        status: 'verified',
+        userId: user?.id,
+        walletAddress: validatedData.userAddress,
+        chainId: validatedData.chainId,
+        amount,
+        verifiedAt: new Date(),
+      },
+      create: {
         transactionHash: validatedData.transactionHash,
         action: validatedData.action,
         writerCoinId: validatedData.writerCoinId,
-        status: 'pending',
+        status: 'verified',
         userId: user?.id,
-        amount: BigInt(0), // Will be updated after verification
+        walletAddress: validatedData.userAddress,
+        chainId: validatedData.chainId,
+        amount,
+        verifiedAt: new Date(),
       }
     })
 
@@ -48,13 +154,15 @@ export async function POST(request: NextRequest) {
       action: validatedData.action,
       status: payment.status,
       userId: user?.id,
+      walletAddress: validatedData.userAddress,
+      chainId: validatedData.chainId,
     })
 
     return NextResponse.json({
       success: true,
       paymentId: payment.id,
       transactionHash: validatedData.transactionHash,
-      status: 'pending',
+      status: payment.status,
       statusCheckUrl: `/api/payments/${payment.id}/status`,
     })
   } catch (error) {
@@ -66,6 +174,13 @@ export async function POST(request: NextRequest) {
           error: 'Invalid request data',
           details: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         },
+        { status: 400 }
+      )
+    }
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
         { status: 400 }
       )
     }

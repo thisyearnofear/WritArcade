@@ -41,6 +41,8 @@ export interface Game {
   promptVaultUuid?: string
 
   // Attribution data - preserves source material author
+  ownerWallet?: string
+  ownershipSource?: 'payment_wallet' | 'siwe_user' | 'legacy_creator_wallet'
   creatorWallet?: string
   authorWallet?: string
   authorParagraphUsername?: string
@@ -68,6 +70,7 @@ export interface Game {
   // Access control
   private: boolean
   userId?: string
+  paymentId?: string
 
   // Monetization & Discovery
   playFee?: string
@@ -145,7 +148,10 @@ export interface GameGenerationResponse {
   promptText?: string
   // Optional game mode metadata ("story" | "wordle")
   mode?: GameMode
+  ownerWallet?: string
+  ownershipSource?: 'payment_wallet' | 'siwe_user' | 'legacy_creator_wallet'
   creatorWallet?: string
+  paymentId?: string
   imageUrl?: string | null
   wordleAnswerVaultUuid?: string
   promptVaultUuid?: string

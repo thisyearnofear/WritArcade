@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
+import { authorizeGameOwner, isWalletAddress } from '@/domains/games/services/game-ownership.service'
 
 /**
  * Authorizes a player to read a Wordle answer from its CDR vault.
@@ -17,7 +18,7 @@ export async function POST(
     const body = await request.json()
     const { walletAddress } = body
 
-    if (!walletAddress || !walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+    if (!isWalletAddress(walletAddress)) {
       return NextResponse.json({ error: 'Valid wallet address is required' }, { status: 400 })
     }
 
@@ -34,12 +35,11 @@ export async function POST(
       )
     }
 
-    // Check game is accessible (public or the requester is the creator)
-    const creatorWallet = game.creatorWallet
+    // Check game is accessible (public or the requester is the owner)
     const isPublic = !game.private
-    const isCreator = creatorWallet && creatorWallet.toLowerCase() === walletAddress.toLowerCase()
+    const ownership = authorizeGameOwner({ game, wallet: walletAddress })
 
-    if (!isPublic && !isCreator) {
+    if (!isPublic && !ownership.authorized) {
       return NextResponse.json({ error: 'This game is private' }, { status: 403 })
     }
 

@@ -324,7 +324,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     return parseFloat(balance.formattedBalance)
   }, [balance, isMusdPath])
 
-  const handlePaymentSuccess = async (_transactionHash: string) => {
+  const handlePaymentSuccess = async (transactionHash: string) => {
     paymentCompletedRef.current = true
     trackEvent('payment_succeeded', {
       paymentPath,
@@ -333,7 +333,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     })
     setPaymentApproved(true)
     setError(null)
-    await generateGame()
+    await generateGame(transactionHash)
   }
 
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -399,7 +399,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     }
   }
 
-  const generateGame = async () => {
+  const generateGame = async (paymentTransactionHash?: string) => {
     setIsGenerating(true)
     setError(null)
 
@@ -452,6 +452,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 payment: {
                   writerCoinId: isMusdPath ? 'musd-testnet' : writerCoin.id,
                   paymentPath,
+                  transactionHash: paymentTransactionHash,
                 },
               }),
               _attempt: attempt,

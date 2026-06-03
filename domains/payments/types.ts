@@ -58,6 +58,7 @@ export interface PaymentVerifyRequest {
   action: PaymentAction
   gameId?: string
   userAddress?: string
+  chainId?: number
 }
 
 export interface PaymentVerifyResult {
