@@ -101,6 +101,11 @@ export function PaymentFlow({
       return
     }
 
+    if (!config) {
+      setError('Payment configuration missing. Please try selecting a different payment method.')
+      return
+    }
+
     if (hasInsufficientBalance) {
       const message = `Insufficient ${tokenSymbol} balance. You need ${requiredAmount} ${tokenSymbol} but have ${userBalance} ${tokenSymbol}.`
       setError(message)

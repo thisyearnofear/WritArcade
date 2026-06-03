@@ -49,6 +49,9 @@ export class WriterCoinStrategy implements PaymentStrategy {
     if (!contractAddress) {
       throw new Error('Invalid contract address received from server')
     }
+    if (!paymentAmount) {
+      throw new Error('Invalid payment amount received from server')
+    }
 
     // 2. Approve ERC20
     const approvalTx = await walletClient.writeContract({

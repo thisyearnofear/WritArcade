@@ -28,15 +28,10 @@ export function useWriterCoinBalance(coinId = 'avc') {
   const cacheRef = useRef<Map<string, { data: BalanceData; timestamp: number }>>(new Map())
   const CACHE_DURATION = 30000 // 30 seconds cache
 
-  // When no coinId (e.g. MUSD payment path), return no-op state
-  if (!coinId) {
-    return { balance: null, isLoading: false, error: null, refresh: async () => {} }
-  }
-
   const fetchBalance = useCallback(async (wallet: string, coin: string) => {
     const cacheKey = `${wallet}-${coin}`
     const cached = cacheRef.current.get(cacheKey)
-    
+
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.data
     }
@@ -79,10 +74,10 @@ export function useWriterCoinBalance(coinId = 'avc') {
   }, [])
 
   useEffect(() => {
-    if (!address || !isConnected) {
+    if (!address || !isConnected || !coinId) {
       setBalance(null)
       setError(null)
-      cacheRef.current.clear()
+      if (!coinId) cacheRef.current.clear()
       return
     }
 
@@ -112,14 +107,14 @@ export function useWriterCoinBalance(coinId = 'avc') {
   }, [address, isConnected, coinId, fetchBalance])
 
   const refresh = useCallback(async () => {
-    if (!address || !isConnected) {
+    if (!address || !isConnected || !coinId) {
       setBalance(null)
       return
     }
 
     // Clear cache for this wallet/coin to force fresh fetch
     cacheRef.current.delete(`${address}-${coinId}`)
-    
+
     setIsLoading(true)
     setError(null)
 
@@ -132,6 +127,15 @@ export function useWriterCoinBalance(coinId = 'avc') {
       setIsLoading(false)
     }
   }, [address, isConnected, coinId, fetchBalance])
+
+  // When no coinId (e.g. MUSD payment path), return no-op state.
+  // This must come AFTER all hook calls to satisfy React's Rules of Hooks —
+  // otherwise the number of hooks changes between renders (e.g. when switching
+  // from MUSD to Writer Coin) and React throws "Cannot read properties of
+  // undefined (reading 'length')" in useCallback.
+  if (!coinId) {
+    return { balance: null, isLoading: false, error: null, refresh: async () => {} }
+  }
 
   return { balance, isLoading, error, refresh }
 }
