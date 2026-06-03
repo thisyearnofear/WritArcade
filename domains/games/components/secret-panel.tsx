@@ -2,9 +2,19 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, Lock, Unlock, Eye, Loader2, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Lock, Unlock, Eye, Loader2, ShieldCheck, Copy, Check } from 'lucide-react'
 import { useWalletClient } from 'wagmi'
 import type { WalletClient, Transport, Chain, Account } from 'viem'
+
+type UnlockStep = 'idle' | 'authorizing' | 'loading_sdk' | 'requesting_decrypt' | 'done'
+
+const STEP_LABEL: Record<UnlockStep, string> = {
+  idle: '',
+  authorizing: 'Verifying completion + NFT ownership…',
+  loading_sdk: 'Loading CDR SDK (WASM)…',
+  requesting_decrypt: 'Requesting CDR read on Story Aeneid…',
+  done: 'Decrypted via CDR vault',
+}
 
 interface SecretPanelProps {
   gameId: string
@@ -38,10 +48,22 @@ export function SecretPanel({
 }: SecretPanelProps) {
   const { data: walletClient } = useWalletClient()
   const [isUnlocking, setIsUnlocking] = useState(false)
+  const [unlockStep, setUnlockStep] = useState<UnlockStep>('idle')
   const [unlocked, setUnlocked] = useState(false)
   const [panelData, setPanelData] = useState<{ narrative: string, imageUrl?: string } | null>(null)
   const [accessPolicy, setAccessPolicy] = useState<AccessPolicy | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+
+  const copyToClipboard = useCallback(async (value: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopiedField(field)
+      setTimeout(() => setCopiedField(null), 1500)
+    } catch {
+      /* ignore clipboard errors */
+    }
+  }, [])
 
   const handleUnlock = useCallback(async () => {
     if (!isConnected || !walletAddress || !walletClient || !promptVaultUuid) {
@@ -56,6 +78,7 @@ export function SecretPanel({
 
     setIsUnlocking(true)
     setError(null)
+    setUnlockStep('authorizing')
 
     try {
       const response = await fetch(`/api/games/${gameSlug}/secret-panel`, {
@@ -70,6 +93,7 @@ export function SecretPanel({
         throw new Error(data.error || 'Failed to unlock secret panel')
       }
 
+      setUnlockStep('loading_sdk')
       // Lazy-load the CDR SDK (5.5 MB WASM + Emscripten loader) only when the
       // user actually clicks Unlock, so it doesn't bloat the initial client bundle.
       const { createUserCdrClient, readVaultData } = await import('@/domains/story/services/cdr.service')
@@ -79,6 +103,7 @@ export function SecretPanel({
         throw new Error('CDR client unavailable. Try again later.')
       }
 
+      setUnlockStep('requesting_decrypt')
       const decrypted = await readVaultData(client, promptVaultUuid!)
       if (!decrypted) {
         throw new Error('Failed to decrypt vault data')
@@ -89,8 +114,10 @@ export function SecretPanel({
       setPanelData(panel)
       setAccessPolicy(data.accessPolicy ?? null)
       setUnlocked(true)
+      setUnlockStep('done')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unlock failed')
+      setUnlockStep('idle')
     } finally {
       setIsUnlocking(false)
     }
@@ -164,17 +191,55 @@ export function SecretPanel({
                   <span>Unlocked via CDR Vault</span>
                 </div>
                 {accessPolicy && (
-                  <div className="mt-3 grid gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-950/20 p-3 text-[11px] text-emerald-100">
+                  <div className="mt-3 grid gap-2 rounded-md border border-emerald-500/20 bg-emerald-950/20 p-3 text-[11px] text-emerald-100">
                     <div className="flex items-center gap-1.5 font-semibold">
                       <ShieldCheck className="h-3.5 w-3.5" />
                       <span>CDR access policy satisfied</span>
                     </div>
-                    <div className="font-mono text-emerald-200/80">
-                      {accessPolicy.cdrReadCondition}: {accessPolicy.nftContract.slice(0, 6)}...{accessPolicy.nftContract.slice(-4)}
-                    </div>
-                    <div className="text-emerald-200/70">
-                      NFT #{accessPolicy.nftTokenId} owned on chain {accessPolicy.nftChainId}; {accessPolicy.completedPanels} story panels completed.
-                    </div>
+
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-emerald-200/80">
+                      <dt className="text-emerald-300/60">CDR network</dt>
+                      <dd className="font-mono">Story Aeneid (chainId 1315)</dd>
+
+                      <dt className="text-emerald-300/60">Read condition</dt>
+                      <dd className="font-mono">{accessPolicy.cdrReadCondition}</dd>
+
+                      <dt className="text-emerald-300/60">Gate NFT</dt>
+                      <dd className="font-mono flex items-center gap-1">
+                        <span>{accessPolicy.nftContract.slice(0, 6)}…{accessPolicy.nftContract.slice(-4)}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(accessPolicy.nftContract, 'nft')}
+                          className="text-emerald-300/60 hover:text-emerald-200"
+                          aria-label="Copy NFT contract address"
+                        >
+                          {copiedField === 'nft' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        </button>
+                      </dd>
+
+                      <dt className="text-emerald-300/60">Token ID</dt>
+                      <dd className="font-mono">#{accessPolicy.nftTokenId} (chain {accessPolicy.nftChainId})</dd>
+
+                      <dt className="text-emerald-300/60">Panels completed</dt>
+                      <dd className="font-mono">{accessPolicy.completedPanels} / 5</dd>
+
+                      {promptVaultUuid && (
+                        <>
+                          <dt className="text-emerald-300/60">Vault UUID</dt>
+                          <dd className="font-mono flex items-center gap-1 break-all">
+                            <span>{promptVaultUuid.length > 14 ? `${promptVaultUuid.slice(0, 8)}…${promptVaultUuid.slice(-4)}` : promptVaultUuid}</span>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(promptVaultUuid, 'uuid')}
+                              className="text-emerald-300/60 hover:text-emerald-200"
+                              aria-label="Copy vault UUID"
+                            >
+                              {copiedField === 'uuid' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            </button>
+                          </dd>
+                        </>
+                      )}
+                    </dl>
                   </div>
                 )}
               </div>
@@ -262,6 +327,16 @@ export function SecretPanel({
                     </p>
                   )}
 
+                  {isUnlocking && unlockStep !== 'idle' && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mt-3 text-[11px] text-muted-foreground font-mono"
+                    >
+                      {STEP_LABEL[unlockStep]}
+                    </motion.p>
+                  )}
+
                   {error && (
                     <motion.p
                       initial={{ opacity: 0, y: 5 }}
@@ -270,6 +345,14 @@ export function SecretPanel({
                     >
                       {error}
                     </motion.p>
+                  )}
+
+                  {promptVaultUuid && (
+                    <p className="mt-4 text-[10px] font-mono text-muted-foreground/70 break-all">
+                      vault: {promptVaultUuid.length > 18 ? `${promptVaultUuid.slice(0, 10)}…${promptVaultUuid.slice(-6)}` : promptVaultUuid}
+                      <span className="mx-1">·</span>
+                      Story Aeneid (1315)
+                    </p>
                   )}
                 </div>
               ) : (

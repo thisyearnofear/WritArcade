@@ -76,9 +76,11 @@ export async function readVaultData(
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Failed to read vault data:', msg)
     // Surface CDR-specific errors so callers can distinguish protocol
-    // failures (e.g. tokenGate rejection) from generic network errors.
-    if (msg.includes('token') || msg.includes('gate') || msg.includes('condition')) {
-      throw new Error(`CDR access denied — the token-gate condition was not satisfied. (${msg})`)
+    // failures (read-condition rejection) from generic network errors.
+    // Kept generic so it stays correct across condition types
+    // (tokenGate, custom, merkle, ownerOnly).
+    if (msg.includes('token') || msg.includes('gate') || msg.includes('condition') || msg.includes('access')) {
+      throw new Error(`CDR access denied — the vault's read condition was not satisfied. (${msg})`)
     }
     return null
   }
