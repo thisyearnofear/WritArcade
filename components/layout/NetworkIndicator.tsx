@@ -3,7 +3,7 @@
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { motion } from 'framer-motion'
 import { Globe, AlertCircle, ArrowRightLeft } from 'lucide-react'
-import { getChainInfo, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
+import { getChainInfo, MEZO_TESTNET_CHAIN_ID, BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
 
 /**
  * Network Indicator Component
@@ -22,6 +22,7 @@ export function NetworkIndicator() {
   }
 
   const isOnMezo = chainInfo.ecosystem === 'mezo'
+  const isOnBase = chainInfo.ecosystem === 'base'
 
   return (
     <motion.div
@@ -67,6 +68,18 @@ export function NetworkIndicator() {
           <span className="hidden sm:inline">Mezo</span>
         </button>
       )}
+
+      {!isOnBase && (
+        <button
+          onClick={() => switchChain({ chainId: BASE_MAINNET_CHAIN_ID })}
+          disabled={isPending}
+          className="flex items-center gap-1 px-2 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/5 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/50 transition-colors disabled:opacity-50"
+          title="Switch to Base for Writer Coin payments"
+        >
+          <ArrowRightLeft className="w-3 h-3" />
+          <span className="hidden sm:inline">Base</span>
+        </button>
+      )}
     </motion.div>
   )
 }
@@ -85,6 +98,7 @@ export function NetworkIndicatorCompact() {
   }
 
   const isOnMezo = chainInfo.ecosystem === 'mezo'
+  const isOnBase = chainInfo.ecosystem === 'base'
 
   return (
     <div className="flex items-center gap-1.5">
@@ -113,6 +127,17 @@ export function NetworkIndicatorCompact() {
           disabled={isPending}
           className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
           title="Switch to Mezo"
+        >
+          <ArrowRightLeft className="w-2.5 h-2.5" />
+        </button>
+      )}
+
+      {!isOnBase && (
+        <button
+          onClick={() => switchChain({ chainId: BASE_MAINNET_CHAIN_ID })}
+          disabled={isPending}
+          className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-50"
+          title="Switch to Base"
         >
           <ArrowRightLeft className="w-2.5 h-2.5" />
         </button>

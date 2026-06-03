@@ -100,14 +100,12 @@ export function PaymentOption({
 
   return (
     <div className="space-y-4">
-      {/* Network / Token Selection */}
-      {!compact && (
-        <PaymentTokenSelector 
-          selectedToken={selectedToken}
-          onSelectToken={setSelectedToken}
-          writerCoin={writerCoinToken}
-        />
-      )}
+      {/* Network / Token Selection — always show so users can switch between Writer Coin and MUSD */}
+      <PaymentTokenSelector 
+        selectedToken={selectedToken}
+        onSelectToken={setSelectedToken}
+        writerCoin={writerCoinToken}
+      />
 
       {/* Cost Preview */}
       <CostPreview paymentToken={selectedToken} action={action} showBreakdown={!compact} compact={compact} />

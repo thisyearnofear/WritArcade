@@ -51,28 +51,24 @@ export class WriterCoinStrategy implements PaymentStrategy {
     }
 
     // 2. Approve ERC20
-    try {
-      const approvalTx = await walletClient.writeContract({
-        address: writerCoin.address,
-        abi: [{
-          name: 'approve',
-          type: 'function',
-          stateMutability: 'nonpayable',
-          inputs: [
-            { name: 'spender', type: 'address' },
-            { name: 'amount', type: 'uint256' }
-          ],
-          outputs: [{ name: '', type: 'bool' }]
-        }],
-        functionName: 'approve',
-        args: [contractAddress, BigInt(paymentAmount)],
-        account: userAddress as `0x${string}`,
-        chain: null
-      })
-      console.log('[WriterCoinStrategy] Approval transaction sent:', approvalTx)
-    } catch (approvalErr) {
-      console.warn('[WriterCoinStrategy] Approval error (continuing):', approvalErr)
-    }
+    const approvalTx = await walletClient.writeContract({
+      address: writerCoin.address,
+      abi: [{
+        name: 'approve',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { name: 'spender', type: 'address' },
+          { name: 'amount', type: 'uint256' }
+        ],
+        outputs: [{ name: '', type: 'bool' }]
+      }],
+      functionName: 'approve',
+      args: [contractAddress, BigInt(paymentAmount)],
+      account: userAddress as `0x${string}`,
+      chain: null
+    })
+    console.log('[WriterCoinStrategy] Approval transaction sent:', approvalTx)
 
     // 3. Execute Payment Contract
     const txHash = await walletClient.writeContract({
