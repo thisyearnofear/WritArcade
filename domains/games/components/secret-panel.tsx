@@ -275,11 +275,29 @@ export function SecretPanel({
 
               {/* CDR Encryption indicator — visible to judges even before unlock */}
               {promptVaultUuid && (
-                <div className="mb-5 mx-auto max-w-sm rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3">
+                <div className="mb-5 mx-auto max-w-md rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-left">
                   <div className="flex items-center gap-2 text-xs text-emerald-300">
                     <Lock className="h-3.5 w-3.5" />
                     <span className="font-semibold">Encrypted via Story CDR</span>
                   </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-emerald-200/80">
+                    The epilogue is stored off-chain in a vault that only unlocks when Story Protocol verifies you hold the matching Game NFT. Even the platform can&apos;t read it without your token.
+                  </p>
+                  <details className="mt-2 group">
+                    <summary className="cursor-pointer text-[10px] uppercase tracking-wider font-semibold text-emerald-400/80 hover:text-emerald-300 list-none flex items-center gap-1">
+                      <span className="group-open:rotate-90 transition-transform">▸</span>
+                      What is Story CDR?
+                    </summary>
+                    <div className="mt-2 text-[10px] leading-relaxed text-emerald-200/70 space-y-1.5">
+                      <p>
+                        <span className="font-semibold text-emerald-300">CDR</span> = Cross-chain Data Rights.
+                        A Story Protocol primitive that ties encrypted off-chain content to on-chain NFT ownership.
+                      </p>
+                      <p>
+                        Writers can mint, sell, and gate their unreleased epilogues with the same NFT they already use to access the game — no separate subscriptions, no platform custody.
+                      </p>
+                    </div>
+                  </details>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono text-emerald-400/70">
                     <span>Vault: {promptVaultUuid.length > 14 ? `${promptVaultUuid.slice(0, 8)}…${promptVaultUuid.slice(-4)}` : promptVaultUuid}</span>
                     <span className="text-emerald-600">·</span>

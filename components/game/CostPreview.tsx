@@ -71,7 +71,10 @@ export function CostPreview({ paymentToken, action, showBreakdown = true, compac
 
         {showBreakdown && paymentToken.type === 'writercoin' && (
           <>
-            <div className="border-t border-purple-700 pt-2">
+            <div className="border-t border-purple-700 pt-2 space-y-1.5">
+              <p className="text-[11px] text-purple-300/80 leading-snug">
+                Paying with a writer coin auto-routes the original writer a share of this transaction.
+              </p>
               {action === 'generate-game' ? (
                 <>
                   <div className="flex items-center justify-between">

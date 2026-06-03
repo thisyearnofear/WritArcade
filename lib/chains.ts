@@ -38,6 +38,8 @@ export interface ChainInfo {
   purpose: string
   isTestnet: boolean
   isSupported: boolean
+  /** Block explorer base URL (e.g. https://basescan.org). Append /tx/<hash> for txs. */
+  blockExplorer?: string
 }
 
 const UNSUPPORTED: ChainInfo = {
@@ -63,6 +65,7 @@ const CHAINS: Record<number, ChainInfo> = {
     purpose: 'Writer coin payments',
     isTestnet: false,
     isSupported: true,
+    blockExplorer: 'https://basescan.org',
   },
   [BASE_SEPOLIA_CHAIN_ID]: {
     id: BASE_SEPOLIA_CHAIN_ID,
@@ -85,6 +88,7 @@ const CHAINS: Record<number, ChainInfo> = {
     purpose: 'MUSD payments',
     isTestnet: true,
     isSupported: true,
+    blockExplorer: 'https://explorer.test.mezo.org',
   },
   [MEZO_MAINNET_CHAIN_ID]: {
     id: MEZO_MAINNET_CHAIN_ID,
@@ -107,6 +111,7 @@ const CHAINS: Record<number, ChainInfo> = {
     purpose: 'IP registration',
     isTestnet: true,
     isSupported: true,
+    blockExplorer: 'https://aeneid.storyscan.xyz',
   },
 }
 

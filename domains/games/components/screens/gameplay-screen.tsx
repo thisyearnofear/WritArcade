@@ -127,11 +127,21 @@ export function GameplayScreen({
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Story Progress</p>
                 <div className="flex items-center gap-4">
                   <MoodIndicator mood={worldMood} />
-                  <p className="text-sm text-muted-foreground">
-                    {assistantMessageCount >= MAX_COMIC_PANELS
-                      ? 'Story complete'
-                      : `Panel ${assistantMessageCount} of ${MAX_COMIC_PANELS}`}
-                  </p>
+                  <div
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border"
+                    style={{
+                      borderColor: assistantMessageCount >= MAX_COMIC_PANELS
+                        ? '#10b981'
+                        : (game.primaryColor || '#8b5cf6') + '60',
+                      backgroundColor: assistantMessageCount >= MAX_COMIC_PANELS
+                        ? 'rgba(16, 185, 129, 0.15)'
+                        : (game.primaryColor || '#8b5cf6') + '15',
+                      color: assistantMessageCount >= MAX_COMIC_PANELS ? '#10b981' : (game.primaryColor || '#8b5cf6'),
+                    }}
+                  >
+                    {assistantMessageCount >= MAX_COMIC_PANELS ? '✓' : `${assistantMessageCount}/${MAX_COMIC_PANELS}`}
+                    <span>{assistantMessageCount >= MAX_COMIC_PANELS ? 'Story complete' : 'panels'}</span>
+                  </div>
                 </div>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">

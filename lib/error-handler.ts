@@ -173,6 +173,74 @@ function categorizeError(message: string, context?: string): ErrorInfo {
     }
   }
 
+  // User rejected / cancelled the transaction
+  if (
+    lowerMessage.includes('user rejected') ||
+    lowerMessage.includes('user denied') ||
+    lowerMessage.includes('user cancelled') ||
+    lowerMessage.includes('action_rejected') ||
+    lowerMessage.includes('rejected by user') ||
+    lowerMessage.includes('user closed')
+  ) {
+    return {
+      type: 'WALLET_ERROR',
+      message,
+      userMessage: 'You cancelled the transaction. Nothing was charged — try again when you\'re ready.',
+      retryable: true,
+    }
+  }
+
+  // Insufficient gas / funds for transaction
+  if (
+    lowerMessage.includes('insufficient funds for gas') ||
+    lowerMessage.includes('insufficient fee') ||
+    lowerMessage.includes('out of gas')
+  ) {
+    return {
+      type: 'WALLET_ERROR',
+      message,
+      userMessage:
+        'Your wallet doesn\'t have enough ETH on this network to pay for the transaction fee. Top up and retry.',
+      retryable: true,
+    }
+  }
+
+  // Wrong network / chain
+  if (
+    lowerMessage.includes('chain mismatch') ||
+    lowerMessage.includes('wrong chain') ||
+    lowerMessage.includes('unsupported chain') ||
+    lowerMessage.includes('chainid')
+  ) {
+    return {
+      type: 'WALLET_ERROR',
+      message,
+      userMessage: 'Your wallet is on the wrong network. Use the Switch Network button above to continue.',
+      retryable: true,
+    }
+  }
+
+  // Contract revert with known reasons
+  if (lowerMessage.includes('minter_role') || lowerMessage.includes('minterrole')) {
+    return {
+      type: 'MINTING_ERROR',
+      message,
+      userMessage:
+        'The mint contract is not authorized. This is a platform-side issue — please try again in a moment.',
+      retryable: true,
+    }
+  }
+
+  if (lowerMessage.includes('execution reverted') || lowerMessage.includes('revert')) {
+    return {
+      type: 'UNKNOWN_ERROR',
+      message,
+      userMessage:
+        'The transaction couldn\'t be completed. If you\'re switching between Writer Coin and MUSD, make sure you have the right balance on the right chain.',
+      retryable: true,
+    }
+  }
+
   // Generation errors
   if (
     lowerMessage.includes('generation') ||

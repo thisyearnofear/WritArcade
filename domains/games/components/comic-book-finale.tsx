@@ -924,6 +924,25 @@ export function ComicBookFinale({
                   </p>
                 </div>
 
+                {/* NFT metadata preview — judges love this */}
+                <div className="max-w-2xl mx-auto rounded-lg border border-border bg-card/60 p-4 text-left">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                    On-chain metadata (GameMetadata struct)
+                  </p>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs font-mono">
+                    <dt className="text-muted-foreground">title</dt>
+                    <dd className="break-words">{gameTitle}</dd>
+                    <dt className="text-muted-foreground">genre</dt>
+                    <dd>{genre}</dd>
+                    <dt className="text-muted-foreground">difficulty</dt>
+                    <dd>{difficulty ?? 'medium'}</dd>
+                    <dt className="text-muted-foreground">creator</dt>
+                    <dd className="break-all">{creatorWallet}</dd>
+                    <dt className="text-muted-foreground">articleUrl</dt>
+                    <dd className="break-all">{articleUrl}</dd>
+                  </dl>
+                </div>
+
                 <div
                   className="rounded-xl p-6 border-4 shadow-2xl max-w-2xl mx-auto"
                   style={{
@@ -996,6 +1015,26 @@ export function ComicBookFinale({
                       🎨 Generated with writersarcade • Unique Comic NFT
                     </p>
                   </div>
+                </div>
+
+                {/* Mint-this-NFT call-to-action inside the preview */}
+                <div className="text-center">
+                  <Button
+                    onClick={handleMintWithMetadata}
+                    disabled={isMinting}
+                    size="lg"
+                    className="gap-2"
+                    style={{
+                      backgroundColor: primaryColor,
+                      color: 'white',
+                    }}
+                  >
+                    <Zap className="w-4 h-4" />
+                    {isMinting ? 'Preparing NFT…' : 'Mint this NFT'}
+                  </Button>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Mints on Base (writer coin path) or Mezo (MUSD path), atomically routing writer + creator + platform shares.
+                  </p>
                 </div>
               </div>
             )}

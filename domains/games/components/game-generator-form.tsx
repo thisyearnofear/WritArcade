@@ -750,7 +750,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                   paymentCompletedRef.current = false
                   trackEvent('game_mode_selected', { mode: 'story', paymentPath })
                 }}
-                className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
+                className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
                   mode === 'story'
                     ? 'bg-purple-600 text-white shadow'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -759,7 +759,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
-                  <span className="font-semibold">Story (5-panel)</span>
+                  <span className="font-semibold">Story</span>
+                  <span className={`text-[10px] font-bold ${mode === 'story' ? 'text-purple-200' : 'text-purple-400'}`}>
+                    5-panel · NFT · CDR
+                  </span>
               </motion.button>
               <motion.button
                 type="button"
@@ -768,7 +771,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                   paymentCompletedRef.current = false
                   trackEvent('game_mode_selected', { mode: 'wordle', paymentPath })
                 }}
-                className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
+                className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
                   mode === 'wordle'
                     ? 'bg-amber-600 text-white shadow'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -777,13 +780,20 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
-                  <span className="font-semibold">Wordle (Free)</span>
+                  <span className="font-semibold">Wordle</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider rounded-sm px-1 py-0.5 ${
+                    mode === 'wordle'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                  }`}>
+                    Free
+                  </span>
               </motion.button>
             </div>
             <p className="text-xs text-muted-foreground">
               {mode === 'story'
-                ? 'Story creates a 5-panel narrative game with AI-generated artwork, branching choices, and mood tracking.'
-                : 'Wordle creates a free word puzzle derived from your article. No payment needed.'}
+                ? 'Story creates a 5-panel narrative game with AI-generated artwork, branching choices, mood tracking, and an encrypted CDR epilogue unlocked by the minted NFT.'
+                : 'Wordle creates a free word puzzle derived from your article vocabulary. No payment or wallet needed — a quick taste of the engine.'}
             </p>
           </div>
           )}
@@ -872,6 +882,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                               <p className="text-sm font-bold text-foreground">Writer coin · Base</p>
                               <p className="text-xs text-muted-foreground">
                                 Best when you already know the article belongs to a supported writer.
+                              </p>
+                              <p className="mt-1.5 text-[11px] font-semibold text-emerald-300/90">
+                                💸 {writerCoin.writer} auto-receives 60% of every transaction.
                               </p>
                             </div>
                             {!isMusdPath ? (

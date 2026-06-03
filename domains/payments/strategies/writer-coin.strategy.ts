@@ -20,12 +20,15 @@ export class WriterCoinStrategy implements PaymentStrategy {
   name = 'WriterCoin (Base)'
   chainId = BASE_MAINNET_CHAIN_ID
 
-  async executePayment({ walletClient, userAddress, token, action }: ExecutePaymentParams): Promise<string> {
+  async executePayment({ walletClient, userAddress, token, action, onStep }: ExecutePaymentParams): Promise<string> {
     if (token.type !== 'writercoin') {
       throw new Error('Invalid token type for WriterCoinStrategy')
     }
 
     const writerCoin = token.coin
+    const step = onStep ?? (() => {})
+
+    step('Preparing payment…')
 
     // 1. Initiate via backend
     const initiateResponse = await fetch('/api/payments/initiate', {
@@ -54,6 +57,7 @@ export class WriterCoinStrategy implements PaymentStrategy {
     }
 
     // 2. Approve ERC20
+    step('Step 1 of 2: Approve token spend in your wallet…')
     const approvalTx = await walletClient.writeContract({
       address: writerCoin.address,
       abi: [{
@@ -74,6 +78,7 @@ export class WriterCoinStrategy implements PaymentStrategy {
     console.log('[WriterCoinStrategy] Approval transaction sent:', approvalTx)
 
     // 3. Execute Payment Contract
+    step('Step 2 of 2: Confirm payment in your wallet…')
     const txHash = await walletClient.writeContract({
       address: contractAddress,
       abi: action === 'generate-game' 
@@ -103,6 +108,7 @@ export class WriterCoinStrategy implements PaymentStrategy {
     console.log('[WriterCoinStrategy] Transaction sent:', txHash)
 
     // 4. Verify via backend
+    step('Verifying on-chain…')
     const verifyResponse = await fetch('/api/payments/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -118,6 +124,7 @@ export class WriterCoinStrategy implements PaymentStrategy {
       throw new Error(errorData.error || `Failed to verify payment (${verifyResponse.status})`)
     }
 
+    step('Payment complete!')
     return txHash
   }
 }

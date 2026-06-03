@@ -15,7 +15,7 @@ import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/chains'
 import { trackEvent } from '@/lib/analytics'
 
 const MEZO_TESTNET_EXPLORER_URL = 'https://explorer.test.mezo.org/tx'
@@ -74,6 +74,7 @@ export function PaymentFlow({
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastTxHash, setLastTxHash] = useState<string | null>(null)
+  const [currentStep, setCurrentStep] = useState<string | null>(null)
   const networkPromptTrackedRef = useRef<string | null>(null)
   const networkSwitchCompletedRef = useRef(false)
 
@@ -121,6 +122,7 @@ export function PaymentFlow({
 
     setIsProcessing(true)
     setError(null)
+    setCurrentStep('Starting…')
     trackEvent('payment_started', {
       action,
       token: tokenSymbol,
@@ -139,13 +141,15 @@ export function PaymentFlow({
             userAddress,
             token: paymentToken,
             action,
-            amount
+            amount,
+            onStep: setCurrentStep,
           })
         },
         2,
         1500
       ).then((txHash) => {
         setLastTxHash(txHash)
+        setCurrentStep(null)
         if (isMUSD) {
           refreshMUSDBalance()
         } else {
@@ -156,6 +160,7 @@ export function PaymentFlow({
     } catch (err) {
       const message = getUserMessage(err)
       setError(message)
+      setCurrentStep(null)
       trackEvent('payment_failed', {
         action,
         token: tokenSymbol,
@@ -386,7 +391,7 @@ export function PaymentFlow({
         {isProcessing ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin" />
-            Processing...
+            {currentStep ?? 'Processing…'}
           </span>
         ) : isWrongChain ? (
           <span className="flex items-center justify-center gap-2 text-center">
@@ -403,9 +408,7 @@ export function PaymentFlow({
       {isWrongChain && !error && (
         <p className="text-xs text-muted-foreground text-center">
           You&apos;re on {chainId === BASE_MAINNET_CHAIN_ID ? 'Base' : chainId === MEZO_TESTNET_CHAIN_ID ? 'Mezo' : `chain ${chainId}`}.
-          {isMUSD
-            ? ' Switch to Mezo to pay with MUSD, or change the payment token to use your current chain.'
-            : ' Switch to Base to pay with Writer Coin, or change the payment token to use MUSD on Mezo.'}
+          {' '}Pick a payment token above for your current chain, or use the button below to switch networks.
         </p>
       )}
 
@@ -426,12 +429,12 @@ export function PaymentFlow({
           <span className="flex-1">
             Transaction confirmed! View on{' '}
             <a
-              href={`${MEZO_TESTNET_EXPLORER_URL}/${lastTxHash}`}
+              href={`${getChainInfo(targetChainId).blockExplorer ?? MEZO_TESTNET_EXPLORER_URL}/tx/${lastTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline font-semibold hover:text-green-300 transition-colors"
             >
-              Mezo Explorer <ExternalLink className="w-3 h-3 inline-block" />
+              {getChainInfo(targetChainId).name} Explorer <ExternalLink className="w-3 h-3 inline-block" />
             </a>
           </span>
           <button

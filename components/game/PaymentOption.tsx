@@ -1,6 +1,6 @@
 'use client'
 
-import { useAccount } from 'wagmi'
+import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { type WriterCoin, type PaymentToken } from '@/lib/writerCoins'
 import { PaymentFlow } from './PaymentFlow'
 import { CostPreview } from './CostPreview'
@@ -8,9 +8,10 @@ import { WalletConnect } from '@/components/ui/wallet-connect'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PaymentAction } from '@/domains/payments/types'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ArrowRightLeft } from 'lucide-react'
 import { PaymentTokenSelector } from './PaymentTokenSelector'
 import { trackEvent } from '@/lib/analytics'
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/chains'
 
 interface PaymentOptionProps {
   writerCoin: WriterCoin
@@ -26,7 +27,7 @@ interface PaymentOptionProps {
 
 /**
  * Payment UI component for web app
- * 
+ *
  * Shows:
  * 1. Wallet connection requirement (if not connected)
  * 2. Cost preview
@@ -45,6 +46,8 @@ export function PaymentOption({
   _onSkip,
 }: PaymentOptionProps) {
   const { isConnected } = useAccount()
+  const chainId = useChainId()
+  const { switchChain, isPending: isSwitchingChain } = useSwitchChain()
   const walletPromptTrackedRef = useRef(false)
   const walletConnectedTrackedRef = useRef(false)
 
@@ -57,6 +60,11 @@ export function PaymentOption({
   const cost = useMemo(() => {
     return PaymentCostService.calculateCostTokenSync(selectedToken, action)
   }, [selectedToken, action])
+
+  const isMUSD = selectedToken.type === 'musd'
+  const targetChainId = isMUSD ? MEZO_TESTNET_CHAIN_ID : BASE_MAINNET_CHAIN_ID
+  const isWrongChain = Boolean(chainId && chainId !== targetChainId)
+  const currentChain = getChainInfo(chainId)
 
   useEffect(() => {
     if (isConnected || walletPromptTrackedRef.current) return
@@ -98,14 +106,50 @@ export function PaymentOption({
     )
   }
 
+  const otherToken: PaymentToken = isMUSD
+    ? writerCoinToken
+    : { type: 'musd', network: 'testnet' }
+
   return (
     <div className="space-y-4">
       {/* Network / Token Selection — always show so users can switch between Writer Coin and MUSD */}
-      <PaymentTokenSelector 
+      <PaymentTokenSelector
         selectedToken={selectedToken}
         onSelectToken={setSelectedToken}
         writerCoin={writerCoinToken}
       />
+
+      {/* Two-path wrong-chain prompt: switch network OR switch payment token */}
+      {isWrongChain && !compact && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-900/10 p-3 text-xs space-y-2">
+          <div className="flex items-center gap-2 font-semibold text-amber-200">
+            <AlertCircle className="w-4 h-4" />
+            <span>You&apos;re on {currentChain.shortName} — this payment needs {isMUSD ? 'Mezo' : 'Base'}.</span>
+          </div>
+          <p className="text-amber-200/80">Pick the path that fits what you have:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => switchChain({ chainId: targetChainId })}
+              disabled={isSwitchingChain}
+              className="flex items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 px-3 py-2 text-blue-200 hover:bg-blue-500/10 transition-colors disabled:opacity-50"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <span className="font-medium">Switch to {isMUSD ? 'Mezo' : 'Base'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedToken(otherToken)}
+              className="flex items-center justify-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/5 px-3 py-2 text-purple-200 hover:bg-purple-500/10 transition-colors"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <span className="font-medium">
+                Pay with {isMUSD ? 'Writer Coin' : 'MUSD'} on {currentChain.shortName}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Cost Preview */}
       <CostPreview paymentToken={selectedToken} action={action} showBreakdown={!compact} compact={compact} />

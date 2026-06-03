@@ -8,6 +8,8 @@ import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Search, Filter, BookOpen, Compass, Zap, Brain, Sword, Store, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { GenreFilterList } from '@/domains/games/components/genre-filter-list'
 import type { GenreOption } from '@/domains/games/components/genre-filter-list'
+import { WRITER_COINS } from '@/lib/writerCoins'
+import Link from 'next/link'
 
 // Single source of truth — consumed by both sidebar and mobile drawer via GenreFilterList
 const genres: GenreOption[] = [
@@ -27,9 +29,6 @@ export default function GamesPage() {
   const [itemsPerPage] = useState(12)
   /** Mobile filter drawer open state */
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
-
-  // Total count is supplied by GameGrid's onLoad callback — no need for
-  // a separate DB call here (which would require Prisma on the client).
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
@@ -52,9 +51,30 @@ export default function GamesPage() {
               <h1 className="font-serif text-3xl md:text-4xl font-semibold text-slate-950 dark:text-foreground mb-2">
                 The Arcade
               </h1>
-              <p className="text-slate-600 dark:text-muted-foreground max-w-2xl">
+              <p className="text-slate-600 dark:text-muted-foreground max-w-2xl mb-6">
                 Interactive games generated from articles by supported writers. Play, collect, and own the experience.
               </p>
+
+              {/* Writer coin chips row — discoverability for the 5 whitelisted writers */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mr-1">
+                  Writers
+                </span>
+                {WRITER_COINS.map((coin) => (
+                  <Link
+                    key={coin.id}
+                    href={`/writers/${coin.id}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-muted/40 hover:border-purple-500 hover:bg-purple-500/5 text-xs text-foreground transition-colors"
+                    title={`${coin.writer} — ${WRITER_COINS.length} whitelisted writer coins`}
+                  >
+                    <span className="font-mono font-semibold">${coin.symbol.replace('$', '')}</span>
+                    <span className="text-muted-foreground hidden sm:inline">{coin.writer}</span>
+                  </Link>
+                ))}
+                <span className="text-[10px] text-muted-foreground ml-1">
+                  {WRITER_COINS.length} whitelisted
+                </span>
+              </div>
             </div>
           </div>
 

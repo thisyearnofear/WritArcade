@@ -71,7 +71,7 @@ export class MUSDStrategy implements PaymentStrategy {
   name = 'MUSD (Mezo)'
   chainId = MEZO_TESTNET_CHAIN_ID
 
-  async executePayment({ walletClient, userAddress, token, action, amount }: ExecutePaymentParams): Promise<string> {
+  async executePayment({ walletClient, userAddress, token, action, amount, onStep }: ExecutePaymentParams): Promise<string> {
     if (token.type !== 'musd') {
       throw new Error('Invalid token type for MUSDStrategy')
     }
@@ -85,10 +85,13 @@ export class MUSDStrategy implements PaymentStrategy {
     const musd = config.address as `0x${string}`
     const sender = userAddress as `0x${string}`
     const amt = BigInt(amount)
+    const step = onStep ?? (() => {})
 
     if (splitter === ZERO_ADDRESS) {
       throw new Error('MezoPaymentSplitter is not deployed on this network yet.')
     }
+
+    step('Step 1 of 2: Approve MUSD spend in your wallet…')
 
     // 1. Approve splitter to spend MUSD
     const approvalTx = await walletClient.writeContract({
@@ -105,6 +108,7 @@ export class MUSDStrategy implements PaymentStrategy {
     // For both generate-game and mint-nft, use payAndMintGame since the
     // currently deployed MezoBoostedSplitter only has that function.
     // The cost (1 MUSD) is the same for both actions.
+    step('Step 2 of 2: Confirm payment in your wallet…')
     const tokenURI = `ipfs://writersarcade/mezo-${action}-${Date.now()}`
     const metadata = {
       articleUrl: '',
@@ -125,6 +129,7 @@ export class MUSDStrategy implements PaymentStrategy {
       chain: null,
     })
     console.log(`[MUSDStrategy] payAndMintGame (${action}) tx:`, txHash)
+    step('Payment complete!')
     return txHash
   }
 }
