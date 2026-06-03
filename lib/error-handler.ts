@@ -138,6 +138,20 @@ function categorizeError(message: string, context?: string): ErrorInfo {
     }
   }
 
+  // Writer coin not enabled on the deployed payment contract
+  if (
+    lowerMessage.includes('not whitelisted') ||
+    lowerMessage.includes('not enabled for base writer-coin payments') ||
+    lowerMessage.includes('base payment contract')
+  ) {
+    return {
+      type: 'PAYMENT_ERROR',
+      message,
+      userMessage: 'This writer coin is not enabled for Base payments yet. Switch to MUSD on Mezo and try again.',
+      retryable: true,
+    }
+  }
+
   // Payment/wallet errors
   if (lowerMessage.includes('wallet') || lowerMessage.includes('connect')) {
     return {

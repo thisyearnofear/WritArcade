@@ -23,6 +23,7 @@ export interface WriterCoin {
     gameNftAddress: `0x${string}` // GameNFT contract address
     paymentContractAddress: `0x${string}` // WriterCoinPayment contract address
     chainId?: number // Chain ID where this coin lives (defaults to Base mainnet)
+    paymentEnabled: boolean // True only when WriterCoinPayment accepts this coin on-chain
 
     // Revenue distribution (percentages, should sum to 100)
     revenueDistribution: {
@@ -58,6 +59,7 @@ export const WRITER_COINS: WriterCoin[] = [
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
             creator: 20,
@@ -79,6 +81,7 @@ export const WRITER_COINS: WriterCoin[] = [
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
             creator: 20,
@@ -100,6 +103,7 @@ export const WRITER_COINS: WriterCoin[] = [
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
             creator: 20,
@@ -121,6 +125,7 @@ export const WRITER_COINS: WriterCoin[] = [
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
             creator: 20,
@@ -142,6 +147,7 @@ export const WRITER_COINS: WriterCoin[] = [
         decimals: 18,
         gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
         paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
             creator: 20,
@@ -174,6 +180,14 @@ export function getWriterCoinByAuthor(author: string): WriterCoin | undefined {
     return WRITER_COINS.find(
         (coin) => coin.paragraphAuthor.toLowerCase() === author.toLowerCase()
     )
+}
+
+export function getPaymentEnabledWriterCoins(): WriterCoin[] {
+    return WRITER_COINS.filter((coin) => coin.paymentEnabled)
+}
+
+export function isWriterCoinPaymentEnabled(writerCoinId: string): boolean {
+    return Boolean(getWriterCoinById(writerCoinId)?.paymentEnabled)
 }
 
 /**

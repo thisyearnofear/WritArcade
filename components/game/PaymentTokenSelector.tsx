@@ -9,22 +9,27 @@ interface PaymentTokenSelectorProps {
 }
 
 export function PaymentTokenSelector({ selectedToken, onSelectToken, writerCoin }: PaymentTokenSelectorProps) {
+  const writerCoinEnabled = writerCoin.coin.paymentEnabled
+
   return (
     <div className="flex gap-2 p-1 rounded-lg bg-slate-900/50 border border-purple-500/20 mb-4">
       <button
         type="button"
-        onClick={() => onSelectToken(writerCoin)}
+        onClick={() => writerCoinEnabled && onSelectToken(writerCoin)}
+        disabled={!writerCoinEnabled}
         className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
           selectedToken.type === 'writercoin'
             ? 'bg-purple-600 text-white shadow-lg'
-            : 'text-purple-300 hover:bg-purple-800/50'
+            : writerCoinEnabled
+              ? 'text-purple-300 hover:bg-purple-800/50'
+              : 'text-slate-500 cursor-not-allowed opacity-60'
         }`}
       >
         <span className="block">{writerCoin.coin.symbol} · Base</span>
         <span className={`block text-[10px] font-normal normal-case tracking-normal mt-0.5 ${
           selectedToken.type === 'writercoin' ? 'text-purple-200' : 'text-purple-400/60'
         }`}>
-          Writer Coin
+          {writerCoinEnabled ? 'Writer Coin' : 'Use MUSD'}
         </span>
       </button>
       <button

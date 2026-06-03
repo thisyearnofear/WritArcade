@@ -312,6 +312,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const isMusdPath = paymentPath === 'musd'
   const hasPreviewedCurrentUrl = !!articlePreview && previewedUrl === url.trim()
 
+  useEffect(() => {
+    if (paymentPath !== 'writercoin' || writerCoin.paymentEnabled) return
+    setPaymentPath('musd')
+    setPaymentApproved(false)
+    paymentCompletedRef.current = false
+  }, [paymentPath, writerCoin.paymentEnabled])
+
   const requiredAmount = useMemo(() => {
     if (isMusdPath) return 0
     return Number(writerCoin.gameGenerationCost) / 10 ** writerCoin.decimals
@@ -885,8 +892,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                               <p className="text-xs text-muted-foreground">
                                 Best when you already know the article belongs to a supported writer.
                               </p>
-                              <p className="mt-1.5 text-[11px] font-semibold text-emerald-300/90">
-                                💸 {writerCoin.writer} auto-receives 60% of every transaction.
+                              <p className={`mt-1.5 text-[11px] font-semibold ${writerCoin.paymentEnabled ? 'text-emerald-300/90' : 'text-amber-200/90'}`}>
+                                {writerCoin.paymentEnabled
+                                  ? `${writerCoin.writer} auto-receives 60% of every transaction.`
+                                  : `${writerCoin.symbol} is not enabled on the Base payment contract yet. Use MUSD.`}
                               </p>
                             </div>
                             {!isMusdPath ? (
@@ -898,6 +907,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (!writerCoin.paymentEnabled) return
                                   setPaymentPath('writercoin')
                                   paymentCompletedRef.current = false
                                   setPaymentApproved(false)
@@ -907,9 +917,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                   setError(null)
                                   trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, source: 'advanced_click', writerCoinId: writerCoin.id })
                                 }}
-                                className="inline-flex min-h-10 items-center justify-center rounded-md border border-purple-500/40 bg-purple-500/10 px-3 py-2 text-xs font-bold uppercase tracking-wider text-purple-100 transition hover:bg-purple-500/20"
+                                disabled={!writerCoin.paymentEnabled}
+                                className={`inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-wider transition ${
+                                  writerCoin.paymentEnabled
+                                    ? 'border-purple-500/40 bg-purple-500/10 text-purple-100 hover:bg-purple-500/20'
+                                    : 'cursor-not-allowed border-slate-600/40 bg-slate-800/40 text-slate-400'
+                                }`}
                               >
-                                Use writer coin
+                                {writerCoin.paymentEnabled ? 'Use writer coin' : 'Use MUSD instead'}
                               </button>
                             )}
                           </div>
@@ -934,7 +949,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                             </div>
 
                             <div className="rounded-lg border border-purple-500/20 bg-purple-950/20 p-3 text-xs text-purple-100/80">
-                              The article URL must match this writer. If it does not, switch back to MUSD.
+                              {writerCoin.paymentEnabled
+                                ? 'The article URL must match this writer. If it does not, switch back to MUSD.'
+                                : `${writerCoin.symbol} payments are not active on Base yet. MUSD remains available for this writer's articles.`}
                             </div>
 
                             <AnimatePresence>

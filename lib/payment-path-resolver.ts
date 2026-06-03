@@ -58,7 +58,8 @@ export function detectWriterCoinFromUrl(url: string | null | undefined): WriterC
   if (!url) return undefined
   const author = extractParagraphAuthor(url)
   if (!author) return undefined
-  return getWriterCoinByAuthor(author)
+  const coin = getWriterCoinByAuthor(author)
+  return coin?.paymentEnabled ? coin : undefined
 }
 
 /**

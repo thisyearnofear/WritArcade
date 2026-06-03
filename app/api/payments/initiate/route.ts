@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWriterCoinById } from '@/lib/writerCoins'
+import { fetchCoinConfigOnChain } from '@/lib/contracts'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import type { PaymentInitiateRequest, PaymentInfo } from '@/domains/payments/types'
 import { z } from 'zod'
@@ -32,6 +33,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!writerCoin.paymentEnabled) {
+      return NextResponse.json(
+        {
+          error: `${writerCoin.symbol} is not enabled for Base writer-coin payments yet. Use MUSD on Mezo for this article.`,
+        },
+        { status: 400 }
+      )
+    }
+
+    const onChainConfig = await fetchCoinConfigOnChain(writerCoin.address, writerCoin.chainId)
+    if (!onChainConfig.enabled) {
+      return NextResponse.json(
+        {
+          error: `${writerCoin.symbol} is not whitelisted by the Base payment contract yet. Use MUSD on Mezo for this article.`,
+        },
+        { status: 400 }
+      )
+    }
+
     // Calculate cost and distribution using shared service
     const cost = PaymentCostService.calculateCostSync(validatedData.writerCoinId, validatedData.action)
     const distribution = await PaymentCostService.calculateDistribution(validatedData.writerCoinId, validatedData.action)
@@ -53,8 +73,8 @@ export async function POST(request: NextRequest) {
         platformShare: distribution.platformShare.toString(),
         creatorShare: distribution.creatorShare.toString(),
       },
-      contractAddress: (process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS as `0x${string}`) || undefined,
-      chainId: 8453, // Base mainnet
+      contractAddress: (process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS as `0x${string}`) || writerCoin.paymentContractAddress,
+      chainId: writerCoin.chainId ?? 8453, // Base mainnet
     }
 
     return NextResponse.json(paymentInfo)
