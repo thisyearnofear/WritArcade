@@ -24,6 +24,7 @@ interface PaymentFlowProps {
   paymentToken: PaymentToken
   action: PaymentAction
   costFormatted: string
+  onPaymentStart?: () => void
   onPaymentSuccess?: (transactionHash: string) => void
   onPaymentError?: (error: string) => void
   disabled?: boolean
@@ -43,6 +44,7 @@ export function PaymentFlow({
   paymentToken,
   action,
   costFormatted,
+  onPaymentStart,
   onPaymentSuccess,
   onPaymentError,
   disabled = false,
@@ -123,6 +125,7 @@ export function PaymentFlow({
     setIsProcessing(true)
     setError(null)
     setCurrentStep('Starting…')
+    onPaymentStart?.()
     trackEvent('payment_started', {
       action,
       token: tokenSymbol,

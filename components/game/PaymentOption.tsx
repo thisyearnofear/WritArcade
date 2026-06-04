@@ -16,6 +16,7 @@ import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/li
 interface PaymentOptionProps {
   writerCoin: WriterCoin
   action: PaymentAction
+  onPaymentStart?: () => void
   onPaymentSuccess?: (transactionHash: string) => void
   onPaymentError?: (error: string) => void
   disabled?: boolean
@@ -37,6 +38,7 @@ interface PaymentOptionProps {
 export function PaymentOption({
   writerCoin,
   action,
+  onPaymentStart,
   onPaymentSuccess,
   onPaymentError,
   disabled = false,
@@ -161,6 +163,7 @@ export function PaymentOption({
         paymentToken={selectedToken}
         action={action}
         costFormatted={cost.amountFormatted}
+        onPaymentStart={onPaymentStart}
         onPaymentSuccess={onPaymentSuccess}
         onPaymentError={onPaymentError}
         disabled={disabled}

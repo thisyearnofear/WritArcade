@@ -56,7 +56,12 @@ function getGenerationErrorMessage(errorData: { error?: string; code?: string },
       return 'Game generation model failed this time. Please retry in a moment.'
     case 'DB_SAVE_FAILED':
       return 'Your game was generated but failed to save. Please retry to persist it.'
+    case 'PAYMENT_REQUIRED':
+      return 'Payment was not recognized. Your tokens are safe — retry to continue.'
+    case 'PAYMENT_NOT_VERIFIED':
+      return 'Payment is still being confirmed on-chain. Wait a moment and retry.'
     default:
+      if (status === 402) return 'Payment required before generating. Your tokens are safe — retry to continue.'
       return errorData.error || `Generation failed (${status}): ${statusText}`
   }
 }
@@ -114,14 +119,30 @@ function paymentError(message: string): GenerateErrorState {
 function generationError(message: string): GenerateErrorState {
   const lowerMessage = message.toLowerCase()
   const isTimeout = lowerMessage.includes('timed out') || lowerMessage.includes('timeout')
+  const isPaymentError = lowerMessage.includes('payment') || lowerMessage.includes('402')
+  const isQuota = lowerMessage.includes('quota') || lowerMessage.includes('429')
+
+  if (isPaymentError) {
+    return {
+      phase: 'generation',
+      title: 'Payment not found',
+      message: 'Your payment was sent but the server did not recognize it yet. This happens when blockchain indexing is slow. Retry to continue — your tokens are safe.',
+      retryLabel: 'Retry generation',
+      suggestions: [
+        'Wait 5-10 seconds for the transaction to be indexed.',
+        'Retry once — the payment should be found on the next attempt.',
+        'If retry fails, check your wallet to confirm the payment succeeded.',
+      ],
+    }
+  }
 
   return {
     phase: 'generation',
-    title: isTimeout ? 'Generation is taking too long' : 'Game generation failed',
+    title: isTimeout ? 'Generation is taking too long' : isQuota ? 'Generation limit reached' : 'Game generation failed',
     message,
     retryLabel: 'Generate again',
     suggestions: [
-      isTimeout ? 'Retry with Fast image quality if the article is long.' : 'Retry once; model failures are often temporary.',
+      isTimeout ? 'Retry with Fast image quality if the article is long.' : isQuota ? 'Our AI quota is temporarily full — retry in a few minutes.' : 'Retry once; model failures are often temporary.',
       'Try a shorter article or switch to Wordle for a free article-derived result.',
       'Keep this tab open while generation is running.',
     ],
@@ -298,10 +319,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const detectedCoin = useMemo(() => detectWriterCoinFromUrl(url), [url])
   const isAutoDetected = Boolean(detectedCoin) && paymentPath === 'musd' && !showAdvancedPayment
 
-  type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
+  type LoadingStep = 'payment' | 'validate' | 'extract' | 'generate' | 'save'
   type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
   const [stepStatuses, setStepStatuses] = useState<Record<LoadingStep, StepStatus>>({
+    payment: 'pending',
     validate: 'pending',
     extract: 'pending',
     generate: 'pending',
@@ -414,6 +436,8 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     setError(null)
 
     try {
+      // Reset all steps, then mark payment as done (we're called after payment succeeds)
+      setStepStatuses({ payment: 'completed', validate: 'pending', extract: 'pending', generate: 'pending', save: 'pending' })
       setLoadingStep('validate')
       setStepStatuses((prev) => ({ ...prev, validate: 'in-progress' }))
       await wait(700)
@@ -1207,6 +1231,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               writerCoin={writerCoin}
               initialToken={paymentTokenForPath(paymentPath, writerCoin)}
               action="generate-game"
+              onPaymentStart={() => {
+                setIsGenerating(true)
+                setStepStatuses({ payment: 'in-progress', validate: 'pending', extract: 'pending', generate: 'pending', save: 'pending' })
+                setLoadingStep('payment')
+              }}
               onPaymentSuccess={handlePaymentSuccess}
               onPaymentError={(err) => setError(paymentError(err))}
               disabled={isGenerating || !url.trim()}

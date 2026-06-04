@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { Loader2, Sparkles, Gamepad2, X, Lightbulb, BookOpen, Quote } from 'lucide-react'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 
-type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
+type LoadingStep = 'payment' | 'validate' | 'extract' | 'generate' | 'save'
 type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
 
 interface GameGenerationOverlayProps {
@@ -23,6 +23,11 @@ const WARN_AFTER_MS = 30_000   // Show "taking long" hint at 30s
 const ABORT_AFTER_MS = 90_000  // Auto-dismiss with error at 90s
 
 const stepConfig = {
+  payment: {
+    label: 'Payment Verified',
+    icon: '💳',
+    description: 'Confirming your on-chain payment...',
+  },
   validate: {
     label: 'Validating Article',
     icon: '🔍',
@@ -76,7 +81,7 @@ export function GameGenerationOverlay({
   difficulty = 'easy',
   onCancel,
 }: GameGenerationOverlayProps) {
-  const steps = ['validate', 'extract', 'generate', 'save'] as const
+  const steps = ['payment', 'validate', 'extract', 'generate', 'save'] as const
   const currentStepIndex = currentStep ? steps.indexOf(currentStep) : -1
   const progress = currentStep ? ((currentStepIndex + 1) / steps.length) * 100 : 0
 

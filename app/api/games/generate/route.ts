@@ -236,6 +236,22 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       )
     }
 
+    // Idempotency: if a game already exists for this payment, return it
+    if (fundingContext?.paymentId) {
+      const existingGame = await prisma.game.findFirst({
+        where: { paymentId: fundingContext.paymentId },
+        select: { id: true, slug: true, title: true, description: true, imageUrl: true },
+      })
+      if (existingGame) {
+        console.log('[Generate] Idempotency hit — returning existing game for payment:', fundingContext.paymentId)
+        return NextResponse.json({
+          success: true,
+          data: existingGame,
+          idempotent: true,
+        })
+      }
+    }
+
     const ownership = GameFundingService.buildOwnership(fundingContext, {
       siweWallet: user?.walletAddress,
       connectedWallet: validatedData.wallet,
