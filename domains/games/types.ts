@@ -57,11 +57,18 @@ export interface Game {
   nftMintedAt?: Date
   nftContractAddress?: string
   nftChainId?: number
+  nftMetadataUri?: string
+  gameMetadataUri?: string
   writerMintReceipt?: {
     writer: string
     writerShare: string
     symbol: string
   }
+
+  // Saved artifact panels derived from completed playthrough history.
+  savedPanels?: SavedGamePanel[]
+  artifactManifestUri?: string
+  artifactSavedAt?: Date
 
   // Story Protocol IP registration (set after registerGameAsIP)
   storyIpId?: string
@@ -100,6 +107,17 @@ export interface Game {
   // Timestamps
   createdAt: Date
   updatedAt: Date
+}
+
+export interface SavedGamePanel {
+  id: string
+  panelNumber: number
+  narrativeText: string
+  imageUrl?: string
+  imageModel?: string
+  userChoice?: string
+  audioUrl?: string
+  createdAt: Date
 }
 
 export interface GameSession {

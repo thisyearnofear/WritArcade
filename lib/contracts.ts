@@ -8,6 +8,16 @@
 import { encodeFunctionData, createPublicClient, http } from 'viem'
 import { getWriterCoinById } from './writerCoins'
 
+const BASE_MAINNET_PAYMENT_ADDRESS =
+  process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET ||
+  process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS ||
+  ''
+
+const BASE_MAINNET_GAME_NFT_ADDRESS =
+  process.env.NEXT_PUBLIC_GAME_NFT_MAINNET ||
+  process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS ||
+  ''
+
 // Contract ABIs (simplified, use full ABI from contract compilation)
 export const CONTRACT_ABIS = {
   // Minimal ABI objects for viem reads
@@ -59,7 +69,7 @@ export const CONTRACT_ABIS = {
     'function payAndMintGame(address writerCoin, string memory tokenURI, tuple(string, address, address, string, string, uint256, string) memory metadata) external returns (uint256)',
     'function isCoinWhitelisted(address coinAddress) external view returns (bool)',
     'function getCoinConfig(address coinAddress) external view returns (tuple(uint256, uint256, bool))',
-    'function whitelistCoin(address coinAddress, uint256 gameGenerationCost, uint256 mintCost, address treasury, uint256 writerShare, uint256 platformShare, uint256 creatorPoolShare, uint256 mintWriterShare, uint256 mintPlatformShare, uint256 mintCreatorShare) external',
+    'function whitelistCoin(address coinAddress, uint256 gameGenerationCost, uint256 mintCost, address treasury, uint256 writerShare, uint256 platformShare, uint256 creatorPoolShare, uint256 mintCreatorShare, uint256 mintWriterShare, uint256 mintPlatformShare, uint256 playCreatorShare, uint256 playWriterShare, uint256 playPlatformShare) external',
   ],
   GameNFT: [
     'function mintGame(address to, string memory tokenURI, tuple(string, address, address, string, string, uint256, string) memory metadata) external returns (uint256)',
@@ -79,8 +89,8 @@ export const CONTRACT_ADDRESSES = {
   },
   // Base Mainnet (production)
   baseMainnet: {
-    WriterCoinPayment: process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET || '',
-    GameNFT: process.env.NEXT_PUBLIC_GAME_NFT_MAINNET || '',
+    WriterCoinPayment: BASE_MAINNET_PAYMENT_ADDRESS,
+    GameNFT: BASE_MAINNET_GAME_NFT_ADDRESS,
   },
 }
 
@@ -315,10 +325,10 @@ export function calculateGameRevenueSplit(amount: bigint, writerCoinId: string) 
  * Calculate revenue split for NFT minting
  */
 export function calculateMintRevenueSplit(amount: bigint) {
-  const creatorShare = (amount * BigInt(30)) / BigInt(100)  // 30%
+  const creatorShare = (amount * BigInt(50)) / BigInt(100)  // 50%
   const writerShare = (amount * BigInt(15)) / BigInt(100)   // 15%
   const platformShare = (amount * BigInt(5)) / BigInt(100)  // 5%
-  const userShare = amount - creatorShare - writerShare - platformShare  // 50%
+  const userShare = amount - creatorShare - writerShare - platformShare  // 30%
 
   return {
     creatorShare,

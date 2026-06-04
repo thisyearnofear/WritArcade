@@ -141,13 +141,16 @@ WriterCoin
 
 ### Base Mainnet (Chain ID: 8453)
 
-**GameNFT** (`0x778C87dAA2b284982765688AE22832AADae7dccC`)  
+**GameNFT** (`NEXT_PUBLIC_GAME_NFT_MAINNET`)  
 - ERC-721 for game NFT minting
 - On-chain metadata storage
+- ERC-2981 default royalties and collection `contractURI`
+- Access-controlled minting through `MINTER_ROLE`
 
-**WriterCoinPayment** (`0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75`)  
+**WriterCoinPayment** (`NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET`)  
 - Payments with configurable revenue splits
-- Multi-coin support, reentrancy guards
+- Multi-coin support, reentrancy guards, pause control
+- Pulls full mint cost, distributes shares, and refunds undistributed mint remainder
 
 ### Mezo Matsnet (Chain ID: 31611)
 
@@ -167,7 +170,7 @@ WriterCoin
 ### Revenue Splits (configurable per coin)
 
 **Generation**: 60% Writer / 20% Platform / 20% Creator Pool  
-**Minting**: 30% Creator / 15% Writer / 5% Platform (remainder to payer)
+**Minting**: 50% Creator / 15% Writer / 5% Platform (30% refunded to minter)
 
 ## Multi-Chain Architecture
 

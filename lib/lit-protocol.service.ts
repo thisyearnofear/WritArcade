@@ -13,7 +13,10 @@
 import { config, logger } from './config'
 
 // GameNFT contract on Base mainnet
-const GAME_NFT_CONTRACT = '0x778C87dAA2b284982765688AE22832AADae7dccC'
+const GAME_NFT_CONTRACT =
+  process.env.NEXT_PUBLIC_GAME_NFT_MAINNET ||
+  process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS ||
+  '0x778C87dAA2b284982765688AE22832AADae7dccC'
 
 export interface SecretPanelData {
   narrative: string

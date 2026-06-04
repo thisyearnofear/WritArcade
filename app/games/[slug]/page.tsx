@@ -1,12 +1,16 @@
 import { notFound } from 'next/navigation'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { GamePlayInterface } from '@/domains/games/components/game-play-interface'
+import { GameArtifactView } from '@/domains/games/components/game-artifact-view'
 import { WordleGameInterface } from '@/domains/games/components/wordle-game-interface'
 import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { IPAttribution } from '@/domains/games/components/ip-attribution'
 import { ProtocolLifecycle } from '@/domains/games/components/protocol-lifecycle'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
+import { Header } from '@/components/layout/header'
+import { Footer } from '@/components/layout/footer'
+import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 
 // ISR: revalidate game pages every 5 minutes from CDN — eliminates per-request DB hits
 // for read-only story game pages. Wordle answer is stable so this is safe.
@@ -17,6 +21,7 @@ interface GamePageProps {
     slug: string
   }>
   searchParams?: Promise<{
+    play?: string
     unlocked?: string
   }>
 }
@@ -24,11 +29,24 @@ interface GamePageProps {
 export default async function GamePage({ params, searchParams }: GamePageProps) {
   const { slug } = await params
   const query = await searchParams
+  const isPlayMode = query?.play === '1'
   const isUnlockShare = Boolean(query?.unlocked)
   const game = await GameDatabaseService.getGameBySlug(slug)
 
   if (!game) {
     notFound()
+  }
+
+  if (!isPlayMode && !isUnlockShare) {
+    return (
+      <ThemeWrapper theme="arcade">
+        <div className="min-h-screen bg-black">
+          <Header />
+          <GameArtifactView game={game} />
+          <Footer />
+        </div>
+      </ThemeWrapper>
+    )
   }
 
   // For story games, generate image if not exists (async, non-blocking)

@@ -1,47 +1,38 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title GameNFT
- * @dev ERC-721 NFT contract for games generated from articles
- * 
- * Games can be minted as NFTs on Base chain, with metadata tracking:
- * - Original article URL
- * - Creator (user who generated the game)
- * - Writer coin used
- * - Genre and difficulty
- * - Creation timestamp
+ * @dev ERC-721 collection for games generated from articles.
+ *
+ * The payment contract mints through MINTER_ROLE. Metadata remains available
+ * on-chain for app indexing, while tokenURI carries the full NFT JSON.
  */
-contract GameNFT is ERC721URIStorage, Ownable, AccessControl {
-    using Counters for Counters.Counter;
-    
+contract GameNFT is ERC721URIStorage, ERC2981, AccessControl, Ownable2Step {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    
-    Counters.Counter private _tokenIdCounter;
-    
-    // Game metadata stored on-chain
+
     struct GameMetadata {
-        string articleUrl;      // Paragraph article URL (e.g., https://avc.xyz/blog/...)
-        address creator;        // User who generated the game
-        address writerCoin;     // Writer coin contract address used
-        string genre;           // Horror, Comedy, or Mystery
-        string difficulty;      // Easy or Hard
-        uint256 createdAt;      // Timestamp when game was generated
-        string gameTitle;       // Title of the generated game
+        string articleUrl;
+        address creator;
+        address writerCoin;
+        string genre;
+        string difficulty;
+        uint256 createdAt;
+        string gameTitle;
     }
-    
-    // Mapping from token ID to game metadata
-    mapping(uint256 => GameMetadata) public games;
-    
-    // Track games minted per creator
-    mapping(address => uint256[]) public creatorGames;
-    
-    // Event emitted when a game is minted
+
+    uint256 private _nextTokenId = 1;
+    bool public mintingPaused;
+    string private _contractMetadataURI;
+
+    mapping(uint256 tokenId => GameMetadata metadata) public games;
+    mapping(address creator => uint256[] tokenIds) public creatorGames;
+
     event GameMinted(
         uint256 indexed tokenId,
         address indexed creator,
@@ -50,41 +41,54 @@ contract GameNFT is ERC721URIStorage, Ownable, AccessControl {
         string difficulty,
         string articleUrl
     );
-    
-    constructor(address initialOwner) ERC721("WritArcade Games", "GAME") Ownable(initialOwner) {
+    event ContractURIUpdated(string contractURI);
+    event MintingPauseUpdated(bool paused);
+
+    constructor(
+        address initialOwner,
+        string memory initialContractURI,
+        address royaltyReceiver,
+        uint96 royaltyFeeNumerator
+    ) ERC721("WritArcade Games", "GAME") Ownable(initialOwner) {
+        require(initialOwner != address(0), "GameNFT: zero owner");
+
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
         _grantRole(MINTER_ROLE, initialOwner);
+
+        _contractMetadataURI = initialContractURI;
+        if (royaltyReceiver != address(0) && royaltyFeeNumerator > 0) {
+            _setDefaultRoyalty(royaltyReceiver, royaltyFeeNumerator);
+        }
     }
-    
+
     /**
-     * @dev Mint a new game NFT
-     * @param to Address to mint the NFT to
-     * @param tokenURI IPFS URI containing game metadata and images
-     * @param metadata Game metadata struct
-     * @return tokenId The ID of the newly minted token
+     * @dev Mint a new game NFT.
+     * @param to Address receiving the NFT.
+     * @param tokenURI_ Token metadata URI.
+     * @param metadata Game metadata mirrored on-chain for discovery.
      */
     function mintGame(
         address to,
-        string memory tokenURI,
+        string memory tokenURI_,
         GameMetadata memory metadata
-    ) external onlyRole(MINTER_ROLE) returns (uint256) {
-        require(to != address(0), "Cannot mint to zero address");
-        require(metadata.creator != address(0), "Creator cannot be zero address");
-        require(metadata.writerCoin != address(0), "Writer coin cannot be zero address");
-        require(bytes(metadata.genre).length > 0, "Genre cannot be empty");
-        require(bytes(metadata.difficulty).length > 0, "Difficulty cannot be empty");
-        
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        
-        // Store metadata
+    ) external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
+        require(!mintingPaused, "GameNFT: minting paused");
+        require(to != address(0), "GameNFT: zero recipient");
+        require(metadata.creator != address(0), "GameNFT: zero creator");
+        require(metadata.writerCoin != address(0), "GameNFT: zero writer coin");
+        require(bytes(tokenURI_).length > 0, "GameNFT: empty tokenURI");
+        require(bytes(metadata.genre).length > 0, "GameNFT: empty genre");
+        require(bytes(metadata.difficulty).length > 0, "GameNFT: empty difficulty");
+        require(bytes(metadata.gameTitle).length > 0, "GameNFT: empty title");
+
+        tokenId = _nextTokenId++;
+
         games[tokenId] = metadata;
         creatorGames[metadata.creator].push(tokenId);
-        
-        // Mint the token
+
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI);
-        
+        _setTokenURI(tokenId, tokenURI_);
+
         emit GameMinted(
             tokenId,
             metadata.creator,
@@ -93,53 +97,51 @@ contract GameNFT is ERC721URIStorage, Ownable, AccessControl {
             metadata.difficulty,
             metadata.articleUrl
         );
-        
-        return tokenId;
     }
-    
-    /**
-     * @dev Get game metadata for a token
-     * @param tokenId The token ID
-     * @return GameMetadata struct
-     */
+
+    function setMintingPaused(bool paused) external onlyOwner {
+        mintingPaused = paused;
+        emit MintingPauseUpdated(paused);
+    }
+
+    function setContractURI(string calldata newContractURI) external onlyOwner {
+        _contractMetadataURI = newContractURI;
+        emit ContractURIUpdated(newContractURI);
+    }
+
+    function contractURI() external view returns (string memory) {
+        return _contractMetadataURI;
+    }
+
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
+    function deleteDefaultRoyalty() external onlyOwner {
+        _deleteDefaultRoyalty();
+    }
+
     function getGameMetadata(uint256 tokenId) external view returns (GameMetadata memory) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(_ownerOf(tokenId) != address(0), "GameNFT: nonexistent token");
         return games[tokenId];
     }
-    
-    /**
-     * @dev Get all games created by an address
-     * @param creator The creator address
-     * @return Array of token IDs
-     */
+
     function getCreatorGames(address creator) external view returns (uint256[] memory) {
         return creatorGames[creator];
     }
-    
-    /**
-     * @dev Get total number of games minted
-     * @return Total count of games
-     */
+
     function getTotalGamesMinted() external view returns (uint256) {
-        return _tokenIdCounter.current();
+        return _nextTokenId - 1;
     }
-    
-    /**
-     * @dev Check if a token exists
-     * @param tokenId The token ID
-     * @return bool
-     */
+
     function tokenExists(uint256 tokenId) external view returns (bool) {
         return _ownerOf(tokenId) != address(0);
     }
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
+
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        virtual
-        override(ERC721URIStorage, AccessControl)
+        override(ERC721URIStorage, ERC2981, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

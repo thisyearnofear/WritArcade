@@ -189,7 +189,7 @@ We are transitioning our "Secret Panel" logic from Lit Protocol (ERC-721 gating)
 
 **On-chain revenue distribution** (configurable per writer coin):
 - **Generation**: 60% Writer / 20% Platform / 20% Creator Pool
-- **Minting**: 30% Creator / 15% Writer / 5% Platform (remainder to payer)
+- **Minting**: 50% Creator / 15% Writer / 5% Platform (30% refunded to minter)
 
 This ensures:
 - Writers earn from readers using their content creatively

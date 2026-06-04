@@ -15,16 +15,26 @@ const NAV_LINKS = [
   { href: '/my-games', label: 'My Games' },
 ]
 
+const BASE_GAME_NFT_ADDRESS =
+  process.env.NEXT_PUBLIC_GAME_NFT_MAINNET ||
+  process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS ||
+  '0x778C87dAA2b284982765688AE22832AADae7dccC'
+
+const BASE_WRITER_COIN_PAYMENT_ADDRESS =
+  process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET ||
+  process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS ||
+  '0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75'
+
 const CONTRACT_LINKS = [
   {
     label: 'GameNFT',
-    address: '0x778C87dAA2b284982765688AE22832AADae7dccC',
-    href: 'https://basescan.org/address/0x778C87dAA2b284982765688AE22832AADae7dccC',
+    address: BASE_GAME_NFT_ADDRESS,
+    href: `https://basescan.org/address/${BASE_GAME_NFT_ADDRESS}`,
   },
   {
     label: 'WriterCoinPayment',
-    address: '0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75',
-    href: 'https://basescan.org/address/0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75',
+    address: BASE_WRITER_COIN_PAYMENT_ADDRESS,
+    href: `https://basescan.org/address/${BASE_WRITER_COIN_PAYMENT_ADDRESS}`,
   },
 ]
 

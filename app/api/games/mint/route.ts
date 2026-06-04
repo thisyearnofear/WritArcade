@@ -127,13 +127,17 @@ export async function POST(request: NextRequest) {
       name: game.title,
       description: game.description || `A ${game.genre} game generated from an article`,
       image: game.imageUrl || '',
+      external_url: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://writersarcade.vercel.app'}/games/${game.slug}`,
+      animation_url: game.gameMetadataUri || game.artifactManifestUri || undefined,
       attributes: [
         { trait_type: 'genre', value: game.genre },
         { trait_type: 'difficulty', value: game.difficulty },
         { trait_type: 'creator', value: wallet },
         { trait_type: 'created_at', value: new Date(game.createdAt).toISOString() },
+        ...(game.artifactManifestUri ? [{ trait_type: 'artifact_manifest', value: game.artifactManifestUri }] : []),
       ],
     }
+    const tokenURI = game.nftMetadataUri || `data:application/json;base64,${Buffer.from(JSON.stringify(metadata)).toString('base64')}`
 
     // Return minting payload
     // Frontend will use this to call GameNFT.mintGame() contract function
@@ -165,6 +169,10 @@ export async function POST(request: NextRequest) {
         wallet,
         writerCoinId: canonicalWriterCoinId,
         metadata,
+        tokenURI,
+        nftMetadataUri: game.nftMetadataUri,
+        gameMetadataUri: game.gameMetadataUri,
+        artifactManifestUri: game.artifactManifestUri,
         contractAddress: mintConfig.contractAddress,
         chainId: mintConfig.chainId,
         message: 'Prepare minting transaction. Click "Confirm" to mint as NFT.',
@@ -190,7 +198,17 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { gameId, transactionHash, nftTokenId, wallet, contractAddress, chainId } = body
+    const {
+      gameId,
+      transactionHash,
+      nftTokenId,
+      wallet,
+      contractAddress,
+      chainId,
+      nftMetadataUri,
+      gameMetadataUri,
+      artifactManifestUri,
+    } = body
 
     if (!gameId || !transactionHash || !wallet) {
       return NextResponse.json(
@@ -237,16 +255,30 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    const updateData: {
+      nftTokenId?: string
+      nftTransactionHash: string
+      nftMintedAt: Date
+      nftContractAddress?: string
+      nftChainId?: number
+      nftMetadataUri?: string
+      gameMetadataUri?: string
+      artifactManifestUri?: string
+    } = {
+      nftTokenId: nftTokenId?.toString(),
+      nftTransactionHash: transactionHash,
+      nftMintedAt: new Date(),
+      nftContractAddress: typeof contractAddress === 'string' ? contractAddress : undefined,
+      nftChainId: typeof chainId === 'number' ? chainId : undefined,
+      nftMetadataUri: typeof nftMetadataUri === 'string' ? nftMetadataUri : undefined,
+      gameMetadataUri: typeof gameMetadataUri === 'string' ? gameMetadataUri : undefined,
+      artifactManifestUri: typeof artifactManifestUri === 'string' ? artifactManifestUri : undefined,
+    }
+
     // Update game with NFT details
     const updatedGame = await prisma.game.update({
       where: { id: gameId },
-      data: {
-        nftTokenId: nftTokenId?.toString(),
-        nftTransactionHash: transactionHash,
-        nftMintedAt: new Date(),
-        nftContractAddress: typeof contractAddress === 'string' ? contractAddress : undefined,
-        nftChainId: typeof chainId === 'number' ? chainId : undefined,
-      },
+      data: updateData,
     })
 
     // Record payment for minting (if not already recorded)

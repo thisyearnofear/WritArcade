@@ -57,8 +57,9 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 ## Smart contracts
 
 **Base mainnet** (production writer-coin payments)
-- **GameNFT**: `0x778C87dAA2b284982765688AE22832AADae7dccC`
-- **WriterCoinPayment**: `0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75`
+- **GameNFT**: configured by `NEXT_PUBLIC_GAME_NFT_MAINNET`
+- **WriterCoinPayment**: configured by `NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET`
+- Deployment guide: [contracts/deploy.md](./contracts/deploy.md)
 
 **Mezo Matsnet (testnet)** — Mezo Hackathon, MUSD track
 - **MezoPaymentSplitter**: [`0x32D0356f533cC429F94Db73f383bBb21a459E16b`](https://explorer.test.mezo.org/address/0x32D0356f533cC429F94Db73f383bBb21a459E16b)

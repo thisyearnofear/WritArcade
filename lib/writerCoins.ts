@@ -8,6 +8,16 @@
 
 import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, MEZO_MAINNET_CHAIN_ID } from './chains'
 
+const BASE_GAME_NFT_ADDRESS =
+    (process.env.NEXT_PUBLIC_GAME_NFT_MAINNET as `0x${string}` | undefined) ||
+    (process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS as `0x${string}` | undefined) ||
+    "0x778C87dAA2b284982765688AE22832AADae7dccC"
+
+const BASE_WRITER_COIN_PAYMENT_ADDRESS =
+    (process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET as `0x${string}` | undefined) ||
+    (process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS as `0x${string}` | undefined) ||
+    "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75"
+
 export interface WriterCoin {
     id: string
     name: string
@@ -57,8 +67,8 @@ export const WRITER_COINS: WriterCoin[] = [
         gameGenerationCost: 100000000000000000000n, // 100 $AVC (100 * 10^18)
         mintCost: 50000000000000000000n, // 50 $AVC (50 * 10^18)
         decimals: 18,
-        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
-        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        gameNftAddress: BASE_GAME_NFT_ADDRESS,
+        paymentContractAddress: BASE_WRITER_COIN_PAYMENT_ADDRESS,
         paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
@@ -79,8 +89,8 @@ export const WRITER_COINS: WriterCoin[] = [
         gameGenerationCost: 100000000000000000000n, // 100 $DEBBIE (100 * 10^18)
         mintCost: 50000000000000000000n, // 50 $DEBBIE (50 * 10^18)
         decimals: 18,
-        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
-        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        gameNftAddress: BASE_GAME_NFT_ADDRESS,
+        paymentContractAddress: BASE_WRITER_COIN_PAYMENT_ADDRESS,
         paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
@@ -101,8 +111,8 @@ export const WRITER_COINS: WriterCoin[] = [
         gameGenerationCost: 100000000000000000000n, // 100 $JAKE (100 * 10^18)
         mintCost: 50000000000000000000n, // 50 $JAKE (50 * 10^18)
         decimals: 18,
-        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
-        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        gameNftAddress: BASE_GAME_NFT_ADDRESS,
+        paymentContractAddress: BASE_WRITER_COIN_PAYMENT_ADDRESS,
         paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
@@ -123,8 +133,8 @@ export const WRITER_COINS: WriterCoin[] = [
         gameGenerationCost: 100000000000000000000n, // 100 $THOUGHTS (100 * 10^18)
         mintCost: 50000000000000000000n, // 50 $THOUGHTS (50 * 10^18)
         decimals: 18,
-        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
-        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        gameNftAddress: BASE_GAME_NFT_ADDRESS,
+        paymentContractAddress: BASE_WRITER_COIN_PAYMENT_ADDRESS,
         paymentEnabled: true,
         revenueDistribution: {
             writer: 60,
@@ -145,8 +155,8 @@ export const WRITER_COINS: WriterCoin[] = [
         gameGenerationCost: 100000000000000000000n, // 100 $PARAPAPA (100 * 10^18)
         mintCost: 50000000000000000000n, // 50 $PARAPAPA (50 * 10^18)
         decimals: 18,
-        gameNftAddress: "0x778C87dAA2b284982765688AE22832AADae7dccC", // Base mainnet - GameNFT
-        paymentContractAddress: "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75", // Base mainnet - WriterCoinPayment
+        gameNftAddress: BASE_GAME_NFT_ADDRESS,
+        paymentContractAddress: BASE_WRITER_COIN_PAYMENT_ADDRESS,
         paymentEnabled: true,
         revenueDistribution: {
             writer: 60,

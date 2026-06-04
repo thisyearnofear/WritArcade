@@ -156,6 +156,9 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           setShowComicFinale={setShowComicFinale}
           isMinting={blockchain.isMinting}
           handleMintComic={blockchain.handleMintComic}
+          onArtifactSaved={(updates) => {
+            setLiveGame((current) => ({ ...current, ...updates }))
+          }}
           onStoryRegistrationComplete={(result) => {
             setLiveGame((current) => ({
               ...current,

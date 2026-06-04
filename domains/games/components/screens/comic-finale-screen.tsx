@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount, useWalletClient } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
@@ -21,6 +21,7 @@ interface ComicFinaleScreenProps {
   setShowComicFinale: (show: boolean) => void
   isMinting: boolean
   handleMintComic: (panelData: ComicBookFinalePanelData[], metadata?: any) => Promise<void>
+  onArtifactSaved?: (updates: Partial<Game>) => void
   onStoryRegistrationComplete?: (result: { ipId: string; txHash: string }) => void
   handlePanelTextChange: (panelIndex: number, newText: string) => void
   handlePanelImageChange?: (panelIndex: number, customPrompt?: string) => void
@@ -40,9 +41,11 @@ export function ComicFinaleScreen({
   game,
   messages,
   userChoices,
+  showComicFinale,
   setShowComicFinale,
   isMinting,
   handleMintComic,
+  onArtifactSaved,
   onStoryRegistrationComplete,
   handlePanelTextChange,
   handlePanelImageChange,
@@ -65,6 +68,13 @@ export function ComicFinaleScreen({
   const [derivativePromptDismissed, setDerivativePromptDismissed] = useState(false)
   const [isFunding, setIsFunding] = useState(false)
   const [fundError, setFundError] = useState<string | null>(null)
+  const [savedArtifactKey, setSavedArtifactKey] = useState<string | null>(null)
+  const ownerAddress = game.ownerWallet || game.creatorWallet
+  const canSaveArtifact = Boolean(
+    userAddress &&
+    ownerAddress &&
+    userAddress.toLowerCase() === ownerAddress.toLowerCase()
+  )
 
   // Determine if this game can be funded (unfunded but writer coin resolvable)
   const isUnfunded = !game.writerCoinId && !game.paymentId
@@ -149,7 +159,7 @@ export function ComicFinaleScreen({
     ? undefined
     : `${mintCost.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${mintToken?.symbol}`
 
-  const buildComicPanels = (): ComicBookFinalePanelData[] => {
+  const comicPanels = useMemo<ComicBookFinalePanelData[]>(() => {
     const assistantMessages = messages.filter(m => m.role === 'assistant')
 
     return assistantMessages.map((message) => {
@@ -166,7 +176,81 @@ export function ComicFinaleScreen({
         userChoice: nextUserMessage?.content || undefined,
       }
     })
-  }
+  }, [messages])
+
+  const artifactKey = useMemo(() => {
+    return JSON.stringify(comicPanels.map(panel => ({
+      id: panel.id,
+      narrativeText: panel.narrativeText,
+      imageUrl: panel.imageUrl,
+      imageModel: panel.imageModel,
+      userChoice: panel.userChoice,
+      audioUrl: panel.audioUrl,
+    })))
+  }, [comicPanels])
+
+  useEffect(() => {
+    if (!showComicFinale || !userAddress || !canSaveArtifact || !comicPanels.length || artifactKey === savedArtifactKey) {
+      return
+    }
+
+    let cancelled = false
+
+    async function saveArtifact() {
+      try {
+        const response = await fetch(`/api/games/${game.slug}/artifact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wallet: userAddress,
+            panels: comicPanels.map(panel => ({
+              id: panel.id,
+              narrativeText: panel.narrativeText,
+              imageUrl: panel.imageUrl,
+              imageModel: panel.imageModel,
+              userChoice: panel.userChoice,
+              audioUrl: panel.audioUrl,
+            })),
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Failed to save comic artifact')
+        }
+
+        const result = await response.json()
+        if (cancelled) return
+
+        const data = result.data || {}
+        setSavedArtifactKey(artifactKey)
+        onArtifactSaved?.({
+          gameMetadataUri: data.gameMetadataUri,
+          nftMetadataUri: data.nftMetadataUri,
+          artifactManifestUri: data.artifactManifestUri,
+          artifactSavedAt: new Date(),
+          savedPanels: comicPanels.map((panel, index) => ({
+            id: panel.id,
+            panelNumber: index + 1,
+            narrativeText: panel.narrativeText,
+            imageUrl: panel.imageUrl || undefined,
+            imageModel: panel.imageModel || undefined,
+            userChoice: panel.userChoice,
+            audioUrl: panel.audioUrl || undefined,
+            createdAt: new Date(),
+          })),
+        })
+      } catch (error) {
+        console.error('[ComicFinale] Failed to save artifact:', error)
+      }
+    }
+
+    saveArtifact()
+
+    return () => {
+      cancelled = true
+    }
+  }, [artifactKey, canSaveArtifact, comicPanels, game.slug, onArtifactSaved, savedArtifactKey, showComicFinale, userAddress])
 
   return (
     <div>
@@ -176,7 +260,7 @@ export function ComicFinaleScreen({
         gameTitle={game.title}
         genre={game.genre}
         primaryColor={game.primaryColor || '#8b5cf6'}
-        panels={buildComicPanels()}
+        panels={comicPanels}
         onBack={() => setShowComicFinale(false)}
         onMint={handleMintComic}
         onStoryRegistrationComplete={onStoryRegistrationComplete}

@@ -1,7 +1,28 @@
 import { prisma } from '@/lib/database'
 import { createSlug } from '@/lib/utils'
-import type { Game, GameGenerationResponse, GameMode } from '../types'
+import type { Game, GameGenerationResponse, GameMode, SavedGamePanel } from '../types'
 import { Prisma, Game as PrismaGameModel } from '@prisma/client'
+
+type GameChatSnapshot = {
+  id: string
+  role: string
+  content: string
+  sessionId: string
+  parentId: string | null
+  model: string
+  createdAt: Date
+}
+
+type GameArtifactPanelSnapshot = {
+  id: string
+  panelIndex: number
+  narrativeText: string
+  imageUrl: string | null
+  imageModel: string | null
+  userChoice: string | null
+  audioUrl: string | null
+  createdAt: Date
+}
 
 /**
  * Game Database Service
@@ -124,6 +145,40 @@ export class GameDatabaseService {
           payment: {
             select: {
               writerCoinId: true,
+            },
+          },
+          chats: {
+            select: {
+              id: true,
+              role: true,
+              content: true,
+              sessionId: true,
+              parentId: true,
+              model: true,
+              createdAt: true,
+            },
+            where: {
+              role: {
+                in: ['assistant', 'user'],
+              },
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
+          artifactPanels: {
+            select: {
+              id: true,
+              panelIndex: true,
+              narrativeText: true,
+              imageUrl: true,
+              imageModel: true,
+              userChoice: true,
+              audioUrl: true,
+              createdAt: true,
+            },
+            orderBy: {
+              panelIndex: 'asc',
             },
           },
 
@@ -379,6 +434,19 @@ export class GameDatabaseService {
    * Map Prisma game model to our Game type
    */
   private static mapPrismaGameToGame(prismaGame: PrismaGameModel): Game {
+    const gameWithArtifacts = prismaGame as PrismaGameModel & {
+      chats?: GameChatSnapshot[]
+      artifactPanels?: GameArtifactPanelSnapshot[]
+      nftMetadataUri?: string | null
+      gameMetadataUri?: string | null
+      artifactManifestUri?: string | null
+      artifactSavedAt?: Date | null
+    }
+    const artifactPanels = this.mapArtifactPanels(gameWithArtifacts.artifactPanels || [])
+    const savedPanels = artifactPanels.length
+      ? artifactPanels
+      : this.extractSavedPanelsFromChats(gameWithArtifacts.chats || [])
+
     return {
       id: prismaGame.id,
       title: prismaGame.title,
@@ -418,6 +486,11 @@ export class GameDatabaseService {
       nftMintedAt: prismaGame.nftMintedAt || undefined,
       nftContractAddress: (prismaGame as { nftContractAddress?: string }).nftContractAddress || undefined,
       nftChainId: (prismaGame as { nftChainId?: number }).nftChainId || undefined,
+      nftMetadataUri: gameWithArtifacts.nftMetadataUri || undefined,
+      gameMetadataUri: gameWithArtifacts.gameMetadataUri || undefined,
+      savedPanels,
+      artifactManifestUri: gameWithArtifacts.artifactManifestUri || undefined,
+      artifactSavedAt: gameWithArtifacts.artifactSavedAt || undefined,
       storyIpId: (prismaGame as { storyIpId?: string }).storyIpId || undefined,
       storyRegistrationTxHash: (prismaGame as { storyRegistrationTxHash?: string }).storyRegistrationTxHash || undefined,
       storyRegisteredAt: (prismaGame as { storyRegisteredAt?: Date }).storyRegisteredAt || undefined,
@@ -434,6 +507,77 @@ export class GameDatabaseService {
       createdAt: prismaGame.createdAt,
       updatedAt: prismaGame.updatedAt,
     }
+  }
+
+  private static mapArtifactPanels(panels: GameArtifactPanelSnapshot[]): SavedGamePanel[] {
+    return [...panels]
+      .sort((a, b) => a.panelIndex - b.panelIndex)
+      .map(panel => ({
+        id: panel.id,
+        panelNumber: panel.panelIndex + 1,
+        narrativeText: panel.narrativeText,
+        imageUrl: panel.imageUrl || undefined,
+        imageModel: panel.imageModel || undefined,
+        userChoice: panel.userChoice || undefined,
+        audioUrl: panel.audioUrl || undefined,
+        createdAt: panel.createdAt,
+      }))
+  }
+
+  private static extractSavedPanelsFromChats(chats: GameChatSnapshot[]): SavedGamePanel[] {
+    if (!chats.length) return []
+
+    const sessions = chats.reduce((groups, chat) => {
+      const sessionChats = groups.get(chat.sessionId) || []
+      sessionChats.push(chat)
+      groups.set(chat.sessionId, sessionChats)
+      return groups
+    }, new Map<string, GameChatSnapshot[]>())
+
+    const bestSession = Array.from(sessions.values())
+      .map(sessionChats => {
+        const sortedChats = [...sessionChats].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        const assistantChats = sortedChats.filter(chat => chat.role === 'assistant')
+        const lastAssistantAt = assistantChats.at(-1)?.createdAt.getTime() || 0
+
+        return {
+          chats: sortedChats,
+          assistantCount: assistantChats.length,
+          lastAssistantAt,
+        }
+      })
+      .filter(session => session.assistantCount > 0)
+      .sort((a, b) => {
+        if (b.assistantCount !== a.assistantCount) return b.assistantCount - a.assistantCount
+        return b.lastAssistantAt - a.lastAssistantAt
+      })[0]
+
+    if (!bestSession) return []
+
+    const assistantChats = bestSession.chats.filter(chat => chat.role === 'assistant')
+
+    return assistantChats.slice(0, 5).map((assistantChat, index) => {
+      const nextAssistantChat = assistantChats[index + 1]
+      const assistantCreatedAt = assistantChat.createdAt.getTime()
+      const nextAssistantCreatedAt = nextAssistantChat?.createdAt.getTime()
+      const userChoice = bestSession.chats.find(chat => {
+        const chatCreatedAt = chat.createdAt.getTime()
+        return (
+          chat.role === 'user' &&
+          chatCreatedAt > assistantCreatedAt &&
+          (!nextAssistantCreatedAt || chatCreatedAt < nextAssistantCreatedAt)
+        )
+      })?.content
+
+      return {
+        id: assistantChat.id,
+        panelNumber: index + 1,
+        narrativeText: assistantChat.content,
+        imageModel: assistantChat.model,
+        userChoice,
+        createdAt: assistantChat.createdAt,
+      }
+    })
   }
 
   // ============================================================================

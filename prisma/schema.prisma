@@ -101,6 +101,12 @@ model Game {
   nftMintedAt      DateTime?  // When NFT was minted
   nftContractAddress String? // Contract that minted this game NFT
   nftChainId       Int?     // Chain where this game NFT was minted
+  nftMetadataUri   String?  // ERC-721 metadata URI used for the minted token
+  gameMetadataUri  String?  // Full game metadata URI for Story/IP provenance
+
+  // Canonical saved artifact manifest for public gallery/NFT views
+  artifactManifestUri String?
+  artifactSavedAt     DateTime?
 
   // Story Protocol registration for the game itself
   storyIpId        String?  // Story Protocol IP Asset ID
@@ -147,11 +153,33 @@ model Game {
   gamesFromAssets GameFromAsset[]
   feedbacks GameFeedback[]
   panelRatings PanelRating[]
+  artifactPanels GameArtifactPanel[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("games")
+}
+
+model GameArtifactPanel {
+  id String @id @default(cuid())
+
+  gameId String
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  panelIndex Int
+  narrativeText String @db.Text
+  imageUrl String?
+  imageModel String?
+  userChoice String? @db.Text
+  audioUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, panelIndex])
+  @@index([gameId, panelIndex])
+  @@map("game_artifact_panels")
 }
 
 // NEW: User feedback on games (NPS, fidelity, quality)

@@ -16,6 +16,11 @@ export const CDR_REST_URL =
   process.env.CDR_API_URL ||
   "";
 
+const BASE_GAME_NFT_ADDRESS =
+  (process.env.NEXT_PUBLIC_GAME_NFT_MAINNET as `0x${string}` | undefined) ||
+  (process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS as `0x${string}` | undefined) ||
+  "0x778C87dAA2b284982765688AE22832AADae7dccC";
+
 export function ensureCdrUrl(): void {
   if (!CDR_REST_URL) {
     throw new Error(
@@ -146,6 +151,6 @@ export async function vaultSystemPrompt(
 ): Promise<string> {
   return vaultViaBackend(prompt, {
     readCondition: 'tokenGate',
-    nftContract: gameNftAddress || '0x778C87dAA2b284982765688AE22832AADae7dccC',
+    nftContract: gameNftAddress || BASE_GAME_NFT_ADDRESS,
   });
 }

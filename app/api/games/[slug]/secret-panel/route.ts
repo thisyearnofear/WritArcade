@@ -13,6 +13,11 @@ const GAME_NFT_ABI = [
   },
 ] as const
 
+const BASE_GAME_NFT_ADDRESS =
+  (process.env.NEXT_PUBLIC_GAME_NFT_MAINNET as `0x${string}` | undefined) ||
+  (process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS as `0x${string}` | undefined) ||
+  '0x778C87dAA2b284982765688AE22832AADae7dccC'
+
 /**
  * Determines the NFT contract and chain for a game based on its payment type.
  */
@@ -23,7 +28,7 @@ function getNftConfig(writerCoinId?: string | null): { contractAddress: `0x${str
   }
   // Default: Base mainnet GameNFT
   return {
-    contractAddress: '0x778C87dAA2b284982765688AE22832AADae7dccC',
+    contractAddress: BASE_GAME_NFT_ADDRESS,
     chainId: 8453,
   }
 }

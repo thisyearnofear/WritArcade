@@ -113,11 +113,11 @@ export class PaymentCostService {
         cacheSet(cacheKey, res)
         return res
       } catch {
-        // Fallback to 30/15/5 with remainder to user
+        // Fallback to Base v2 default: 50/15/5 with 30% refunded to minter.
         return {
           writerShare: (amount * BigInt(15)) / BigInt(100),
           platformShare: (amount * BigInt(5)) / BigInt(100),
-          creatorShare: (amount * BigInt(30)) / BigInt(100),
+          creatorShare: (amount * BigInt(50)) / BigInt(100),
         }
       }
     }

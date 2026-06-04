@@ -231,17 +231,17 @@ Splits fetched live from contract via `fetchGenerationDistributionOnChain()` / `
 ## Smart Contracts
 
 ### GameNFT (ERC-721)
-**Address**: `0x778C87dAA2b284982765688AE22832AADae7dccC` (Base Mainnet)
+**Address**: `NEXT_PUBLIC_GAME_NFT_MAINNET` (Base Mainnet)
 - Mints games as NFTs on Base mainnet
 - On-chain metadata: creator, article URL, genre, difficulty
-- Verified on Sourcify
+- ERC-2981 royalties and collection metadata
 
 ### WriterCoinPayment
-**Address**: `0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75` (Base Mainnet)
+**Address**: `NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET` (Base Mainnet)
 - Handles writer coin payments for generation + minting
 - Dynamic revenue splits (configurable per coin)
-- Reentrancy guards, access control
-- Verified on Sourcify
+- SafeERC20 transfers, reentrancy guards, pause control
+- Full mint-cost collection with creator/writer/platform distribution and minter refund
 
 ### MezoPaymentSplitter
 **Address**: `0x32D0356f533cC429F94Db73f383bBb21a459E16b` (Mezo Matsnet)

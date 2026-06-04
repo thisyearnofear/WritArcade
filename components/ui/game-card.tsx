@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Play, Compass, Sword, Zap, Brain, Store, BookOpen } from 'lucide-react';
+import { Compass, Eye, Sword, Zap, Brain, Store, BookOpen } from 'lucide-react';
 
 const GENRE_STYLES: Record<string, { gradient: string; icon: React.ElementType }> = {
   Adventure:  { gradient: 'from-emerald-800 via-teal-900 to-cyan-950', icon: Compass },
@@ -44,13 +44,15 @@ export function GameCard({ slug, title, description, genre, imageUrl, primaryCol
         )}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <Link href={`/games/${slug}`} className="bg-white text-black px-6 py-2 rounded-full font-bold flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform">
-            <Play className="w-4 h-4 fill-current" /> Play Now
+            <Eye className="w-4 h-4" /> View creation
           </Link>
         </div>
       </div>
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-bold text-card-foreground truncate">{title}</h3>
+          <Link href={`/games/${slug}`} className="min-w-0">
+            <h3 className="text-lg font-bold text-card-foreground truncate hover:text-primary transition-colors">{title}</h3>
+          </Link>
           <Badge variant="secondary" className="text-[10px]">{genre}</Badge>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{description}</p>

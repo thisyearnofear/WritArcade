@@ -144,6 +144,56 @@ export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {
 
         setIsMinting(true)
         try {
+            let artifactData: {
+                gameMetadataUri?: string
+                nftMetadataUri?: string
+                artifactManifestUri?: string
+            } | null = null
+
+            if (_panelData?.length && !game.artifactManifestUri) {
+                toast({ title: 'Saving comic artifact…', description: 'Uploading the completed panel manifest before minting.' })
+
+                const artifactResponse = await fetch(`/api/games/${game.slug}/artifact`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet: accountAddress,
+                        panels: _panelData.map(panel => ({
+                            id: panel.id,
+                            narrativeText: panel.narrativeText,
+                            imageUrl: panel.imageUrl,
+                            imageModel: panel.imageModel,
+                            userChoice: panel.userChoice,
+                            audioUrl: panel.audioUrl,
+                        })),
+                    }),
+                })
+
+                if (!artifactResponse.ok) {
+                    const errorData = await artifactResponse.json().catch(() => ({}))
+                    throw new Error(errorData.error || 'Failed to save comic artifact')
+                }
+
+                const artifactResult = await artifactResponse.json()
+                artifactData = artifactResult.data || null
+                options.onGameUpdated?.({
+                    gameMetadataUri: artifactData?.gameMetadataUri,
+                    nftMetadataUri: artifactData?.nftMetadataUri,
+                    artifactManifestUri: artifactData?.artifactManifestUri,
+                    artifactSavedAt: new Date(),
+                    savedPanels: _panelData.map((panel, index) => ({
+                        id: panel.id,
+                        panelNumber: index + 1,
+                        narrativeText: panel.narrativeText,
+                        imageUrl: panel.imageUrl || undefined,
+                        imageModel: panel.imageModel || undefined,
+                        userChoice: panel.userChoice,
+                        audioUrl: panel.audioUrl || undefined,
+                        createdAt: new Date(),
+                    })),
+                })
+            }
+
             // 1. POST to get minting payload from server
             const mintResponse = await fetch('/api/games/mint', {
                 method: 'POST',
@@ -165,10 +215,14 @@ export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {
             const {
                 contractAddress,
                 metadata: apiMetadata,
+                tokenURI: preparedTokenURI,
                 chainId: targetChainId,
                 writerCoinId: mintWriterCoinId,
                 estimatedCost,
                 writerReceipt,
+                nftMetadataUri,
+                gameMetadataUri,
+                artifactManifestUri,
             } = mintData.data
 
             // 1b. Switch chain if needed
@@ -178,8 +232,8 @@ export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {
                 await new Promise(r => setTimeout(r, 1000))
             }
 
-            // 2. Build tokenURI as a data URI (no IPFS needed)
-            const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(apiMetadata))}`
+            // 2. Prefer durable NFT metadata URI. Fallback keeps legacy mint paths working.
+            const tokenURI = preparedTokenURI || `data:application/json;base64,${btoa(JSON.stringify(apiMetadata))}`
 
             // 3. Determine minting path based on chain
             const isBase = targetChainId === BASE_MAINNET_CHAIN_ID
@@ -261,6 +315,9 @@ export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {
                     wallet: accountAddress,
                     contractAddress,
                     chainId: targetChainId,
+                    nftMetadataUri: nftMetadataUri || artifactData?.nftMetadataUri,
+                    gameMetadataUri: gameMetadataUri || artifactData?.gameMetadataUri,
+                    artifactManifestUri: artifactManifestUri || artifactData?.artifactManifestUri,
                 }),
             })
 
@@ -272,6 +329,9 @@ export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {
                     nftMintedAt: new Date(),
                     nftContractAddress: contractAddress,
                     nftChainId: targetChainId,
+                    nftMetadataUri: nftMetadataUri || artifactData?.nftMetadataUri,
+                    gameMetadataUri: gameMetadataUri || artifactData?.gameMetadataUri,
+                    artifactManifestUri: artifactManifestUri || artifactData?.artifactManifestUri,
                 })
                 if (confirmData.data?.extractedAssetIds?.length) {
                     setExtractedAssetIds(confirmData.data.extractedAssetIds)
