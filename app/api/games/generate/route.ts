@@ -61,6 +61,66 @@ export async function POST(request: NextRequest) {
     const userPreferences = await UserAIPreferenceService.getUserPreferences()
     console.log('User AI preferences:', { geminiEnabled: userPreferences.geminiEnabled, preferGemini: userPreferences.preferGemini })
 
+    const fundingLookup = validatedData.payment?.paymentId
+      ? { paymentId: validatedData.payment.paymentId } as const
+      : validatedData.payment?.transactionHash
+        ? { transactionHash: validatedData.payment.transactionHash } as const
+        : null
+
+    // Enforce payment for story mode before content extraction or AI generation.
+    if (mode === 'story' && !fundingLookup) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Story mode requires payment. Complete payment before generating.',
+          code: 'PAYMENT_REQUIRED',
+        },
+        { status: 402 }
+      )
+    }
+
+    const fundingContext = fundingLookup
+      ? await GameFundingService.getVerifiedCreationPayment(fundingLookup)
+      : null
+
+    if (fundingLookup && !fundingContext) {
+      return NextResponse.json(
+        { success: false, error: 'Verified generation payment not found.', code: 'PAYMENT_NOT_VERIFIED' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      fundingContext &&
+      validatedData.payment?.writerCoinId &&
+      fundingContext.writerCoinId !== validatedData.payment.writerCoinId
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Payment coin mismatch: verified payment used ${fundingContext.writerCoinId}, not ${validatedData.payment.writerCoinId}.`,
+          code: 'PAYMENT_COIN_MISMATCH',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Idempotency: if a game already exists for this payment, return it.
+    if (fundingContext?.paymentId) {
+      const existingGame = await prisma.game.findFirst({
+        where: { paymentId: fundingContext.paymentId },
+        select: { id: true, slug: true, title: true, description: true, imageUrl: true },
+      })
+      if (existingGame) {
+        console.log('[Generate] Idempotency hit — returning existing game for payment:', fundingContext.paymentId)
+        return NextResponse.json({
+          success: true,
+          data: existingGame,
+          idempotent: true,
+        })
+      }
+    }
+
     let processedPrompt = validatedData.promptText || ''
     let processedContent: import('@/domains/content/services/content-processor.service').ProcessedContent | undefined
 
@@ -190,66 +250,6 @@ Your game MUST authentically interpret this article's core themes. Players shoul
         if (Number.isFinite(parsed)) return Math.max(0, Math.floor(parsed))
       }
       return undefined
-    }
-
-    const fundingLookup = validatedData.payment?.paymentId
-      ? { paymentId: validatedData.payment.paymentId } as const
-      : validatedData.payment?.transactionHash
-        ? { transactionHash: validatedData.payment.transactionHash } as const
-        : null
-
-    // Enforce payment for story mode — prevents unfunded games from being created
-    if (mode === 'story' && !fundingLookup) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Story mode requires payment. Complete payment before generating.',
-          code: 'PAYMENT_REQUIRED',
-        },
-        { status: 402 }
-      )
-    }
-
-    const fundingContext = fundingLookup
-      ? await GameFundingService.getVerifiedCreationPayment(fundingLookup)
-      : null
-
-    if (fundingLookup && !fundingContext) {
-      return NextResponse.json(
-        { success: false, error: 'Verified generation payment not found.', code: 'PAYMENT_NOT_VERIFIED' },
-        { status: 400 }
-      )
-    }
-
-    if (
-      fundingContext &&
-      validatedData.payment?.writerCoinId &&
-      fundingContext.writerCoinId !== validatedData.payment.writerCoinId
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Payment coin mismatch: verified payment used ${fundingContext.writerCoinId}, not ${validatedData.payment.writerCoinId}.`,
-          code: 'PAYMENT_COIN_MISMATCH',
-        },
-        { status: 400 }
-      )
-    }
-
-    // Idempotency: if a game already exists for this payment, return it
-    if (fundingContext?.paymentId) {
-      const existingGame = await prisma.game.findFirst({
-        where: { paymentId: fundingContext.paymentId },
-        select: { id: true, slug: true, title: true, description: true, imageUrl: true },
-      })
-      if (existingGame) {
-        console.log('[Generate] Idempotency hit — returning existing game for payment:', fundingContext.paymentId)
-        return NextResponse.json({
-          success: true,
-          data: existingGame,
-          idempotent: true,
-        })
-      }
     }
 
     const ownership = GameFundingService.buildOwnership(fundingContext, {

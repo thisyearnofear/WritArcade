@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, X, ChevronDown } from 'lucide-react'
+import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, X, ChevronDown, ExternalLink } from 'lucide-react'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { PaymentOption } from '@/components/game/PaymentOption'
@@ -68,6 +68,17 @@ function getGenerationErrorMessage(errorData: { error?: string; code?: string },
 
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError'
+}
+
+function shortTxHash(hash: string) {
+  return `${hash.slice(0, 8)}...${hash.slice(-6)}`
+}
+
+function paymentExplorerUrl(path: PaymentPath, hash: string) {
+  const baseUrl = path === 'musd'
+    ? 'https://explorer.test.mezo.org/tx'
+    : 'https://basescan.org/tx'
+  return `${baseUrl}/${hash}`
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
@@ -334,6 +345,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const isStoryMode = mode === 'story'
   const isMusdPath = paymentPath === 'musd'
   const hasPreviewedCurrentUrl = !!articlePreview && previewedUrl === url.trim()
+  const activePaymentTxHash = paymentTxHashRef.current
+  const activePaymentExplorerUrl = activePaymentTxHash
+    ? paymentExplorerUrl(paymentPath, activePaymentTxHash)
+    : null
 
   useEffect(() => {
     if (paymentPath !== 'writercoin' || writerCoin.paymentEnabled) return
@@ -434,6 +449,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const generateGame = async (paymentTransactionHash?: string) => {
     setIsGenerating(true)
     setError(null)
+    const hasPaymentProof = isStoryMode && (paymentApproved || Boolean(paymentTransactionHash))
 
     try {
       // Reset all steps, then mark payment as done (we're called after payment succeeds)
@@ -475,14 +491,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               url: url.trim(),
               mode,
               wallet: accountAddress || undefined,
-              ...(isStoryMode && showCustomization && paymentApproved && {
+              ...(hasPaymentProof && showCustomization && {
                 customization: {
                   genre,
                   difficulty,
                   imageQuality,
                 },
               }),
-              ...(isStoryMode && paymentApproved && {
+              ...(hasPaymentProof && {
                 payment: {
                   writerCoinId: isMusdPath ? 'musd-testnet' : writerCoin.id,
                   paymentPath,
@@ -577,6 +593,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     }
   }
 
+  const resetPaymentProgress = () => {
+    setPaymentApproved(false)
+    paymentCompletedRef.current = false
+    paymentTxHashRef.current = undefined
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -663,19 +685,18 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 </Label>
               </div>
               <Input
-                id="url"
-                type="url"
-                placeholder={isMusdPath ? 'https://paragraph.xyz/... (any article)' : 'https://paragraph.xyz/...'}
-                value={url}
-                onChange={(e) => {
-                  setUrl(e.target.value)
-                  paymentCompletedRef.current = false
-                  setError(null)
-                  setArticlePreview(null)
-                  setPreviewedUrl('')
-                  paymentPathExposureRef.current = null
-                  setPaymentApproved(false)
-                }}
+                  id="url"
+                  type="url"
+                  placeholder={isMusdPath ? 'https://paragraph.xyz/... (any article)' : 'https://paragraph.xyz/...'}
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value)
+                    resetPaymentProgress()
+                    setError(null)
+                    setArticlePreview(null)
+                    setPreviewedUrl('')
+                    paymentPathExposureRef.current = null
+                  }}
                 className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               />
             </div>
@@ -701,16 +722,15 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     <p className="mt-1 text-xs text-purple-200/70">
                       This article is by {detectedCoin.name}. Pay with {detectedCoin.symbol} on Base to support them directly.
                     </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentPath('writercoin')
-                      setSelectedCoin(detectedCoin)
-                      setShowAdvancedPayment(true)
-                      paymentCompletedRef.current = false
-                      setPaymentApproved(false)
-                      trackEvent('payment_path_auto_detected', {
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentPath('writercoin')
+                        setSelectedCoin(detectedCoin)
+                        setShowAdvancedPayment(true)
+                        resetPaymentProgress()
+                        trackEvent('payment_path_auto_detected', {
                         writer: detectedCoin.id,
                         symbol: detectedCoin.symbol,
                         path: 'writercoin',
@@ -778,14 +798,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 </motion.div>
               </motion.div>
             </div>
-            <div className="grid grid-cols-1 gap-2 rounded-lg bg-muted/40 border border-border p-1 min-[420px]:grid-cols-2">
-              <motion.button
-                type="button"
-                onClick={() => {
-                  setMode('story')
-                  paymentCompletedRef.current = false
-                  trackEvent('game_mode_selected', { mode: 'story', paymentPath })
-                }}
+              <div className="grid grid-cols-1 gap-2 rounded-lg bg-muted/40 border border-border p-1 min-[420px]:grid-cols-2">
+                <motion.button
+                  type="button"
+                  onClick={() => {
+                    setMode('story')
+                    resetPaymentProgress()
+                    trackEvent('game_mode_selected', { mode: 'story', paymentPath })
+                  }}
                 className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
                   mode === 'story'
                     ? 'bg-purple-600 text-white shadow'
@@ -800,13 +820,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                     5-panel · NFT · CDR
                   </span>
               </motion.button>
-              <motion.button
-                type="button"
-                onClick={() => {
-                  setMode('wordle')
-                  paymentCompletedRef.current = false
-                  trackEvent('game_mode_selected', { mode: 'wordle', paymentPath })
-                }}
+                <motion.button
+                  type="button"
+                  onClick={() => {
+                    setMode('wordle')
+                    resetPaymentProgress()
+                    trackEvent('game_mode_selected', { mode: 'wordle', paymentPath })
+                  }}
                 className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
                   mode === 'wordle'
                     ? 'bg-amber-600 text-white shadow'
@@ -887,17 +907,16 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 Selected
                               </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPaymentPath('musd')
-                                  paymentCompletedRef.current = false
-                                  setPaymentApproved(false)
-                                  setArticlePreview(null)
-                                  setPreviewedUrl('')
-                                  paymentPathExposureRef.current = null
-                                  setError(null)
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPaymentPath('musd')
+                                    resetPaymentProgress()
+                                    setArticlePreview(null)
+                                    setPreviewedUrl('')
+                                    paymentPathExposureRef.current = null
+                                    setError(null)
                                   trackEvent('payment_path_selected', { paymentPath: 'musd', mode, source: 'recommended_click' })
                                 }}
                                 className="inline-flex min-h-10 items-center justify-center rounded-md bg-amber-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-amber-500"
@@ -930,18 +949,17 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 Selected
                               </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!writerCoin.paymentEnabled) return
-                                  setPaymentPath('writercoin')
-                                  paymentCompletedRef.current = false
-                                  setPaymentApproved(false)
-                                  setArticlePreview(null)
-                                  setPreviewedUrl('')
-                                  paymentPathExposureRef.current = null
-                                  setError(null)
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!writerCoin.paymentEnabled) return
+                                    setPaymentPath('writercoin')
+                                    resetPaymentProgress()
+                                    setArticlePreview(null)
+                                    setPreviewedUrl('')
+                                    paymentPathExposureRef.current = null
+                                    setError(null)
                                   trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, source: 'advanced_click', writerCoinId: writerCoin.id })
                                 }}
                                 disabled={!writerCoin.paymentEnabled}
@@ -986,18 +1004,17 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  className="overflow-hidden"
-                                >
-                                  <WriterCoinSelector onSelect={(coin) => {
-                                    setSelectedCoin(coin)
-                                    paymentCompletedRef.current = false
-                                    setShowWriterSelector(false)
-                                    setPaymentApproved(false)
-                                    setArticlePreview(null)
-                                    setPreviewedUrl('')
-                                    paymentPathExposureRef.current = null
-                                    setError(null)
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <WriterCoinSelector onSelect={(coin) => {
+                                      setSelectedCoin(coin)
+                                      resetPaymentProgress()
+                                      setShowWriterSelector(false)
+                                      setArticlePreview(null)
+                                      setPreviewedUrl('')
+                                      paymentPathExposureRef.current = null
+                                      setError(null)
                                   }} />
                                 </motion.div>
                               )}
@@ -1051,14 +1068,14 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                         Customize
                       </button>
                     )}
-                    {mode === 'story' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode('wordle')
-                          paymentCompletedRef.current = false
-                          trackEvent('game_mode_selected', { mode: 'wordle', paymentPath, source: 'post_preview_link' })
-                        }}
+                      {mode === 'story' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMode('wordle')
+                            resetPaymentProgress()
+                            trackEvent('game_mode_selected', { mode: 'wordle', paymentPath, source: 'post_preview_link' })
+                          }}
                         className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground transition hover:text-foreground"
                       >
                         Make free Wordle instead
@@ -1184,7 +1201,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
         {error && (
           <GenerateErrorPanel
-            error={error}
+            error={{
+              ...error,
+              retryLabel: error.phase === 'generation' && activePaymentTxHash
+                ? 'Continue generation'
+                : error.retryLabel,
+            }}
             onRetry={() => {
               if (error.phase === 'article') {
                 previewArticle()
@@ -1226,21 +1248,70 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               </div>
             </div>
 
-            <PaymentOption
-              key={`${paymentPath}-${writerCoin.id}`}
-              writerCoin={writerCoin}
-              initialToken={paymentTokenForPath(paymentPath, writerCoin)}
-              action="generate-game"
-              onPaymentStart={() => {
-                setIsGenerating(true)
-                setStepStatuses({ payment: 'in-progress', validate: 'pending', extract: 'pending', generate: 'pending', save: 'pending' })
-                setLoadingStep('payment')
-              }}
-              onPaymentSuccess={handlePaymentSuccess}
-              onPaymentError={(err) => setError(paymentError(err))}
-              disabled={isGenerating || !url.trim()}
-              compact
-            />
+            {activePaymentTxHash ? (
+              <div className="rounded-lg border border-emerald-500/35 bg-emerald-500/10 p-3">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-md bg-emerald-500/20 p-1.5">
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                      {isGenerating ? 'Generation running' : 'Payment received'}
+                    </p>
+                    <p className="mt-1 text-sm text-emerald-50">
+                      {paymentApproved
+                        ? 'Your payment is confirmed. Continue generation without paying again.'
+                        : 'Your transaction is saved for this attempt. Continue generation without paying again.'}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-md border border-emerald-400/25 bg-black/20 px-2 py-1 font-mono text-emerald-100">
+                        {shortTxHash(activePaymentTxHash)}
+                      </span>
+                      {activePaymentExplorerUrl && (
+                        <a
+                          href={activePaymentExplorerUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border border-emerald-400/25 px-2 py-1 font-semibold text-emerald-100 transition hover:bg-emerald-500/10"
+                        >
+                          View transaction
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => generateGame(activePaymentTxHash)}
+                      disabled={isGenerating || isPreviewingArticle}
+                      className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                      {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      {isGenerating ? 'Generating...' : 'Continue generation'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <PaymentOption
+                key={`${paymentPath}-${writerCoin.id}`}
+                writerCoin={writerCoin}
+                initialToken={paymentTokenForPath(paymentPath, writerCoin)}
+                action="generate-game"
+                onPaymentStart={() => {
+                  setIsGenerating(true)
+                  setStepStatuses({ payment: 'in-progress', validate: 'pending', extract: 'pending', generate: 'pending', save: 'pending' })
+                  setLoadingStep('payment')
+                }}
+                onPaymentSuccess={handlePaymentSuccess}
+                onPaymentError={(err) => setError(paymentError(err))}
+                disabled={isGenerating || !url.trim()}
+                compact
+              />
+            )}
             <details className="rounded-lg border border-cyan-500/20 bg-black/20 p-3 text-xs text-cyan-100/75">
               <summary className="cursor-pointer font-medium text-cyan-100">Details</summary>
               <p className="mt-2 leading-relaxed">
@@ -1365,7 +1436,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           setSuccessData(null)
           setGeneratedGame(null)
           setUrl('')
-          setPaymentApproved(false)
+          resetPaymentProgress()
         }}
         title={successData?.title || 'Game Created Successfully!'}
         description="Your playable story is ready. Play it now, share it, or make another."
@@ -1376,8 +1447,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           setSuccessData(null)
           setGeneratedGame(null)
           setUrl('')
-          setPaymentApproved(false)
-          paymentCompletedRef.current = false
+          resetPaymentProgress()
         }}
         onReviewSource={generatedGame ? () => {
           setSuccessData(null)
