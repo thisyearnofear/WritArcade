@@ -217,7 +217,7 @@ export async function PATCH(request: NextRequest) {
           id: crypto.randomUUID(),
           transactionHash,
           action: 'mint-nft',
-          amount: mintAmount,
+          amount: mintAmount.toString(),
           status: 'verified',
           userId: updatedGame.userId,
           walletAddress: wallet,

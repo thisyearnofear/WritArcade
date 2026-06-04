@@ -290,7 +290,7 @@ model Payment {
   id               String   @id @default(cuid())
   transactionHash  String   @unique  // Blockchain tx hash
   action           String   // 'generate-game' or 'mint-nft'
-  amount           BigInt   // Amount in token smallest unit
+  amount           Decimal  @db.Decimal(78, 0) // Amount in token smallest unit
   status           String   @default("pending")  // 'pending' | 'verified' | 'failed'
   walletAddress    String?  // Wallet that sent the verified transaction
   chainId          Int?

@@ -59,10 +59,10 @@ export async function getCreatorStats(userAddress: string): Promise<CreatorStats
         _sum: { amount: true }
     })
 
-    const totalMusdRaw = musdPayments._sum.amount || BigInt(0)
+    const totalMusdRaw = musdPayments._sum.amount?.toString() || '0'
     const totalMusdRevenue = (Number(totalMusdRaw) / 1e18).toFixed(2)
 
-    const totalBaseRaw = basePayments._sum.amount || BigInt(0)
+    const totalBaseRaw = basePayments._sum.amount?.toString() || '0'
     const totalBaseRevenue = (Number(totalBaseRaw) / 1e18).toFixed(2)
 
     // 3. Get top performing articles by game count

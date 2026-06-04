@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       userAddress: validatedData.userAddress,
       chainId: validatedData.chainId,
     })
-    const amount = toNativeBigInt(getPaymentAmount(validatedData.writerCoinId, validatedData.action))
+    const amount = toNativeBigInt(getPaymentAmount(validatedData.writerCoinId, validatedData.action)).toString()
 
     // Store the verified payment wallet directly. SIWE is optional during
     // creation, so userId can be null while walletAddress remains canonical.
