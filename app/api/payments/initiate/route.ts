@@ -98,6 +98,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ error: 'Failed to initiate payment' }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Failed to initiate payment',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
   }
 }
