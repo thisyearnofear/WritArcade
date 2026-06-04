@@ -139,9 +139,10 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 ## API Endpoints
 
 ### Games
-- `POST /api/games/generate` - Generate game from article URL
+- `POST /api/games/generate` - Generate game from article URL (requires payment for story mode; returns 402 if unpaid)
 - `POST /api/games/mint` - Mint game as NFT with WriterCoinPayment
 - `GET /api/games/my-games` - List user's games
+- `POST /api/games/[slug]/fund` - Link a verified payment to an unfunded game (enables minting)
 - `POST /api/games/[slug]/secret-panel` - Decrypt NFT-gated content
 
 ### Assets

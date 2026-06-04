@@ -18,7 +18,7 @@ Turn Paragraph.xyz articles into interactive, mintable games. Players pay with w
 
 1. **Input**: Paste article URL → AI extracts assets
 2. **Customize** (Optional): Edit characters & mechanics in Workshop
-3. **Generate**: Compile assets into 5-panel comic story
+3. **Generate**: Complete payment → compile assets into 5-panel comic story
 4. **Refine**: Regenerate images with custom prompts + edit text
 5. **Register**: Mint NFT & register IP on Story Protocol (user-owned)
 6. **Revenue**: Splits executed on-chain (Writer/Platform/Creator)
