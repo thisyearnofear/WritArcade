@@ -509,12 +509,12 @@ export class ImageGenerationService {
     theme?: string
   }): string {
     const genreComicStyles: Record<string, string> = {
-      horror: 'dark comic book panel, bold inking, high contrast shadows, moody lighting, ominous atmosphere, graphic novel style',
-      mystery: 'noir comic panel, dramatic shadows, suspicious atmosphere, comic book illustration, bold lines, high contrast',
-      comedy: 'bright cartoon comic panel, exaggerated expressions, vibrant colors, playful illustration, comic style, humorous',
-      adventure: 'action comic panel, dynamic poses, motion lines, epic scale, dramatic composition, comic book illustration',
-      'sci-fi': 'futuristic comic panel, tech aesthetic, neon accents, science fiction illustration, bold comic style, otherworldly',
-      fantasy: 'magical comic panel, mystical illustration, glowing effects, enchanted atmosphere, fantasy comic style, detailed',
+      horror: 'dark cinematic illustration, bold inking, high contrast shadows, moody lighting, ominous atmosphere, graphic style',
+      mystery: 'noir illustration, dramatic shadows, suspicious atmosphere, bold lines, high contrast, moody graphic art',
+      comedy: 'bright cartoon illustration, exaggerated expressions, vibrant colors, playful graphic art, humorous scene',
+      adventure: 'action illustration, dynamic poses, motion lines, epic scale, dramatic composition, bold graphic art',
+      'sci-fi': 'futuristic illustration, tech aesthetic, neon accents, science fiction art, bold graphic style, otherworldly',
+      fantasy: 'magical illustration, mystical scene, glowing effects, enchanted atmosphere, fantasy graphic art, detailed',
     }
 
     const themeStyles: Record<string, string> = {
@@ -524,7 +524,7 @@ export class ImageGenerationService {
       watercolor: 'Watercolor painting style, soft brush strokes, artistic wash effect, painterly quality, flowing colors',
     }
 
-    const genreStyle = genreComicStyles[context.genre.toLowerCase()] || 'comic panel illustration, bold lines, digital art style'
+    const genreStyle = genreComicStyles[context.genre.toLowerCase()] || 'graphic illustration, bold lines, digital art style'
     const themeModifier = context.theme && context.theme !== 'default' ? themeStyles[context.theme] : ''
     const style = themeModifier ? `${themeModifier}, ${genreStyle}` : genreStyle
 
@@ -547,14 +547,23 @@ export class ImageGenerationService {
       return scene.trim()
     }
 
-    const narrativeExcerpt = extractFirstScene(context.narrative)
+    // Strip quoted dialogue — models render quoted text as speech bubbles/glyphs
+    const stripDialogue = (text: string) =>
+      text
+        .replace(/["\u201C\u201D].*?["\u201C\u201D]|".*?"|'.*?'|[\u2018\u2019].*?[\u2018\u2019]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+
+    const narrativeExcerpt = stripDialogue(extractFirstScene(context.narrative))
 
     // Build color instruction if primaryColor provided
     const colorInstruction = context.primaryColor 
       ? `, featuring ${context.primaryColor} color palette and accents`
       : ''
 
-    const prompt = `${style} depicting this scene${colorInstruction}: "${narrativeExcerpt}". Comic book illustration, professional artwork, high quality digital art, expressive and dynamic. NOT photorealistic. Comic/illustrated aesthetic.`
+    const NO_TEXT_SUFFIX = 'wordless illustration, no text, no speech bubbles, no captions, no signage, no writing, no letters, no typography, pure visual scene'
+
+    const prompt = `${style} depicting this scene${colorInstruction}: "${narrativeExcerpt}". Professional artwork, high quality digital art, expressive and dynamic. NOT photorealistic. Illustrated aesthetic. ${NO_TEXT_SUFFIX}.`
     
     // Log for debugging - shows what prompt was sent to image generator
     if (process.env.NODE_ENV === 'development') {

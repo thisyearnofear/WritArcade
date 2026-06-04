@@ -121,6 +121,11 @@ export class GameDatabaseService {
               walletAddress: true,
             }
           },
+          payment: {
+            select: {
+              writerCoinId: true,
+            },
+          },
 
           gamesFromAssets: {
             include: {

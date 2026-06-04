@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAccount, useWalletClient } from 'wagmi'
 import { Loader2, ArrowRightLeft, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ComicBookFinale, type ComicBookFinalePanelData } from '../comic-book-finale'
 import { Game, ChatMessage } from '../../types'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/lib/story-sdk-client'
-import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
+import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG, type PaymentToken } from '@/lib/writerCoins'
+import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
+import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
 
 interface ComicFinaleScreenProps {
   game: Game
@@ -52,8 +56,65 @@ export function ComicFinaleScreen({
   maxPanels,
   epilogueReflection,
 }: ComicFinaleScreenProps) {
+  const router = useRouter()
+  const { address: userAddress } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const onStoryNetwork = isOnStoryNetwork(chainId)
   const [derivativePromptDismissed, setDerivativePromptDismissed] = useState(false)
+  const [isFunding, setIsFunding] = useState(false)
+  const [fundError, setFundError] = useState<string | null>(null)
+
+  // Determine if this game can be funded (unfunded but writer coin resolvable)
+  const isUnfunded = !game.writerCoinId && !game.paymentId
+  const resolvableCoin = game.authorParagraphUsername
+    ? getWriterCoinByAuthor(game.authorParagraphUsername)
+    : undefined
+  // Fall back to MUSD testnet if no writer coin found
+  const fundingToken: PaymentToken = resolvableCoin
+    ? { type: 'writercoin' as const, coin: resolvableCoin }
+    : { type: 'musd' as const, network: 'testnet' as const }
+
+  const handleFundGame = useCallback(async () => {
+    if (!walletClient || !userAddress || !fundingToken) return
+
+    setIsFunding(true)
+    setFundError(null)
+
+    try {
+      const strategy = fundingToken.type === 'musd' ? new MUSDStrategy() : new WriterCoinStrategy()
+      const config = fundingToken.type === 'musd' ? MUSD_CONFIG.testnet : fundingToken.coin
+      const amount = config.gameGenerationCost.toString()
+
+      const txHash = await strategy.executePayment({
+        walletClient,
+        userAddress,
+        token: fundingToken,
+        action: 'generate-game',
+        amount,
+      })
+
+      // Link payment to this game
+      const fundRes = await fetch(`/api/games/${game.slug}/fund`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionHash: txHash }),
+      })
+
+      if (!fundRes.ok) {
+        const err = await fundRes.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to link payment to game')
+      }
+
+      // Refresh the page to pick up the new writerCoinId
+      router.refresh()
+    } catch (err) {
+      console.error('[FundGame] Error:', err)
+      setFundError(err instanceof Error ? err.message : 'Payment failed')
+    } finally {
+      setIsFunding(false)
+    }
+  }, [walletClient, userAddress, fundingToken, game.slug, router])
+
   const mintToken = game.writerCoinId?.startsWith('musd')
     ? game.writerCoinId === 'musd-mainnet'
       ? MUSD_CONFIG.mainnet
@@ -114,7 +175,9 @@ export function ComicFinaleScreen({
         regeneratingMessageId={regeneratingMessageId}
         epilogueReflection={epilogueReflection || undefined}
         mintAvailable={Boolean(game.writerCoinId)}
-        mintUnavailableReason="This legacy game is playable, but it was created before payment provenance was recorded, so minting is unavailable."
+        mintUnavailableReason={isUnfunded && !fundingToken ? 'No payment token available for this game.' : undefined}
+        onFundGame={isUnfunded && fundingToken && userAddress ? handleFundGame : undefined}
+        isFunding={isFunding}
         mintTokenLabel={mintToken?.symbol}
         mintCostLabel={mintCostLabel}
       />

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Download, Zap, Grid3X3, Eye, Pencil, Check, X, Volume2, VolumeX, Play, Pause, Loader2 } from 'lucide-react'
+import { ChevronLeft, Download, Zap, Grid3X3, Eye, Pencil, Check, X, Volume2, VolumeX, Play, Pause, Loader2, Wallet } from 'lucide-react'
 import { ImageLightbox } from './image-lightbox'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { UserAttribution, AttributionPair } from '@/components/ui/user-attribution'
@@ -75,6 +75,8 @@ interface ComicBookFinaleProps {
   mintUnavailableReason?: string
   mintTokenLabel?: string
   mintCostLabel?: string
+  onFundGame?: () => void
+  isFunding?: boolean
 }
 
 export function ComicBookFinale({
@@ -106,6 +108,8 @@ export function ComicBookFinale({
   mintUnavailableReason,
   mintTokenLabel,
   mintCostLabel,
+  onFundGame,
+  isFunding = false,
 }: ComicBookFinaleProps) {
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
   const [isImageExpanded, setIsImageExpanded] = useState(false)
@@ -1097,24 +1101,55 @@ export function ComicBookFinale({
 
                 {/* Mint-this-NFT call-to-action inside the preview */}
                 <div className="text-center">
-                  <Button
-                    onClick={handleMintWithMetadata}
-                    disabled={isMinting || !mintAvailable}
-                    size="lg"
-                    className="gap-2"
-                    style={{
-                      backgroundColor: primaryColor,
-                      color: 'white',
-                    }}
-                  >
-                    <Zap className="w-4 h-4" />
-                    {isMinting ? 'Preparing NFT…' : 'Mint this NFT'}
-                  </Button>
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    {mintAvailable
-                      ? `Cost: ${mintCostLabel || 'token mint fee'}${mintTokenLabel ? ` in ${mintTokenLabel}` : ''}. Wallet prompts: approve token spend, then mint on Base.`
-                      : mintUnavailableReason || 'This legacy game is playable, but minting is unavailable.'}
-                  </p>
+                  {mintAvailable ? (
+                    <>
+                      <Button
+                        onClick={handleMintWithMetadata}
+                        disabled={isMinting}
+                        size="lg"
+                        className="gap-2"
+                        style={{
+                          backgroundColor: primaryColor,
+                          color: 'white',
+                        }}
+                      >
+                        <Zap className="w-4 h-4" />
+                        {isMinting ? 'Preparing NFT…' : 'Mint this NFT'}
+                      </Button>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        {`Cost: ${mintCostLabel || 'token mint fee'}${mintTokenLabel ? ` in ${mintTokenLabel}` : ''}. Wallet prompts: approve token spend, then mint on Base.`}
+                      </p>
+                    </>
+                  ) : onFundGame ? (
+                    <>
+                      <Button
+                        onClick={onFundGame}
+                        disabled={isFunding}
+                        size="lg"
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+                      >
+                        {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                        {isFunding ? 'Processing payment…' : 'Pay to unlock minting'}
+                      </Button>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        One payment unlocks minting for this game. Your wallet will prompt you to approve the spend.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        disabled
+                        size="lg"
+                        className="gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Mint this NFT
+                      </Button>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        {mintUnavailableReason || 'This legacy game is playable, but minting is unavailable.'}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -1293,18 +1328,34 @@ export function ComicBookFinale({
                 Download
               </Button>
 
-              <Button
-                onClick={handleMintWithMetadata}
-                disabled={isMinting || !mintAvailable}
-                className="gap-2"
-                style={{
-                  backgroundColor: primaryColor,
-                  color: 'white',
-                }}
-              >
-                <Zap className="w-4 h-4" />
-                {isMinting ? 'Preparing NFT...' : 'Mint as NFT'}
-              </Button>
+              {mintAvailable ? (
+                <Button
+                  onClick={handleMintWithMetadata}
+                  disabled={isMinting}
+                  className="gap-2"
+                  style={{
+                    backgroundColor: primaryColor,
+                    color: 'white',
+                  }}
+                >
+                  <Zap className="w-4 h-4" />
+                  {isMinting ? 'Preparing NFT...' : 'Mint as NFT'}
+                </Button>
+              ) : onFundGame ? (
+                <Button
+                  onClick={onFundGame}
+                  disabled={isFunding}
+                  className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+                >
+                  {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                  {isFunding ? 'Paying…' : 'Pay to Mint'}
+                </Button>
+              ) : (
+                <Button disabled className="gap-2">
+                  <Zap className="w-4 h-4" />
+                  Mint as NFT
+                </Button>
+              )}
 
               {ipRegistrationReady && !showIPRegistration && (
                 <Button
