@@ -270,7 +270,17 @@ Your game MUST authentically interpret this article's core themes. Players shoul
         message: dbError instanceof Error ? dbError.message : 'Unknown error',
       })
       try {
-        savedGame = await GameDatabaseService.createGame(enhancedGameData, user?.id, undefined, validatedData.assetIds)
+        const fundingOnlyData = miniAppData
+          ? {
+              writerCoinId: miniAppData.writerCoinId,
+              paymentId: miniAppData.paymentId,
+              ownerWallet: miniAppData.ownerWallet,
+              ownershipSource: miniAppData.ownershipSource,
+              difficulty: miniAppData.difficulty,
+              wordleAnswerVaultUuid: miniAppData.wordleAnswerVaultUuid,
+            }
+          : undefined
+        savedGame = await GameDatabaseService.createGame(enhancedGameData, user?.id, fundingOnlyData, validatedData.assetIds)
       } catch (fallbackDbError) {
         const fallbackMessage = fallbackDbError instanceof Error ? fallbackDbError.message : 'Unknown DB save error'
         throw new Error(`DB_SAVE_FAILED: ${fallbackMessage}`)
@@ -299,7 +309,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       try {
         await enrichGameInBackground(
           savedGame.id, savedGame.slug, gameData,
-          processedContent?.text, validatedData.payment?.writerCoinId
+          processedContent?.text, canonicalWriterCoinId
         )
       } catch (err) {
         logger.error('Background enrichment failed', err, { gameId: savedGame.id })
