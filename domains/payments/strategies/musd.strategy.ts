@@ -130,22 +130,47 @@ export class MUSDStrategy implements PaymentStrategy {
     })
     console.log(`[MUSDStrategy] payAndMintGame (${action}) tx:`, txHash)
 
+    // Verify via backend (with retry — Mezo blocks may not be indexed immediately)
     step('Verifying on-chain…')
-    const verifyResponse = await fetch('/api/payments/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transactionHash: txHash,
-        writerCoinId: token.network === 'mainnet' ? 'musd-mainnet' : 'musd-testnet',
-        action,
-        userAddress,
-        chainId: this.chainId,
-      }),
-    })
+    const verifyPayload = {
+      transactionHash: txHash,
+      writerCoinId: token.network === 'mainnet' ? 'musd-mainnet' : 'musd-testnet',
+      action,
+      userAddress,
+      chainId: this.chainId,
+    }
 
-    if (!verifyResponse.ok) {
-      const errorData = await verifyResponse.json().catch(() => ({}))
-      throw new Error(errorData.error || `Failed to verify payment (${verifyResponse.status})`)
+    let verifyResponse: Response | null = null
+    const MAX_VERIFY_ATTEMPTS = 3
+    const VERIFY_DELAY_MS = 3000
+
+    for (let attempt = 1; attempt <= MAX_VERIFY_ATTEMPTS; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, VERIFY_DELAY_MS))
+
+      verifyResponse = await fetch('/api/payments/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(verifyPayload),
+      })
+
+      if (verifyResponse.ok) break
+
+      if (attempt < MAX_VERIFY_ATTEMPTS) {
+        const errorData = await verifyResponse.json().catch(() => ({}))
+        const isReceiptError = (errorData.error || '').toLowerCase().includes('receipt')
+          || (errorData.error || '').toLowerCase().includes('could not be found')
+        if (isReceiptError) {
+          console.log(`[MUSDStrategy] Receipt not found yet, retrying (${attempt}/${MAX_VERIFY_ATTEMPTS})…`)
+          step(`Waiting for confirmation (${attempt}/${MAX_VERIFY_ATTEMPTS})…`)
+          continue
+        }
+      }
+      break
+    }
+
+    if (!verifyResponse || !verifyResponse.ok) {
+      const errorData = verifyResponse ? await verifyResponse.json().catch(() => ({})) : {}
+      throw new Error(errorData.error || `Failed to verify payment (${verifyResponse?.status || 'no response'})`)
     }
 
     step('Payment complete!')

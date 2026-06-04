@@ -177,6 +177,12 @@ export function SuccessModal({
             </div>
 
             {action === 'generate' && (
+              <>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-500/30 px-3 py-2 text-center">
+                <p className="text-xs text-purple-200/80">
+                  Play your story first — when you reach the finale, you can mint it as an NFT on Base.
+                </p>
+              </div>
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-1 text-xs">
                 <button
                   type="button"
@@ -203,6 +209,7 @@ export function SuccessModal({
                   Close
                 </button>
               </div>
+              </>
             )}
 
             {action !== 'generate' && (

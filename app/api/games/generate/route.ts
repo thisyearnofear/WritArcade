@@ -198,6 +198,18 @@ Your game MUST authentically interpret this article's core themes. Players shoul
         ? { transactionHash: validatedData.payment.transactionHash } as const
         : null
 
+    // Enforce payment for story mode — prevents unfunded games from being created
+    if (mode === 'story' && !fundingLookup) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Story mode requires payment. Complete payment before generating.',
+          code: 'PAYMENT_REQUIRED',
+        },
+        { status: 402 }
+      )
+    }
+
     const fundingContext = fundingLookup
       ? await GameFundingService.getVerifiedCreationPayment(fundingLookup)
       : null

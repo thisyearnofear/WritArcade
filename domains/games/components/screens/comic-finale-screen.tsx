@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount, useWalletClient } from 'wagmi'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { Loader2, ArrowRightLeft, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ComicBookFinale, type ComicBookFinalePanelData } from '../comic-book-finale'
@@ -10,6 +11,7 @@ import { Game, ChatMessage } from '../../types'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/lib/story-sdk-client'
 import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG, type PaymentToken } from '@/lib/writerCoins'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
+import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 
 interface ComicFinaleScreenProps {
   game: Game
@@ -58,6 +60,7 @@ export function ComicFinaleScreen({
   const router = useRouter()
   const { address: userAddress } = useAccount()
   const { data: walletClient } = useWalletClient()
+  const { openConnectModal } = useConnectModal()
   const onStoryNetwork = isOnStoryNetwork(chainId)
   const [derivativePromptDismissed, setDerivativePromptDismissed] = useState(false)
   const [isFunding, setIsFunding] = useState(false)
@@ -73,6 +76,21 @@ export function ComicFinaleScreen({
   const fundingToken: PaymentToken | undefined = resolvableCoin
     ? { type: 'writercoin' as const, coin: resolvableCoin }
     : undefined
+
+  // Formatted cost for the fund button
+  const fundCost = resolvableCoin
+    ? Number(resolvableCoin.gameGenerationCost) / 10 ** resolvableCoin.decimals
+    : null
+  const fundCostLabel = fundCost !== null && resolvableCoin
+    ? `${fundCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${resolvableCoin.symbol}`
+    : undefined
+
+  // Fetch user balance for the funding token (only when unfunded + coin resolvable)
+  const { balance: fundingBalance } = useWriterCoinBalance(
+    isUnfunded && resolvableCoin ? resolvableCoin.id : ''
+  )
+  const userFundBalance = fundingBalance ? parseFloat(fundingBalance.formattedBalance) : null
+  const hasEnoughToFund = userFundBalance !== null && fundCost !== null && userFundBalance >= fundCost
 
   const handleFundGame = useCallback(async () => {
     if (!walletClient || !userAddress || !fundingToken) return
@@ -176,7 +194,13 @@ export function ComicFinaleScreen({
         mintAvailable={Boolean(game.writerCoinId)}
         mintUnavailableReason={isUnfunded && !fundingToken ? `No writer coin found for "${game.authorParagraphUsername || 'unknown author'}". Minting requires payment in the author's token.` : undefined}
         onFundGame={isUnfunded && fundingToken && userAddress ? handleFundGame : undefined}
+        onConnectWallet={isUnfunded && fundingToken && !userAddress ? openConnectModal : undefined}
         isFunding={isFunding}
+        fundCostLabel={fundCostLabel}
+        fundBalanceLabel={userFundBalance !== null && resolvableCoin ? `${userFundBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${resolvableCoin.symbol}` : undefined}
+        hasEnoughToFund={hasEnoughToFund}
+        fundError={fundError}
+        onDismissFundError={() => setFundError(null)}
         mintTokenLabel={mintToken?.symbol}
         mintCostLabel={mintCostLabel}
       />

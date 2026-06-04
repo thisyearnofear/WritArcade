@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Download, Zap, Grid3X3, Eye, Pencil, Check, X, Volume2, VolumeX, Play, Pause, Loader2, Wallet } from 'lucide-react'
+import { ChevronLeft, Download, Zap, Grid3X3, Eye, Pencil, Check, X, Volume2, VolumeX, Play, Pause, Loader2, Wallet, AlertTriangle } from 'lucide-react'
 import { ImageLightbox } from './image-lightbox'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { UserAttribution, AttributionPair } from '@/components/ui/user-attribution'
@@ -76,7 +76,13 @@ interface ComicBookFinaleProps {
   mintTokenLabel?: string
   mintCostLabel?: string
   onFundGame?: () => void
+  onConnectWallet?: (() => void) | undefined
   isFunding?: boolean
+  fundCostLabel?: string
+  fundBalanceLabel?: string
+  hasEnoughToFund?: boolean
+  fundError?: string | null
+  onDismissFundError?: () => void
 }
 
 export function ComicBookFinale({
@@ -109,7 +115,13 @@ export function ComicBookFinale({
   mintTokenLabel,
   mintCostLabel,
   onFundGame,
+  onConnectWallet,
   isFunding = false,
+  fundCostLabel,
+  fundBalanceLabel,
+  hasEnoughToFund,
+  fundError,
+  onDismissFundError,
 }: ComicBookFinaleProps) {
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
   const [isImageExpanded, setIsImageExpanded] = useState(false)
@@ -336,6 +348,26 @@ export function ComicBookFinale({
     setCurrentPanelIndex(0)
     setIsAutoPlayMode(true)
   }, [panels, panelAudioUrls.size, generateAllNarration])
+
+  // Pre-generate first panel audio on mount (faster cinematic mode entry)
+  useEffect(() => {
+    const firstPanel = panels[0]
+    if (!firstPanel || panelAudioUrls.has(firstPanel.id) || firstPanel.audioUrl) return
+    // Fire-and-forget — don't block or show loading for this
+    VoiceNarrationService.generateNarration(firstPanel.narrativeText, genre)
+      .then(result => {
+        if (result.audioUrl) {
+          setPanelAudioUrls(prev => {
+            const updated = new Map(prev)
+            updated.set(firstPanel.id, result.audioUrl!)
+            return updated
+          })
+          onPanelAudioChange?.(0, result.audioUrl)
+        }
+      })
+      .catch(() => { /* silent — will retry when user taps cinematic */ })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run once on mount
 
   // Prefetch next panel assets
   useEffect(() => {
@@ -741,7 +773,11 @@ export function ComicBookFinale({
                       <img
                         src={currentPanel.imageUrl}
                         alt={`Panel ${currentPanelIndex + 1}`}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                        loading="lazy"
+                        style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}22, #000)` }}
+                        onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1' }}
+                        onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.5' }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60"></div>
                       <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-all duration-200 opacity-0 group-hover:opacity-100">
@@ -749,8 +785,11 @@ export function ComicBookFinale({
                       </div>
                     </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-card to-black">
-                      <p className="text-muted-foreground">No image available</p>
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-card to-black animate-pulse">
+                      <div className="text-center space-y-2">
+                        <div className="w-8 h-8 mx-auto rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground animate-spin" />
+                        <p className="text-muted-foreground text-xs">Generating image…</p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1129,10 +1168,42 @@ export function ComicBookFinale({
                         className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
                       >
                         {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-                        {isFunding ? 'Processing payment…' : 'Pay to unlock minting'}
+                        {isFunding ? 'Processing payment…' : `Pay ${fundCostLabel || ''} to unlock minting`}
+                      </Button>
+                      {fundError && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-red-400 bg-red-900/20 border border-red-500/30 rounded-md px-3 py-1.5">
+                          <AlertTriangle className="w-3 h-3 shrink-0" />
+                          <span className="flex-1">{fundError}</span>
+                          {onDismissFundError && (
+                            <button onClick={onDismissFundError} className="text-red-300 hover:text-white">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        {fundBalanceLabel && (
+                          <span className={`font-medium ${hasEnoughToFund === false ? 'text-red-400' : 'text-emerald-400'}`}>
+                            Balance: {fundBalanceLabel}
+                            {hasEnoughToFund === false && ' (insufficient)'}
+                          </span>
+                        )}
+                        {fundBalanceLabel && ' · '}
+                        One payment unlocks minting. Your wallet will prompt you to approve the spend.
+                      </p>
+                    </>
+                  ) : onConnectWallet ? (
+                    <>
+                      <Button
+                        onClick={onConnectWallet}
+                        size="lg"
+                        className="gap-2 bg-purple-600 hover:bg-purple-500 text-white"
+                      >
+                        <Wallet className="w-4 h-4" />
+                        Connect wallet to unlock minting
                       </Button>
                       <p className="mt-2 text-[11px] text-muted-foreground">
-                        One payment unlocks minting for this game. Your wallet will prompt you to approve the spend.
+                        {fundCostLabel ? `Cost: ${fundCostLabel}. ` : ''}Connect your wallet to pay and enable minting.
                       </p>
                     </>
                   ) : (
@@ -1348,7 +1419,15 @@ export function ComicBookFinale({
                   className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
                 >
                   {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-                  {isFunding ? 'Paying…' : 'Pay to Mint'}
+                  {isFunding ? 'Paying…' : `Pay ${fundCostLabel || ''} to Mint`}
+                </Button>
+              ) : onConnectWallet ? (
+                <Button
+                  onClick={onConnectWallet}
+                  className="gap-2 bg-purple-600 hover:bg-purple-500 text-white"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Connect to Mint
                 </Button>
               ) : (
                 <Button disabled className="gap-2">
