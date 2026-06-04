@@ -10,6 +10,7 @@ import { isAdmin } from '@/lib/constants'
 import { HypercertBadge } from './hypercert-badge'
 import { ProtocolLifecycle } from './protocol-lifecycle'
 import { trackEvent } from '@/lib/analytics'
+import { getWriterCoinById } from '@/lib/writerCoins'
 
 interface GameCardEnhancedProps {
   game: Game
@@ -38,6 +39,17 @@ export function GameCardEnhanced({
 }: GameCardEnhancedProps) {
   const { address } = useAccount()
   const userIsAdmin = isAdmin(address)
+  const writerCoin = game.writerCoinId ? getWriterCoinById(game.writerCoinId) : undefined
+  const writerMintReceipt = game.nftTokenId && writerCoin
+    ? {
+        writer: game.authorParagraphUsername || writerCoin.writer,
+        amount: `${(
+          Number(writerCoin.mintCost) /
+          10 ** writerCoin.decimals *
+          (writerCoin.revenueDistribution.writer / 100)
+        ).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${writerCoin.symbol}`,
+      }
+    : null
 
   // Settings visible if owner OR admin
   const showSettings = isUserGame || userIsAdmin
@@ -158,6 +170,16 @@ export function GameCardEnhanced({
               Model: {game.promptModel}
             </div>
             <ProtocolLifecycle game={game} variant="compact" />
+            {writerMintReceipt && (
+              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-800 dark:text-emerald-200">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                  Writer receipt
+                </div>
+                <div className="mt-1 leading-snug">
+                  {writerMintReceipt.amount} routed to {writerMintReceipt.writer} on this mint.
+                </div>
+              </div>
+            )}
             {game.hypercertUri && (
               <HypercertBadge hypercertUri={game.hypercertUri} compact />
             )}

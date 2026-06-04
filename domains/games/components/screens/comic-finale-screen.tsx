@@ -1,6 +1,7 @@
 'use client'
 
-import { Loader2, ArrowRightLeft } from 'lucide-react'
+import { useState } from 'react'
+import { Loader2, ArrowRightLeft, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ComicBookFinale, type ComicBookFinalePanelData } from '../comic-book-finale'
 import { Game, ChatMessage } from '../../types'
@@ -52,6 +53,7 @@ export function ComicFinaleScreen({
   epilogueReflection,
 }: ComicFinaleScreenProps) {
   const onStoryNetwork = isOnStoryNetwork(chainId)
+  const [derivativePromptDismissed, setDerivativePromptDismissed] = useState(false)
   const mintToken = game.writerCoinId?.startsWith('musd')
     ? game.writerCoinId === 'musd-mainnet'
       ? MUSD_CONFIG.mainnet
@@ -116,8 +118,16 @@ export function ComicFinaleScreen({
         mintTokenLabel={mintToken?.symbol}
         mintCostLabel={mintCostLabel}
       />
-      {extractedAssetIds.length > 0 && !derivativeRegistered && (
+      {extractedAssetIds.length > 0 && !derivativeRegistered && !derivativePromptDismissed && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">
+          <button
+            type="button"
+            onClick={() => setDerivativePromptDismissed(true)}
+            className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Dismiss derivative IP prompt"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <p className="text-sm text-muted-foreground text-center">
             <span className="font-semibold text-white">{extractedAssetIds.length} asset{extractedAssetIds.length > 1 ? 's' : ''} extracted</span> — register as derivative IP on Story Protocol to establish royalty chains.
           </p>
@@ -127,7 +137,10 @@ export function ComicFinaleScreen({
                 Register this game as IP first, then return here to link derivative assets.
               </p>
               <Button
-                onClick={() => document.getElementById('game-ip-registration')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                onClick={() => {
+                  setDerivativePromptDismissed(true)
+                  document.getElementById('game-ip-registration')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }}
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
               >
                 Open Game IP Registration

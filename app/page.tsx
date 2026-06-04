@@ -367,7 +367,7 @@ export default function HomePage() {
                 </a>
               </div>
               <Suspense fallback={<GridSkeleton count={4} columns={3} />}>
-                <GameGrid limit={4} requireFunding={true} requireImage={true} />
+                <GameGrid limit={4} requireImage={true} />
               </Suspense>
             </div>
           </section>

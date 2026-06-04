@@ -16,6 +16,9 @@ interface GamePageProps {
   params: Promise<{
     slug: string
   }>
+  searchParams?: Promise<{
+    unlocked?: string
+  }>
 }
 
 export default async function GamePage({ params }: GamePageProps) {
@@ -72,7 +75,13 @@ export default async function GamePage({ params }: GamePageProps) {
   )
 }
 
-export async function generateMetadata({ params }: GamePageProps) {
+function getSiteUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return 'https://writersarcade.vercel.app'
+}
+
+export async function generateMetadata({ params, searchParams }: GamePageProps) {
   if (!process.env.DATABASE_URL) {
     return {
       title: 'writersarcade Game',
@@ -89,14 +98,31 @@ export async function generateMetadata({ params }: GamePageProps) {
     }
   }
 
+  const query = await searchParams
+  const isUnlockShare = Boolean(query?.unlocked)
+  const siteUrl = getSiteUrl()
+  const unlockOgImage = `${siteUrl}/api/games/${encodeURIComponent(slug)}/unlock-og`
+
   return {
-    title: `${game.title} - writersarcade`,
-    description: game.description,
+    title: isUnlockShare
+      ? `CDR vault unlocked: ${game.title}`
+      : `${game.title} - writersarcade`,
+    description: isUnlockShare
+      ? `A secret CDR vault was unlocked for "${game.title}" on writersarcade.`
+      : game.description,
     openGraph: {
-      title: game.title,
-      description: game.description,
+      title: isUnlockShare ? `I unlocked the secret CDR vault of ${game.title}` : game.title,
+      description: isUnlockShare
+        ? 'Verified unlock proof with vault UUID and gate NFT context.'
+        : game.description,
       type: 'article',
-      images: game.imageUrl ? [game.imageUrl] : [],
+      images: isUnlockShare ? [unlockOgImage] : game.imageUrl ? [game.imageUrl] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: isUnlockShare ? `I unlocked the secret CDR vault of ${game.title}` : game.title,
+      description: isUnlockShare ? 'Verified unlock proof on writersarcade.' : game.description,
+      images: isUnlockShare ? [unlockOgImage] : game.imageUrl ? [game.imageUrl] : [],
     },
   }
 }
