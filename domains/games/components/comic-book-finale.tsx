@@ -30,6 +30,7 @@ interface ComicBookFinaleProps {
   panels: ComicBookFinalePanelData[]
   onBack: () => void
   onMint: (panelData: ComicBookFinalePanelData[], metadata?: { nftMetadataUri: string; gameMetadataUri: string; creator: GameCreator; author: GameAuthor }) => void | Promise<void>
+  onStoryRegistrationComplete?: (result: { ipId: string; txHash: string }) => void
   isMinting?: boolean
   nftMinted?: boolean
   storyIpId?: string
@@ -62,6 +63,7 @@ export function ComicBookFinale({
   panels,
   onBack,
   onMint,
+  onStoryRegistrationComplete,
   isMinting = false,
   nftMinted = false,
   storyIpId,
@@ -1289,7 +1291,7 @@ export function ComicBookFinale({
 
         {/* Story Protocol IP Registration */}
         {ipRegistrationReady && showIPRegistration && (
-          <div className="border-t border-white/10 p-4 md:p-8 bg-gradient-to-b from-black/40 via-black to-black"
+          <div id="game-ip-registration" className="border-t border-white/10 p-4 md:p-8 bg-gradient-to-b from-black/40 via-black to-black"
             style={{
               boxShadow: `inset 0 1px 0 ${primaryColor}15`,
             }}
@@ -1326,6 +1328,7 @@ export function ComicBookFinale({
                   if (!response.ok) {
                     throw new Error('Story registration succeeded, but saving it to the game failed.')
                   }
+                  onStoryRegistrationComplete?.({ ipId: result.ipId, txHash: result.txHash })
                 }}
               />
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAccount } from 'wagmi'
 
 import { Game } from '../types'
@@ -22,14 +22,22 @@ interface GamePlayInterfaceProps {
 const MAX_COMIC_PANELS = 5
 
 export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
+  const [liveGame, setLiveGame] = useState(game)
+
+  useEffect(() => {
+    setLiveGame(game)
+  }, [game])
+
   // Account hook kept for potential future features
   useAccount()
 
   // 1. Session & Gameplay Logic
-  const session = useGameSession(game)
+  const session = useGameSession(liveGame)
 
   // 2. Blockchain & Payment Logic
-  const blockchain = useGameBlockchain(game)
+  const blockchain = useGameBlockchain(liveGame, {
+    onGameUpdated: (updates) => setLiveGame((current) => ({ ...current, ...updates })),
+  })
 
   // 3. UI Local State
   const [showComicFinale, setShowComicFinale] = useState(false)
@@ -43,9 +51,9 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const generateStoryboardPreview = () => {
     if (session.messages.length === 0) return []
     return session.messages.filter(m => m.role === 'assistant').map((message, index) => ({
-      title: `Panel ${index + 1}: ${game.title} - Scene ${index + 1}`,
+      title: `Panel ${index + 1}: ${liveGame.title} - Scene ${index + 1}`,
       description: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : ''),
-      imagePrompt: message.imagePromptText || `A ${game.genre} scene showing ${message.content.substring(0, 50)}...`,
+      imagePrompt: message.imagePromptText || `A ${liveGame.genre} scene showing ${message.content.substring(0, 50)}...`,
       previewImage: message.narrativeImage || undefined
     }))
   }
@@ -61,8 +69,8 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
 
   const generateAIPromptSuggestions = (narrative: string): string[] => {
     const baseSuggestions = [
-      `A ${game.genre} style illustration of ${narrative.substring(0, 50)}...`,
-      `Digital art of ${narrative.substring(0, 40)}..., ${game.genre} theme, cinematic lighting`,
+      `A ${liveGame.genre} style illustration of ${narrative.substring(0, 50)}...`,
+      `Digital art of ${narrative.substring(0, 40)}..., ${liveGame.genre} theme, cinematic lighting`,
       `Comic book style illustration: ${narrative.substring(0, 45)}..., vibrant colors`,
     ]
     return baseSuggestions
@@ -78,15 +86,15 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const handleStartClick = () => {
     trackEvent('play_clicked', {
       surface: 'game_page_hero',
-      gameSlug: game.slug,
-      mode: game.mode || 'story',
+      gameSlug: liveGame.slug,
+      mode: liveGame.mode || 'story',
     })
     setShowPreview(true)
   }
 
   const handlePreviewApproved = () => {
     setShowPreview(false)
-    if (game.playFee && parseFloat(game.playFee) > 0) {
+    if (liveGame.playFee && parseFloat(liveGame.playFee) > 0) {
       setShowPaymentModal(true)
     } else {
       session.startGame()
@@ -109,7 +117,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     const completionTimestamp = Date.now()
 
     trackEvent('story_completed', {
-      gameSlug: game.slug,
+      gameSlug: liveGame.slug,
       panelCount,
       maxPanels: MAX_COMIC_PANELS,
       completionTimestamp,
@@ -118,22 +126,22 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   }
   const renderEnrichment = () => (
     <GameEnrichment
-      gameId={game.id}
-      gameSlug={game.slug}
-      primaryColor={game.primaryColor || '#6366f1'}
-      nftTokenId={game.nftTokenId}
-      secretPanelGenerated={game.secretPanelGenerated}
-      promptVaultUuid={game.promptVaultUuid}
-      hypercertUri={game.hypercertUri}
-      hypercertCid={game.hypercertCid}
+      gameId={liveGame.id}
+      gameSlug={liveGame.slug}
+      primaryColor={liveGame.primaryColor || '#6366f1'}
+      nftTokenId={liveGame.nftTokenId}
+      secretPanelGenerated={liveGame.secretPanelGenerated}
+      promptVaultUuid={liveGame.promptVaultUuid}
+      hypercertUri={liveGame.hypercertUri}
+      hypercertCid={liveGame.hypercertCid}
       storySessionId={session.sessionId}
       storyComplete={storyComplete}
     />
   )
 
   // NEW: Block gameplay if game not approved
-  if (game.approvalStatus === 'rejected' || game.approvalStatus === 'pending') {
-    return <GameStatusScreens game={game} />
+  if (liveGame.approvalStatus === 'rejected' || liveGame.approvalStatus === 'pending') {
+    return <GameStatusScreens game={liveGame} />
   }
 
   // COMIC FINALE SCREEN
@@ -141,13 +149,21 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     return (
       <>
         <ComicFinaleScreen
-          game={game}
+          game={liveGame}
           messages={session.messages}
           userChoices={session.userChoices}
           showComicFinale={showComicFinale}
           setShowComicFinale={setShowComicFinale}
           isMinting={blockchain.isMinting}
           handleMintComic={blockchain.handleMintComic}
+          onStoryRegistrationComplete={(result) => {
+            setLiveGame((current) => ({
+              ...current,
+              storyIpId: result.ipId,
+              storyRegistrationTxHash: result.txHash,
+              storyRegisteredAt: new Date(),
+            }))
+          }}
           handlePanelTextChange={(idx, text) => {
             const assistantMessages = session.messages.filter(m => m.role === 'assistant')
             if (assistantMessages[idx]) {
@@ -182,14 +198,14 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     return (
       <>
         <HeroScreen
-          game={game}
+          game={liveGame}
           isStarting={session.isStarting}
           loadingProgress={session.loadingProgress}
           messages={session.messages}
           showPreview={showPreview}
           showPaymentModal={showPaymentModal}
           isPaying={blockchain.isPaying}
-          playFee={game.playFee || '0'}
+          playFee={liveGame.playFee || '0'}
           onStartClick={handleStartClick}
           onPreviewApproved={handlePreviewApproved}
           onPaymentConfirm={onPaymentConfirm}
@@ -206,7 +222,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   return (
     <>
       <GameplayScreen
-        game={game}
+        game={liveGame}
         messages={session.messages}
         isWaitingForResponse={session.isWaitingForResponse}
         pendingOptionId={session.pendingOptionId}

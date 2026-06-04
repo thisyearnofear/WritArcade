@@ -81,7 +81,11 @@ const ERC20_ABI = [
     }
 ]
 
-export function useGameBlockchain(game: Game) {
+interface GameBlockchainOptions {
+    onGameUpdated?: (updates: Partial<Game>) => void
+}
+
+export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {}) {
     const { toast } = useToast()
     const { writeContractAsync } = useWriteContract()
     const { data: walletClient } = useWalletClient()
@@ -261,6 +265,13 @@ export function useGameBlockchain(game: Game) {
 
             if (confirmResponse.ok) {
                 const confirmData = await confirmResponse.json()
+                options.onGameUpdated?.({
+                    nftTokenId: confirmData.data?.nftTokenId?.toString(),
+                    nftTransactionHash: tx,
+                    nftMintedAt: new Date(),
+                    nftContractAddress: contractAddress,
+                    nftChainId: targetChainId,
+                })
                 if (confirmData.data?.extractedAssetIds?.length) {
                     setExtractedAssetIds(confirmData.data.extractedAssetIds)
                 }

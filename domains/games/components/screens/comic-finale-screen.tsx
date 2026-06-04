@@ -14,6 +14,7 @@ interface ComicFinaleScreenProps {
   setShowComicFinale: (show: boolean) => void
   isMinting: boolean
   handleMintComic: (panelData: ComicBookFinalePanelData[], metadata?: any) => Promise<void>
+  onStoryRegistrationComplete?: (result: { ipId: string; txHash: string }) => void
   handlePanelTextChange: (panelIndex: number, newText: string) => void
   handlePanelImageChange?: (panelIndex: number, customPrompt?: string) => void
   regeneratingMessageId?: string | null
@@ -35,6 +36,7 @@ export function ComicFinaleScreen({
   setShowComicFinale,
   isMinting,
   handleMintComic,
+  onStoryRegistrationComplete,
   handlePanelTextChange,
   handlePanelImageChange,
   regeneratingMessageId,
@@ -80,6 +82,7 @@ export function ComicFinaleScreen({
         panels={buildComicPanels()}
         onBack={() => setShowComicFinale(false)}
         onMint={handleMintComic}
+        onStoryRegistrationComplete={onStoryRegistrationComplete}
         isMinting={isMinting}
         nftMinted={Boolean(game.nftTransactionHash || game.nftTokenId)}
         storyIpId={game.storyIpId}
@@ -101,9 +104,17 @@ export function ComicFinaleScreen({
             <span className="font-semibold text-white">{extractedAssetIds.length} asset{extractedAssetIds.length > 1 ? 's' : ''} extracted</span> — register as derivative IP on Story Protocol to establish royalty chains.
           </p>
           {!game.storyIpId ? (
-            <p className="text-xs text-amber-400 text-center">
-              Register this game as IP first using the IP Registration button above, then return here to link derivative assets.
-            </p>
+            <>
+              <p className="text-xs text-amber-400 text-center">
+                Register this game as IP first, then return here to link derivative assets.
+              </p>
+              <Button
+                onClick={() => document.getElementById('game-ip-registration')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                Open Game IP Registration
+              </Button>
+            </>
           ) : !onStoryNetwork ? (
             <Button
               onClick={() => switchChain({ chainId: STORY_CHAIN_ID })}
