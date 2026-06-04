@@ -8,12 +8,14 @@ interface PostGameFeedbackProps {
   _gameId?: string
   onSubmit?: (feedback: { npsScore: number; comment?: string }) => Promise<void>
   onSkip?: () => void
+  onDisable?: () => void
 }
 
 export function PostGameFeedback({
   _gameId,
   onSubmit,
   onSkip,
+  onDisable,
 }: PostGameFeedbackProps) {
   const [step, setStep] = useState<'nps' | 'comment' | 'success'>('nps')
   const [npsScore, setNpsScore] = useState<number | null>(null)
@@ -102,6 +104,12 @@ export function PostGameFeedback({
               Next
             </button>
           </div>
+          <button
+            onClick={onDisable}
+            className="mt-3 w-full text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Don't ask again on this device
+          </button>
         </motion.div>
       )}
 
@@ -140,6 +148,12 @@ export function PostGameFeedback({
               {isSubmitting ? 'Sending...' : 'Send Feedback'}
             </button>
           </div>
+          <button
+            onClick={onDisable}
+            className="mt-3 w-full text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Don't ask again on this device
+          </button>
         </motion.div>
       )}
 

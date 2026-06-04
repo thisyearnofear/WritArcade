@@ -180,7 +180,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
   };
 
   return (
-    <Card className="w-full border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30">
+    <Card className="w-full border border-white/10 bg-black/70 text-white shadow-xl">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -189,8 +189,8 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
               <span className="text-white font-bold text-lg">S</span>
             </div>
             <div>
-              <CardTitle className="text-lg">Register Your IP</CardTitle>
-              <CardDescription className="text-sm">
+              <CardTitle className="text-lg text-white">Register Your IP</CardTitle>
+              <CardDescription className="text-sm text-white/65">
                 Own your creation on Story Protocol
               </CardDescription>
             </div>
@@ -204,16 +204,16 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
         {!isRegistered && (
           <>
             {/* Ownership Explainer */}
-            <div className="bg-white/60 dark:bg-white/5 border border-purple-200 dark:border-purple-700 rounded-xl p-4">
-              <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
+            <div className="rounded-md border border-white/10 bg-white/[0.04] p-4">
+              <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                 <Wallet className="h-4 w-4" />
                 Your Signature = Your Ownership
               </h3>
-              <p className="text-sm text-foreground mb-3">
+              <p className="text-sm text-white/80 mb-3">
                 When you sign this transaction, <strong>YOU</strong> become the on-chain owner of this IP.
                 Not us. Your wallet. Your IP.
               </p>
-              <ul className="text-sm text-muted-foreground space-y-1.5">
+              <ul className="text-sm text-white/70 space-y-1.5">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <span>Registered on Story Protocol blockchain</span>
@@ -231,10 +231,10 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
             {/* Royalty Distribution Visual */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-white">
                 Royalty Distribution
               </label>
-              <div className="h-4 rounded-full overflow-hidden flex bg-muted">
+              <div className="h-4 rounded-full overflow-hidden flex bg-white/10">
                 <div
                   className="bg-blue-500 h-full flex items-center justify-center"
                   style={{ width: `${ROYALTY_CONFIG.authorShare / 100}%` }}
@@ -246,12 +246,12 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                   title={`Creator: ${ROYALTY_CONFIG.creatorShare / 100}%`}
                 />
                 <div
-                  className="bg-muted-foreground h-full flex items-center justify-center"
+                  className="bg-white/45 h-full flex items-center justify-center"
                   style={{ width: `${ROYALTY_CONFIG.platformShare / 100}%` }}
                   title={`Platform: ${ROYALTY_CONFIG.platformShare / 100}%`}
                 />
               </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-xs text-white/65">
                 <span className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
                   Author 60%
@@ -261,7 +261,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                   You 30%
                 </span>
                 <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+                  <div className="w-2 h-2 rounded-full bg-white/45" />
                   Platform 10%
                 </span>
               </div>
@@ -269,7 +269,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
             {/* License Selection */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-white">
                 License Type
               </label>
               <div className="grid grid-cols-1 gap-2">
@@ -282,8 +282,8 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                     key={license.id}
                     className={`relative flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
                       license.recommended
-                        ? 'border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-border hover:border-foreground/20'
+                        ? 'border-purple-400/60 bg-purple-500/15'
+                        : 'border-white/10 bg-white/[0.03] hover:border-white/25'
                     }`}
                   >
                     <div className="flex items-center h-5">
@@ -298,16 +298,16 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
                     </div>
                     <div className="ml-3 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-foreground">
+                        <span className="font-medium text-sm text-white">
                           {license.name}
                         </span>
                         {license.recommended && (
-                          <Badge className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                          <Badge className="text-xs bg-purple-500/20 text-purple-100 border border-purple-400/30">
                             Recommended
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs text-white/60 mt-0.5">
                         {license.description}
                       </p>
                     </div>
@@ -317,14 +317,14 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
             </div>
 
             {/* Network Status */}
-            <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-400/30 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${onStoryNetwork ? 'bg-green-500' : 'bg-amber-500'}`} />
-                <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                <span className="text-sm font-medium text-amber-100">
                   {onStoryNetwork ? 'Connected to Story Network' : 'Switch to Story Network'}
                 </span>
               </div>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs border-amber-400/40 text-amber-100">
                 Testnet
               </Badge>
             </div>
@@ -350,7 +350,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
               <Button
                 onClick={handleSwitchChain}
                 disabled={isSwitching || isSwitchingChain}
-                className="w-full bg-amber-500 hover:bg-amber-600"
+                className="w-full bg-amber-500 text-black hover:bg-amber-400"
                 size="lg"
               >
                 {(isSwitching || isSwitchingChain) ? (
@@ -386,7 +386,7 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
               </Button>
             )}
 
-            <p className="text-xs text-center text-muted-foreground">
+            <p className="text-xs text-center text-white/55">
               This is optional. You can skip and mint on Base without IP registration.
             </p>
           </>

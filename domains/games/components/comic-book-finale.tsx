@@ -12,6 +12,25 @@ import { PostGameFeedback } from '@/components/game/post-game-feedback'
 import { VoiceNarrationService } from '../services/voice-narration.service'
 import { StreamingTypewriter, PretextContainer } from '@/components/effects'
 
+const FEEDBACK_DISABLED_KEY = 'writersarcade.feedback.disabled'
+const FEEDBACK_COMPLETIONS_KEY = 'writersarcade.feedback.completions'
+const FEEDBACK_INTERVAL = 10
+
+function shouldShowFeedbackPrompt() {
+  if (typeof window === 'undefined') return false
+  if (window.localStorage.getItem(FEEDBACK_DISABLED_KEY) === 'true') return false
+
+  const currentCount = Number(window.localStorage.getItem(FEEDBACK_COMPLETIONS_KEY) || '0')
+  const nextCount = Number.isFinite(currentCount) ? currentCount + 1 : 1
+  window.localStorage.setItem(FEEDBACK_COMPLETIONS_KEY, String(nextCount))
+  return nextCount % FEEDBACK_INTERVAL === 0
+}
+
+function disableFeedbackPrompts() {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(FEEDBACK_DISABLED_KEY, 'true')
+}
+
 export interface ComicBookFinalePanelData {
   id: string
   narrativeText: string
@@ -371,7 +390,7 @@ export function ComicBookFinale({
     try {
       await onMint(panels)
       setShowIPRegistration(true)
-      setShowFeedback(true)
+      setShowFeedback(shouldShowFeedbackPrompt())
     } catch (error) {
       console.error('Mint failed:', error)
     }
@@ -1365,6 +1384,10 @@ export function ComicBookFinale({
                   }
                 }}
                 onSkip={() => setShowFeedback(false)}
+                onDisable={() => {
+                  disableFeedbackPrompts()
+                  setShowFeedback(false)
+                }}
               />
             </div>
           </div>
