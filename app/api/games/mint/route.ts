@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const canonicalWriterCoinId = game.writerCoinId || writerCoinId
+    const canonicalWriterCoinId = game.writerCoinId || game.payment?.writerCoinId || writerCoinId
     if (!canonicalWriterCoinId) {
       return NextResponse.json(
         { error: 'This game is missing its payment token. Please contact support before minting.' },
@@ -74,6 +74,13 @@ export async function POST(request: NextRequest) {
         { error: `Mint coin mismatch: this game was created with ${game.writerCoinId}, not ${writerCoinId}` },
         { status: 400 }
       )
+    }
+
+    if (!game.writerCoinId && game.payment?.writerCoinId) {
+      await prisma.game.update({
+        where: { id: game.id },
+        data: { writerCoinId: game.payment.writerCoinId },
+      })
     }
 
     // Look up mint config (handles both writer coins and MUSD) from the saved game.
@@ -232,7 +239,7 @@ export async function PATCH(request: NextRequest) {
     })
 
     if (!existingPayment) {
-      const writerCoinId = game.writerCoinId ?? 'avc'
+      const writerCoinId = game.writerCoinId ?? game.payment?.writerCoinId ?? 'avc'
       const isMUSD = writerCoinId.startsWith('musd')
       let mintAmount = BigInt(50 * 10 ** 18) // fallback
       if (!isMUSD) {
