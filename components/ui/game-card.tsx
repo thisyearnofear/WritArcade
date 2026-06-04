@@ -26,6 +26,7 @@ interface GameCardProps {
 export function GameCard({ slug, title, description, genre, imageUrl, primaryColor, symbol }: GameCardProps) {
   const genreStyle = GENRE_STYLES[genre] || DEFAULT_STYLE;
   const GenreIcon = genreStyle.icon;
+  const displaySymbol = symbol.startsWith('$') ? symbol : `$${symbol}`;
 
   return (
     <Card 
@@ -54,7 +55,7 @@ export function GameCard({ slug, title, description, genre, imageUrl, primaryCol
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{description}</p>
         <div className="flex items-center text-xs font-mono text-muted-foreground">
-          Powered by <span className="ml-1 text-primary">${symbol}</span>
+          Powered by <span className="ml-1 text-primary">{displaySymbol}</span>
         </div>
       </CardContent>
     </Card>

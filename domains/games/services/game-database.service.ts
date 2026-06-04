@@ -201,7 +201,12 @@ export class GameDatabaseService {
                 id: true,
                 walletAddress: true,
               }
-            }
+            },
+            payment: {
+              select: {
+                writerCoinId: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
           take: limit,
@@ -376,7 +381,7 @@ export class GameDatabaseService {
       musicPromptSeedImage: prismaGame.musicPromptSeedImage || undefined,
       articleUrl: prismaGame.articleUrl || undefined,
       articleContext: prismaGame.articleContext || undefined,
-      writerCoinId: prismaGame.writerCoinId || undefined,
+      writerCoinId: prismaGame.writerCoinId || (prismaGame as { payment?: { writerCoinId?: string | null } | null }).payment?.writerCoinId || undefined,
       difficulty: prismaGame.difficulty || undefined,
       // Attribution data - preserves source material author for NFT & Story Protocol
       ownerWallet: (prismaGame as { ownerWallet?: string | null }).ownerWallet || undefined,

@@ -8,6 +8,7 @@ import { animationConfig } from '@/lib/animations'
 import { CardSkeleton } from '@/components/effects'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Gamepad2, SearchX } from 'lucide-react'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
 
 interface GameGridProps {
   limit?: number
@@ -127,6 +128,15 @@ export function GameGrid({
     )
   }
 
+  const getGameSymbol = (game: Game) => {
+    if (!game.writerCoinId) return 'WRITER COIN'
+
+    if (game.writerCoinId === 'musd-testnet') return MUSD_CONFIG.testnet.symbol
+    if (game.writerCoinId === 'musd-mainnet') return MUSD_CONFIG.mainnet.symbol
+
+    return getWriterCoinById(game.writerCoinId)?.symbol || game.writerCoinId.toUpperCase()
+  }
+
   return (
     <motion.div
       className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
@@ -147,7 +157,7 @@ export function GameGrid({
             genre={game.genre}
             imageUrl={game.imageUrl}
             primaryColor={game.primaryColor}
-            symbol={game.playFee?.split(' ')[1] || 'AVC'} 
+            symbol={getGameSymbol(game)}
           />
         </motion.div>
       ))}
