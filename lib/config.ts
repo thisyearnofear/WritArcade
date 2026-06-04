@@ -19,6 +19,7 @@ export const config = {
   ipfs: {
     enableMock: process.env.NODE_ENV === 'development',
     pinataJwt: process.env.PINATA_JWT,
+    groveChainId: Number.parseInt(process.env.GROVE_CHAIN_ID || '8453', 10),
   },
 
   /**
@@ -84,10 +85,9 @@ export function validateConfig(): void {
   const errors: string[] = []
 
   if (config.isProduction) {
-    // Production requires IPFS
-    if (!config.ipfs.pinataJwt) {
-      errors.push('PINATA_JWT environment variable is required in production for IPFS uploads')
-    }
+    // IPFS uploads can use Pinata or Grove fallback. Keep validation here
+    // non-fatal for PINATA_JWT so the runtime fallback can handle provider
+    // choice per upload.
 
     // Production requires database
     if (!config.database.url) {

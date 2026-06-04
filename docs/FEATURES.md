@@ -87,7 +87,7 @@ WritersArcade supports the Mezo ecosystem via a dedicated MUSD payment track:
 2. App validates wallet + network (switch to Story if needed)
 3. Gas estimation with 15% buffer
 4. User selects license type
-5. Metadata uploaded to IPFS via Pinata
+5. Metadata uploaded to IPFS via Pinata, with Grove fallback
 6. User signs transaction in wallet
 7. IP registered on-chain with license
 8. Verification: Read IP Asset to confirm
@@ -167,13 +167,15 @@ Game Creation → createGameHypercert() (async, non-blocking)
           Save URI to Game.hypercertUri + Game.hypercertCid
 ```
 
-### IPFS Storage (Pinata)
+### IPFS Storage (Pinata + Grove)
 
-**Required**: `PINATA_JWT` environment variable  
+**Primary**: `PINATA_JWT` environment variable
+**Fallback**: Grove immutable upload via `https://api.grove.storage`, using `GROVE_CHAIN_ID` (defaults to Base mainnet `8453`)
 **Usage**: Metadata uploads for Story Protocol IP registration
 
-- Production: Real Pinata upload (throws error if JWT missing)
+- Production: Server-side upload route tries Pinata first, then Grove fallback if Pinata is missing or fails
 - Development: Mock IPFS hash generation (for testing)
+- Browser clients call `/api/ipfs/upload`; server secrets are never read from the client bundle
 
 ## Writer Coins (Base Mainnet)
 

@@ -25,7 +25,7 @@ Article URL
 **Backend**: Next.js API routes + Prisma + PostgreSQL  
 **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (image generation)  
 **Mezo**: MUSD (Bitcoin-backed stablecoin) for payments; Mezo Matsnet (testnet)
-**IP**: Story Protocol (testnet) + IPFS (Pinata) + **Story CDR (TEE-backed confidentiality)**
+**IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove fallback) + **Story CDR (TEE-backed confidentiality)**
 **Access Control**: Story CDR token-gated vaults for secret panels; Lit Protocol remains legacy support
 **Impact**: Hypercerts (AT Protocol impact certificates)
 

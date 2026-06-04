@@ -6,22 +6,46 @@
 import { createHash } from "crypto"
 import { logger, config } from "@/lib/config"
 
+type GroveUploadResponse = {
+  storage_key?: string
+  gateway_url?: string
+  uri?: string
+  status_url?: string
+}
+
 /**
  * Upload metadata to IPFS
  * Requires PINATA_JWT or similar IPFS provider credentials
  */
 export async function uploadToIPFS(metadata: object): Promise<string> {
+  if (typeof window !== 'undefined') {
+    const response = await fetch('/api/ipfs/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metadata }),
+    })
+
+    const result = await response
+      .json()
+      .catch(() => ({} as { uri?: string; error?: string }))
+
+    if (!response.ok || !result.uri) {
+      throw new Error(result.error || `IPFS upload failed (${response.status})`)
+    }
+
+    return result.uri
+  }
+
   const pinataBearerToken = config.ipfs.pinataJwt;
 
   if (!pinataBearerToken) {
-    if (config.isProduction) {
-      logger.error('PINATA_JWT missing in production', undefined, { context: 'ipfs-upload' });
-      throw new Error(
-        'PINATA_JWT environment variable is required in production for IPFS uploads.'
-      );
+    if (!config.isProduction) {
+      logger.warn("IPFS: Using mock hash for development", { context: 'ipfs-upload' });
+      return generateMockIPFSHash(JSON.stringify(metadata));
     }
-    logger.warn("IPFS: Using mock hash for development", { context: 'ipfs-upload' });
-    return generateMockIPFSHash(JSON.stringify(metadata));
+
+    logger.warn('PINATA_JWT missing in production; trying Grove fallback', { context: 'ipfs-upload' });
+    return uploadToGrove(metadata);
   }
 
   try {
@@ -57,13 +81,48 @@ export async function uploadToIPFS(metadata: object): Promise<string> {
     logger.error("IPFS upload failed", error, { context: 'ipfs-upload' });
 
     if (config.isProduction) {
-      throw error;
+      logger.warn("Trying Grove fallback after Pinata upload failure", { context: 'ipfs-upload' });
+      return uploadToGrove(metadata);
     }
 
     // Fall back to mock for development only
     logger.warn("Falling back to mock IPFS hash for development", { context: 'ipfs-upload' });
     return generateMockIPFSHash(JSON.stringify(metadata));
   }
+}
+
+async function uploadToGrove(metadata: object): Promise<string> {
+  const chainId = Number.isFinite(config.ipfs.groveChainId)
+    ? config.ipfs.groveChainId
+    : 8453
+
+  const response = await fetch(`https://api.grove.storage/?chain_id=${chainId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(metadata),
+  })
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '')
+    throw new Error(`Grove upload failed: ${response.status} ${response.statusText}${body ? ` - ${body.slice(0, 200)}` : ''}`)
+  }
+
+  const parsed = (await response.json()) as GroveUploadResponse | GroveUploadResponse[]
+  const result = Array.isArray(parsed) ? parsed[0] : parsed
+  const uri = result.gateway_url || result.uri
+
+  if (!uri) {
+    throw new Error('Grove upload failed: response did not include gateway_url or uri')
+  }
+
+  logger.ipfs('Uploaded to Grove', {
+    storageKey: result.storage_key,
+    uri: result.uri,
+  })
+
+  return uri
 }
 
 /**

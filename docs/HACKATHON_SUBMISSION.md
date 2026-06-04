@@ -39,7 +39,7 @@ The entire Mezo/MUSD integration was built during this hackathon (April–May 20
 - **Web3**: wagmi + viem + RainbowKit + **Mezo Passport**
 - **Mezo**: MUSD (Bitcoin-backed stablecoin), MEZO token, Mezo Matsnet (testnet)
 - **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Pollinations (images)
-- **IP**: Story Protocol (testnet) + IPFS (Pinata)
+- **IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove fallback)
 - **Access Control**: Lit Protocol (NFT-gated encryption)
 - **Indexing**: Goldsky subgraph (configured for Mezo contract events)
 - **Testing**: Tenderly multi-chain simulation

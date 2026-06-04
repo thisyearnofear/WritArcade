@@ -84,7 +84,8 @@ NETMIND_API_KEY="..."             # Secondary image fallback
 BASE_RPC_URL="https://mainnet.base.org"
 STORY_RPC_URL="https://aeneid.storyrpc.io"
 STORY_WALLET_KEY="0x..."          # For server-side Story txs
-PINATA_JWT="pina_..."             # IPFS uploads
+PINATA_JWT="pina_..."             # IPFS uploads via Pinata primary
+GROVE_CHAIN_ID="8453"             # Optional IPFS fallback via Grove immutable uploads
 
 # Mezo Hackathon
 NEXT_PUBLIC_MEZO_TESTNET_RPC="https://rpc.test.mezo.org"

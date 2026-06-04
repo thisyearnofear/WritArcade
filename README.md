@@ -50,7 +50,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 - **Web3**: wagmi + viem + RainbowKit / WalletConnect
 - **Backend**: Next.js API routes + Prisma + PostgreSQL
 - **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (images)
-- **IP**: Story Protocol (testnet) + IPFS (Pinata)
+- **IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove fallback)
 - **Access Control**: Lit Protocol (NFT-gated encryption)
 - **Impact**: Hypercerts (AT Protocol)
 
