@@ -32,6 +32,7 @@ export default async function WriterPage({ params }: WriterPageProps) {
   const { total } = await GameDatabaseService.getGames({
     writerCoinId: coinId,
     includePrivate: false,
+    requireArtifact: true,
     limit: 1,
   })
 

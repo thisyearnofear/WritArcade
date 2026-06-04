@@ -216,6 +216,7 @@ export class GameDatabaseService {
     featured?: boolean
     requireFunding?: boolean
     requireImage?: boolean
+    requireArtifact?: boolean
   } = {}) {
     const {
       limit = 25,
@@ -227,7 +228,8 @@ export class GameDatabaseService {
       includePrivate = false,
       featured,
       requireFunding = false,
-      requireImage = false
+      requireImage = false,
+      requireArtifact = false
     } = options
 
     try {
@@ -263,6 +265,15 @@ export class GameDatabaseService {
           } : {},
           requireImage ? {
             imageUrl: { not: null },
+          } : {},
+          requireArtifact ? {
+            OR: [
+              { artifactManifestUri: { not: null } },
+              { artifactPanels: { some: {} } },
+              { nftTokenId: { not: null } },
+              { nftTransactionHash: { not: null } },
+              { storyIpId: { not: null } },
+            ],
           } : {},
         ]
       }

@@ -15,7 +15,7 @@ export default function DiscoveryPage() {
         const fetchGames = async () => {
             try {
                 // Fetch public games
-                const data = await GameDatabaseService.getGames({ limit: 10 })
+                const data = await GameDatabaseService.getGames({ limit: 10, requireArtifact: true })
                 setGames(data.games)
             } catch (err) {
                 console.error("Failed to fetch games:", err)
