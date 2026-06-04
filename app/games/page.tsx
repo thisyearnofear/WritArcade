@@ -41,17 +41,17 @@ export default function GamesPage() {
 
   return (
     <ThemeWrapper theme="arcade">
-      <div className="flex flex-col min-h-screen bg-white dark:bg-black">
+      <div className="flex flex-col min-h-screen">
         <Header />
 
         <main className="flex-1">
           {/* Page Header */}
           <div className="px-4 py-8 border-b border-border sm:py-10">
             <div className="max-w-7xl mx-auto">
-              <h1 className="font-serif text-3xl md:text-4xl font-semibold text-slate-950 dark:text-foreground mb-2">
+              <h1 className="font-serif text-3xl md:text-4xl font-semibold text-foreground mb-2">
                 The Arcade
               </h1>
-              <p className="text-slate-600 dark:text-muted-foreground max-w-2xl mb-6">
+              <p className="text-muted-foreground max-w-2xl mb-6">
                 Interactive games generated from articles by supported writers. Play, collect, and own the experience.
               </p>
 

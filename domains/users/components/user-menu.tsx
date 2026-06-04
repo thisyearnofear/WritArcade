@@ -208,7 +208,7 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
                 onClick={() => setIsOpen(false)}
               >
                 <LayoutDashboard className="w-4 h-4 text-amber-500 group-hover:text-amber-400" />
-                <span className="text-muted-foreground group-hover:text-white font-bold uppercase tracking-widest text-[10px]">Creator Hub</span>
+                <span className="text-muted-foreground group-hover:text-white font-bold uppercase tracking-widest text-[10px]">Creator Studio</span>
               </Link>
 
               <Link

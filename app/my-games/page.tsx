@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { GameCardEnhanced } from '@/domains/games/components/game-card-enhanced'
 import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
@@ -339,8 +340,9 @@ export default function MyGamesPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <ThemeWrapper theme="arcade">
+      <div className="min-h-screen flex flex-col">
+        <Header />
 
       <main className="flex-1 overflow-y-auto">
         {/* Page Header */}
@@ -666,6 +668,7 @@ export default function MyGamesPage() {
 
       <Footer />
       <Toaster />
-    </div>
+      </div>
+    </ThemeWrapper>
   )
 }
