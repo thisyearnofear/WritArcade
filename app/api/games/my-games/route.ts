@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { optionalAuth } from '@/lib/auth'
+import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
+import { getWriterCoinById } from '@/lib/writerCoins'
 
 /**
  * GET /api/games/my-games
@@ -83,45 +85,71 @@ export async function GET(request: NextRequest) {
     // Calculate stats
     const mintedGames = games.filter((g: { nftTokenId?: string | null }) => g.nftTokenId).length
 
-    const formattedGames = games.map((game) => ({
-      id: game.id,
-      slug: game.slug,
-      title: game.title,
-      description: game.description,
-      tagline: game.tagline,
-      genre: game.genre,
-      subgenre: game.subgenre,
-      primaryColor: game.primaryColor,
-      mode: game.mode as 'story' | 'wordle' || 'story',
-      promptName: game.promptName,
-      promptText: game.promptText,
-      promptModel: game.promptModel,
-      articleUrl: game.articleUrl,
-      articleContext: game.articleContext,
-      writerCoinId: game.writerCoinId,
-      difficulty: game.difficulty,
-      creatorWallet: game.creatorWallet,
-      authorWallet: game.authorWallet,
-      authorParagraphUsername: game.authorParagraphUsername,
-      publicationName: game.publicationName,
-      publicationSummary: game.publicationSummary,
-      subscriberCount: game.subscriberCount,
-      articlePublishedAt: game.articlePublishedAt,
-      imageUrl: game.imageUrl,
-      imagePromptModel: game.imagePromptModel,
-      imagePromptName: game.imagePromptName,
-      imagePromptText: game.imagePromptText,
-      imageData: game.imageData,
-      musicPromptText: game.musicPromptText,
-      musicPromptSeedImage: game.musicPromptSeedImage,
-      nftTokenId: game.nftTokenId,
-      nftTransactionHash: game.nftTransactionHash,
-      nftMintedAt: game.nftMintedAt,
-      private: game.private,
-      playFee: game.playFee,
-      featured: game.featured ?? false,
-      createdAt: game.createdAt,
-      updatedAt: game.updatedAt,
+    const formattedGames = await Promise.all(games.map(async (game) => {
+      let writerMintReceipt: {
+        writer: string
+        writerShare: string
+        symbol: string
+      } | undefined
+
+      if (game.nftTokenId && game.writerCoinId) {
+        const coin = getWriterCoinById(game.writerCoinId)
+        if (coin) {
+          try {
+            const distribution = await PaymentCostService.calculateDistribution(game.writerCoinId, 'mint-nft')
+            const formatted = PaymentCostService.formatDistribution(distribution, coin.decimals, coin.symbol)
+            writerMintReceipt = {
+              writer: game.authorParagraphUsername || coin.writer,
+              writerShare: formatted.writerShare,
+              symbol: coin.symbol,
+            }
+          } catch {
+            writerMintReceipt = undefined
+          }
+        }
+      }
+
+      return {
+        id: game.id,
+        slug: game.slug,
+        title: game.title,
+        description: game.description,
+        tagline: game.tagline,
+        genre: game.genre,
+        subgenre: game.subgenre,
+        primaryColor: game.primaryColor,
+        mode: game.mode as 'story' | 'wordle' || 'story',
+        promptName: game.promptName,
+        promptText: game.promptText,
+        promptModel: game.promptModel,
+        articleUrl: game.articleUrl,
+        articleContext: game.articleContext,
+        writerCoinId: game.writerCoinId,
+        difficulty: game.difficulty,
+        creatorWallet: game.creatorWallet,
+        authorWallet: game.authorWallet,
+        authorParagraphUsername: game.authorParagraphUsername,
+        publicationName: game.publicationName,
+        publicationSummary: game.publicationSummary,
+        subscriberCount: game.subscriberCount,
+        articlePublishedAt: game.articlePublishedAt,
+        imageUrl: game.imageUrl,
+        imagePromptModel: game.imagePromptModel,
+        imagePromptName: game.imagePromptName,
+        imagePromptText: game.imagePromptText,
+        imageData: game.imageData,
+        musicPromptText: game.musicPromptText,
+        musicPromptSeedImage: game.musicPromptSeedImage,
+        nftTokenId: game.nftTokenId,
+        nftTransactionHash: game.nftTransactionHash,
+        nftMintedAt: game.nftMintedAt,
+        writerMintReceipt,
+        private: game.private,
+        playFee: game.playFee,
+        featured: game.featured ?? false,
+        createdAt: game.createdAt,
+        updatedAt: game.updatedAt,
+      }
     }))
 
     return NextResponse.json({

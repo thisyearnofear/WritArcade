@@ -57,6 +57,11 @@ export interface Game {
   nftMintedAt?: Date
   nftContractAddress?: string
   nftChainId?: number
+  writerMintReceipt?: {
+    writer: string
+    writerShare: string
+    symbol: string
+  }
 
   // Story Protocol IP registration (set after registerGameAsIP)
   storyIpId?: string
