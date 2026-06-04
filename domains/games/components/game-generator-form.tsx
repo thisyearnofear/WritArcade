@@ -268,6 +268,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [imageQuality, setImageQuality] = useState<ImageQuality>('fast')
   const [showCustomization, setShowCustomization] = useState(false)
   const [paymentApproved, setPaymentApproved] = useState(false)
+  const paymentTxHashRef = useRef<string | undefined>(undefined)
   const [error, setError] = useState<GenerateErrorState | null>(null)
   const [successData, setSuccessData] = useState<{
     gameSlug: string
@@ -317,6 +318,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     setPaymentPath('musd')
     setPaymentApproved(false)
     paymentCompletedRef.current = false
+    paymentTxHashRef.current = undefined
   }, [paymentPath, writerCoin.paymentEnabled])
 
   const requiredAmount = useMemo(() => {
@@ -333,6 +335,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
   const handlePaymentSuccess = async (transactionHash: string) => {
     paymentCompletedRef.current = true
+    paymentTxHashRef.current = transactionHash
     trackEvent('payment_succeeded', {
       paymentPath,
       mode,
@@ -568,7 +571,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       return
     }
 
-    await generateGame()
+    await generateGame(paymentTxHashRef.current)
   }
 
   useEffect(() => {
@@ -1164,7 +1167,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 return
               }
               if (error.phase === 'generation') {
-                generateGame()
+                generateGame(paymentTxHashRef.current)
                 return
               }
               setError(null)
