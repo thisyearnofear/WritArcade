@@ -50,6 +50,21 @@ function getPaymentAmount(writerCoinId: string, action: 'generate-game' | 'mint-
   return action === 'generate-game' ? writerCoin.gameGenerationCost : writerCoin.mintCost
 }
 
+function toNativeBigInt(value: unknown): bigint {
+  if (typeof value === 'bigint') return value
+  if (typeof value === 'number' || typeof value === 'string') return BigInt(value)
+  if (
+    value &&
+    typeof value === 'object' &&
+    '$type' in value &&
+    'value' in value &&
+    (value as { $type?: unknown }).$type === 'BigInt'
+  ) {
+    return BigInt(String((value as { value: unknown }).value))
+  }
+  throw new Error('Invalid payment amount')
+}
+
 function getRpcUrl(chainId: number) {
   if (chainId === BASE_MAINNET_CHAIN_ID) return process.env.BASE_RPC_URL || 'https://mainnet.base.org'
   if (chainId === MEZO_TESTNET_CHAIN_ID) return process.env.NEXT_PUBLIC_MEZO_TESTNET_RPC || 'https://rpc.test.mezo.org'
@@ -119,7 +134,7 @@ export async function POST(request: NextRequest) {
       userAddress: validatedData.userAddress,
       chainId: validatedData.chainId,
     })
-    const amount = getPaymentAmount(validatedData.writerCoinId, validatedData.action)
+    const amount = toNativeBigInt(getPaymentAmount(validatedData.writerCoinId, validatedData.action))
 
     // Store the verified payment wallet directly. SIWE is optional during
     // creation, so userId can be null while walletAddress remains canonical.
