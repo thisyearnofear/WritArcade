@@ -16,7 +16,7 @@ import { config, logger } from './config'
 const GAME_NFT_CONTRACT =
   process.env.NEXT_PUBLIC_GAME_NFT_MAINNET ||
   process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS ||
-  '0x778C87dAA2b284982765688AE22832AADae7dccC'
+  '0x32D0356f533cC429F94Db73f383bBb21a459E16b'
 
 export interface SecretPanelData {
   narrative: string

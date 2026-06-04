@@ -11,12 +11,12 @@ import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, MEZO_MAINNET_CHAIN_ID } f
 const BASE_GAME_NFT_ADDRESS =
     (process.env.NEXT_PUBLIC_GAME_NFT_MAINNET as `0x${string}` | undefined) ||
     (process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS as `0x${string}` | undefined) ||
-    "0x778C87dAA2b284982765688AE22832AADae7dccC"
+    "0x32D0356f533cC429F94Db73f383bBb21a459E16b"
 
 const BASE_WRITER_COIN_PAYMENT_ADDRESS =
     (process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET as `0x${string}` | undefined) ||
     (process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS as `0x${string}` | undefined) ||
-    "0xf11822F99FF5f6982d42d4A0923d2b3f9589fA75"
+    "0x56Ee5A3f122da00B635DdbB319708e24450aEB89"
 
 export interface WriterCoin {
     id: string
