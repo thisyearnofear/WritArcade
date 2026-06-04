@@ -31,6 +31,20 @@ export const CONTRACT_ABIS = {
       { name: 'writerShare', type: 'uint256' },
       { name: 'platformShare', type: 'uint256' }
     ]
+  }, {
+    name: 'getCoinConfig',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'coinAddress', type: 'address' }],
+    outputs: [{
+      name: '',
+      type: 'tuple',
+      components: [
+        { name: 'gameGenerationCost', type: 'uint256' },
+        { name: 'mintCost', type: 'uint256' },
+        { name: 'enabled', type: 'bool' },
+      ],
+    }]
   }] as const,
   WriterCoinPayment: [
     'function getRevenueDistribution(address coinAddress) external view returns (uint256 writerShare, uint256 platformShare, uint256 creatorPoolShare)',
@@ -236,7 +250,7 @@ export async function fetchCoinConfigOnChain(coinAddress: `0x${string}`, chainId
   const contractAddress = getWriterCoinPaymentAddress(chainId)
   const [genCost, mintCost, enabled] = await readWithRetry(() => client.readContract({
     address: contractAddress,
-    abi: CONTRACT_ABIS.WriterCoinPayment,
+    abi: CONTRACT_ABIS.__WriterCoinPaymentRead,
     functionName: 'getCoinConfig',
     args: [coinAddress],
   })) as unknown as [bigint, bigint, boolean]
