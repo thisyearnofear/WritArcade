@@ -200,6 +200,26 @@ export function isWriterCoinPaymentEnabled(writerCoinId: string): boolean {
     return Boolean(getWriterCoinById(writerCoinId)?.paymentEnabled)
 }
 
+const PARAGRAPH_HOSTNAMES = new Set(['paragraph.com', 'paragraph.xyz'])
+
+function normalizeHostname(hostname: string): string {
+    return hostname.replace(/^www\./, '').toLowerCase()
+}
+
+function normalizePathname(pathname: string): string {
+    const normalized = pathname.toLowerCase().replace(/\/+$/, '')
+    return normalized || '/'
+}
+
+function hostnamesMatch(articleHostname: string, coinHostname: string): boolean {
+    const articleHost = normalizeHostname(articleHostname)
+    const coinHost = normalizeHostname(coinHostname)
+
+    if (articleHost === coinHost) return true
+
+    return PARAGRAPH_HOSTNAMES.has(articleHost) && PARAGRAPH_HOSTNAMES.has(coinHost)
+}
+
 /**
  * Validate if an article URL matches a writer coin's Paragraph
  * For paragraph.com coins, also checks the author path prefix.
@@ -211,16 +231,22 @@ export function validateArticleUrl(url: string, writerCoinId: string): boolean {
     try {
         const articleUrl = new URL(url)
         const coinUrl = new URL(coin.paragraphUrl)
-        if (articleUrl.hostname !== coinUrl.hostname) return false
+        if (!hostnamesMatch(articleUrl.hostname, coinUrl.hostname)) return false
         // For shared-domain hosts (e.g. paragraph.com), ensure the article
         // belongs to the correct author by checking the path prefix.
-        if (coinUrl.pathname && coinUrl.pathname !== "/") {
-            return articleUrl.pathname.toLowerCase().startsWith(coinUrl.pathname.toLowerCase())
+        const coinPath = normalizePathname(coinUrl.pathname)
+        if (coinPath !== "/") {
+            const articlePath = normalizePathname(articleUrl.pathname)
+            return articlePath === coinPath || articlePath.startsWith(`${coinPath}/`)
         }
         return true
     } catch {
         return false
     }
+}
+
+export function getWriterCoinByArticleUrl(url: string): WriterCoin | undefined {
+    return WRITER_COINS.find((coin) => coin.paymentEnabled && validateArticleUrl(url, coin.id))
 }
 
 /**

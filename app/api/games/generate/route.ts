@@ -11,7 +11,7 @@ import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 import { config, logger } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
-import { getMintConfig } from '@/lib/writerCoins'
+import { getMintConfig, getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 
 // Request validation schema
@@ -100,6 +100,29 @@ export async function POST(request: NextRequest) {
           success: false,
           error: `Payment coin mismatch: verified payment used ${fundingContext.writerCoinId}, not ${validatedData.payment.writerCoinId}.`,
           code: 'PAYMENT_COIN_MISMATCH',
+        },
+        { status: 400 }
+      )
+    }
+
+    const canonicalWriterCoinId = fundingContext?.writerCoinId || validatedData.payment?.writerCoinId
+
+    if (
+      mode === 'story' &&
+      validatedData.url &&
+      canonicalWriterCoinId &&
+      !canonicalWriterCoinId.startsWith('musd') &&
+      !validateArticleUrl(validatedData.url, canonicalWriterCoinId)
+    ) {
+      const detectedWriterCoin = getWriterCoinByArticleUrl(validatedData.url)
+      return NextResponse.json(
+        {
+          success: false,
+          error: detectedWriterCoin
+            ? `Payment coin mismatch: this article belongs to ${detectedWriterCoin.name}. Use ${detectedWriterCoin.symbol}, or switch to MUSD for any public Paragraph article.`
+            : 'Payment coin mismatch: this article does not match the selected writer coin. Switch to MUSD for any public Paragraph article.',
+          code: 'ARTICLE_WRITER_MISMATCH',
+          detectedWriterCoinId: detectedWriterCoin?.id,
         },
         { status: 400 }
       )
@@ -256,7 +279,6 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       siweWallet: user?.walletAddress,
       connectedWallet: validatedData.wallet,
     })
-    const canonicalWriterCoinId = fundingContext?.writerCoinId || validatedData.payment?.writerCoinId
 
     // Save to database using enhanced database service
     const miniAppData = processedContent ? {

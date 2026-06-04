@@ -345,9 +345,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     save: 'pending',
   })
 
-  const writerCoin = selectedCoin
   const isStoryMode = mode === 'story'
   const isMusdPath = paymentPath === 'musd'
+  const writerCoin = !isMusdPath && detectedCoin ? detectedCoin : selectedCoin
   const hasPreviewedCurrentUrl = !!articlePreview && previewedUrl === url.trim()
   const activePaymentTxHash = paymentTxHashRef.current
   const activePaymentExplorerUrl = activePaymentTxHash
@@ -374,6 +374,18 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     if (isMusdPath || !balance?.formattedBalance) return null
     return parseFloat(balance.formattedBalance)
   }, [balance, isMusdPath])
+
+  useEffect(() => {
+    if (paymentPath !== 'writercoin' || !detectedCoin || selectedCoin.id === detectedCoin.id) return
+    setSelectedCoin(detectedCoin)
+    setPaymentApproved(false)
+    paymentCompletedRef.current = false
+    paymentTxHashRef.current = undefined
+    paymentIdRef.current = undefined
+    setArticlePreview(null)
+    setPreviewedUrl('')
+    paymentPathExposureRef.current = null
+  }, [detectedCoin, paymentPath, selectedCoin.id])
 
   const handlePaymentSuccess = async (payment: PaymentResult) => {
     paymentCompletedRef.current = true

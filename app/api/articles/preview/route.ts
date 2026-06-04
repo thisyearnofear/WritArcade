@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
-import { validateArticleUrl } from '@/lib/writerCoins'
+import { getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
 import { z } from 'zod'
 
 const previewSchema = z.object({
@@ -22,10 +22,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (paymentPath === 'writercoin' && writerCoinId && !validateArticleUrl(url, writerCoinId)) {
+      const detectedWriterCoin = getWriterCoinByArticleUrl(url)
       return NextResponse.json(
         {
           success: false,
-          error: 'This URL does not match the selected writer. Switch to MUSD for any Paragraph article, or choose the matching writer coin.',
+          error: detectedWriterCoin
+            ? `This article belongs to ${detectedWriterCoin.name}. Use ${detectedWriterCoin.symbol}, or switch to MUSD for any public Paragraph article.`
+            : 'This URL does not match the selected writer. Switch to MUSD for any Paragraph article, or choose the matching writer coin.',
+          detectedWriterCoin: detectedWriterCoin
+            ? {
+                id: detectedWriterCoin.id,
+                name: detectedWriterCoin.name,
+                symbol: detectedWriterCoin.symbol,
+              }
+            : undefined,
         },
         { status: 400 }
       )
