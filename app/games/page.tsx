@@ -170,6 +170,7 @@ export default function GamesPage() {
                   page={currentPage}
                   genre={selectedGenre}
                   search={searchQuery}
+                  requireFunding={true}
                   onLoad={handleStatsLoad}
                   emptyActionLabel="Create a game"
                 />

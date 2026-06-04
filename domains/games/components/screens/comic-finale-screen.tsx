@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ComicBookFinale, type ComicBookFinalePanelData } from '../comic-book-finale'
 import { Game, ChatMessage } from '../../types'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/lib/story-sdk-client'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
 
 interface ComicFinaleScreenProps {
   game: Game
@@ -51,6 +52,19 @@ export function ComicFinaleScreen({
   epilogueReflection,
 }: ComicFinaleScreenProps) {
   const onStoryNetwork = isOnStoryNetwork(chainId)
+  const mintToken = game.writerCoinId?.startsWith('musd')
+    ? game.writerCoinId === 'musd-mainnet'
+      ? MUSD_CONFIG.mainnet
+      : MUSD_CONFIG.testnet
+    : game.writerCoinId
+      ? getWriterCoinById(game.writerCoinId)
+      : undefined
+  const mintCost = mintToken
+    ? Number(mintToken.mintCost) / 10 ** mintToken.decimals
+    : null
+  const mintCostLabel = mintCost === null
+    ? undefined
+    : `${mintCost.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${mintToken?.symbol}`
 
   const buildComicPanels = (): ComicBookFinalePanelData[] => {
     const assistantMessages = messages.filter(m => m.role === 'assistant')
@@ -97,6 +111,10 @@ export function ComicFinaleScreen({
         onPanelImageChange={handlePanelImageChange}
         regeneratingMessageId={regeneratingMessageId}
         epilogueReflection={epilogueReflection || undefined}
+        mintAvailable={Boolean(game.writerCoinId)}
+        mintUnavailableReason="This legacy game is playable, but it was created before payment provenance was recorded, so minting is unavailable."
+        mintTokenLabel={mintToken?.symbol}
+        mintCostLabel={mintCostLabel}
       />
       {extractedAssetIds.length > 0 && !derivativeRegistered && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">

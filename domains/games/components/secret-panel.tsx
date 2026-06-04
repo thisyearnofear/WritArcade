@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, Lock, Unlock, Eye, Loader2, ShieldCheck, Copy, Check } from 'lucide-react'
+import { CheckCircle2, Lock, Unlock, Eye, Loader2, ShieldCheck, Copy, Check, Share2 } from 'lucide-react'
 import { useWalletClient } from 'wagmi'
 import type { WalletClient, Transport, Chain, Account } from 'viem'
 
@@ -15,6 +15,8 @@ const STEP_LABEL: Record<UnlockStep, string> = {
   requesting_decrypt: 'Requesting CDR read on Story Aeneid…',
   done: 'Decrypted via CDR vault',
 }
+
+const UNLOCKED_VAULTS_KEY = 'writersarcade.unlockedVaults'
 
 interface SecretPanelProps {
   gameId: string
@@ -54,6 +56,9 @@ export function SecretPanel({
   const [accessPolicy, setAccessPolicy] = useState<AccessPolicy | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const shareUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/games/${gameSlug}?unlocked=${encodeURIComponent(gameSlug)}`
+    : ''
 
   const copyToClipboard = useCallback(async (value: string, field: string) => {
     try {
@@ -64,6 +69,35 @@ export function SecretPanel({
       /* ignore clipboard errors */
     }
   }, [])
+
+  const recordUnlockedVault = useCallback((policy: AccessPolicy | null) => {
+    if (typeof window === 'undefined' || !promptVaultUuid) return
+
+    const record = {
+      gameSlug,
+      vaultUuid: promptVaultUuid,
+      nftContract: policy?.nftContract ?? null,
+      nftTokenId: policy?.nftTokenId ?? nftTokenId ?? null,
+      nftChainId: policy?.nftChainId ?? null,
+      walletAddress: walletAddress ?? null,
+      unlockedAt: new Date().toISOString(),
+      shareUrl,
+    }
+
+    try {
+      const existing = JSON.parse(window.localStorage.getItem(UNLOCKED_VAULTS_KEY) || '[]')
+      const records = Array.isArray(existing) ? existing : []
+      const next = [
+        record,
+        ...records.filter((item: { gameSlug?: string; vaultUuid?: string }) => (
+          item.gameSlug !== gameSlug || item.vaultUuid !== promptVaultUuid
+        )),
+      ].slice(0, 50)
+      window.localStorage.setItem(UNLOCKED_VAULTS_KEY, JSON.stringify(next))
+    } catch {
+      window.localStorage.setItem(UNLOCKED_VAULTS_KEY, JSON.stringify([record]))
+    }
+  }, [gameSlug, nftTokenId, promptVaultUuid, shareUrl, walletAddress])
 
   const handleUnlock = useCallback(async () => {
     if (!isConnected || !walletAddress || !walletClient || !promptVaultUuid) {
@@ -114,6 +148,7 @@ export function SecretPanel({
       setPanelData(panel)
       setAccessPolicy(data.accessPolicy ?? null)
       setUnlocked(true)
+      recordUnlockedVault(data.accessPolicy ?? null)
       setUnlockStep('done')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unlock failed')
@@ -121,7 +156,7 @@ export function SecretPanel({
     } finally {
       setIsUnlocking(false)
     }
-  }, [isConnected, walletAddress, walletClient, gameSlug, promptVaultUuid, storyComplete, storySessionId])
+  }, [isConnected, walletAddress, walletClient, gameSlug, promptVaultUuid, storyComplete, storySessionId, recordUnlockedVault])
 
   return (
     <motion.div
@@ -240,6 +275,57 @@ export function SecretPanel({
                         </>
                       )}
                     </dl>
+                  </div>
+                )}
+                {promptVaultUuid && (
+                  <div className="mt-3 rounded-md border border-white/10 bg-white/[0.03] p-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                      <Share2 className="h-3.5 w-3.5" />
+                      <span>Shareable proof of unlock</span>
+                    </div>
+                    <dl className="mt-2 grid gap-1.5 text-[11px] text-muted-foreground">
+                      <div className="flex items-center justify-between gap-3">
+                        <dt>Vault UUID</dt>
+                        <dd className="font-mono text-foreground">{promptVaultUuid.length > 18 ? `${promptVaultUuid.slice(0, 10)}…${promptVaultUuid.slice(-6)}` : promptVaultUuid}</dd>
+                      </div>
+                      {accessPolicy && (
+                        <>
+                          <div className="flex items-center justify-between gap-3">
+                            <dt>Gate NFT</dt>
+                            <dd className="font-mono text-foreground">#{accessPolicy.nftTokenId} on Base</dd>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <dt>Verify</dt>
+                            <dd className="font-mono text-foreground">{accessPolicy.nftContract.slice(0, 6)}…{accessPolicy.nftContract.slice(-4)}</dd>
+                          </div>
+                        </>
+                      )}
+                    </dl>
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(shareUrl, 'share')}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-white/10"
+                      >
+                        {copiedField === 'share' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        Copy deep link
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const text = `I unlocked the secret CDR vault for ${gameSlug}: ${shareUrl}`
+                          if (navigator.share) {
+                            navigator.share({ title: 'CDR vault unlocked', text, url: shareUrl }).catch(() => {})
+                          } else {
+                            copyToClipboard(text, 'share-text')
+                          }
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-500 px-3 py-2 text-xs font-bold text-black hover:bg-emerald-400"
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                        Share unlock
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

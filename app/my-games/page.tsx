@@ -10,7 +10,7 @@ import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
 import { IPRegistration } from '@/components/story/IPRegistration'
-import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye } from 'lucide-react'
+import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check } from 'lucide-react'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
@@ -28,6 +28,19 @@ function StatTile({ icon: Icon, label, value }: { icon: LucideIcon; label: strin
   )
 }
 
+type UnlockedVault = {
+  gameSlug: string
+  vaultUuid: string
+  nftContract?: string | null
+  nftTokenId?: string | null
+  nftChainId?: number | null
+  walletAddress?: string | null
+  unlockedAt: string
+  shareUrl: string
+}
+
+const UNLOCKED_VAULTS_KEY = 'writersarcade.unlockedVaults'
+
 export default function MyGamesPage() {
   const { toast } = useToast()
   const router = useRouter()
@@ -44,13 +57,34 @@ export default function MyGamesPage() {
   const [registrationGame, setRegistrationGame] = useState<Game | null>(null)
   const [sessionAllowed, setSessionAllowed] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
-  const [activeTab, setActiveTab] = useState<'games' | 'ip-registrations'>('games')
+  const [activeTab, setActiveTab] = useState<'games' | 'unlocked-vaults' | 'ip-registrations'>('games')
+  const [unlockedVaults, setUnlockedVaults] = useState<UnlockedVault[]>([])
+  const [copiedVault, setCopiedVault] = useState<string | null>(null)
   const stats = useMemo(() => {
     const minted = games.filter(game => !!game.nftTokenId).length
     const registered = games.filter(game => !!game.storyIpId).length
     const publicGames = games.filter(game => !game.private).length
     return { minted, registered, publicGames }
   }, [games])
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(UNLOCKED_VAULTS_KEY) || '[]')
+      setUnlockedVaults(Array.isArray(stored) ? stored : [])
+    } catch {
+      setUnlockedVaults([])
+    }
+  }, [])
+
+  const copyVaultLink = async (vault: UnlockedVault) => {
+    try {
+      await navigator.clipboard.writeText(vault.shareUrl)
+      setCopiedVault(vault.vaultUuid)
+      setTimeout(() => setCopiedVault(null), 1500)
+    } catch {
+      toast({ title: 'Copy failed', description: 'Could not copy the vault link.', variant: 'destructive' })
+    }
+  }
 
   // Require connection, but wait for status to resolve to avoid false redirects
   // Guard against 'connecting' AND 'reconnecting' — both are transient states
@@ -329,11 +363,12 @@ export default function MyGamesPage() {
               </Link>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-5">
               <StatTile icon={Library} label="Games" value={games.length} />
               <StatTile icon={Eye} label="Public" value={stats.publicGames} />
               <StatTile icon={BadgeCheck} label="Minted" value={stats.minted} />
               <StatTile icon={Network} label="IP Registered" value={stats.registered} />
+              <StatTile icon={Lock} label="Vaults" value={unlockedVaults.length} />
             </div>
           </div>
         </section>
@@ -368,11 +403,91 @@ export default function MyGamesPage() {
                 <Shield className="w-4 h-4" />
                 Ownership History
               </button>
+              <button
+                onClick={() => setActiveTab('unlocked-vaults')}
+                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
+                  activeTab === 'unlocked-vaults'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Lock className="w-4 h-4" />
+                Unlocked Vaults
+                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
+                  {unlockedVaults.length}
+                </span>
+              </button>
             </div>
 
             {/* Tab Content */}
             {activeTab === 'ip-registrations' ? (
               <IPRegistrationHistory />
+            ) : activeTab === 'unlocked-vaults' ? (
+              unlockedVaults.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border bg-card/50 px-4 py-12 text-center sm:py-16">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+                    <Lock className="h-7 w-7" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground mb-3">No vaults unlocked yet</h2>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    Finish a 5-panel game, mint the NFT, then decrypt the CDR vault to add it here.
+                  </p>
+                  <Link
+                    href="/games"
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-emerald-700"
+                  >
+                    Browse Games
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Vaults You've Unlocked</h2>
+                    <p className="text-sm text-muted-foreground">
+                      CDR unlock receipts saved on this device. Each one links back to the game and gate NFT.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {unlockedVaults.map((vault) => (
+                      <div key={`${vault.gameSlug}-${vault.vaultUuid}`} className="rounded-lg border border-border bg-card p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">CDR Vault</p>
+                            <h3 className="mt-1 text-base font-semibold text-foreground">{vault.gameSlug.replace(/-/g, ' ')}</h3>
+                          </div>
+                          <Link href={vault.shareUrl || `/games/${vault.gameSlug}`} className="text-xs font-semibold text-purple-400 hover:text-purple-300">
+                            Open
+                          </Link>
+                        </div>
+                        <dl className="mt-4 grid gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center justify-between gap-3">
+                            <dt>Vault UUID</dt>
+                            <dd className="font-mono text-foreground">{vault.vaultUuid.length > 18 ? `${vault.vaultUuid.slice(0, 10)}…${vault.vaultUuid.slice(-6)}` : vault.vaultUuid}</dd>
+                          </div>
+                          {vault.nftTokenId && (
+                            <div className="flex items-center justify-between gap-3">
+                              <dt>Gate NFT</dt>
+                              <dd className="font-mono text-foreground">#{vault.nftTokenId}</dd>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between gap-3">
+                            <dt>Unlocked</dt>
+                            <dd className="text-foreground">{new Date(vault.unlockedAt).toLocaleString()}</dd>
+                          </div>
+                        </dl>
+                        <button
+                          type="button"
+                          onClick={() => copyVaultLink(vault)}
+                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted/80"
+                        >
+                          {copiedVault === vault.vaultUuid ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          {copiedVault === vault.vaultUuid ? 'Copied' : 'Copy Unlock Link'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
             ) : loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (

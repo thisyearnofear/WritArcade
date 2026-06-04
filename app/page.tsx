@@ -341,6 +341,8 @@ export default function HomePage() {
                   <GameGrid
                     limit={3}
                     featured={true}
+                    requireFunding={true}
+                    requireImage={true}
                     onLoad={({ count }) => {
                       if (!featuredLoadedRef.current) {
                         featuredLoadedRef.current = true
@@ -365,7 +367,7 @@ export default function HomePage() {
                 </a>
               </div>
               <Suspense fallback={<GridSkeleton count={4} columns={3} />}>
-                <GameGrid limit={4} />
+                <GameGrid limit={4} requireFunding={true} requireImage={true} />
               </Suspense>
             </div>
           </section>

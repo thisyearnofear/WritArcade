@@ -18,11 +18,13 @@ export async function GET(request: NextRequest) {
     const genre = searchParams.get('genre') || undefined
     const featured = searchParams.get('featured') === 'true'
     const writerCoinId = searchParams.get('writerCoinId') || undefined
+    const requireFunding = searchParams.get('requireFunding') === 'true'
+    const requireImage = searchParams.get('requireImage') === 'true'
 
     // Cache key is the full param set — skip cache for search queries
     const cacheKey = search
       ? null
-      : `games:${limit}:${offset}:${genre ?? ''}:${featured}:${writerCoinId ?? ''}`
+      : `games:${limit}:${offset}:${genre ?? ''}:${featured}:${writerCoinId ?? ''}:${requireFunding}:${requireImage}`
 
     if (cacheKey) {
       const cached = cacheGet<unknown>(cacheKey, CACHE_TTL_MS)
@@ -38,6 +40,8 @@ export async function GET(request: NextRequest) {
       genre,
       featured,
       writerCoinId,
+      requireFunding,
+      requireImage,
       includePrivate: false,
     })
 

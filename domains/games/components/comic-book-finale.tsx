@@ -71,6 +71,10 @@ interface ComicBookFinaleProps {
   onPanelAudioChange?: (panelIndex: number, audioUrl: string | null) => void
   // Epilogue reflection
   epilogueReflection?: string
+  mintAvailable?: boolean
+  mintUnavailableReason?: string
+  mintTokenLabel?: string
+  mintCostLabel?: string
 }
 
 export function ComicBookFinale({
@@ -98,6 +102,10 @@ export function ComicBookFinale({
   regeneratingMessageId,
   onPanelAudioChange,
   epilogueReflection,
+  mintAvailable = true,
+  mintUnavailableReason,
+  mintTokenLabel,
+  mintCostLabel,
 }: ComicBookFinaleProps) {
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
   const [isImageExpanded, setIsImageExpanded] = useState(false)
@@ -387,6 +395,7 @@ export function ComicBookFinale({
   }, [currentPanelIndex, currentAudioUrl, isAutoPlayMode])
 
   const handleMintWithMetadata = async () => {
+    if (!mintAvailable) return
     try {
       await onMint(panels)
       setShowIPRegistration(true)
@@ -1090,7 +1099,7 @@ export function ComicBookFinale({
                 <div className="text-center">
                   <Button
                     onClick={handleMintWithMetadata}
-                    disabled={isMinting}
+                    disabled={isMinting || !mintAvailable}
                     size="lg"
                     className="gap-2"
                     style={{
@@ -1102,7 +1111,9 @@ export function ComicBookFinale({
                     {isMinting ? 'Preparing NFT…' : 'Mint this NFT'}
                   </Button>
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    Mints on Base (writer coin path) or Mezo (MUSD path), atomically routing writer + creator + platform shares.
+                    {mintAvailable
+                      ? `Cost: ${mintCostLabel || 'token mint fee'}${mintTokenLabel ? ` in ${mintTokenLabel}` : ''}. Wallet prompts: approve token spend, then mint on Base.`
+                      : mintUnavailableReason || 'This legacy game is playable, but minting is unavailable.'}
                   </p>
                 </div>
               </div>
@@ -1284,7 +1295,7 @@ export function ComicBookFinale({
 
               <Button
                 onClick={handleMintWithMetadata}
-                disabled={isMinting}
+                disabled={isMinting || !mintAvailable}
                 className="gap-2"
                 style={{
                   backgroundColor: primaryColor,

@@ -6,6 +6,7 @@ import { GameDatabaseService } from '@/domains/games/services/game-database.serv
 import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
 import { BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
+import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 
 interface MintRequest {
   gameId: string
@@ -137,6 +138,26 @@ export async function POST(request: NextRequest) {
     // Return minting payload
     // Frontend will use this to call GameNFT.mintGame() contract function
     const coin = getWriterCoinById(canonicalWriterCoinId)
+    let writerReceipt: {
+      writer: string
+      symbol: string
+      writerShare: string
+    } | null = null
+
+    if (coin) {
+      try {
+        const distribution = await PaymentCostService.calculateDistribution(canonicalWriterCoinId, 'mint-nft')
+        const formatted = PaymentCostService.formatDistribution(distribution, coin.decimals, coin.symbol)
+        writerReceipt = {
+          writer: game.authorParagraphUsername || coin.writer,
+          symbol: coin.symbol,
+          writerShare: formatted.writerShare,
+        }
+      } catch {
+        writerReceipt = null
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -148,6 +169,8 @@ export async function POST(request: NextRequest) {
         chainId: mintConfig.chainId,
         message: 'Prepare minting transaction. Click "Confirm" to mint as NFT.',
         estimatedCost: coin ? coin.mintCost.toString() : '0',
+        symbol: coin?.symbol,
+        writerReceipt,
       },
     })
   } catch (error) {

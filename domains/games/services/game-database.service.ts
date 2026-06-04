@@ -154,6 +154,8 @@ export class GameDatabaseService {
     writerCoinId?: string
     includePrivate?: boolean
     featured?: boolean
+    requireFunding?: boolean
+    requireImage?: boolean
   } = {}) {
     const {
       limit = 25,
@@ -163,7 +165,9 @@ export class GameDatabaseService {
       userId,
       writerCoinId,
       includePrivate = false,
-      featured
+      featured,
+      requireFunding = false,
+      requireImage = false
     } = options
 
     try {
@@ -189,6 +193,17 @@ export class GameDatabaseService {
           genre ? { genre: { equals: genre, mode: 'insensitive' } } : {},
           // Writer coin filter
           writerCoinId ? { writerCoinId } : {},
+          // Public showcase quality filters. Legacy games without funding
+          // provenance are playable, but should not be promoted into mint flows.
+          requireFunding ? {
+            OR: [
+              { writerCoinId: { not: null } },
+              { payment: { isNot: null } },
+            ],
+          } : {},
+          requireImage ? {
+            imageUrl: { not: null },
+          } : {},
         ]
       }
 

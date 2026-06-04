@@ -168,6 +168,7 @@ export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {
                 chainId: targetChainId,
                 writerCoinId: mintWriterCoinId,
                 estimatedCost,
+                writerReceipt,
             } = mintData.data
 
             // 1b. Switch chain if needed
@@ -277,7 +278,12 @@ export function useGameBlockchain(game: Game, options: GameBlockchainOptions = {
                 }
             }
 
-            toast({ title: '🎉 NFT minted!', description: `Your game NFT is on ${isBase ? 'Base' : 'Mezo'}. ${isBase ? 'You can switch back to Mezo to generate more games.' : 'You can generate more games on Mezo with MUSD.'}` })
+            toast({
+                title: 'NFT minted',
+                description: writerReceipt?.writerShare
+                    ? `${writerReceipt.writerShare} routed to ${writerReceipt.writer} on this mint.`
+                    : `Your game NFT is on ${isBase ? 'Base' : 'Mezo'}.`,
+            })
         } catch (error) {
             console.error('Mint failed:', error)
             toast({ title: 'Minting failed', description: error instanceof Error ? error.message : 'Failed to mint comic. Please try again.', variant: 'destructive' })

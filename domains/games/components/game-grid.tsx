@@ -17,6 +17,8 @@ interface GameGridProps {
   writerCoinId?: string
   page?: number
   featured?: boolean
+  requireFunding?: boolean
+  requireImage?: boolean
   onLoad?: (data: { total: number, count: number }) => void
   emptyTitle?: string
   emptyDescription?: string
@@ -31,6 +33,8 @@ export function GameGrid({
   writerCoinId,
   page = 1,
   featured,
+  requireFunding,
+  requireImage,
   onLoad,
   emptyTitle,
   emptyDescription,
@@ -56,6 +60,8 @@ export function GameGrid({
         if (genre) params.set('genre', genre)
         if (featured) params.set('featured', 'true')
         if (writerCoinId) params.set('writerCoinId', writerCoinId)
+        if (requireFunding) params.set('requireFunding', 'true')
+        if (requireImage) params.set('requireImage', 'true')
 
         // BUG FIX: was incorrectly calling /api/games/generate (POST creation endpoint)
         // via GET. The listing endpoint is /api/games.
@@ -79,7 +85,7 @@ export function GameGrid({
     fetchGames()
   // onLoad intentionally omitted — use onLoadRef.current inside instead
    
-  }, [limit, search, genre, writerCoinId, page, featured])
+  }, [limit, search, genre, writerCoinId, page, featured, requireFunding, requireImage])
 
   if (loading) {
     // Cap skeletons to avoid huge layout shift — never render more than 6
