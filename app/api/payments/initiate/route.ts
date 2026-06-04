@@ -42,14 +42,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const onChainConfig = await fetchCoinConfigOnChain(writerCoin.address, writerCoin.chainId)
-    if (!onChainConfig.enabled) {
-      return NextResponse.json(
-        {
-          error: `${writerCoin.symbol} is not whitelisted by the Base payment contract yet. Use MUSD on Mezo for this article.`,
-        },
-        { status: 400 }
-      )
+    try {
+      const onChainConfig = await fetchCoinConfigOnChain(writerCoin.address, writerCoin.chainId)
+      if (!onChainConfig.enabled) {
+        return NextResponse.json(
+          {
+            error: `${writerCoin.symbol} is not whitelisted by the Base payment contract yet. Use MUSD on Mezo for this article.`,
+          },
+          { status: 400 }
+        )
+      }
+    } catch (error) {
+      console.warn('[Payment Initiate] Skipping on-chain whitelist check:', {
+        writerCoinId: writerCoin.id,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
     }
 
     // Calculate cost and distribution using shared service
