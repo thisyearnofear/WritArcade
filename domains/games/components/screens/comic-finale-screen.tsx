@@ -81,6 +81,8 @@ export function ComicFinaleScreen({
         onBack={() => setShowComicFinale(false)}
         onMint={handleMintComic}
         isMinting={isMinting}
+        nftMinted={Boolean(game.nftTransactionHash || game.nftTokenId)}
+        storyIpId={game.storyIpId}
         creatorWallet={game.creatorWallet || ''}
         articleUrl={game.articleUrl || ''}
         articleTitle={game.articleContext?.replace(/^Article:\s*"([^"]+)".*$/s, '$1') || game.title}

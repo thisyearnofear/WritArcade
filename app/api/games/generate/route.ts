@@ -305,6 +305,12 @@ Your game MUST authentically interpret this article's core themes. Players shoul
         slug: savedGame.slug,
         createdAt: savedGame.createdAt,
         authorParagraphUsername: savedGame.authorParagraphUsername,
+        authorWallet: savedGame.authorWallet,
+        creatorWallet: savedGame.creatorWallet,
+        ownerWallet: savedGame.ownerWallet,
+        ownershipSource: savedGame.ownershipSource,
+        paymentId: savedGame.paymentId,
+        writerCoinId: savedGame.writerCoinId,
         imageUrl: coverImageUrl,
       },
     })

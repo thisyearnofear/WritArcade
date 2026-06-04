@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useWriteContract, useWalletClient, useChainId, useSwitchChain, useAccount } from 'wagmi'
-import { parseEther, encodeFunctionData, maxUint256 } from 'viem'
+import { parseEther, encodeFunctionData } from 'viem'
 import { useToast } from '@/components/ui/use-toast'
 import { getWriterCoinById } from '@/lib/writerCoins'
 import { CONTRACT_ABIS } from '@/lib/contracts'
@@ -141,7 +141,6 @@ export function useGameBlockchain(game: Game) {
         setIsMinting(true)
         try {
             // 1. POST to get minting payload from server
-            const writerCoinId = game.writerCoinId || 'avc'
             const mintResponse = await fetch('/api/games/mint', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -149,7 +148,7 @@ export function useGameBlockchain(game: Game) {
                     gameId: game.id,
                     gameSlug: game.slug,
                     wallet: accountAddress,
-                    writerCoinId,
+                    writerCoinId: game.writerCoinId,
                 }),
             })
 
@@ -159,7 +158,13 @@ export function useGameBlockchain(game: Game) {
             }
 
             const mintData = await mintResponse.json()
-            const { contractAddress, metadata: apiMetadata, chainId: targetChainId } = mintData.data
+            const {
+                contractAddress,
+                metadata: apiMetadata,
+                chainId: targetChainId,
+                writerCoinId: mintWriterCoinId,
+                estimatedCost,
+            } = mintData.data
 
             // 1b. Switch chain if needed
             if (targetChainId && chainId !== targetChainId) {
@@ -178,18 +183,21 @@ export function useGameBlockchain(game: Game) {
             if (isBase) {
                 // BASE MAINNET: Route through WriterCoinPayment which has MINTER_ROLE
                 // User must approve WriterCoinPayment to spend their writer coins first
-                const writerCoin = getWriterCoinById(writerCoinId)
-                if (!writerCoin) throw new Error(`Unknown writer coin: ${writerCoinId}`)
+                const writerCoin = getWriterCoinById(mintWriterCoinId)
+                if (!writerCoin) throw new Error(`Unknown writer coin: ${mintWriterCoinId}`)
 
                 const paymentAddress = writerCoin.paymentContractAddress
+                const approvalAmount = typeof estimatedCost === 'string'
+                    ? BigInt(estimatedCost)
+                    : writerCoin.mintCost
 
-                // Approve WriterCoinPayment to spend the writer coin (max uint256 for convenience)
+                // Approve only the mint cost for this transaction.
                 toast({ title: 'Approving token spend…', description: 'Your wallet will ask you to approve the payment contract.' })
                 const approveTx = await writeContractAsync({
                     address: writerCoin.address as `0x${string}`,
                     abi: ERC20_ABI,
                     functionName: 'approve',
-                    args: [paymentAddress as `0x${string}`, maxUint256],
+                    args: [paymentAddress as `0x${string}`, approvalAmount],
                 })
                 console.log('[Mint] Approval tx:', approveTx)
 
@@ -262,6 +270,7 @@ export function useGameBlockchain(game: Game) {
         } catch (error) {
             console.error('Mint failed:', error)
             toast({ title: 'Minting failed', description: error instanceof Error ? error.message : 'Failed to mint comic. Please try again.', variant: 'destructive' })
+            throw error
         } finally {
             setIsMinting(false)
         }

@@ -29,8 +29,10 @@ interface ComicBookFinaleProps {
   primaryColor: string
   panels: ComicBookFinalePanelData[]
   onBack: () => void
-  onMint: (panelData: ComicBookFinalePanelData[], metadata?: { nftMetadataUri: string; gameMetadataUri: string; creator: GameCreator; author: GameAuthor }) => void
+  onMint: (panelData: ComicBookFinalePanelData[], metadata?: { nftMetadataUri: string; gameMetadataUri: string; creator: GameCreator; author: GameAuthor }) => void | Promise<void>
   isMinting?: boolean
+  nftMinted?: boolean
+  storyIpId?: string
   // Attribution data
   creatorWallet: string
   articleUrl: string
@@ -61,6 +63,8 @@ export function ComicBookFinale({
   onBack,
   onMint,
   isMinting = false,
+  nftMinted = false,
+  storyIpId,
   creatorWallet,
   articleUrl,
   articleTitle,
@@ -78,7 +82,6 @@ export function ComicBookFinale({
   const [isImageExpanded, setIsImageExpanded] = useState(false)
   const [viewMode, setViewMode] = useState<'single' | 'grid' | 'nft-preview'>('grid')
   const [showIPRegistration, setShowIPRegistration] = useState(false)
-  const [nftMintedMetadata, setNftMintedMetadata] = useState<{ nftMetadataUri: string; gameMetadataUri: string; creator: GameCreator; author: GameAuthor } | null>(null)
   const [isEditingText, setIsEditingText] = useState(false)
   const [editedText, setEditedText] = useState('')
   const [showCustomPrompt, setShowCustomPrompt] = useState(false)
@@ -116,6 +119,13 @@ export function ComicBookFinale({
   const currentPanel = panels[currentPanelIndex]
   const totalPanels = panels.length
   const currentAudioUrl = panelAudioUrls.get(currentPanel?.id || '') || currentPanel?.audioUrl
+  const ipRegistrationReady = (nftMinted || showIPRegistration) && !storyIpId
+
+  useEffect(() => {
+    if (nftMinted && !storyIpId) {
+      setShowIPRegistration(true)
+    }
+  }, [nftMinted, storyIpId])
 
   // Prepare share data using existing game props
   const shareData = {
@@ -357,7 +367,8 @@ export function ComicBookFinale({
 
   const handleMintWithMetadata = async () => {
     try {
-      onMint(panels)
+      await onMint(panels)
+      setShowIPRegistration(true)
       setShowFeedback(true)
     } catch (error) {
       console.error('Mint failed:', error)
@@ -1262,12 +1273,22 @@ export function ComicBookFinale({
                 <Zap className="w-4 h-4" />
                 {isMinting ? 'Preparing NFT...' : 'Mint as NFT'}
               </Button>
+
+              {ipRegistrationReady && !showIPRegistration && (
+                <Button
+                  variant="outline"
+                  className="gap-2 border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/10"
+                  onClick={() => setShowIPRegistration(true)}
+                >
+                  Register Game IP
+                </Button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Story Protocol IP Registration */}
-        {showIPRegistration && nftMintedMetadata && (
+        {ipRegistrationReady && showIPRegistration && (
           <div className="border-t border-white/10 p-4 md:p-8 bg-gradient-to-b from-black/40 via-black to-black"
             style={{
               boxShadow: `inset 0 1px 0 ${primaryColor}15`,
@@ -1291,7 +1312,6 @@ export function ComicBookFinale({
                   authorWalletAddress: authorWallet || '',
                   genre: genre.toLowerCase() as 'horror' | 'comedy' | 'mystery',
                   difficulty: difficulty.toLowerCase() as 'easy' | 'hard',
-                  gameMetadataUri: nftMintedMetadata.gameMetadataUri,
                 }}
                 onRegistrationComplete={async (result) => {
                   const response = await fetch(`/api/games/${gameSlug}/story-registration`, {

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getWriterCoinById, getMintConfig } from '@/lib/writerCoins'
-import { fetchCoinConfigOnChain } from '@/lib/contracts'
+import { fetchCoinConfigOnChain, fetchConfiguredGameNFT } from '@/lib/contracts'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
+import { BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
 
 interface MintRequest {
   gameId: string
   gameSlug: string
   wallet: string
-  writerCoinId: string
+  writerCoinId?: string
 }
 
 /**
@@ -29,9 +30,9 @@ export async function POST(request: NextRequest) {
     const { gameId, gameSlug, wallet, writerCoinId } = body
 
     // Validation
-    if (!gameId || !gameSlug || !wallet || !writerCoinId) {
+    if (!gameId || !gameSlug || !wallet) {
       return NextResponse.json(
-        { error: 'Missing required fields: gameId, gameSlug, wallet, writerCoinId' },
+        { error: 'Missing required fields: gameId, gameSlug, wallet' },
         { status: 400 }
       )
     }
@@ -40,15 +41,6 @@ export async function POST(request: NextRequest) {
     if (!isWalletAddress(wallet)) {
       return NextResponse.json(
         { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
-    }
-
-    // Look up mint config (handles both writer coins and MUSD)
-    const mintConfig = getMintConfig(writerCoinId)
-    if (!mintConfig) {
-      return NextResponse.json(
-        { error: `Unknown payment type: ${writerCoinId}` },
         { status: 400 }
       )
     }
@@ -69,12 +61,53 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const canonicalWriterCoinId = game.writerCoinId || writerCoinId
+    if (!canonicalWriterCoinId) {
+      return NextResponse.json(
+        { error: 'This game is missing its payment token. Please contact support before minting.' },
+        { status: 400 }
+      )
+    }
+
+    if (game.writerCoinId && writerCoinId && game.writerCoinId !== writerCoinId) {
+      return NextResponse.json(
+        { error: `Mint coin mismatch: this game was created with ${game.writerCoinId}, not ${writerCoinId}` },
+        { status: 400 }
+      )
+    }
+
+    // Look up mint config (handles both writer coins and MUSD) from the saved game.
+    const mintConfig = getMintConfig(canonicalWriterCoinId)
+    if (!mintConfig) {
+      return NextResponse.json(
+        { error: `Unknown payment type: ${canonicalWriterCoinId}` },
+        { status: 400 }
+      )
+    }
+
     const ownership = authorizeGameOwner({ game, wallet })
     if (!ownership.authorized) {
       return NextResponse.json(
         { error: ownershipError() },
         { status: 403 }
       )
+    }
+
+    if (mintConfig.chainId === BASE_MAINNET_CHAIN_ID && !canonicalWriterCoinId.startsWith('musd')) {
+      const configuredGameNFT = await fetchConfiguredGameNFT(mintConfig.chainId)
+      const expectedGameNFT = mintConfig.contractAddress.toLowerCase()
+      if (configuredGameNFT === '0x0000000000000000000000000000000000000000') {
+        return NextResponse.json(
+          { error: 'Base minting is not configured yet: WriterCoinPayment has no GameNFT set. The contract owner must call setGameNFT before minting can proceed.' },
+          { status: 503 }
+        )
+      }
+      if (configuredGameNFT.toLowerCase() !== expectedGameNFT) {
+        return NextResponse.json(
+          { error: `Base minting is misconfigured: WriterCoinPayment points to ${configuredGameNFT}, expected ${mintConfig.contractAddress}.` },
+          { status: 503 }
+        )
+      }
     }
 
     // Check if already minted
@@ -100,12 +133,13 @@ export async function POST(request: NextRequest) {
 
     // Return minting payload
     // Frontend will use this to call GameNFT.mintGame() contract function
-    const coin = getWriterCoinById(writerCoinId)
+    const coin = getWriterCoinById(canonicalWriterCoinId)
     return NextResponse.json({
       success: true,
       data: {
         gameId,
         wallet,
+        writerCoinId: canonicalWriterCoinId,
         metadata,
         contractAddress: mintConfig.contractAddress,
         chainId: mintConfig.chainId,

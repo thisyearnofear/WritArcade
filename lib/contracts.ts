@@ -32,6 +32,12 @@ export const CONTRACT_ABIS = {
       { name: 'platformShare', type: 'uint256' }
     ]
   }, {
+    name: 'gameNFT',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  }, {
     name: 'getCoinConfig',
     type: 'function',
     stateMutability: 'view',
@@ -229,6 +235,23 @@ export async function fetchMintDistributionOnChain(coinAddress: `0x${string}`, c
   }
   __setCache(cacheKey, res)
   return res
+}
+
+export async function fetchConfiguredGameNFT(chainId: number = getDefaultChainId()): Promise<`0x${string}`> {
+  const cacheKey = `gameNFT:${chainId}`
+  const cached = __getCache(cacheKey)
+  if (cached) return cached as `0x${string}`
+
+  const client = getPublicClient(chainId)
+  const contractAddress = getWriterCoinPaymentAddress(chainId)
+  const address = await readWithRetry(() => client.readContract({
+    address: contractAddress,
+    abi: CONTRACT_ABIS.__WriterCoinPaymentRead,
+    functionName: 'gameNFT',
+  })) as `0x${string}`
+
+  __setCache(cacheKey, address)
+  return address
 }
 
 /**
