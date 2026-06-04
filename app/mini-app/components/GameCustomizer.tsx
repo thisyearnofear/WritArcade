@@ -8,6 +8,7 @@ import { CostPreview } from '@/components/game/CostPreview'
 import { PaymentFlow } from '@/components/game/PaymentFlow'
 import { PaymentTokenSelector } from '@/components/game/PaymentTokenSelector'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
+import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +40,7 @@ export function GameCustomizer({ writerCoin, isMUSD, articleUrl, onBack, onGameG
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [paymentApproved, setPaymentApproved] = useState(false)
+  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null)
   const [selectedToken, setSelectedToken] = useState<PaymentToken>(
     isMUSD 
       ? { type: 'musd', network: 'testnet' } 
@@ -51,13 +53,14 @@ export function GameCustomizer({ writerCoin, isMUSD, articleUrl, onBack, onGameG
     return PaymentCostService.calculateCostTokenSync(selectedToken, 'generate-game')
   }, [selectedToken])
 
-  const handlePaymentSuccess = async (_transactionHash: string) => {
+  const handlePaymentSuccess = async (payment: PaymentResult) => {
+    setPaymentResult(payment)
     setPaymentApproved(true)
     setError(null)
-    await generateGame()
+    await generateGame(payment)
   }
 
-  const generateGame = async () => {
+  const generateGame = async (payment = paymentResult) => {
     setIsGenerating(true)
     setError(null)
     try {
@@ -69,14 +72,16 @@ export function GameCustomizer({ writerCoin, isMUSD, articleUrl, onBack, onGameG
             }
           : {
               url: articleUrl,
-              customization: {
-                genre,
-                difficulty,
-              },
-              payment: {
-                writerCoinId: selectedToken.type === 'musd' ? 'musd-testnet' : (writerCoin?.id || 'musd-testnet'),
-              },
-            }
+	              customization: {
+	                genre,
+	                difficulty,
+	              },
+	              payment: {
+	                paymentId: payment?.paymentId,
+	                writerCoinId: selectedToken.type === 'musd' ? 'musd-testnet' : (writerCoin?.id || 'musd-testnet'),
+	                transactionHash: payment?.transactionHash,
+	              },
+	            }
 
       const response = await fetch('/api/games/generate', {
         method: 'POST',
@@ -306,7 +311,7 @@ export function GameCustomizer({ writerCoin, isMUSD, articleUrl, onBack, onGameG
         ) : (
           <button
             type="button"
-            onClick={generateGame}
+            onClick={() => generateGame()}
             disabled={isGenerating}
             className="w-full rounded-2xl bg-purple-600 py-4 text-sm font-black uppercase tracking-[0.2em] italic text-white shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all hover:bg-purple-500 hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] active:scale-[0.98] disabled:opacity-50"
           >
@@ -317,4 +322,3 @@ export function GameCustomizer({ writerCoin, isMUSD, articleUrl, onBack, onGameG
     </div>
   )
 }
-

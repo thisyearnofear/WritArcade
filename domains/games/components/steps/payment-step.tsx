@@ -8,12 +8,13 @@ import { GenreSelector } from '@/components/game/GenreSelector'
 import { DifficultySelector } from '@/components/game/DifficultySelector'
 import { type GameGenre } from '@/components/game/GenreSelector'
 import { type GameDifficulty } from '@/components/game/DifficultySelector'
+import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 
 interface PaymentStepProps {
   writerCoin: WriterCoin
   genre: GameGenre
   difficulty: GameDifficulty
-  onPaymentSuccess: (transactionHash: string) => void
+  onPaymentSuccess: (payment: PaymentResult) => void
   onPaymentError: (error: string) => void
   isGenerating: boolean
 }

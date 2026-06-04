@@ -19,6 +19,7 @@ import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
 import { retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import type { PaymentPath } from '@/domains/games/components/simple-game-form'
+import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 import { trackEvent } from '@/lib/analytics'
 
 interface GameGeneratorFormProps {
@@ -31,6 +32,8 @@ interface GameGeneratorFormProps {
 const DEFAULT_WRITER_COIN = WRITER_COINS[0]
 const ARTICLE_PREVIEW_TIMEOUT_MS = 15000
 const GAME_GENERATION_TIMEOUT_MS = 120000
+const PAYMENT_RECOVERY_TIMEOUT_MS = 45000
+const PAYMENT_RECOVERY_INTERVAL_MS = 3000
 
 type GenerateErrorPhase = 'article' | 'payment' | 'generation'
 
@@ -301,6 +304,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const [showCustomization, setShowCustomization] = useState(false)
   const [paymentApproved, setPaymentApproved] = useState(false)
   const paymentTxHashRef = useRef<string | undefined>(undefined)
+  const paymentIdRef = useRef<string | undefined>(undefined)
   const [error, setError] = useState<GenerateErrorState | null>(null)
   const [successData, setSuccessData] = useState<{
     gameSlug: string
@@ -356,6 +360,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     setPaymentApproved(false)
     paymentCompletedRef.current = false
     paymentTxHashRef.current = undefined
+    paymentIdRef.current = undefined
   }, [paymentPath, writerCoin.paymentEnabled])
 
   const requiredAmount = useMemo(() => {
@@ -370,20 +375,58 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     return parseFloat(balance.formattedBalance)
   }, [balance, isMusdPath])
 
-  const handlePaymentSuccess = async (transactionHash: string) => {
+  const handlePaymentSuccess = async (payment: PaymentResult) => {
     paymentCompletedRef.current = true
-    paymentTxHashRef.current = transactionHash
+    paymentTxHashRef.current = payment.transactionHash
+    paymentIdRef.current = payment.paymentId
     trackEvent('payment_succeeded', {
       paymentPath,
       mode,
       articlePreviewed: hasPreviewedCurrentUrl,
+      hasPaymentId: Boolean(payment.paymentId),
     })
     setPaymentApproved(true)
     setError(null)
-    await generateGame(transactionHash)
+    await generateGame(payment.transactionHash)
   }
 
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+  const pollVerifiedPayment = async (params: {
+    paymentId?: string
+    transactionHash?: string
+  }) => {
+    const startedAt = Date.now()
+
+    while (Date.now() - startedAt < PAYMENT_RECOVERY_TIMEOUT_MS) {
+      const searchParams = new URLSearchParams()
+      if (params.paymentId) {
+        searchParams.set('paymentId', params.paymentId)
+      } else if (params.transactionHash) {
+        searchParams.set('transactionHash', params.transactionHash)
+      } else {
+        return null
+      }
+
+      const response = await fetchWithTimeout(
+        `/api/payments/verify?${searchParams.toString()}`,
+        { method: 'GET' },
+        10000
+      ).catch(() => null)
+
+      const result = response
+        ? await response.json().catch(() => null as { status?: string; paymentId?: string } | null)
+        : null
+
+      if (response?.ok && result?.status === 'verified') {
+        return result.paymentId || params.paymentId || null
+      }
+
+      await wait(PAYMENT_RECOVERY_INTERVAL_MS)
+    }
+
+    return null
+  }
 
   const previewArticle = async () => {
     if (!url.trim()) {
@@ -449,7 +492,13 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const generateGame = async (paymentTransactionHash?: string) => {
     setIsGenerating(true)
     setError(null)
-    const hasPaymentProof = isStoryMode && (paymentApproved || Boolean(paymentTransactionHash))
+    const currentPaymentTxHash = paymentTransactionHash || paymentTxHashRef.current
+    let currentPaymentId = paymentIdRef.current
+    const hasPaymentProof = isStoryMode && (
+      paymentApproved ||
+      Boolean(currentPaymentId) ||
+      Boolean(currentPaymentTxHash)
+    )
 
     try {
       // Reset all steps, then mark payment as done (we're called after payment succeeds)
@@ -500,9 +549,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               }),
               ...(hasPaymentProof && {
                 payment: {
+                  paymentId: currentPaymentId,
                   writerCoinId: isMusdPath ? 'musd-testnet' : writerCoin.id,
                   paymentPath,
-                  transactionHash: paymentTransactionHash,
+                  transactionHash: currentPaymentTxHash,
                 },
               }),
               _attempt: attempt,
@@ -511,12 +561,30 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           }, GAME_GENERATION_TIMEOUT_MS)
 
           if (!response.ok) {
-            const errorData = await response
-              .json()
-              .catch(() => ({} as { error?: string; code?: string }))
-            const errorMsg = getGenerationErrorMessage(errorData, response.status, response.statusText)
+	            const errorData = await response
+	              .json()
+	              .catch(() => ({} as { error?: string; code?: string }))
+	            const errorMsg = getGenerationErrorMessage(errorData, response.status, response.statusText)
 
-            lastError = new Error(errorMsg)
+	            if (errorData.code === 'PAYMENT_NOT_VERIFIED' && (currentPaymentId || currentPaymentTxHash)) {
+	              setLoadingStep('payment')
+	              setStepStatuses((prev) => ({ ...prev, payment: 'in-progress' }))
+	              const recoveredPaymentId = await pollVerifiedPayment({
+	                paymentId: currentPaymentId,
+	                transactionHash: currentPaymentTxHash,
+	              })
+
+	              if (recoveredPaymentId) {
+	                paymentIdRef.current = recoveredPaymentId
+	                currentPaymentId = recoveredPaymentId
+	                setPaymentApproved(true)
+	                setStepStatuses((prev) => ({ ...prev, payment: 'completed' }))
+	                lastError = new Error('Payment verified. Continuing generation...')
+	                throw lastError
+	              }
+	            }
+
+	            lastError = new Error(errorMsg)
 
             if (response.status === 400) {
               console.warn(`Attempt ${attempt}/${maxAttempts} failed with validation error:`, errorMsg)
@@ -597,6 +665,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     setPaymentApproved(false)
     paymentCompletedRef.current = false
     paymentTxHashRef.current = undefined
+    paymentIdRef.current = undefined
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

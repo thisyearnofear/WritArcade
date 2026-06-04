@@ -102,7 +102,7 @@ export function ComicFinaleScreen({
       const strategy = new WriterCoinStrategy()
       const amount = fundingToken.coin.gameGenerationCost.toString()
 
-      const txHash = await strategy.executePayment({
+      const payment = await strategy.executePayment({
         walletClient,
         userAddress,
         token: fundingToken,
@@ -114,7 +114,10 @@ export function ComicFinaleScreen({
       const fundRes = await fetch(`/api/games/${game.slug}/fund`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionHash: txHash }),
+        body: JSON.stringify({
+          paymentId: payment.paymentId,
+          transactionHash: payment.transactionHash,
+        }),
       })
 
       if (!fundRes.ok) {

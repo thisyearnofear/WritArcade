@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/chains'
 import { trackEvent } from '@/lib/analytics'
+import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 
 const MEZO_TESTNET_EXPLORER_URL = 'https://explorer.test.mezo.org/tx'
 
@@ -25,7 +26,7 @@ interface PaymentFlowProps {
   action: PaymentAction
   costFormatted: string
   onPaymentStart?: () => void
-  onPaymentSuccess?: (transactionHash: string) => void
+  onPaymentSuccess?: (payment: PaymentResult) => void
   onPaymentError?: (error: string) => void
   disabled?: boolean
   compact?: boolean
@@ -136,7 +137,7 @@ export function PaymentFlow({
     try {
       const strategy = isMUSD ? new MUSDStrategy() : new WriterCoinStrategy()
       const amount = (action === 'generate-game' ? config.gameGenerationCost : config.mintCost).toString()
-      const txHash = await strategy.executePayment({
+      const paymentResult = await strategy.executePayment({
         walletClient,
         userAddress,
         token: paymentToken,
@@ -145,14 +146,14 @@ export function PaymentFlow({
         onStep: setCurrentStep,
       })
 
-      setLastTxHash(txHash)
+      setLastTxHash(paymentResult.transactionHash)
       setCurrentStep(null)
       if (isMUSD) {
         refreshMUSDBalance()
       } else {
         refresh()
       }
-      onPaymentSuccess?.(txHash)
+      onPaymentSuccess?.(paymentResult)
     } catch (err) {
       const message = getUserMessage(err)
       setError(message)

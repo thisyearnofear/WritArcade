@@ -1,4 +1,4 @@
-import type { PaymentStrategy, ExecutePaymentParams } from './payment-strategy'
+import type { PaymentStrategy, ExecutePaymentParams, PaymentResult } from './payment-strategy'
 import { getPaymentTokenConfig } from '@/lib/writerCoins'
 import { MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
 
@@ -71,7 +71,7 @@ export class MUSDStrategy implements PaymentStrategy {
   name = 'MUSD (Mezo)'
   chainId = MEZO_TESTNET_CHAIN_ID
 
-  async executePayment({ walletClient, userAddress, token, action, amount, onStep }: ExecutePaymentParams): Promise<string> {
+  async executePayment({ walletClient, userAddress, token, action, amount, onStep }: ExecutePaymentParams): Promise<PaymentResult> {
     if (token.type !== 'musd') {
       throw new Error('Invalid token type for MUSDStrategy')
     }
@@ -173,7 +173,12 @@ export class MUSDStrategy implements PaymentStrategy {
       throw new Error(errorData.error || `Failed to verify payment (${verifyResponse?.status || 'no response'})`)
     }
 
+    const verifyResult = await verifyResponse.json().catch(() => ({} as { paymentId?: string; statusCheckUrl?: string }))
     step('Payment complete!')
-    return txHash
+    return {
+      transactionHash: txHash,
+      paymentId: verifyResult.paymentId,
+      statusCheckUrl: verifyResult.statusCheckUrl,
+    }
   }
 }

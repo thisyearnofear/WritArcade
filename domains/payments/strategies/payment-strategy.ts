@@ -16,13 +16,19 @@ export interface ExecutePaymentParams {
   onStep?: (step: string) => void;
 }
 
+export interface PaymentResult {
+  transactionHash: string;
+  paymentId?: string;
+  statusCheckUrl?: string;
+}
+
 export interface PaymentStrategy {
   id: string;
   name: string;
   chainId: number;
   
   /**
-   * Execute the payment flow and return the transaction hash
+   * Execute the payment flow and return the verified payment details.
    */
-  executePayment: (params: ExecutePaymentParams) => Promise<string>;
+  executePayment: (params: ExecutePaymentParams) => Promise<PaymentResult>;
 }

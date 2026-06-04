@@ -12,12 +12,13 @@ import { AlertCircle, ArrowRightLeft } from 'lucide-react'
 import { PaymentTokenSelector } from './PaymentTokenSelector'
 import { trackEvent } from '@/lib/analytics'
 import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/chains'
+import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 
 interface PaymentOptionProps {
   writerCoin: WriterCoin
   action: PaymentAction
   onPaymentStart?: () => void
-  onPaymentSuccess?: (transactionHash: string) => void
+  onPaymentSuccess?: (payment: PaymentResult) => void
   onPaymentError?: (error: string) => void
   disabled?: boolean
   initialToken?: PaymentToken
