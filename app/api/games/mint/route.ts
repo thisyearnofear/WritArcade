@@ -5,6 +5,7 @@ import { fetchCoinConfigOnChain, fetchConfiguredGameNFT } from '@/lib/contracts'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
 import { BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
+import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 
 interface MintRequest {
   gameId: string
@@ -61,27 +62,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const canonicalWriterCoinId = game.writerCoinId || game.payment?.writerCoinId || writerCoinId
-    if (!canonicalWriterCoinId) {
+    const funding = await GameFundingService.getGameFunding(game.id)
+    if (!funding) {
       return NextResponse.json(
         { error: 'This game is missing its payment token. Please contact support before minting.' },
         { status: 400 }
       )
     }
 
-    if (game.writerCoinId && writerCoinId && game.writerCoinId !== writerCoinId) {
+    if (writerCoinId && funding.writerCoinId !== writerCoinId) {
       return NextResponse.json(
-        { error: `Mint coin mismatch: this game was created with ${game.writerCoinId}, not ${writerCoinId}` },
+        { error: `Mint coin mismatch: this game was created with ${funding.writerCoinId}, not ${writerCoinId}` },
         { status: 400 }
       )
     }
 
-    if (!game.writerCoinId && game.payment?.writerCoinId) {
-      await prisma.game.update({
-        where: { id: game.id },
-        data: { writerCoinId: game.payment.writerCoinId },
-      })
-    }
+    const canonicalWriterCoinId = funding.writerCoinId
 
     // Look up mint config (handles both writer coins and MUSD) from the saved game.
     const mintConfig = getMintConfig(canonicalWriterCoinId)
@@ -239,7 +235,14 @@ export async function PATCH(request: NextRequest) {
     })
 
     if (!existingPayment) {
-      const writerCoinId = game.writerCoinId ?? game.payment?.writerCoinId ?? 'avc'
+      const funding = await GameFundingService.getGameFunding(game.id)
+      const writerCoinId = funding?.writerCoinId
+      if (!writerCoinId) {
+        return NextResponse.json(
+          { error: 'This game is missing its payment token. Please contact support before minting.' },
+          { status: 400 }
+        )
+      }
       const isMUSD = writerCoinId.startsWith('musd')
       let mintAmount = BigInt(50 * 10 ** 18) // fallback
       if (!isMUSD) {

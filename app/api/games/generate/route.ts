@@ -12,6 +12,7 @@ import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 import { config, logger } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
 import { getMintConfig } from '@/lib/writerCoins'
+import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 
 // Request validation schema
 const generateGameSchema = z.object({
@@ -24,6 +25,7 @@ const generateGameSchema = z.object({
     difficulty: z.enum(['easy', 'hard']).optional(),
   }).optional(),
   payment: z.object({
+    paymentId: z.string().optional(),
     writerCoinId: z.string().optional(),
     transactionHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/).optional(),
   }).optional(),
@@ -190,37 +192,49 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       return undefined
     }
 
-    const generationPayment = validatedData.payment?.transactionHash
-      ? await prisma.payment.findUnique({
-        where: { transactionHash: validatedData.payment.transactionHash },
-        select: {
-          id: true,
-          action: true,
-          status: true,
-          walletAddress: true,
-          user: { select: { walletAddress: true } },
-        },
-      })
+    const fundingLookup = validatedData.payment?.paymentId
+      ? { paymentId: validatedData.payment.paymentId } as const
+      : validatedData.payment?.transactionHash
+        ? { transactionHash: validatedData.payment.transactionHash } as const
+        : null
+
+    const fundingContext = fundingLookup
+      ? await GameFundingService.getVerifiedCreationPayment(fundingLookup)
       : null
 
-    const paymentOwnerWallet =
-      generationPayment?.action === 'generate-game' && generationPayment.status === 'verified'
-        ? generationPayment.walletAddress || generationPayment.user?.walletAddress || undefined
-        : undefined
-    const ownerWallet = paymentOwnerWallet || user?.walletAddress || validatedData.wallet
-    const ownershipSource: GameGenerationResponse['ownershipSource'] = paymentOwnerWallet
-      ? 'payment_wallet'
-      : user?.walletAddress
-        ? 'siwe_user'
-        : validatedData.wallet
-          ? 'legacy_creator_wallet'
-          : undefined
+    if (fundingLookup && !fundingContext) {
+      return NextResponse.json(
+        { success: false, error: 'Verified generation payment not found.', code: 'PAYMENT_NOT_VERIFIED' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      fundingContext &&
+      validatedData.payment?.writerCoinId &&
+      fundingContext.writerCoinId !== validatedData.payment.writerCoinId
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Payment coin mismatch: verified payment used ${fundingContext.writerCoinId}, not ${validatedData.payment.writerCoinId}.`,
+          code: 'PAYMENT_COIN_MISMATCH',
+        },
+        { status: 400 }
+      )
+    }
+
+    const ownership = GameFundingService.buildOwnership(fundingContext, {
+      siweWallet: user?.walletAddress,
+      connectedWallet: validatedData.wallet,
+    })
+    const canonicalWriterCoinId = fundingContext?.writerCoinId || validatedData.payment?.writerCoinId
 
     // Save to database using enhanced database service
     const miniAppData = processedContent ? {
       articleUrl: validatedData.url,
       difficulty: validatedData.customization?.difficulty,
-      writerCoinId: validatedData.payment?.writerCoinId,
+      writerCoinId: canonicalWriterCoinId,
       wordleAnswerVaultUuid: gameData.wordleAnswerVaultUuid,
       authorWallet: processedContent.authorWallet,
       authorParagraphUsername: processedContent.author, // Extract from URL parsing
@@ -228,9 +242,9 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       publicationSummary: processedContent.publicationSummary,
       subscriberCount: normalizeSubscriberCount(processedContent.subscriberCount),
       articlePublishedAt: normalizePublishedAt(processedContent.publishedAt),
-      ownerWallet,
-      ownershipSource,
-      paymentId: generationPayment?.id,
+      ownerWallet: ownership.ownerWallet,
+      ownershipSource: ownership.ownershipSource,
+      paymentId: ownership.paymentId,
       // Include comprehensive article context for authentic game narrative continuity
       articleContext: `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nPublication: ${processedContent.publicationName || 'Unknown'}\n\nCore Themes:\n${ContentProcessorService.extractArticleThemes(processedContent.text, processedContent.title)}\n\nKey excerpt:\n${processedContent.text.substring(0, 800)}...`,
     } : undefined
@@ -238,10 +252,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     // Enhance game data with attribution
     const enhancedGameData = {
       ...gameData,
-      ownerWallet,
-      ownershipSource,
-      creatorWallet: ownerWallet,
-      paymentId: generationPayment?.id,
+      ...ownership,
     }
 
     console.log('About to save game to database:', {

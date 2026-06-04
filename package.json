@@ -16,6 +16,7 @@
     "db:studio": "prisma studio",
     "db:setup": "prisma generate && prisma db push",
     "migrate:data": "tsx scripts/migrate-data.ts",
+    "repair:game-funding": "node scripts/repair-game-funding.mjs",
     "deploy:api": "bash scripts/deploy-writersarcade-api.sh"
   },
   "dependencies": {
