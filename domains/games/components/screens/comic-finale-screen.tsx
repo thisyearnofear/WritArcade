@@ -10,7 +10,6 @@ import { Game, ChatMessage } from '../../types'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/lib/story-sdk-client'
 import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG, type PaymentToken } from '@/lib/writerCoins'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
-import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
 
 interface ComicFinaleScreenProps {
   game: Game
@@ -69,10 +68,11 @@ export function ComicFinaleScreen({
   const resolvableCoin = game.authorParagraphUsername
     ? getWriterCoinByAuthor(game.authorParagraphUsername)
     : undefined
-  // Fall back to MUSD testnet if no writer coin found
-  const fundingToken: PaymentToken = resolvableCoin
+  // Only offer fund button when writer coin exists on Base — no MUSD fallback
+  // (MUSD lives on Mezo; cross-chain fallback would require chain switching)
+  const fundingToken: PaymentToken | undefined = resolvableCoin
     ? { type: 'writercoin' as const, coin: resolvableCoin }
-    : { type: 'musd' as const, network: 'testnet' as const }
+    : undefined
 
   const handleFundGame = useCallback(async () => {
     if (!walletClient || !userAddress || !fundingToken) return
@@ -81,9 +81,8 @@ export function ComicFinaleScreen({
     setFundError(null)
 
     try {
-      const strategy = fundingToken.type === 'musd' ? new MUSDStrategy() : new WriterCoinStrategy()
-      const config = fundingToken.type === 'musd' ? MUSD_CONFIG.testnet : fundingToken.coin
-      const amount = config.gameGenerationCost.toString()
+      const strategy = new WriterCoinStrategy()
+      const amount = fundingToken.coin.gameGenerationCost.toString()
 
       const txHash = await strategy.executePayment({
         walletClient,
@@ -175,7 +174,7 @@ export function ComicFinaleScreen({
         regeneratingMessageId={regeneratingMessageId}
         epilogueReflection={epilogueReflection || undefined}
         mintAvailable={Boolean(game.writerCoinId)}
-        mintUnavailableReason={isUnfunded && !fundingToken ? 'No payment token available for this game.' : undefined}
+        mintUnavailableReason={isUnfunded && !fundingToken ? `No writer coin found for "${game.authorParagraphUsername || 'unknown author'}". Minting requires payment in the author's token.` : undefined}
         onFundGame={isUnfunded && fundingToken && userAddress ? handleFundGame : undefined}
         isFunding={isFunding}
         mintTokenLabel={mintToken?.symbol}
