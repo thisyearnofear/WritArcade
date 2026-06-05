@@ -22,13 +22,13 @@
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    --muted-foreground: 0 0% 30%;
     --accent: 0 0% 96%;
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89%;
-    --input: 0 0% 89%;
+    --border: 0 0% 82%;
+    --input: 0 0% 82%;
     --ring: 271 81% 45%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;

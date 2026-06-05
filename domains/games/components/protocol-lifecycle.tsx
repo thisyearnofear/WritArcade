@@ -89,7 +89,7 @@ export function ProtocolLifecycle({ game, variant = 'full' }: ProtocolLifecycleP
               className={`inline-flex h-6 items-center gap-1 rounded border px-1.5 text-[11px] font-medium ${
                 step.state === 'complete'
                   ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                  : 'border-border bg-muted/50 text-muted-foreground'
+                  : 'border-border bg-muted text-muted-foreground'
               }`}
               title={step.detail}
             >
