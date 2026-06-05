@@ -37,6 +37,30 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
     notFound()
   }
 
+  const siteUrl = getSiteUrl()
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: game.title,
+    description: game.description,
+    url: `${siteUrl}/games/${game.slug}`,
+    gamePlatform: 'writersarcade',
+    applicationCategory: 'Game',
+    operatingSystem: 'Web',
+    offers: {
+      '@type': 'Offer',
+      availability: 'https://schema.org/InStock',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    author: {
+      '@type': 'Person',
+      name: game.writerName || 'Anonymous',
+    },
+    datePublished: game.createdAt.toISOString(),
+    image: game.imageUrl || `${siteUrl}/api/og-image`,
+  }
+
   if (!isPlayMode && !isUnlockShare) {
     return (
       <ThemeWrapper theme="arcade">
@@ -44,6 +68,10 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
           <Header />
           <GameArtifactView game={game} />
           <Footer />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
         </div>
       </ThemeWrapper>
     )
@@ -111,7 +139,10 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
       <ErrorBoundary>
         <GamePlayInterface game={game} />
       </ErrorBoundary>
-
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </div>
   )
 }

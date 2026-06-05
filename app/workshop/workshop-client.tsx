@@ -1,14 +1,17 @@
-import { WorkshopClient } from './workshop-client'
+'use client'
 
-export const metadata = {
-  title: 'Workshop',
-  description: 'Decompose articles into game assets, refine your interactive fiction, and register IP on-chain.',
-  robots: { index: false, follow: false },
-}
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { UndoManager } from '@/lib/undo-manager'
+import { useToast } from '@/components/ui/use-toast'
+import { AssetGenerationResponse } from '@/domains/games/types'
+import { Header } from '@/components/layout/header'
+import { useOnboarding } from '@/hooks/useOnboarding'
+import { RevenueForecast } from '@/components/ui/revenue-forecast'
 
-export default function WorkshopPage() {
-  return <WorkshopClient />
-}
+type WorkshopState = 'input' | 'processing' | 'workshop' | 'compiling' | 'minting'
+
+export function WorkshopClient() {
     const { showOnboarding, currentStep, flowId, startTour, nextStep, dismissOnboarding } = useOnboarding()
     const { toast: showToast } = useToast()
     const [url, setUrl] = useState('')
@@ -17,7 +20,6 @@ export default function WorkshopPage() {
     const [undoManager] = useState(() => new UndoManager<AssetGenerationResponse>(15, 'writarcade_workshop_history'))
     const [allChecklistsPassed, setAllChecklistsPassed] = useState(false)
 
-    // Trigger workshop tour on first entry
     useEffect(() => {
         if (state === 'workshop' && !localStorage.getItem('workshop_tour_seen')) {
             startTour('workshop-tour')
@@ -25,11 +27,9 @@ export default function WorkshopPage() {
         }
     }, [state, startTour])
 
-    // Hydrate from persisted history on mount
     useEffect(() => {
         const current = undoManager.current()
         if (current && !assets) {
-            // Defer state updates to avoid cascading renders
             requestAnimationFrame(() => {
                 setAssets(current.state)
                 setState('workshop')
@@ -37,7 +37,6 @@ export default function WorkshopPage() {
         }
     }, [undoManager, assets])
 
-    // Push to undo history when assets change + compute relationships
     useEffect(() => {
         if (assets && state === 'workshop') {
             undoManager.push(assets, 'Asset modified')
@@ -49,14 +48,12 @@ export default function WorkshopPage() {
             const hasBeats = assets.storyBeats.length >= 3
             const isPassing = hasTitle && hasDescription && hasChars && hasMechs && hasBeats
 
-            // Defer state updates to avoid cascading renders
             requestAnimationFrame(() => {
                 setAllChecklistsPassed(isPassing)
             })
         }
     }, [assets, state, undoManager])
 
-    // Handlers
     const handleDecompose = async () => {
         setState('processing')
         try {
@@ -127,25 +124,24 @@ export default function WorkshopPage() {
             <Header />
             <div className="p-4 sm:p-6 lg:p-12">
                 <header className="mb-8 max-w-4xl mx-auto">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent mb-2">
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-blue-50 gradient-text-purple-blue">
                         Asset Workshop
                     </h1>
                 </header>
-                
+
                 <div className="max-w-4xl mx-auto">
-                    {/* Simplified UI for demonstration */}
                     {state === 'input' && (
                         <div className="bg-muted/50 p-8 rounded-2xl border border-border">
                              <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Enter article URL..." className="w-full bg-black border border-border rounded-lg p-3" />
                              <button onClick={handleDecompose} className="mt-4 px-6 py-3 bg-purple-600 rounded-lg font-bold">Decompose</button>
                         </div>
                     )}
-                    
+
                     {state === 'workshop' && assets && (
                         <div className="sticky top-4 z-10 bg-black/80 backdrop-blur p-4 rounded-xl border border-border">
                             <button onClick={handleUndo} disabled={!undoManager.canUndo()} className="mr-2">Undo</button>
                             <button onClick={handleMint} disabled={!allChecklistsPassed} className="bg-green-600 px-4 py-2 rounded">Register IP</button>
-                            
+
                             {allChecklistsPassed && (
                                 <div className="mt-4">
                                     <RevenueForecast writerCoinId="avc" action="mint-game" />
