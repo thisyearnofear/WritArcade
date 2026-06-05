@@ -55,7 +55,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
     },
     author: {
       '@type': 'Person',
-      name: game.writerName || 'Anonymous',
+      name: game.authorParagraphUsername || 'Anonymous',
     },
     datePublished: game.createdAt.toISOString(),
     image: game.imageUrl || `${siteUrl}/api/og-image`,
