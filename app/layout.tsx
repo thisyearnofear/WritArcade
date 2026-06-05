@@ -18,7 +18,10 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'writersarcade — Interactive fiction from the writers you follow',
+  title: {
+    default: 'writersarcade — Interactive fiction from the writers you follow',
+    template: '%s — writersarcade',
+  },
   description: 'Transform articles into interactive, mintable games. Support writers with their own coins, earn from plays, and own on-chain IP with configurable revenue splits.',
   keywords: ['interactive fiction', 'games', 'articles', 'NFT', 'writer coins', 'paragraph', 'farcaster', 'base', 'story protocol'],
   openGraph: {
