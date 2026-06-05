@@ -353,7 +353,10 @@ function AttentionSection({ items }: { items: AttentionItem[] }) {
         {items.map((item) => {
           const meta = attentionMeta[item.kind]
           const Icon = meta.icon
-          const href = item.kind === 'no-artifact' ? `/games/${item.game.slug}?play=1` : '/my-games'
+          const href =
+            item.kind === 'no-artifact'
+              ? `/games/${item.game.slug}?play=1`
+              : `/my-games#${item.game.id}`
           return (
             <Link
               key={`${item.kind}-${item.game.id}`}

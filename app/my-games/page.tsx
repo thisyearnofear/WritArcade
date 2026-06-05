@@ -77,6 +77,20 @@ export default function MyGamesPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (loading || games.length === 0) return
+    const hash = window.location.hash?.replace('#', '')
+    if (!hash) return
+    const el = document.getElementById(hash)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.animate(
+        [{ boxShadow: '0 0 0 0 rgba(168, 85, 247, 0.5)' }, { boxShadow: '0 0 0 8px rgba(168, 85, 247, 0)' }],
+        { duration: 900, easing: 'ease-out' },
+      )
+    }
+  }, [loading, games])
+
   const copyVaultLink = async (vault: UnlockedVault) => {
     try {
       await navigator.clipboard.writeText(vault.shareUrl)
@@ -548,17 +562,18 @@ export default function MyGamesPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {games.map((game) => (
-                    <GameCardEnhanced
-                      key={game.id}
-                      game={game}
-                      isUserGame={true}
-                      onMintClick={() => handleMintClick(game.id)}
-                      onRegisterClick={() => handleRegisterClick(game.id)}
-                      onToggleVisibility={() => handleToggleVisibility(game.id, !game.private)}
-                      onSettingsClick={() => setSettingsGame(game)}
-                      onDeleteClick={() => handleDeleteClick(game.id)}
-                      isLoading={actionInProgress === game.id}
-                    />
+                    <div key={game.id} id={game.id} className="scroll-mt-24">
+                      <GameCardEnhanced
+                        game={game}
+                        isUserGame={true}
+                        onMintClick={() => handleMintClick(game.id)}
+                        onRegisterClick={() => handleRegisterClick(game.id)}
+                        onToggleVisibility={() => handleToggleVisibility(game.id, !game.private)}
+                        onSettingsClick={() => setSettingsGame(game)}
+                        onDeleteClick={() => handleDeleteClick(game.id)}
+                        isLoading={actionInProgress === game.id}
+                      />
+                    </div>
                   ))}
                 </div>
 
