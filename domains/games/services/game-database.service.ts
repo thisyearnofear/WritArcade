@@ -302,7 +302,7 @@ export class GameDatabaseService {
       ])
 
       return {
-        games: games.map(this.mapPrismaGameToGame),
+        games: games.map(this.mapPrismaGameToGame.bind(this)),
         total,
         limit,
         offset,
