@@ -347,6 +347,22 @@ export const MEZO_CONFIG = {
 export type PaymentToken = 
     | { type: 'writercoin'; coin: WriterCoin }
     | { type: 'musd'; network: 'testnet' | 'mainnet' }
+    | { type: 'credits' }
+
+/** Credit-based payment config */
+export const CREDITS_CONFIG = {
+    address: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    decimals: 0,
+    symbol: 'Credits',
+    name: 'Credits',
+    gameGenerationCost: 10n, // 10 credits per game generation
+    mintCost: 5n,            // 5 credits per NFT mint
+    cost: {
+        'generate-game': 10,
+        'mint-nft': 5,
+        'play-wordle': 1,
+    } as Record<string, number>,
+} as const
 
 /**
  * Mint config lookup: returns the contract address and chain ID for minting
@@ -381,6 +397,9 @@ export function getMintConfig(writerCoinId: string): MintConfig | undefined {
 export function getPaymentTokenConfig(token: PaymentToken) {
     if (token.type === 'musd') {
         return MUSD_CONFIG[token.network]
+    }
+    if (token.type === 'credits') {
+        return CREDITS_CONFIG
     }
     return token.coin
 }

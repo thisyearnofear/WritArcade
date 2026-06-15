@@ -22,6 +22,10 @@ model User {
   isCreator      Boolean @default(false) // User can create/register IP assets
   isAdmin        Boolean @default(false) // Platform admin access
 
+  // Etherfuse fiat onramp credits
+  credits              Int      @default(0) // Available credits from fiat purchases
+  totalCreditsPurchased Int     @default(0) // Lifetime credits purchased (append-only)
+
   // Story Protocol Grouping — EvenSplitGroupPool for pooled royalties
   storyGroupIpId String? // Group IP Asset ID for this writer's royalty pool
 
@@ -31,6 +35,8 @@ model User {
   sessions Session[]
   orders   Order[]
   payments Payment[]
+  
+  creditTransactions CreditTransaction[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -143,6 +149,11 @@ model Game {
   // Hypercerts: Impact certificate for creative contribution
   hypercertUri String? // AT Protocol URI (at://did:plc:xxx/org.hypercerts.claim.activity/yyy)
   hypercertCid String? // Content hash for tamper-evidence
+
+  // SuperRare NFT collectible fields
+  superrareTokenId   String?   // SuperRare token ID
+  superrareContract  String?   // SuperRare contract address
+  superrareMintedAt  DateTime? // When SuperRare NFT was minted
 
   // Relations
   userId String?
@@ -521,4 +532,40 @@ model AssetStoryRegistration {
   updatedAt DateTime @updatedAt
   
   @@map("asset_story_registrations")
+}
+
+// Etherfuse fiat onramp credit transactions
+model CreditTransaction {
+  id        String   @id @default(cuid())
+  
+  // User who purchased credits
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Order tracking
+  etherfuseOrderId String? // Etherfuse's order ID for this transaction
+  externalRef      String? // Client-side idempotency key
+  
+  // Amounts
+  fiatAmount   Int    // Amount in fiat cents (e.g., USD cents)
+  fiatCurrency String @default("USD") // Fiat currency code
+  creditAmount Int    // Credits awarded (1 credit = $0.10 USD)
+  
+  // Status tracking
+  status    CreditTransactionStatus @default(pending)
+  metadata  Json? // Additional data: payment method, kyc status, etc.
+  
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  
+  @@index([userId])
+  @@index([etherfuseOrderId])
+  @@map("credit_transactions")
+}
+
+enum CreditTransactionStatus {
+  pending
+  completed
+  failed
+  refunded
 }

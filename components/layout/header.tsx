@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
+import { BuyCreditsButton } from '@/components/ui/buy-credits'
 import { PenLine, LayoutDashboard, Sun, Moon, HelpCircle } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -141,6 +142,7 @@ export function Header({ onOpenOnboarding }: { onOpenOnboarding?: () => void } =
             My Games
           </Link>
           <CreatorDashboardLink />
+          <BuyCreditsButton />
           <BalanceDisplay />
           <ThemeToggle />
           <UserMenu />
@@ -150,6 +152,7 @@ export function Header({ onOpenOnboarding }: { onOpenOnboarding?: () => void } =
         <div className="flex md:hidden items-center space-x-3">
           <ThemeToggle />
           <BalanceDisplay />
+          <BuyCreditsButton />
           <UserMenu mobileLayout />
         </div>
       </div>

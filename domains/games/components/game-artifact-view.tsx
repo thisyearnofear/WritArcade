@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 import {
   ArrowLeft,
@@ -9,6 +9,8 @@ import {
   BookOpen,
   ExternalLink,
   Gamepad2,
+  GalleryHorizontalEnd,
+  Loader2,
   Lock,
   RefreshCw,
   ShieldCheck,
@@ -101,11 +103,34 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
   const isOwner = Boolean(address && ownerAddress && address.toLowerCase() === ownerAddress.toLowerCase())
   const tokenLabel = getTokenLabel(game)
   const hasMintRecord = Boolean(game.nftTokenId || game.nftTransactionHash || game.nftMintedAt)
+  const hasSuperRareRecord = Boolean(game.superrareTokenId || game.superrareMintedAt)
   const savedPanels = game.savedPanels || []
   const hasSavedPanels = savedPanels.length > 0
   const nftTxUrl = getTxUrl(game.nftTransactionHash, game.nftChainId)
   const nftContractUrl = getContractUrl(game.nftContractAddress, game.nftChainId)
   const remixHref = useMemo(() => getRemixHref(game), [game])
+
+  const [superrareMinting, setSuperrareMinting] = useState(false)
+  const [superrareError, setSuperrareError] = useState<string | null>(null)
+
+  const handleSuperrareMint = async () => {
+    if (!address) return
+    setSuperrareMinting(true)
+    setSuperrareError(null)
+    try {
+      const response = await fetch('/api/superrare/mint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: game.id, wallet: address }),
+      })
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error)
+    } catch (err) {
+      setSuperrareError(err instanceof Error ? err.message : 'Minting failed')
+    } finally {
+      setSuperrareMinting(false)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -287,7 +312,7 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
         <div className="rounded-lg border border-white/10 bg-zinc-950 p-5">
           <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
             <Wallet className="h-4 w-4 text-white/70" />
-            NFT
+            Base NFT
           </div>
           {hasMintRecord ? (
             <>
@@ -308,6 +333,49 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
                 Minting is available to the creator after completing a fresh session. Public visitors stay on the saved artifact unless they explicitly start a new session.
               </p>
             </>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-white/10 bg-zinc-950 p-5">
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+            <GalleryHorizontalEnd className="h-4 w-4 text-pink-400" />
+            SuperRare Collectible
+          </div>
+          {hasSuperRareRecord ? (
+            <>
+              <DetailRow label="Status" value="Minted on SuperRare" />
+              <DetailRow label="Token ID" value={game.superrareTokenId || '—'} />
+              <DetailRow label="Contract" value={shortAddress(game.superrareContract)} />
+              <DetailRow label="Minted" value={game.superrareMintedAt ? formatDate(game.superrareMintedAt) : '—'} />
+              <p className="mt-4 text-sm leading-6 text-white/58">
+                This game artifact has been collected as a SuperRare NFT.
+              </p>
+            </>
+          ) : isOwner ? (
+            <>
+              <DetailRow label="Status" value="Available to mint" />
+              <p className="mt-2 text-sm leading-6 text-white/58">
+                Mint this game as a SuperRare collectible. Character cards, story artifacts, and limited-edition endings are eligible.
+              </p>
+              <button
+                onClick={handleSuperrareMint}
+                disabled={superrareMinting}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-pink-500 disabled:opacity-50"
+              >
+                {superrareMinting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Preparing mint…</>
+                ) : (
+                  <><GalleryHorizontalEnd className="h-4 w-4" /> Collect as SuperRare NFT</>
+                )}
+              </button>
+              {superrareError && (
+                <p className="mt-2 text-xs text-red-400">{superrareError}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm leading-6 text-white/58">
+              Only the game owner can mint this as a SuperRare collectible.
+            </p>
           )}
         </div>
       </section>

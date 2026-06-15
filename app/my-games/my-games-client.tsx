@@ -11,7 +11,7 @@ import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
 import { IPRegistration } from '@/components/story/IPRegistration'
-import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check } from 'lucide-react'
+import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink, Palette } from 'lucide-react'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
@@ -58,14 +58,15 @@ export function MyGamesClient() {
   const [registrationGame, setRegistrationGame] = useState<Game | null>(null)
   const [sessionAllowed, setSessionAllowed] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
-  const [activeTab, setActiveTab] = useState<'games' | 'unlocked-vaults' | 'ip-registrations'>('games')
+  const [activeTab, setActiveTab] = useState<'games' | 'unlocked-vaults' | 'ip-registrations' | 'nft-gallery'>('games')
   const [unlockedVaults, setUnlockedVaults] = useState<UnlockedVault[]>([])
   const [copiedVault, setCopiedVault] = useState<string | null>(null)
   const stats = useMemo(() => {
     const minted = games.filter(game => !!game.nftTokenId).length
     const registered = games.filter(game => !!game.storyIpId).length
     const publicGames = games.filter(game => !game.private).length
-    return { minted, registered, publicGames }
+    const superrareMinted = games.filter(game => !!game.superrareTokenId).length
+    return { minted, registered, publicGames, superrareMinted }
   }, [games])
 
   useEffect(() => {
@@ -366,6 +367,7 @@ export function MyGamesClient() {
               <StatTile icon={Eye} label="Public" value={stats.publicGames} />
               <StatTile icon={BadgeCheck} label="Minted" value={stats.minted} />
               <StatTile icon={Network} label="IP Registered" value={stats.registered} />
+              <StatTile icon={GalleryHorizontalEnd} label="SuperRare" value={stats.superrareMinted} />
               <StatTile icon={Lock} label="Vaults" value={unlockedVaults.length} />
             </div>
           </div>
@@ -413,9 +415,79 @@ export function MyGamesClient() {
                   {unlockedVaults.length}
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab('nft-gallery')}
+                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
+                  activeTab === 'nft-gallery'
+                    ? 'border-pink-500 text-pink-600 dark:text-pink-400'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <GalleryHorizontalEnd className="w-4 h-4" />
+                NFT Gallery
+                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
+                  {stats.superrareMinted}
+                </span>
+              </button>
             </div>
 
-            {activeTab === 'ip-registrations' ? (
+            {activeTab === 'nft-gallery' ? (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">SuperRare NFT Gallery</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Game artifacts minted as SuperRare collectibles. Character cards, story artifacts, and limited editions.
+                  </p>
+                </div>
+                {games.filter(g => !!g.superrareTokenId).length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border bg-card/50 px-4 py-12 text-center sm:py-16">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-pink-500/10 text-pink-300">
+                      <GalleryHorizontalEnd className="h-7 w-7" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-foreground mb-3">No SuperRare collectibles yet</h2>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      Mint your game artifacts as SuperRare NFTs to build your collection.
+                    </p>
+                    <Link
+                      href="/games"
+                      className="inline-flex items-center gap-2 rounded-lg bg-pink-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-pink-700"
+                    >
+                      Browse Games
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {games.filter(g => !!g.superrareTokenId).map((game) => (
+                      <div key={game.id} className="rounded-lg border border-pink-500/20 bg-card p-5">
+                        <div className="flex items-start justify-between mb-3">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-pink-400/30 bg-pink-500/10 px-2.5 py-1 text-xs font-semibold text-pink-300">
+                            <GalleryHorizontalEnd className="w-3 h-3" />
+                            SuperRare
+                          </span>
+                          <span className="text-xs text-muted-foreground">#{game.superrareTokenId}</span>
+                        </div>
+                        <h3 className="text-base font-semibold text-foreground mb-1">{game.title}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-4">{game.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">{game.genre}</span>
+                          <Link
+                            href={`/games/${game.slug}`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-pink-400 hover:text-pink-300"
+                          >
+                            View <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        </div>
+                        {game.superrareMintedAt && (
+                          <p className="mt-3 text-[10px] text-muted-foreground">
+                            Minted {new Date(game.superrareMintedAt).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : activeTab === 'ip-registrations' ? (
               <IPRegistrationHistory />
             ) : activeTab === 'unlocked-vaults' ? (
               unlockedVaults.length === 0 ? (

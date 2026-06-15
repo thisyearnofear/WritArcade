@@ -65,8 +65,9 @@ export function PaymentOption({
   }, [selectedToken, action])
 
   const isMUSD = selectedToken.type === 'musd'
+  const isCredits = selectedToken.type === 'credits'
   const targetChainId = isMUSD ? MEZO_TESTNET_CHAIN_ID : BASE_MAINNET_CHAIN_ID
-  const isWrongChain = Boolean(chainId && chainId !== targetChainId)
+  const isWrongChain = !isCredits && Boolean(chainId && chainId !== targetChainId)
   const currentChain = getChainInfo(chainId)
 
   useEffect(() => {
@@ -74,8 +75,8 @@ export function PaymentOption({
     walletPromptTrackedRef.current = true
     trackEvent('payment_wallet_connect_prompt_shown', {
       action,
-      paymentPath: selectedToken.type === 'musd' ? 'musd' : 'writercoin',
-      token: selectedToken.type === 'musd' ? 'MUSD' : selectedToken.coin.symbol,
+      paymentPath: selectedToken.type === 'credits' ? 'credits' : selectedToken.type === 'musd' ? 'musd' : 'writercoin',
+      token: selectedToken.type === 'credits' ? 'Credits' : selectedToken.type === 'musd' ? 'MUSD' : selectedToken.coin.symbol,
     })
   }, [action, isConnected, selectedToken])
 
@@ -84,8 +85,8 @@ export function PaymentOption({
     walletConnectedTrackedRef.current = true
     trackEvent('payment_wallet_connected', {
       action,
-      paymentPath: selectedToken.type === 'musd' ? 'musd' : 'writercoin',
-      token: selectedToken.type === 'musd' ? 'MUSD' : selectedToken.coin.symbol,
+      paymentPath: selectedToken.type === 'credits' ? 'credits' : selectedToken.type === 'musd' ? 'musd' : 'writercoin',
+      token: selectedToken.type === 'credits' ? 'Credits' : selectedToken.type === 'musd' ? 'MUSD' : selectedToken.coin.symbol,
     })
   }, [action, isConnected, selectedToken])
 
@@ -109,8 +110,8 @@ export function PaymentOption({
     )
   }
 
-  const otherToken: PaymentToken = isMUSD
-    ? writerCoinToken
+  const otherToken: PaymentToken = isCredits ? writerCoinToken
+    : isMUSD ? writerCoinToken
     : { type: 'musd', network: 'testnet' }
 
   return (
@@ -143,11 +144,11 @@ export function PaymentOption({
             <button
               type="button"
               onClick={() => setSelectedToken(otherToken)}
-              className="flex items-center justify-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/5 px-3 py-2 text-purple-200 hover:bg-purple-500/10 transition-colors"
+              className="flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-emerald-200 hover:bg-emerald-500/10 transition-colors"
             >
               <ArrowRightLeft className="w-3.5 h-3.5" />
               <span className="font-medium">
-                Pay with {isMUSD ? 'Writer Coin' : 'MUSD'} on {currentChain.shortName}
+                Pay with Credits on {currentChain.shortName}
               </span>
             </button>
           </div>

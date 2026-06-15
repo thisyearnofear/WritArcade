@@ -104,6 +104,11 @@ export interface Game {
   hypercertUri?: string
   hypercertCid?: string
 
+  // SuperRare NFT collectible fields
+  superrareTokenId?: string
+  superrareContract?: string
+  superrareMintedAt?: Date
+
   // Timestamps
   createdAt: Date
   updatedAt: Date

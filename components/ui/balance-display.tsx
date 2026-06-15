@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
-import { Coins, Loader2, ChevronDown, Sparkles, ArrowRightLeft } from 'lucide-react'
+import { Coins, Loader2, ChevronDown, Sparkles, ArrowRightLeft, Banknote } from 'lucide-react'
 import { WRITER_COINS } from '@/lib/writerCoins'
 import { CopyAddressButton } from '@/components/ui/copy-address-button'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
@@ -20,18 +20,41 @@ interface CoinBalanceRow {
 }
 
 interface EcosystemGroup {
-  id: 'base' | 'mezo'
+  id: 'base' | 'mezo' | 'credits'
   label: string
-  chain: ChainInfo
+  chain?: ChainInfo
   rows: Array<{
     id: string
     symbol: string
-    address: string
+    address?: string
     value: string
     isLoading: boolean
     isZero: boolean
     accentClass: string
   }>
+}
+
+function useCreditsBalance() {
+  const { address, isConnected } = useAccount()
+  const [credits, setCredits] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setCredits(null)
+      return
+    }
+    setIsLoading(true)
+    fetch(`/api/ramp/credits?wallet=${encodeURIComponent(address)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setCredits(data.data.credits ?? 0)
+      })
+      .catch(() => setCredits(0))
+      .finally(() => setIsLoading(false))
+  }, [address, isConnected])
+
+  return { credits: credits ?? 0, isLoading }
 }
 
 function useAllWriterCoinBalances(): CoinBalanceRow[] {
@@ -95,27 +118,31 @@ function BalanceRow({
   isZero,
   mobileLayout,
   accentClass,
+  icon,
 }: {
   symbol: string
-  address: string
+  address?: string
   value: string
   isLoading: boolean
   isZero: boolean
   mobileLayout: boolean
   accentClass: string
+  icon?: React.ReactNode
 }) {
   return (
     <div className={`flex items-center justify-between gap-3 ${mobileLayout ? 'py-2.5 px-4' : 'py-2 px-3'}`}>
       <div className="flex items-center gap-2.5 min-w-0">
-        <Coins className={`w-4 h-4 shrink-0 ${isZero ? 'text-muted-foreground' : accentClass}`} />
+        {icon ?? <Coins className={`w-4 h-4 shrink-0 ${isZero ? 'text-muted-foreground' : accentClass}`} />}
         <span className={`text-sm font-medium truncate ${isZero ? 'text-muted-foreground' : 'text-foreground'}`}>
           {symbol}
         </span>
-        <CopyAddressButton
-          address={address}
-          sizeClass="w-3 h-3"
-          labelPrefix={`Copy ${symbol}`}
-        />
+        {address && (
+          <CopyAddressButton
+            address={address}
+            sizeClass="w-3 h-3"
+            labelPrefix={`Copy ${symbol}`}
+          />
+        )}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {isLoading ? (
@@ -149,22 +176,33 @@ function EcosystemSection({
 }) {
   return (
     <div>
-      <div className={`flex items-center justify-between gap-2 border-b border-border/50 ${mobileLayout ? 'px-4 py-2' : 'px-3 py-2'}`}>
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${group.chain.bgColor} ${group.chain.color}`}>
+      {group.chain ? (
+        <div className={`flex items-center justify-between gap-2 border-b border-border/50 ${mobileLayout ? 'px-4 py-2' : 'px-3 py-2'}`}>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${group.chain.bgColor} ${group.chain.color}`}>
+              {group.label}
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              {group.chain.purpose}
+            </span>
+          </div>
+          {group.id === 'mezo' && isMezoHolder && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+              <Sparkles className="w-3 h-3" />
+              MEZO Holder
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className={`flex items-center gap-2 border-b border-border/50 ${mobileLayout ? 'px-4 py-2' : 'px-3 py-2'}`}>
+          <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
             {group.label}
           </span>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            {group.chain.purpose}
+            Fiat onramp credits
           </span>
         </div>
-        {group.id === 'mezo' && isMezoHolder && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
-            <Sparkles className="w-3 h-3" />
-            MEZO Holder
-          </span>
-        )}
-      </div>
+      )}
 
       {group.rows.map((row) => (
         <BalanceRow
@@ -176,6 +214,7 @@ function EcosystemSection({
           isZero={row.isZero}
           mobileLayout={mobileLayout}
           accentClass={row.accentClass}
+          icon={group.id === 'credits' ? <Banknote className={`w-4 h-4 shrink-0 ${row.isZero ? 'text-muted-foreground' : 'text-emerald-400'}`} /> : undefined}
         />
       ))}
 
@@ -209,6 +248,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const allBalances = useAllWriterCoinBalances()
   const { formatted: mezoFormatted, isHolder: isMezoHolder, isLoading: isLoadingMezo } = useMezoBalance()
+  const { credits, isLoading: isLoadingCredits } = useCreditsBalance()
 
   useEffect(() => {
     setMounted(true)
@@ -229,6 +269,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const primaryIsLoading = primary.isLoading
   const hasPrimaryBalance = primary.balance && primary.balance.formattedBalance !== '0'
   const nonZeroCount = allBalances.filter(r => r.balance && r.balance.formattedBalance !== '0').length
+  const hasCredits = credits > 0
 
   const ecosystemGroups = useMemo<EcosystemGroup[]>(() => {
     const baseChain = getChainInfo(primary.coin ? 8453 : 8453)
@@ -265,8 +306,22 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
           },
         ],
       },
+      {
+        id: 'credits',
+        label: 'Credits',
+        rows: [
+          {
+            id: 'credits-balance',
+            symbol: 'Credits',
+            value: isLoadingCredits ? '—' : credits.toString(),
+            isLoading: isLoadingCredits,
+            isZero: !hasCredits && credits === 0,
+            accentClass: 'text-emerald-400',
+          },
+        ],
+      },
     ]
-  }, [allBalances, isMezoHolder, isLoadingMezo, mezoFormatted, primary.coin])
+  }, [allBalances, isMezoHolder, isLoadingMezo, mezoFormatted, primary.coin, credits, isLoadingCredits, hasCredits])
 
   if (!mounted || !isConnected) {
     return null

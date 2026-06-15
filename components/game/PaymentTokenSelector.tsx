@@ -48,6 +48,22 @@ export function PaymentTokenSelector({ selectedToken, onSelectToken, writerCoin 
           Universal
         </span>
       </button>
+      <button
+        type="button"
+        onClick={() => onSelectToken({ type: 'credits' })}
+        className={`flex-1 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
+          selectedToken.type === 'credits'
+            ? 'bg-emerald-600 text-white shadow-lg'
+            : 'text-emerald-300 hover:bg-emerald-800/50'
+        }`}
+      >
+        <span className="block">Credits</span>
+        <span className={`block text-[10px] font-normal normal-case tracking-normal mt-0.5 ${
+          selectedToken.type === 'credits' ? 'text-emerald-200' : 'text-emerald-400/60'
+        }`}>
+          No crypto needed
+        </span>
+      </button>
     </div>
   )
 }

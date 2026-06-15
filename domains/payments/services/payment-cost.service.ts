@@ -5,7 +5,7 @@
  * Used by both web app + mini app payment flows
  */
 
-import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
+import { getWriterCoinById, MUSD_CONFIG, CREDITS_CONFIG } from '@/lib/writerCoins'
 import type { PaymentToken } from '@/lib/writerCoins'
 import type { PaymentAction, PaymentCost, RevenueDistribution } from '../types'
 
@@ -38,6 +38,18 @@ export class PaymentCostService {
         writerCoinId: `musd-${token.network}`,
         writerCoinSymbol: config.symbol,
         decimals: config.decimals,
+      }
+    }
+
+    if (token.type === 'credits') {
+      const amount = BigInt(CREDITS_CONFIG.cost[action] ?? 10)
+      return {
+        action,
+        amount,
+        amountFormatted: `${Number(amount)} Credits`,
+        writerCoinId: 'credits',
+        writerCoinSymbol: 'Credits',
+        decimals: 0,
       }
     }
 

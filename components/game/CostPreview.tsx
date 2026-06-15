@@ -30,8 +30,7 @@ export function CostPreview({ paymentToken, action, showBreakdown = true, compac
   const [distribution, setDistribution] = useState({ writerShare: BigInt(0), platformShare: BigInt(0), creatorShare: BigInt(0) })
   useEffect(() => {
     let canceled = false
-    if (paymentToken.type === 'musd') {
-        // No breakdown for MUSD yet
+    if (paymentToken.type === 'musd' || paymentToken.type === 'credits') {
         return
     }
     ;(async () => {
@@ -68,6 +67,14 @@ export function CostPreview({ paymentToken, action, showBreakdown = true, compac
           <span className="text-purple-200">{actionLabel}:</span>
           <span className="font-semibold text-purple-100">{cost.amountFormatted} {tokenSymbol}</span>
         </div>
+
+        {showBreakdown && paymentToken.type === 'credits' && (
+          <div className="border-t border-emerald-700 pt-2 space-y-1.5">
+            <p className="text-[11px] text-emerald-300/80 leading-snug">
+              Pay with credits purchased via Etherfuse fiat onramp. No blockchain transaction fees.
+            </p>
+          </div>
+        )}
 
         {showBreakdown && paymentToken.type === 'writercoin' && (
           <>
