@@ -93,6 +93,7 @@ function AnimatedExternalLink({ href, children }: { href: string; children: Reac
 export function Footer() {
   const [year, setYear] = useState<number | null>(null)
 
+   
   useEffect(() => {
     setYear(new Date().getFullYear())
   }, [])

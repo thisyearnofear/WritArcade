@@ -9,7 +9,7 @@
  *      STORY_RPC_URL (optional, defaults to Aeneid)
  */
 
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { StoryClient } from "@story-protocol/core-sdk";
 

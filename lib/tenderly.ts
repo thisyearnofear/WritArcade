@@ -6,7 +6,7 @@
  * before executing them on-chain.
  */
 
-import { encodeFunctionData, type Address, type Hex } from 'viem';
+import { type Address, type Hex } from 'viem';
 
 export interface TenderlySimulationParams {
   network_id: string;

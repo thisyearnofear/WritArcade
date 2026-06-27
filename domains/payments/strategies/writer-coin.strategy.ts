@@ -1,19 +1,7 @@
-import { encodeFunctionData } from 'viem'
 import type { PaymentStrategy, ExecutePaymentParams, PaymentResult } from './payment-strategy'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getPaymentTokenConfig } from '@/lib/writerCoins'
 import { BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
-
-function encodeERC20Approval(
-  spenderAddress: `0x${string}`,
-  amount: string
-): `0x${string}` {
-  const selector = '0x095ea7b3'
-  const encodedSpender = spenderAddress.slice(2).padStart(64, '0')
-  const amountBigInt = BigInt(amount)
-  const encodedAmount = amountBigInt.toString(16).padStart(64, '0')
-  
-  return (selector + encodedSpender + encodedAmount) as `0x${string}`
-}
 
 export class WriterCoinStrategy implements PaymentStrategy {
   id = 'writercoin'

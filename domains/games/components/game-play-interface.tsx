@@ -29,7 +29,8 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   }, [game])
 
   // Account hook kept for potential future features
-  useAccount()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const account = useAccount()
 
   // 1. Session & Gameplay Logic
   const session = useGameSession(liveGame)
@@ -109,6 +110,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   }
 
   const previouslyIncompleteRef = useRef(true)
+   
   const storyComplete = !!session.epilogueReflection || session.assistantMessageCount >= MAX_COMIC_PANELS
   if (storyComplete && previouslyIncompleteRef.current) {
     previouslyIncompleteRef.current = false

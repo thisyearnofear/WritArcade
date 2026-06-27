@@ -90,6 +90,7 @@ export function ComicPanelCard({
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0)
   const [showImageComparison, setShowImageComparison] = useState(false)
   const [regenerationCount, setRegenerationCount] = useState(0)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [revealAnimation, setRevealAnimation] = useState(false)
   const messageIdRef = useRef(messageId)
 

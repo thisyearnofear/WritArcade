@@ -1,8 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Loader2, BookOpen, ChevronDown, Share2 } from 'lucide-react'
+import { BookOpen, ChevronDown, Share2 } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import type { Game, GameplayOption } from '../../types'
@@ -47,7 +46,9 @@ export function GameplayScreen({
   assistantMessageCount,
   canAddMorePanels,
   isGeneratingEpilogue,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   userInput,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onUserInputChange,
   onOptionClick,
   onImagesReady,
@@ -57,10 +58,14 @@ export function GameplayScreen({
   responseReady,
   isRegenerating,
   setShowComicFinale,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   epilogueReflection,
   epilogueGenerationFailed,
+   
   availableThemes,
+   
   generateAIPromptSuggestions,
+   
   handleAIPromptSelect,
 }: GameplayScreenProps) {
 

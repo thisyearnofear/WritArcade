@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion, Variants } from 'framer-motion'
 import { ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface AnimatedTextProps {
   children: string
@@ -322,4 +323,3 @@ export function StreamingTypewriter({
   )
 }
 
-import { useEffect, useRef, useState } from 'react'

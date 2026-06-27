@@ -33,6 +33,7 @@ export function useScrollReveal(once = true) {
         observer.unobserve(ref.current)
       }
     }
+   
   }, [once])
 
   return { ref, isVisible }

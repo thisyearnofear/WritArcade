@@ -30,7 +30,7 @@ export class WalletErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, _errorInfo: React.ErrorInfo) {
     console.error('[WalletErrorBoundary] Wallet provider crashed:', error)
   }
 

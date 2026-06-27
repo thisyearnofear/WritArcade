@@ -64,7 +64,9 @@ export function ComicFinaleScreen({
   const router = useRouter()
   const { address: userAddress } = useAccount()
   const { data: walletClient } = useWalletClient()
+   
   const { openConnectModal } = useConnectModal()
+   
   const onStoryNetwork = isOnStoryNetwork(chainId)
   const [derivativePromptDismissed, setDerivativePromptDismissed] = useState(false)
   const [isFunding, setIsFunding] = useState(false)
@@ -84,6 +86,7 @@ export function ComicFinaleScreen({
     : undefined
   // Only offer fund button when writer coin exists on Base — no MUSD fallback
   // (MUSD lives on Mezo; cross-chain fallback would require chain switching)
+   
   const fundingToken: PaymentToken | undefined = resolvableCoin
     ? { type: 'writercoin' as const, coin: resolvableCoin }
     : undefined
@@ -103,6 +106,7 @@ export function ComicFinaleScreen({
   const userFundBalance = fundingBalance ? parseFloat(fundingBalance.formattedBalance) : null
   const hasEnoughToFund = userFundBalance !== null && fundCost !== null && userFundBalance >= fundCost
 
+   
   const handleFundGame = useCallback(async () => {
     if (!walletClient || !userAddress || !fundingToken) return
 
@@ -172,7 +176,9 @@ export function ComicFinaleScreen({
       return {
         id: message.id,
         narrativeText: message.content,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         imageUrl: (message as any).narrativeImage || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         imageModel: (message as any).imageModel || 'unknown',
         userChoice: nextUserMessage?.content || undefined,
       }
@@ -251,6 +257,7 @@ export function ComicFinaleScreen({
     return () => {
       cancelled = true
     }
+   
   }, [artifactKey, canSaveArtifact, comicPanels, game.slug, onArtifactSaved, savedArtifactKey, showComicFinale, userAddress])
 
   return (
@@ -282,7 +289,7 @@ export function ComicFinaleScreen({
         mintAvailable={Boolean(game.writerCoinId)}
         mintUnavailableReason={isUnfunded && !fundingToken ? `No writer coin found for "${game.authorParagraphUsername || 'unknown author'}". Minting requires payment in the author's token.` : undefined}
         onFundGame={isUnfunded && fundingToken && userAddress ? handleFundGame : undefined}
-        onConnectWallet={isUnfunded && fundingToken && !userAddress ? openConnectModal : undefined}
+        onConnectWallet={isUnfunded && fundingToken && !userAddress ? openConnectModal as unknown as (() => void) : undefined}
         isFunding={isFunding}
         fundCostLabel={fundCostLabel}
         fundBalanceLabel={userFundBalance !== null && resolvableCoin ? `${userFundBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${resolvableCoin.symbol}` : undefined}

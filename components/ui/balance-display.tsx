@@ -250,6 +250,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const { formatted: mezoFormatted, isHolder: isMezoHolder, isLoading: isLoadingMezo } = useMezoBalance()
   const { credits, isLoading: isLoadingCredits } = useCreditsBalance()
 
+   
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -257,6 +258,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
   const close = useCallback(() => setIsOpen(false), [])
   useClickOutside(containerRef, close)
 
+   
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setIsOpen(false)

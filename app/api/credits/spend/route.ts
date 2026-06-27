@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validated = spendSchema.parse(body)
-    const { walletAddress, action, gameId } = validated
+    const { walletAddress, action } = validated
 
     const cost = CREDITS_CONFIG.cost[action]
     if (!cost) {

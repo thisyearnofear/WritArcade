@@ -117,6 +117,7 @@ export function CommandPalette({ items }: CommandPaletteProps) {
 
   // Reset selection when search changes
    
+   
   useEffect(() => {
     setSelectedIndex(0)
   }, [search])

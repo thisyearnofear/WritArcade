@@ -13,6 +13,7 @@ const ERC20_APPROVE_ABI = [{
   outputs: [{ name: '', type: 'bool' }],
 }] as const
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SPLITTER_PAY_FOR_GENERATION_ABI = [{
   name: 'payForGeneration',
   type: 'function',

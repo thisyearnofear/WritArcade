@@ -32,6 +32,7 @@ describe('Play count increment (route handler)', () => {
     const { PATCH } = await import('@/app/api/games/[slug]/play/route')
 
     const request = new Request('http://localhost:3000/api/games/test-game/play', { method: 'PATCH' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await PATCH(request as any, { params: { slug: 'test-game' } })
     const body = await response.json()
 
@@ -64,6 +65,7 @@ describe('Play count increment (route handler)', () => {
     const { PATCH } = await import('@/app/api/games/[slug]/play/route')
 
     const request = new Request('http://localhost:3000/api/games/test-game/play', { method: 'PATCH' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await PATCH(request as any, { params: { slug: 'test-game' } })
     const body = await response.json()
 

@@ -2,14 +2,14 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
-import { type PaymentToken, getPaymentTokenConfig, CREDITS_CONFIG, MEZO_CONFIG } from '@/lib/writerCoins'
+import { type PaymentToken, getPaymentTokenConfig, CREDITS_CONFIG } from '@/lib/writerCoins'
 import type { PaymentAction } from '@/domains/payments/types'
 import { ErrorCard } from '@/components/error/ErrorCard'
 import { getUserMessage } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { useMezoBalance } from '@/hooks/useMezoBalance'
 import { useMUSDBalance } from '@/hooks/useMUSDBalance'
-import { Loader2, Wallet, Sparkles, ExternalLink, ArrowRight, Banknote } from 'lucide-react'
+import { Loader2, Wallet, ExternalLink, ArrowRight, Banknote } from 'lucide-react'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
 import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
 import { Button } from '@/components/ui/button'
@@ -58,12 +58,15 @@ export function PaymentFlow({
   const tokenSymbol = isCredits ? 'Credits' : isMUSD ? config.symbol : config.symbol
 
   const { balance, isLoading: isLoadingBalance, error: balanceError, refresh } = useWriterCoinBalance(isMUSD ? '' : (isCredits ? '' : paymentToken.coin.id))
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { isHolder: isMezoHolder, formatted: mezoFormatted, balance: rawMezoBalance } = useMezoBalance()
 
   const {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     balance: musdBalance,
     formatted: musdFormatted,
     isLoading: isMUSDBalanceLoading,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     error: musdBalanceError,
     refresh: refreshMUSDBalance,
   } = useMUSDBalance()
@@ -152,6 +155,7 @@ export function PaymentFlow({
     } finally {
       setIsProcessing(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletClient, userAddress, paymentToken, action, hasInsufficientBalance, userBalance, requiredAmount, onPaymentSuccess, onPaymentError, refresh, isMUSD, config, tokenSymbol])
 
   const handleCreditPayment = useCallback(async () => {
@@ -190,6 +194,7 @@ export function PaymentFlow({
     } finally {
       setIsProcessing(false)
     }
+   
   }, [userAddress, action, hasInsufficientBalance, userBalance, requiredAmount, onPaymentStart, onPaymentSuccess, onPaymentError])
 
   const actionLabel = isCredits

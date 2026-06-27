@@ -4,10 +4,8 @@ import { motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import { PaymentOption } from '@/components/game/PaymentOption'
 import { type WriterCoin } from '@/lib/writerCoins'
-import { GenreSelector } from '@/components/game/GenreSelector'
-import { DifficultySelector } from '@/components/game/DifficultySelector'
-import { type GameGenre } from '@/components/game/GenreSelector'
-import { type GameDifficulty } from '@/components/game/DifficultySelector'
+import type { GameGenre } from '@/components/game/GenreSelector'
+import type { GameDifficulty } from '@/components/game/DifficultySelector'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 
 interface PaymentStepProps {

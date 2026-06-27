@@ -87,6 +87,7 @@ export async function collectAndDistributeGroupRoyalties(
     memberIpIds,
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const collected = (response.collectedRoyalties || []).map((r: any) => ({
     ipId: r.ipId as string,
     amount: r.amount?.toString() || "0",

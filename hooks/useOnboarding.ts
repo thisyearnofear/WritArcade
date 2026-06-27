@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const ONBOARDING_DISMISSED_KEY = 'writarcade_onboarding_dismissed'
 const ONBOARDING_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days

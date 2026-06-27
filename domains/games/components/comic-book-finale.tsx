@@ -387,8 +387,8 @@ export function ComicBookFinale({
         audio.src = nextAudioUrl
         audio.preload = 'auto'
       }
-    }
-  }, [currentPanelIndex, panels, panelAudioUrls])
+    }    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPanelIndex, panels, panelAudioUrls])
 
   // Keyboard shortcuts
   useEffect(() => {

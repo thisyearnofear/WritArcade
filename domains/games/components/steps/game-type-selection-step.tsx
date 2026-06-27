@@ -4,18 +4,14 @@ import { motion } from 'framer-motion'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Info } from 'lucide-react'
-import { type GameGenre } from '@/components/game/GenreSelector'
-import { type GameDifficulty } from '@/components/game/DifficultySelector'
+
 
 interface GameTypeSelectionStepProps {
   mode: 'story' | 'wordle'
   onModeChange: (mode: 'story' | 'wordle') => void
   url: string
   onUrlChange: (url: string) => void
-  writerCoinName: string
-  writerCoinSymbol: string
   writerCoinUrl: string
-  isGenerating: boolean
 }
 
 export function GameTypeSelectionStep({
@@ -23,10 +19,7 @@ export function GameTypeSelectionStep({
   onModeChange,
   url,
   onUrlChange,
-  writerCoinName,
-  writerCoinSymbol,
   writerCoinUrl,
-  isGenerating,
 }: GameTypeSelectionStepProps) {
   return (
     <div className="space-y-4">

@@ -17,6 +17,7 @@ export function SuccessMoment({ trigger, onComplete }: SuccessMomentProps) {
   const [isShowing, setIsShowing] = useState(false)
 
    
+   
   useEffect(() => {
     if (trigger) {
       setIsShowing(true)

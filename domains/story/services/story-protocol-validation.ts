@@ -103,6 +103,7 @@ export function getStoryProtocolConfig(): StoryProtocolConfig {
       gatewayUrl: process.env.NEXT_PUBLIC_STORY_IPFS_GATEWAY || '',
       uploadEndpoint: process.env.NEXT_PUBLIC_STORY_IPFS_UPLOAD_ENDPOINT || '',
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pilFlavor: (process.env.NEXT_PUBLIC_STORY_PIL_FLAVOR as any) || 'commercial-remix',
     spgContract: process.env.NEXT_PUBLIC_STORY_SPG_CONTRACT || '',
     licenseRegistry: process.env.NEXT_PUBLIC_STORY_LICENSE_REGISTRY || '',

@@ -22,12 +22,12 @@ export function useFontReady(options: FontReadyOptions = {}) {
   const [fontsReady, setFontsReady] = useState(false)
   const resolvedRef = useRef(false)
 
+   
   useEffect(() => {
     // Already resolved
     if (resolvedRef.current) return
     
     // If document.fonts is not supported, skip
-     
     if (!('fonts' in document)) {
       setFontsReady(true)
       resolvedRef.current = true
@@ -39,6 +39,7 @@ export function useFontReady(options: FontReadyOptions = {}) {
         if (fontFamilies && fontFamilies.length > 0) {
           // Wait for specific fonts
           await Promise.all(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fontFamilies.map(family => (document.fonts as any).load(`16px "${family}"`))
           )
         } else {
@@ -68,6 +69,7 @@ export function useFontReady(options: FontReadyOptions = {}) {
       }
     }, timeout)
 
+     
     checkFonts().finally(() => clearTimeout(timeoutId))
   }, [timeout, fontFamilies?.join(',')])
 
@@ -93,6 +95,7 @@ export function FontReadyWrapper({
   const fontsReady = useFontReady({ fontFamilies, timeout })
 
   if (!fontsReady) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return <>{fallback}</> as any
   }
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useWriteContract, useWalletClient, useChainId, useSwitchChain, useAccount } from 'wagmi'
-import { parseEther, encodeFunctionData } from 'viem'
+import { parseEther } from 'viem'
 import { useToast } from '@/components/ui/use-toast'
 import { getWriterCoinById } from '@/lib/writerCoins'
 import { CONTRACT_ABIS } from '@/lib/contracts'

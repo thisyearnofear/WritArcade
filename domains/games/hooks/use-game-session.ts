@@ -85,7 +85,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   // Derived state
   const assistantMessageCount = messages.filter(m => m.role === 'assistant').length
   const canAddMorePanels = assistantMessageCount < MAX_COMIC_PANELS
-  const storyComplete = !canAddMorePanels || !!epilogueReflection
+  const _storyComplete = !canAddMorePanels || !!epilogueReflection
 
   /**
    * Handle image generation result - updates the message with the generated image
@@ -257,6 +257,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
    */
   const isGeneratingEpilogueRef = useRef(false)
 
+   
   const generateEpilogue = useCallback(async () => {
     if (!sessionId || isGeneratingEpilogueRef.current) return
     isGeneratingEpilogueRef.current = true
@@ -351,6 +352,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   /**
    * Send message - continues the game conversation
    */
+   
   const sendMessage = useCallback(async (message: string) => {
     if (!sessionId || !message.trim()) return
 
@@ -524,6 +526,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   /**
    * Handle option click - triggers sendMessage with the option text
    */
+   
   const handleOptionClick = useCallback((optionId: number, optionText: string) => {
     setPendingOptionId(optionId)
     setUserChoices(prev => [...prev, {
@@ -551,6 +554,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
   /**
    * Regenerate image for a specific panel
    */
+   
   const handleImageRegenerate = useCallback(async (messageId: string, narrativeText: string, customPrompt?: string, theme?: string) => {
     setRegeneratingMessageId(messageId)
 

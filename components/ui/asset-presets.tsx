@@ -29,6 +29,7 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
     }
 
      
+     
     useEffect(() => {
         loadPresets()
     }, [])

@@ -86,6 +86,7 @@ export function GameGenerationOverlay({
   const progress = currentStep ? ((currentStepIndex + 1) / steps.length) * 100 : 0
 
   const [showSlowHint, setShowSlowHint] = useState(false)
+   
   const [tipIndex, setTipIndex] = useState(0)
   const warnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)

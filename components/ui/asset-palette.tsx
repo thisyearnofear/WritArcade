@@ -33,6 +33,7 @@ export function AssetPalette({ isOpen, onClose, onInject }: AssetPaletteProps) {
         if (isOpen) {
             fetchAssets()
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
 
     const fetchAssets = async () => {

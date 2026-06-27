@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { type GameGenre } from '@/components/game/GenreSelector'
 import { type GameDifficulty } from '@/components/game/DifficultySelector'
-import { type GameMode } from '@/domains/games/types'
-import { type WriterCoin } from '@/lib/writerCoins'
+import type { GameMode } from '@/domains/games/types'
+import type { WriterCoin } from '@/lib/writerCoins'
 
 export type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
 export type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
@@ -94,6 +94,7 @@ export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
   setUrl: (url) => set({ url }),
   setGenre: (genre) => set({ genre }),
   setDifficulty: (difficulty) => set({ difficulty }),
+   
   toggleCustomization: () => set((state) => ({ showCustomization: !state.showCustomization })),
   setShowPayment: (show) => set({ showPayment: show }),
   setPaymentApproved: (approved) => set({ paymentApproved: approved }),

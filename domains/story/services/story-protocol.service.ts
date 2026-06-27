@@ -22,7 +22,9 @@ import {
   LICENSE_TERMS_ID_COMMERCIAL_REMIX,
   getIPAssetExplorerUrl,
   getTxExplorerUrl,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   createStoryClientFromWallet,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isStoryClientReady,
 } from "./story-sdk-client";
 
@@ -177,7 +179,9 @@ async function estimateGasForRegistration(
           stateMutability: "payable"
         }
       ],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       functionName: "mint" as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       args: [] as any,
     });
 

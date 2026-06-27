@@ -19,6 +19,7 @@ export function AnimatedBackground({ variant = 'gradient', className = '' }: Ani
     case 'mesh':
       return <MeshGradient className={className} />
     case 'particles':
+       
       return <ParticleField className={className} />
     case 'aurora':
       return <AuroraEffect className={className} />
@@ -139,6 +140,7 @@ function MeshGradient({ className }: { className?: string }) {
 function ParticleField({ className }: { className?: string }) {
   // Use seeded random to avoid impure function calls during render
   const particles = useMemo(() => {
+     
     let seed = 12345
     const seededRandom = () => {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff

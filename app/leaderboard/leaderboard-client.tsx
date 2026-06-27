@@ -5,7 +5,7 @@ import { GameGrid } from '@/domains/games/components/game-grid'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
-import { Trophy, TrendingUp, Flame, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Trophy, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
 export function LeaderboardClient() {

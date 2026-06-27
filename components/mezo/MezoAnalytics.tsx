@@ -117,7 +117,7 @@ export function MezoAnalytics() {
   }
 
   const totalVolume = formatMUSD(data.totalVolumeMUSD)
-  const totalPlatform = formatMUSD(data.totalPlatformFees)
+  const _totalPlatform = formatMUSD(data.totalPlatformFees)
   const totalCreator = formatMUSD(data.totalCreatorPayouts)
   const boostedPct = data.totalGames > 0
     ? Math.round((data.boostedCount / data.totalGames) * 100)
