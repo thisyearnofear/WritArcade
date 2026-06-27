@@ -217,6 +217,7 @@ export class GameDatabaseService {
     requireFunding?: boolean
     requireImage?: boolean
     requireArtifact?: boolean
+    sortBy?: 'recent' | 'playCount'
   } = {}) {
     const {
       limit = 25,
@@ -229,7 +230,8 @@ export class GameDatabaseService {
       featured,
       requireFunding = false,
       requireImage = false,
-      requireArtifact = false
+      requireArtifact = false,
+      sortBy = 'recent',
     } = options
 
     try {
@@ -278,6 +280,15 @@ export class GameDatabaseService {
         ]
       }
 
+      const orderBy: Prisma.GameOrderByWithRelationInput | Prisma.GameOrderByWithRelationInput[] =
+        sortBy === 'playCount'
+          ? [
+              // Cast since `playCount` may not be in generated Prisma types yet
+              ({ playCount: 'desc' } as Prisma.GameOrderByWithRelationInput),
+              { createdAt: 'desc' },
+            ]
+          : { createdAt: 'desc' }
+
       const [games, total] = await Promise.all([
         prisma.game.findMany({
           where,
@@ -294,7 +305,7 @@ export class GameDatabaseService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy,
           take: limit,
           skip: offset,
         }),
@@ -404,7 +415,10 @@ export class GameDatabaseService {
         totalGames,
         publicGames,
         genres,
-        recentGames
+        recentGames,
+        playCountAgg,
+        playsToday,
+        playsThisWeek,
       ] = await Promise.all([
         prisma.game.count(),
         prisma.game.count({ where: { private: false } }),
@@ -420,12 +434,30 @@ export class GameDatabaseService {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
             }
           }
-        })
+        }),
+        prisma.game.aggregate({
+          _sum: { playCount: true },
+        }),
+        // Plays in the last 24 hours
+        prisma.gamePlayEvent.count({
+          where: {
+            playedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          },
+        }),
+        // Plays in the last 7 days
+        prisma.gamePlayEvent.count({
+          where: {
+            playedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+          },
+        }),
       ])
 
       return {
         totalGames,
         publicGames,
+        totalPlays: playCountAgg._sum.playCount ?? 0,
+        playsToday,
+        playsThisWeek,
         topGenres: genres.map(g => ({ genre: g.genre, count: g._count.genre })),
         recentGames,
       }
@@ -435,9 +467,53 @@ export class GameDatabaseService {
       return {
         totalGames: 0,
         publicGames: 0,
+        totalPlays: 0,
+        playsToday: 0,
+        playsThisWeek: 0,
         topGenres: [],
         recentGames: 0,
       }
+    }
+  }
+
+  /**
+   * Get play trend data for a specific game (daily play counts for last 30 days)
+   */
+  static async getGamePlayTrends(slug: string): Promise<{ date: string; count: number }[]> {
+    try {
+      const game = await prisma.game.findUnique({ where: { slug }, select: { id: true } })
+      if (!game) return []
+
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+      const events = await prisma.gamePlayEvent.findMany({
+        where: {
+          gameId: game.id,
+          playedAt: { gte: thirtyDaysAgo },
+        },
+        select: { playedAt: true },
+        orderBy: { playedAt: 'asc' },
+      })
+
+      // Group by date
+      const dayBuckets = new Map<string, number>()
+      for (const event of events) {
+        const dateKey = event.playedAt.toISOString().split('T')[0]
+        dayBuckets.set(dateKey, (dayBuckets.get(dateKey) || 0) + 1)
+      }
+
+      // Fill in missing days with zeroes
+      const trends: { date: string; count: number }[] = []
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+        const dateKey = d.toISOString().split('T')[0]
+        trends.push({ date: dateKey, count: dayBuckets.get(dateKey) || 0 })
+      }
+
+      return trends
+    } catch (error) {
+      console.error('Failed to get game play trends:', error)
+      return []
     }
   }
 
@@ -515,6 +591,8 @@ export class GameDatabaseService {
       // Cast to any because Prisma types are not yet updated in the running process
       playFee: (prismaGame as { playFee?: string }).playFee || undefined,
       featured: (prismaGame as { featured?: boolean }).featured || false,
+      playCount: (prismaGame as { playCount?: number }).playCount || undefined,
+      lastPlayedAt: (prismaGame as { lastPlayedAt?: Date | null }).lastPlayedAt || undefined,
       createdAt: prismaGame.createdAt,
       updatedAt: prismaGame.updatedAt,
     }

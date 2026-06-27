@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { UserMenu } from '@/domains/users/components/user-menu'
 import { BalanceDisplay } from '@/components/ui/balance-display'
 import { BuyCreditsWrapper } from '@/components/ui/buy-credits-wrapper'
-import { PenLine, LayoutDashboard, Sun, Moon, HelpCircle } from 'lucide-react'
-import { useAccount } from 'wagmi'
+import { PenLine, Sun, Moon } from 'lucide-react'
+
 import { motion, useReducedMotion } from 'framer-motion'
 import { useIsActive } from '@/hooks/useIsActive'
 import { useDarkMode } from '@/components/providers/DarkModeProvider'
@@ -22,21 +22,6 @@ function ThemeToggle() {
     >
       {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </Button>
-  )
-}
-
-
-function CreatorDashboardLink() {
-  const { isConnected } = useAccount()
-  if (!isConnected) return null
-  return (
-    <Link
-      href="/creators/dashboard"
-      className="flex items-center gap-1.5 text-sm font-bold text-amber-500 hover:text-amber-400 transition-colors"
-    >
-      <LayoutDashboard className="w-4 h-4" />
-      <span className="uppercase tracking-widest text-[10px]">Hub</span>
-    </Link>
   )
 }
 
@@ -94,7 +79,7 @@ function AnimatedCreateButton({ isActive }: { isActive: boolean }) {
   )
 }
 
-export function Header({ onOpenOnboarding }: { onOpenOnboarding?: () => void } = {}) {
+export function Header() {
   const isActive = useIsActive()
 
   return (
@@ -119,32 +104,8 @@ export function Header({ onOpenOnboarding }: { onOpenOnboarding?: () => void } =
 
           <AnimatedCreateButton isActive={isActive('/generate')} />
 
-          {onOpenOnboarding && (
-            <button
-              type="button"
-              onClick={onOpenOnboarding}
-              title="How it works"
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border hover:border-foreground/30"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">How it works</span>
-            </button>
-          )}
-
-          <Link
-            href="/my-games"
-            className={`text-sm transition-colors ${
-              isActive('/my-games')
-                ? 'text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            My Games
-          </Link>
-          <CreatorDashboardLink />
           <BuyCreditsWrapper />
           <BalanceDisplay />
-          <ThemeToggle />
           <UserMenu />
         </nav>
 

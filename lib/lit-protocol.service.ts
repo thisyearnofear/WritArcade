@@ -1,14 +1,20 @@
 /**
- * Lit Protocol Service
- * NFT-gated encryption for secret game panels.
+ * Lit Protocol Service (DEPRECATED)
  *
- * Architecture:
+ * Status: Superseded by Story CDR (Confidential Data Rails) for all new secret panels.
+ * Legacy games that used Lit Protocol before the CDR migration still reference this
+ * service for decryption. All NEW games vault their secret epilogues via CDR.
+ *
+ * REMOVAL TARGET: Once all legacy games with Lit-ciphertext have been migrated to CDR
+ * vaults, this entire file can be deleted.
+ *
+ * Architecture (legacy):
  * - Encryption: server-side after game generation (no auth needed)
  * - Decryption: client-side when NFT holder views the game
  * - Access control: GameNFT ownership on Base mainnet
- *
- * ENHANCEMENT FIRST: Follows existing service patterns (config, logger, error handling)
  */
+
+/** @deprecated Use CDR vaults via `domains/story/services/cdr.service.ts` instead */
 
 import { config, logger } from './config'
 

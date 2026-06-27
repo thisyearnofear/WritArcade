@@ -87,6 +87,8 @@ export interface Game {
   // Monetization & Discovery
   playFee?: string
   featured?: boolean
+  playCount?: number  // Number of times game sessions have completed
+  lastPlayedAt?: Date // Last time the game was played
 
   // NEW: Approval workflow & quality metrics
   approvalStatus?: 'pending' | 'approved' | 'rejected'

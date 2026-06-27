@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server'
 import { checkDatabaseHealth } from '@/lib/database'
 
+// Guarded: only enabled when NODE_ENV=production for external uptime monitoring (Vercel cron, health checks).
+// In dev/test, return a 404 so this route is never accidentally depended on.
 export async function GET() {
+  if (process.env.NODE_ENV !== 'production') {
+    return NextResponse.json(
+      { success: false, message: 'Health check only available in production' },
+      { status: 404 }
+    )
+  }
+
   try {
     const health = await checkDatabaseHealth()
     

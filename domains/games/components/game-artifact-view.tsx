@@ -18,6 +18,12 @@ import {
   User,
   Wallet,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
+
+const PlayTrendChart = dynamic(
+  () => import('@/components/ui/play-trend-chart').then(m => m.PlayTrendChart),
+  { ssr: false }
+)
 
 import type { Game } from '../types'
 import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
@@ -295,6 +301,10 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-6">
+        <PlayTrendChart slug={game.slug} />
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[1fr_1fr]">

@@ -92,11 +92,11 @@ function HowItWorksSection() {
 /* ─── Hooks ──────────────────────────────────────────────────────────────── */
 
 function useGameCount() {
-  const [count, setCount] = useState<number | null>(null)
+  const [count, setCount] = useState<{ publicGames: number; totalPlays: number } | null>(null)
   useEffect(() => {
     fetch('/api/games/stats')
       .then((r) => r.json())
-      .then((r) => { if (r.success) setCount(r.data.publicGames) })
+      .then((r) => { if (r.success) setCount({ publicGames: r.data.publicGames, totalPlays: r.data.totalPlays ?? 0 }) })
       .catch(() => {})
   }, [])
   return count
@@ -138,16 +138,18 @@ function WriterTicker() {
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
-  const { showOnboarding, dismissOnboarding, startTour } = useOnboarding()
+  const { showOnboarding, dismissOnboarding } = useOnboarding()
   const gameCount = useGameCount()
   const [paymentPath] = useState<PaymentPath>('musd')
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
   const featuredLoadedRef = useRef(false)
+  const [hasMostPlayed, setHasMostPlayed] = useState<boolean | null>(null)
+  const mostPlayedLoadedRef = useRef(false)
 
   return (
     <ThemeWrapper theme="arcade">
       <div className="flex flex-col min-h-screen">
-        <Header onOpenOnboarding={() => startTour('app-intro')} />
+        <Header />
 
         <main className="flex-1">
           {/* Skip nav target */}
@@ -181,19 +183,22 @@ export default function HomePage() {
                 >
                   <span className="underline decoration-dotted underline-offset-2 cursor-help text-foreground font-medium">Paragraph</span>
                 </ConceptTooltip>{' '}
-                article URL. AI generates a{' '}
+                article URL. Get a{' '}
+                <span className="text-foreground font-medium">free Wordle puzzle</span>{' '}
+                or a{' '}
                 <span className="text-foreground font-medium">5-panel interactive comic</span>{' '}
                 you can play, customise, and collect.
               </motion.p>
 
-              {gameCount !== null && gameCount >= 10 && (
+              {gameCount !== null && gameCount.publicGames >= 10 && (
                 <motion.p
                   className="text-sm text-muted-foreground mb-6"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.5 }}
                 >
-                  Join {gameCount} early creators
+                  {gameCount.publicGames} games created{' · '}
+                  {gameCount.totalPlays.toLocaleString()} plays
                 </motion.p>
               )}
 
@@ -227,6 +232,13 @@ export default function HomePage() {
                       >
                         Try with a sample article
                       </button>
+                      <a
+                        href="/generate?mode=wordle"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 border border-amber-500/30 rounded-full px-3 py-1.5 transition-colors"
+                      >
+                        <Puzzle className="w-3.5 h-3.5" />
+                        Free Wordle
+                      </a>
 </div>
                   </div>
                 </ErrorBoundary>
@@ -303,23 +315,26 @@ export default function HomePage() {
           </section>
 
           {/* Daily Wordle — free, no wallet */}
-          <section className="px-4 py-12 border-t border-border bg-gradient-to-r from-amber-500/5 to-purple-500/5 sm:py-16">
+          <section className="px-4 py-12 sm:py-16 border-t-0 bg-gradient-to-r from-amber-500/5 to-purple-500/5">
             <div className="max-w-4xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
                 <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
                   <Puzzle className="w-8 h-8 text-amber-400" aria-hidden="true" />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h2 className="text-lg font-bold text-foreground mb-1">Daily Wordle — Free</h2>
+                  <h2 className="text-lg font-bold text-foreground mb-1">
+                    Free Wordle Puzzle
+                    <span className="ml-2 text-[10px] font-bold uppercase tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-0.5 align-middle">No wallet</span>
+                  </h2>
                   <p className="text-sm text-muted-foreground max-w-lg">
-                    Article-derived word puzzles, free to play. No wallet needed. Guess the word in 6 tries, then share your score.
+                    Article-derived word puzzles, free to play. No wallet needed. Guess the word in 6 tries, then share your score. The fastest way to see what WritersArcade can do.
                   </p>
                 </div>
                 <a
                   href="/generate?mode=wordle"
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-amber-700 sm:w-auto sm:flex-shrink-0"
                 >
-                  Play Now <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                  Play Wordle <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 </a>
               </div>
             </div>
@@ -347,6 +362,38 @@ export default function HomePage() {
                       if (!featuredLoadedRef.current) {
                         featuredLoadedRef.current = true
                         setHasFeatured(count > 0)
+                      }
+                    }}
+                  />
+                </Suspense>
+              </div>
+            </section>
+          )}
+
+          {/* Most played — leaderboard sorted by playCount. Only rendered
+              once there are at least a few plays AND the filtered query
+              returns games, so we don't show a degenerate one-card
+              leaderboard or an empty-state mid-page. */}
+          {gameCount !== null && gameCount.totalPlays >= 3 && hasMostPlayed !== false && (
+            <section className="py-16 px-4 border-t border-border" aria-labelledby="most-played-heading">
+              <div className="max-w-6xl mx-auto">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 id="most-played-heading" className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                    Most played
+                  </h2>
+                  <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    View all
+                  </a>
+                </div>
+                <Suspense fallback={<GridSkeleton count={6} columns={3} />}>
+                  <GameGrid
+                    limit={6}
+                    sortBy="playCount"
+                    requireImage={true}
+                    onLoad={({ count }) => {
+                      if (!mostPlayedLoadedRef.current) {
+                        mostPlayedLoadedRef.current = true
+                        setHasMostPlayed(count > 0)
                       }
                     }}
                   />

@@ -97,11 +97,13 @@ export function GameGenerationOverlay({
       seed = (seed * 1103515245 + 12345) & 0x7fffffff
       return seed / 0x7fffffff
     }
+    const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1920
+    const viewportH = typeof window !== 'undefined' ? window.innerHeight : 1080
     return [...Array(20)].map((_, i) => ({
       id: i,
-      initialX: seededRandom() * window.innerWidth,
-      initialY: seededRandom() * window.innerHeight,
-      animateY: seededRandom() * window.innerHeight,
+      initialX: seededRandom() * viewportW,
+      initialY: seededRandom() * viewportH,
+      animateY: seededRandom() * viewportH,
       duration: 3 + seededRandom() * 2,
     }))
   }, [])

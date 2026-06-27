@@ -131,6 +131,10 @@ model Game {
   playFee          String?   // Fee to play in tokens (BigInt as String)
   featured         Boolean   @default(false)
   
+  // Play tracking — incremented each time a game session completes
+  playCount    Int      @default(0)
+  lastPlayedAt DateTime? // Last time the game was played
+
   // Access control
   private Boolean @default(false)
 
@@ -163,6 +167,7 @@ model Game {
   gamesFromArticles GameFromArticle[]
   gamesFromAssets GameFromAsset[]
   feedbacks GameFeedback[]
+  playEvents GamePlayEvent[]
   panelRatings PanelRating[]
   artifactPanels GameArtifactPanel[]
 
@@ -170,6 +175,18 @@ model Game {
   updatedAt DateTime @updatedAt
 
   @@map("games")
+}
+
+// Play event log for trend analytics — one row per play completion
+model GamePlayEvent {
+  id     String   @id @default(cuid())
+  gameId String
+  game   Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playedAt DateTime @default(now())
+
+  @@index([gameId, playedAt])
+  @@index([playedAt])
+  @@map("game_play_events")
 }
 
 model GameArtifactPanel {
@@ -568,4 +585,21 @@ enum CreditTransactionStatus {
   completed
   failed
   refunded
+}
+
+// Farcaster Mini App notification tokens for push notifications
+// Stored per-fid so we can send notifications when new games are published
+model FarcasterNotificationToken {
+  id        String   @id @default(cuid())
+  fid       Int      // Farcaster user ID (from webhook header)
+  token     String   // Notification token from Farcaster SDK
+  url       String?  // Notification webhook URL
+  enabled   Boolean  @default(true) // false when user disables or removes mini app
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fid, token])
+  @@index([fid])
+  @@map("farcaster_notification_tokens")
 }

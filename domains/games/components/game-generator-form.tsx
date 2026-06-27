@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,15 @@ import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import type { PaymentPath } from '@/domains/games/components/simple-game-form'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 import { trackEvent } from '@/lib/analytics'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import {
+  DesktopStepIndicator,
+  MobileStepHeader,
+  MobileStepNav,
+  type GenerateStep,
+  getStepIndex,
+  GENERATE_STEPS,
+} from '@/components/ui/step-indicator'
 
 interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
@@ -329,6 +338,38 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const autoPreviewedUrlRef = useRef<string | null>(null)
   const paymentCompletedRef = useRef(false)
   const paymentPathExposureRef = useRef<string | null>(null)
+
+  // Step-based mobile UX
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  const [mobileStep, setMobileStep] = useState<GenerateStep>('article')
+
+  const handleStepBack = useCallback(() => {
+    const currentIdx = getStepIndex(mobileStep)
+    if (currentIdx > 0) {
+      setMobileStep(GENERATE_STEPS[currentIdx - 1].id)
+    }
+  }, [mobileStep])
+
+  const canGoBack = getStepIndex(mobileStep) > 0
+
+  // Auto-advance on mobile when article is previewed
+  useEffect(() => {
+    if (isDesktop) return
+    if (!hasPreviewedCurrentUrl) return
+    if (mode === 'wordle') {
+      setMobileStep('generate')
+    } else if (mobileStep === 'article') {
+      setMobileStep('customize')
+    }
+  }, [hasPreviewedCurrentUrl, isDesktop, mode, mobileStep])
+
+  // Auto-advance on mobile when payment is approved
+  useEffect(() => {
+    if (isDesktop) return
+    if (paymentApproved && mobileStep === 'payment') {
+      setMobileStep('generate')
+    }
+  }, [paymentApproved, isDesktop, mobileStep])
 
   // Auto-detect writer coin from URL
   const detectedCoin = useMemo(() => detectWriterCoinFromUrl(url), [url])
@@ -749,8 +790,15 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Step indicator — desktop phase bar, mobile header */}
+      <DesktopStepIndicator currentStep={mobileStep} />
+      <MobileStepHeader currentStep={mobileStep} />
+
+      <form onSubmit={handleSubmit} className="space-y-6 pb-28 md:pb-0">
         <div className="space-y-4">
+
+          {/* ── STEP 1: Article ── */}
+          <div className={`${mobileStep === 'article' || isDesktop ? 'block' : 'hidden'}`}>
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Paste the article</h2>
@@ -934,6 +982,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             </p>
           </div>
           )}
+          </div>
+          {/* ── Close Step 1: Article ── */}
+
+          {/* ── STEP 2: Customize ── */}
+          <div className={`${mobileStep === 'customize' || isDesktop ? 'block' : 'hidden'}`}>
 
           {isStoryMode && hasPreviewedCurrentUrl && (
             <div className="rounded-xl border border-border bg-card">
@@ -1277,8 +1330,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               </AnimatePresence>
             </motion.div>
           )}
+          </div>
+          {/* ── Close Step 2: Customize ── */}
 
-        </div>
+          {/* ── STEP 3: Payment ── */}
+          <div className={`${mobileStep === 'payment' || isDesktop ? 'block' : 'hidden'}`}>
 
         {error && (
           <GenerateErrorPanel
@@ -1410,6 +1466,12 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           </div>
         )}
 
+          </div>
+          {/* ── Close Step 3: Payment ── */}
+
+          {/* ── STEP 4: Generate ── */}
+          <div className={`${mobileStep === 'generate' || isDesktop ? 'block' : 'hidden'}`}>
+
         {/* Submit button — visible until the paid story payment CTA takes over. */}
         {(!isStoryMode || !hasPreviewedCurrentUrl) && (
           <motion.div
@@ -1462,6 +1524,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             </Button>
           </motion.div>
         )}
+          </div>
+          {/* ── Close Step 4: Generate ── */}
+
+        </div>
       </form>
 
       <details className="mt-8 rounded-lg border border-border bg-card p-4 text-card-foreground">
@@ -1535,6 +1601,15 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           setShowFidelityReview(true)
         } : undefined}
       />
+
+      {/* Mobile bottom nav — back button + step dots */}
+      {!isGenerating && (
+        <MobileStepNav
+          currentStep={mobileStep}
+          canGoBack={canGoBack}
+          onBack={handleStepBack}
+        />
+      )}
     </div>
   )
 }

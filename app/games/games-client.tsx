@@ -5,7 +5,7 @@ import { GameGrid } from '@/domains/games/components/game-grid'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
-import { Search, Filter, BookOpen, Compass, Zap, Brain, Sword, Store, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Search, Filter, BookOpen, Compass, Zap, Brain, Sword, Store, ChevronLeft, ChevronRight, X, BarChart3, Clock } from 'lucide-react'
 import { GenreFilterList } from '@/domains/games/components/genre-filter-list'
 import type { GenreOption } from '@/domains/games/components/genre-filter-list'
 import { WRITER_COINS } from '@/lib/writerCoins'
@@ -27,6 +27,7 @@ export function GamesClient() {
   const [totalGames, setTotalGames] = useState(0)
   const [itemsPerPage] = useState(12)
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<'recent' | 'playCount'>('recent')
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
@@ -105,7 +106,7 @@ export function GamesClient() {
               <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-card border-t border-border rounded-t-lg p-5 lg:hidden animate-slide-in-up">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Filter className="w-4 h-4" /> Genres
+                    <Filter className="w-4 h-4" /> Filters
                   </h3>
                   <button
                     onClick={() => setFilterDrawerOpen(false)}
@@ -115,12 +116,48 @@ export function GamesClient() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <GenreFilterList
-                  genres={genres}
-                  selected={selectedGenre}
-                  onSelect={(id) => { setSelectedGenre(id); setCurrentPage(1); setFilterDrawerOpen(false) }}
-                  variant="drawer"
-                />
+
+                <div className="mb-5">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5" /> Sort
+                  </h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setSortBy('recent'); setCurrentPage(1); setFilterDrawerOpen(false) }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                        sortBy === 'recent'
+                          ? 'bg-card text-foreground border-purple-500 shadow-sm'
+                          : 'bg-muted text-muted-foreground border-border hover:border-purple-500'
+                      }`}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      Newest
+                    </button>
+                    <button
+                      onClick={() => { setSortBy('playCount'); setCurrentPage(1); setFilterDrawerOpen(false) }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                        sortBy === 'playCount'
+                          ? 'bg-card text-foreground border-purple-500 shadow-sm'
+                          : 'bg-muted text-muted-foreground border-border hover:border-purple-500'
+                      }`}
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      Most played
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-1">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Filter className="w-3.5 h-3.5" /> Genres
+                  </h4>
+                  <GenreFilterList
+                    genres={genres}
+                    selected={selectedGenre}
+                    onSelect={(id) => { setSelectedGenre(id); setCurrentPage(1); setFilterDrawerOpen(false) }}
+                    variant="drawer"
+                  />
+                </div>
               </div>
             </>
           )}
@@ -152,12 +189,39 @@ export function GamesClient() {
               </aside>
 
               <div className="flex-1">
+                <div className="flex items-center justify-end mb-4">
+                  <div className="inline-flex items-center rounded-lg border border-border bg-muted p-0.5">
+                    <button
+                      onClick={() => { setSortBy('recent'); setCurrentPage(1) }}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        sortBy === 'recent'
+                          ? 'bg-card text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      Newest
+                    </button>
+                    <button
+                      onClick={() => { setSortBy('playCount'); setCurrentPage(1) }}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        sortBy === 'playCount'
+                          ? 'bg-card text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      Most played
+                    </button>
+                  </div>
+                </div>
                 <GameGrid
-                  key={`${selectedGenre}-${searchQuery}-${currentPage}`}
+                  key={`${selectedGenre}-${searchQuery}-${currentPage}-${sortBy}`}
                   limit={itemsPerPage}
                   page={currentPage}
                   genre={selectedGenre}
                   search={searchQuery}
+                  sortBy={sortBy}
                   onLoad={handleStatsLoad}
                   emptyActionLabel="Create a game"
                 />

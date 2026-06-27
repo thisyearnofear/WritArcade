@@ -24,11 +24,13 @@ export async function GET(request: NextRequest) {
     const requireArtifact = searchParams.has('requireArtifact')
       ? searchParams.get('requireArtifact') === 'true'
       : !includeLegacy
+    const sortByParam = searchParams.get('sortBy')
+    const sortBy: 'recent' | 'playCount' = sortByParam === 'playCount' ? 'playCount' : 'recent'
 
     // Cache key is the full param set — skip cache for search queries
     const cacheKey = search
       ? null
-      : `games:${limit}:${offset}:${genre ?? ''}:${featured}:${writerCoinId ?? ''}:${requireFunding}:${requireImage}:${requireArtifact}`
+      : `games:${limit}:${offset}:${genre ?? ''}:${featured}:${writerCoinId ?? ''}:${requireFunding}:${requireImage}:${requireArtifact}:${sortBy}`
 
     if (cacheKey) {
       const cached = cacheGet<unknown>(cacheKey, CACHE_TTL_MS)
@@ -47,6 +49,7 @@ export async function GET(request: NextRequest) {
       requireFunding,
       requireImage,
       requireArtifact,
+      sortBy,
       includePrivate: false,
     })
 

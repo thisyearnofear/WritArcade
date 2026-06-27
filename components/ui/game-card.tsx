@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Compass, Eye, Sword, Zap, Brain, Store, BookOpen } from 'lucide-react';
+import { Compass, Eye, Sword, Zap, Brain, Store, BookOpen, Play, TrendingUp, Clock } from 'lucide-react';
 
 const GENRE_STYLES: Record<string, { gradient: string; icon: React.ElementType }> = {
   Adventure:  { gradient: 'from-emerald-800 via-teal-900 to-cyan-950', icon: Compass },
@@ -21,9 +21,26 @@ interface GameCardProps {
   imageUrl?: string | null;
   primaryColor?: string | null;
   symbol: string;
+  playCount?: number;
+  lastPlayedAt?: string | null;
 }
 
-export function GameCard({ slug, title, description, genre, imageUrl, primaryColor, symbol }: GameCardProps) {
+function formatLastPlayed(dateStr: string): string {
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const diffMs = now - then
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMins < 1) return 'just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  return new Date(dateStr).toLocaleDateString()
+}
+
+export function GameCard({ slug, title, description, genre, imageUrl, primaryColor, symbol, playCount, lastPlayedAt }: GameCardProps) {
   const genreStyle = GENRE_STYLES[genre] || DEFAULT_STYLE;
   const GenreIcon = genreStyle.icon;
   const displaySymbol = symbol.startsWith('$') ? symbol : `$${symbol}`;
@@ -56,8 +73,32 @@ export function GameCard({ slug, title, description, genre, imageUrl, primaryCol
           <Badge variant="secondary" className="text-[10px]">{genre}</Badge>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{description}</p>
-        <div className="flex items-center text-xs font-mono text-muted-foreground">
-          Powered by <span className="ml-1 text-primary">{displaySymbol}</span>
+        <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="truncate">
+              Powered by <span className="text-primary">{displaySymbol}</span>
+            </span>
+            {lastPlayedAt && (
+              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-muted-foreground/60" title={`Last played: ${new Date(lastPlayedAt).toLocaleString()}`}>
+                <Clock className="w-3 h-3" />
+                {formatLastPlayed(lastPlayedAt)}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {playCount !== undefined && playCount >= 5 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-500">
+                <TrendingUp className="w-3 h-3" />
+                Trending
+              </span>
+            )}
+            {playCount !== undefined && playCount > 0 && (
+              <span className="flex items-center gap-1">
+                <Play className="w-3 h-3" />
+                <span>{playCount}</span>
+              </span>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -7,6 +7,7 @@ import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { Loader2, ArrowRightLeft, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ComicBookFinale, type ComicBookFinalePanelData } from '../comic-book-finale'
+import { PostGameCompletion } from '../post-game-completion'
 import { Game, ChatMessage } from '../../types'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/lib/story-sdk-client'
 import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG, type PaymentToken } from '@/lib/writerCoins'
@@ -345,6 +346,15 @@ export function ComicFinaleScreen({
           ✅ Derivative IP registered on Story Protocol
         </div>
       )}
+
+      {/* Post-game completion screen with stats and CTAs */}
+      <div className="mt-12 border-t border-border pt-12">
+        <PostGameCompletion
+          game={game}
+          messages={messages}
+          userChoices={userChoices}
+        />
+      </div>
     </div>
   )
 }

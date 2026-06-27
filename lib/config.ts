@@ -55,7 +55,10 @@ export const config = {
    * NFT-gated encryption for secret game panels
    */
   litProtocol: {
-    enabled: process.env.LIT_PROTOCOL_ENABLED !== 'false',
+    // Deprecated: CDR vaults supersede Lit for all new secret panel encryption.
+    // Defaults to disabled; set LIT_PROTOCOL_ENABLED=true to re-enable
+    // for legacy game decryption support.
+    enabled: process.env.LIT_PROTOCOL_ENABLED === 'true',
     rpcUrl: process.env.LIT_RPC_URL || 'https://lit-protocol-datil-dev.rpc.litgateway.com',
     network: process.env.LIT_NETWORK || 'datil-dev',
   },

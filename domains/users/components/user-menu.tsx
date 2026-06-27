@@ -12,7 +12,8 @@ import {
   Circle,
   Moon,
   Sun,
-  LayoutDashboard
+  LayoutDashboard,
+  HelpCircle
 } from 'lucide-react'
 import { useAccount, useDisconnect } from 'wagmi'
 import { useAccountModal } from '@rainbow-me/rainbowkit'
@@ -227,6 +228,15 @@ export function UserMenu({ mobileLayout = false }: UserMenuProps) {
               >
                 <GamepadIcon className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
                 <span className="text-muted-foreground group-hover:text-white">My Games</span>
+              </Link>
+
+              <Link
+                href="/#how-it-works"
+                className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-purple-600/10 transition-colors group"
+                onClick={() => setIsOpen(false)}
+              >
+                <HelpCircle className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+                <span className="text-muted-foreground group-hover:text-white">How it works</span>
               </Link>
 
               {mounted && (

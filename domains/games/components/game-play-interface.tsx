@@ -123,6 +123,11 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       completionTimestamp,
       epilogueGenerated: !!session.epilogueReflection,
     })
+
+    // Increment play count on the server
+    fetch(`/api/games/${liveGame.slug}/play`, { method: 'PATCH' }).catch(() => {
+      // Non-critical — don't block the user if this fails
+    })
   }
   const renderEnrichment = () => (
     <GameEnrichment
