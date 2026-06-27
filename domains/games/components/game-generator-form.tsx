@@ -351,6 +351,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   }, [mobileStep])
 
   const canGoBack = getStepIndex(mobileStep) > 0
+  const hasPreviewedCurrentUrl = !!articlePreview && previewedUrl === url.trim()
 
   // Auto-advance on mobile when article is previewed
   useEffect(() => {
@@ -389,7 +390,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const isStoryMode = mode === 'story'
   const isMusdPath = paymentPath === 'musd'
   const writerCoin = !isMusdPath && detectedCoin ? detectedCoin : selectedCoin
-  const hasPreviewedCurrentUrl = !!articlePreview && previewedUrl === url.trim()
   const activePaymentTxHash = paymentTxHashRef.current
   const activePaymentExplorerUrl = activePaymentTxHash
     ? paymentExplorerUrl(paymentPath, activePaymentTxHash)

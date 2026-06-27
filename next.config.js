@@ -3,6 +3,9 @@
 // Hetzner backend for heavy API routes (image gen, audio gen, balance)
 const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const path = require('path');
+
 const nextConfig = {
   output: 'standalone',
   // ── Mezo Passport compatibility ──────────────────────────────────────────
@@ -102,6 +105,7 @@ const nextConfig = {
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(
         /@wagmi\/connectors\/dist\/esm\/baseAccount\.js$/,
+         
         require.resolve('./webpack-stubs/baseAccount-stub.js')
       )
     );
@@ -112,7 +116,6 @@ const nextConfig = {
       // packages that bundle their own React copy (e.g. @mezo-org/mezo-clay
       // which ships a vendored baseui) don't end up with two React copies
       // (the classic ReactCurrentOwner / ReactCurrentDispatcher crash).
-      const path = require('path');
       config.resolve.alias = {
         ...config.resolve.alias,
         react: path.resolve(__dirname, 'node_modules/react'),
