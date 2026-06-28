@@ -6,7 +6,7 @@ import { PaymentFlow } from './PaymentFlow'
 import { CostPreview } from './CostPreview'
 import { WalletConnect } from '@/components/ui/wallet-connect'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PaymentAction } from '@/domains/payments/types'
 import { AlertCircle, ArrowRightLeft } from 'lucide-react'
 import { PaymentTokenSelector } from './PaymentTokenSelector'
@@ -20,6 +20,7 @@ interface PaymentOptionProps {
   onPaymentStart?: () => void
   onPaymentSuccess?: (payment: PaymentResult) => void
   onPaymentError?: (error: string) => void
+  onPaymentPathChange?: (path: 'musd' | 'writercoin') => void
   disabled?: boolean
   initialToken?: PaymentToken
   compact?: boolean
@@ -47,6 +48,7 @@ export function PaymentOption({
   compact = false,
   _optional = false,
   _onSkip,
+  onPaymentPathChange,
 }: PaymentOptionProps) {
   const { isConnected } = useAccount()
   const chainId = useChainId()
@@ -59,6 +61,11 @@ export function PaymentOption({
     [writerCoin]
   )
   const [selectedToken, setSelectedToken] = useState<PaymentToken>(initialToken ?? writerCoinToken)
+
+  const handleTokenChange = useCallback((token: PaymentToken) => {
+    setSelectedToken(token)
+    onPaymentPathChange?.(token.type === 'musd' ? 'musd' : 'writercoin')
+  }, [onPaymentPathChange])
 
   const cost = useMemo(() => {
     return PaymentCostService.calculateCostTokenSync(selectedToken, action)
@@ -119,7 +126,7 @@ export function PaymentOption({
       {/* Network / Token Selection — always show so users can switch between Writer Coin and MUSD */}
       <PaymentTokenSelector
         selectedToken={selectedToken}
-        onSelectToken={setSelectedToken}
+        onSelectToken={handleTokenChange}
         writerCoin={writerCoinToken}
       />
 
@@ -143,7 +150,7 @@ export function PaymentOption({
             </button>
             <button
               type="button"
-              onClick={() => setSelectedToken(otherToken)}
+              onClick={() => handleTokenChange(otherToken)}
               className="flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-emerald-200 hover:bg-emerald-500/10 transition-colors"
             >
               <ArrowRightLeft className="w-3.5 h-3.5" />

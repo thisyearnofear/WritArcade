@@ -1450,6 +1450,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 }}
                 onPaymentSuccess={handlePaymentSuccess}
                 onPaymentError={(err) => setError(paymentError(err))}
+                onPaymentPathChange={(path) => setPaymentPath(path)}
                 disabled={isGenerating || !url.trim()}
                 compact
               />
