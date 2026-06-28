@@ -292,6 +292,15 @@ export default function HomePage() {
               </div>
             </section>
           )}
+          {hasFeatured === false && (
+            <section className="py-12 px-4 border-t border-border">
+              <div className="max-w-6xl mx-auto">
+                <p className="text-sm text-muted-foreground text-center">
+                  Featured games will appear here once published.
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* Most played — leaderboard sorted by playCount. Only rendered
               once there are at least a few plays AND the filtered query
@@ -321,6 +330,15 @@ export default function HomePage() {
                     }}
                   />
                 </Suspense>
+              </div>
+            </section>
+          )}
+          {gameCount !== null && gameCount.totalPlays < 3 && hasMostPlayed === false && (
+            <section className="py-12 px-4 border-t border-border">
+              <div className="max-w-6xl mx-auto">
+                <p className="text-sm text-muted-foreground text-center">
+                  Most played games will appear here once the community starts playing.
+                </p>
               </div>
             </section>
           )}

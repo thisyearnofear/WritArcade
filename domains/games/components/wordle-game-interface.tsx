@@ -133,7 +133,7 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
     }
   }
 
-  const renderTile = (char: string | null, state: WordleLetterState | null, index: number) => {
+  const renderTile = (char: string | null, state: WordleLetterState | null, index: number, isNewGuess?: boolean) => {
     const baseClasses = 'w-10 h-10 md:w-12 md:h-12 border flex items-center justify-center text-lg md:text-2xl font-bold rounded-sm'
     let stateClasses = 'border-border bg-black text-white'
 
@@ -146,7 +146,11 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
     }
 
     return (
-      <div key={index} className={`${baseClasses} ${state ? stateClasses : 'border-border bg-black text-white'}`}>
+      <div
+        key={index}
+        className={`${baseClasses} ${state ? stateClasses : 'border-border bg-black text-white'} ${isNewGuess ? 'animate-wordle-flip' : ''}`}
+        style={isNewGuess ? { animationDelay: `${index * 80}ms` } : undefined}
+      >
         {char?.toUpperCase()}
       </div>
     )
@@ -155,13 +159,14 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
   const rows = Array.from({ length: attemptsAllowed }, (_, rowIndex) => {
     const guess = guesses[rowIndex]?.guess ?? ''
     const letters = guesses[rowIndex]?.letters ?? []
+    const isNewGuess = rowIndex === guesses.length - 1 && letters.length > 0
 
     return (
       <div key={rowIndex} className="flex gap-2 justify-center">
         {Array.from({ length: wordLength }, (_, colIndex) => {
           const char = guess[colIndex] ?? null
           const state = letters[colIndex] ?? null
-          return renderTile(char, state as WordleLetterState | null, colIndex)
+          return renderTile(char, state as WordleLetterState | null, colIndex, isNewGuess)
         })}
       </div>
     )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { BookOpen, ChevronDown, Share2 } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
@@ -100,6 +101,27 @@ export function GameplayScreen({
     })
     setShowComicFinale(true)
   }
+
+  const router = useRouter()
+
+  // Keyboard shortcuts: 1/2/3 for choices, V for comic, S for share
+  useEffect(() => {
+    const activeAssistant = [...messages].reverse().find(m => m.role === 'assistant' && m.options?.length)
+    const options = activeAssistant?.options ?? []
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const key = parseInt(e.key)
+      if (key >= 1 && key <= 3 && options[key - 1]) {
+        onOptionClick(options[key - 1])
+        return
+      }
+      if (e.key === 'v' || e.key === 'V') handleViewComic()
+      if (e.key === 's' || e.key === 'S') handleShare()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [messages, onOptionClick])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -254,7 +276,7 @@ export function GameplayScreen({
 
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
-              <button onClick={() => window.history.back()} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => router.push('/games')} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDown className="w-3.5 h-3.5" />
                 Back to Games
               </button>

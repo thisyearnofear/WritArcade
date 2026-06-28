@@ -11,9 +11,10 @@ import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
 import { IPRegistration } from '@/components/story/IPRegistration'
-import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink } from 'lucide-react'
-import { Toaster } from '@/components/ui/toaster'
+import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink, AlertTriangle, Sparkles } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 
@@ -54,6 +55,8 @@ export function MyGamesClient() {
   const [total, setTotal] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
+  const [mintConfirmGame, setMintConfirmGame] = useState<Game | null>(null)
+  const [deleteConfirmGame, setDeleteConfirmGame] = useState<Game | null>(null)
   const [settingsGame, setSettingsGame] = useState<Game | null>(null)
   const [registrationGame, setRegistrationGame] = useState<Game | null>(null)
   const [sessionAllowed, setSessionAllowed] = useState(false)
@@ -166,19 +169,23 @@ export function MyGamesClient() {
     loadGames()
   }, [address, status, authChecked, sessionAllowed, isConnected, toast])
 
-  const handleMintClick = async (gameId: string) => {
-    if (!address) return
+  const handleMintClick = (gameId: string) => {
+    const game = games.find(g => g.id === gameId)
+    if (game) setMintConfirmGame(game)
+  }
 
-    setActionInProgress(gameId)
+  const handleMintConfirmed = async () => {
+    const game = mintConfirmGame
+    if (!game || !address) return
+
+    setMintConfirmGame(null)
+    setActionInProgress(game.id)
     try {
-      const game = games.find(g => g.id === gameId)
-      if (!game) throw new Error('Game not found')
-
       const prepareResponse = await fetch('/api/games/mint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          gameId,
+          gameId: game.id,
           gameSlug: game.slug,
           wallet: address,
           writerCoinId: game.writerCoinId ?? 'avc',
@@ -192,7 +199,6 @@ export function MyGamesClient() {
       const prepareData = await prepareResponse.json()
       if (!prepareData.success) throw new Error(prepareData.error)
 
-      console.log('Minting prepared:', prepareData.data)
       const coinSymbol = prepareData.data.symbol ?? (game.writerCoinId?.toUpperCase() ?? 'AVC')
       toast({ title: 'Ready to mint', description: `Estimated cost: ${prepareData.data.estimatedCost} ${coinSymbol}`, variant: 'default' })
     } catch (err) {
@@ -256,18 +262,18 @@ export function MyGamesClient() {
     }
   }
 
-  const handleDeleteClick = async (gameId: string) => {
-    if (!address) return
+  const handleDeleteClick = (gameId: string) => {
+    const game = games.find(g => g.id === gameId)
+    if (game) setDeleteConfirmGame(game)
+  }
 
-    if (!window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteConfirmed = async () => {
+    const game = deleteConfirmGame
+    if (!game || !address) return
 
-    setActionInProgress(gameId)
+    setDeleteConfirmGame(null)
+    setActionInProgress(game.id)
     try {
-      const game = games.find(g => g.id === gameId)
-      if (!game) throw new Error('Game not found')
-
       if (game.nftTokenId) {
         throw new Error('Cannot delete games that have been minted as NFTs. NFT records are permanent on-chain.')
       }
@@ -287,7 +293,7 @@ export function MyGamesClient() {
       const data = await response.json()
       if (!data.success) throw new Error(data.error)
 
-      setGames(games.filter(g => g.id !== gameId))
+      setGames(games.filter(g => g.id !== game.id))
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete game'
       console.error('Delete error:', err)
@@ -733,8 +739,68 @@ export function MyGamesClient() {
       </main>
 
       <Footer />
-      <Toaster />
       </div>
+
+      <Dialog open={!!mintConfirmGame} onOpenChange={(open) => !open && setMintConfirmGame(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mint as NFT</DialogTitle>
+            <DialogDescription>
+              This will mint your game as a permanent on-chain NFT. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {mintConfirmGame && (
+            <div className="space-y-3 py-2">
+              <div className="rounded-lg bg-purple-900/20 border border-purple-500/30 p-3 text-sm">
+                <p className="font-semibold text-purple-100">{mintConfirmGame.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{mintConfirmGame.genre} · {mintConfirmGame.difficulty}</p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                Make sure your wallet has enough funds for gas and the mint fee.
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMintConfirmGame(null)}>Cancel</Button>
+            <Button onClick={handleMintConfirmed} className="bg-purple-600 hover:bg-purple-500">
+              <Sparkles className="w-4 h-4 mr-1.5" />
+              Confirm Mint
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteConfirmGame} onOpenChange={(open) => !open && setDeleteConfirmGame(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete game?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. The game will be permanently removed.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteConfirmGame && (
+            <div className="rounded-lg bg-red-900/20 border border-red-500/30 p-3 text-sm">
+              <p className="font-semibold text-red-100">{deleteConfirmGame.title}</p>
+              {deleteConfirmGame.nftTokenId && (
+                <p className="text-xs text-red-300 mt-2">
+                  This game has an NFT minted (Token #{deleteConfirmGame.nftTokenId}). NFT records are permanent on-chain and cannot be deleted.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmGame(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirmed}
+              disabled={!!deleteConfirmGame?.nftTokenId}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ThemeWrapper>
   )
 }

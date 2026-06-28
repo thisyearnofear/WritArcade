@@ -64,12 +64,11 @@ export default function GeneratePage() {
       <div className="flex flex-col min-h-screen">
         <Header />
 
-        <main className="flex-1 py-8 sm:py-12">
+        <main id="main-content" className="flex-1 py-8 sm:py-12">
           <Suspense fallback={
-            <div className="max-w-4xl mx-auto px-4">
-              <div className="flex items-center justify-center py-12">
-                <div className="text-muted-foreground">Loading...</div>
-              </div>
+            <div className="max-w-4xl mx-auto px-4 space-y-4 py-12">
+              <CardSkeleton />
+              <CardSkeleton />
             </div>
           }>
             <GeneratePageContent />
