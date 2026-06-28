@@ -89,6 +89,37 @@
 - ✅ Daily Wordle section on homepage
 - ✅ CDR Hackathon integration (May 27–June 5): store Wordle answers and secret panels in CDR vaults; lazy-load SDK/WASM; gate secret panels by completed gameplay + minted Game NFT ownership
 
+### Phase 1-4: 8.5/10 Product Polish (June 2026)
+
+Complete rewrite of the product foundation across 4 phases:
+
+#### Phase 1 — Foundation ✅
+- ✅ Payment flow tests (37 tests: cost service, strategies, initiate route)
+- ✅ Pruned dead code — down to 30 intentional warnings
+- ✅ Sentry error monitoring (client/server/edge config files + @sentry/nextjs)
+- ✅ CI workflow (`.github/workflows/ci.yml` — type-check, lint, test, build on push)
+- ✅ Cache consolidation — removed duplicate `__splitCache` in `lib/contracts.ts`, shared `lib/cache.ts`
+- ✅ Feature flags (`config.features` in `lib/config.ts`) — non-core features default OFF
+
+#### Phase 2 — Architecture ✅
+- ✅ `lib/` → `services/` split — moved analytics, error-handler, rate-limit, auth to `services/` with backward-compatible re-exports
+- ✅ `PaymentStrategyFactory` — singleton DI for payment strategies, replaces direct `new WriterCoinStrategy()` / `new MUSDStrategy()`
+- ✅ `lib/api-response.ts` — standardized `ok()`, `fail()`, `notFound()`, `unauthorized()`, `forbidden()`, `serverError()`, `paginated()` helpers
+
+#### Phase 3 — UX & Product ✅
+- ✅ Progressive disclosure entry flow — wallet/chain/payment removed from first view. URL → game in 2 clicks
+- ✅ Simplified `SimpleGameForm` — removed PaymentPath, wagmi hooks, payment toggle, chain warnings
+- ✅ Contextual micro-copy — "Why pay?" explanation in generator form
+- ✅ Writer ticker on homepage — just names + symbols, no chain/coin mentions
+
+#### Phase 4 — Polish ✅
+- ✅ `loading.tsx` + `error.tsx` at 5 route segments (`games/`, `my-games/`, `profile/`, `generate/`, `writers/[coinId]/`)
+- ✅ `lib/request-dedup.ts` — `deduplicate<T>()` with LRU eviction (max 500)
+- ✅ `lib/ai-cache.ts` — AI generation cache keys + deduplication wrapper, wired into `POST /api/games/generate`
+- ✅ `lib/latency-monitor.ts` — `monitorLatency()` wrapper with 10K ring buffer, p50/p95/p99 reporting
+- ✅ Bundle optimization — `GameGeneratorForm` dynamically imported on `/generate` page (`next/dynamic`, `ssr: false`)
+- ✅ Global ToastProvider + Toaster already wired in `ClientProviders.tsx`
+
 ### CDR Hackathon Strategy (May 27 – June 5, 2026)
 
 **Event:** [CDR (Confidential Data Rails) Hackathon](https://build.usecdr.dev/) by Story Protocol. $3k prizes.

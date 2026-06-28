@@ -18,8 +18,9 @@ import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
 import { retryWithBackoff } from '@/lib/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
-import type { PaymentPath } from '@/domains/games/components/simple-game-form'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
+
+type PaymentPath = 'writercoin' | 'musd'
 import { trackEvent } from '@/lib/analytics'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
@@ -1382,6 +1383,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               <div className="flex-1">
                 <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80 mb-1">Ready to build</p>
                 <h3 className="font-semibold text-lg text-cyan-50">Pay and generate</h3>
+                <p className="text-xs text-cyan-300/70 mt-1">
+                  Why pay? Story games use AI to generate 5 custom panels with artwork, music, and branching narratives. The fee covers AI computation, on-chain registration, and supports the original writer.{' '}
+                  <span className="text-cyan-200 font-medium">You can read the comic for free afterward — no recurring costs.</span>
+                </p>
               </div>
             </div>
 

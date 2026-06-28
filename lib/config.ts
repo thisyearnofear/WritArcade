@@ -6,11 +6,44 @@
 /**
  * Environment Detection
  */
+/**
+ * writersarcade Feature Flags
+ * Centralized toggle for non-core features.
+ * Default everything OFF except the core Quick Games + IP Registration + CDR flow.
+ */
+export const features = {
+  /** Asset Marketplace — compose games from marketplace assets */
+  assetMarketplace: process.env.FEATURE_ASSET_MARKETPLACE === 'true',
+  /** Hypercerts / AT Protocol impact certificates */
+  hypercerts: process.env.FEATURE_HYPERCERTS === 'true',
+  /** Lit Protocol — legacy secret panel encryption (superseded by CDR) */
+  litProtocol: process.env.FEATURE_LIT_PROTOCOL === 'true',
+  /** SuperRare NFT minting bridge */
+  superrare: process.env.FEATURE_SUPERRARE === 'true',
+  /** Etherfuse fiat on-ramp */
+  etherfuse: process.env.FEATURE_ETHERFUSE === 'true',
+  /** Farcaster mini-app */
+  farcasterMiniApp: process.env.FEATURE_FARCASTER_MINI_APP === 'true',
+  /** Video pipeline (future) */
+  videoPipeline: process.env.FEATURE_VIDEO_PIPELINE === 'true',
+} as const
+
+/** Shorthand: is a given feature enabled? */
+export function isFeatureEnabled(feature: keyof typeof features): boolean {
+  return features[feature]
+}
+
 export const config = {
   // Environment info
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV === 'development',
   
+  /**
+   * Feature flags
+   */
+  features,
+  isFeatureEnabled,
+
   /**
    * IPFS Configuration
    * - Production: REQUIRES PINATA_JWT, throws error if missing
@@ -29,8 +62,6 @@ export const config = {
   storyProtocol: {
     enabled: process.env.STORY_PROTOCOL_ENABLED !== 'false',
     rpcUrl: process.env.STORY_RPC_URL || 'https://aeneid.storyrpc.io',
-    // Aeneid Testnet: 1514 (deprecated) → 1315 (current)
-    // Using SDK's chain ID (1315) for consistency
     chainId: process.env.STORY_CHAIN_ID ? parseInt(process.env.STORY_CHAIN_ID) : 1315,
   },
 
@@ -39,8 +70,8 @@ export const config = {
    * Async verification with polling (not immediate)
    */
   payments: {
-    pollIntervalMs: 3000, // Check blockchain every 3 seconds
-    maxRetries: 20, // Max 60 seconds total
+    pollIntervalMs: 3000,
+    maxRetries: 20,
   },
 
   /**
@@ -51,24 +82,19 @@ export const config = {
   },
 
   /**
-   * Lit Protocol Configuration
-   * NFT-gated encryption for secret game panels
+   * Lit Protocol — now managed via features flag
    */
   litProtocol: {
-    // Deprecated: CDR vaults supersede Lit for all new secret panel encryption.
-    // Defaults to disabled; set LIT_PROTOCOL_ENABLED=true to re-enable
-    // for legacy game decryption support.
-    enabled: process.env.LIT_PROTOCOL_ENABLED === 'true',
+    enabled: features.litProtocol,
     rpcUrl: process.env.LIT_RPC_URL || 'https://lit-protocol-datil-dev.rpc.litgateway.com',
     network: process.env.LIT_NETWORK || 'datil-dev',
   },
 
   /**
-   * Hypercerts Configuration (AT Protocol)
-   * Impact certificates for creative contributions
+   * Hypercerts — now managed via features flag
    */
   hypercerts: {
-    enabled: process.env.HYPERCERTS_ENABLED !== 'false',
+    enabled: features.hypercerts,
     pdsUrl: process.env.HYPERCERTS_PDS_URL || 'https://certified.app',
   },
 

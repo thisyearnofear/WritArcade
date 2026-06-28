@@ -104,6 +104,7 @@ export function ComicBookFinale({
   authorParagraphUsername,
   authorWallet,
   difficulty = 'medium',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   userChoices = [],
   onPanelTextChange,
   onPanelImageChange,

@@ -8,6 +8,7 @@ import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 import { trackEvent } from '@/lib/analytics'
 
+ 
 const MAX_COMIC_PANELS = 5
 
 interface GameplayScreenProps {

@@ -1,13 +1,28 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { GameGeneratorForm as GameGenerator } from '@/domains/games/components/game-generator-form'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
-import type { PaymentPath } from '@/domains/games/components/simple-game-form'
+import { CardSkeleton } from '@/components/effects'
+
+type PaymentPath = 'writercoin' | 'musd'
+
+const GameGenerator = dynamic(
+  () => import('@/domains/games/components/game-generator-form').then(m => m.GameGeneratorForm),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-4">
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    ),
+  }
+)
 
 function paymentPathFromParam(value: string | null): PaymentPath | undefined {
   if (value === 'musd' || value === 'writercoin') {

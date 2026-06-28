@@ -1,10 +1,9 @@
 'use client'
 
 import { Suspense, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
-import { SimpleGameForm, type PaymentPath } from '@/domains/games/components/simple-game-form'
+import { SimpleGameForm } from '@/domains/games/components/simple-game-form'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -13,7 +12,6 @@ import { OnboardingModal } from '@/components/onboarding/OnboardingModal'
 import { ConceptTooltip } from '@/components/ui/concept-tooltip'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import {
-  ExternalLink,
   Puzzle,
   Wand2,
   Gamepad2,
@@ -140,7 +138,6 @@ function WriterTicker() {
 export default function HomePage() {
   const { showOnboarding, dismissOnboarding } = useOnboarding()
   const gameCount = useGameCount()
-  const [paymentPath] = useState<PaymentPath>('musd')
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
   const featuredLoadedRef = useRef(false)
   const [hasMostPlayed, setHasMostPlayed] = useState<boolean | null>(null)
@@ -155,7 +152,7 @@ export default function HomePage() {
           {/* Skip nav target */}
           <div id="main-content" tabIndex={-1} className="sr-only" />
 
-          {/* Hero — single clear CTA above the fold */}
+          {/* Hero — single clear CTA above the fold. No wallet, no chain, no payment. */}
           <section className="py-20 sm:py-28 px-4" aria-labelledby="hero-heading">
             <div className="max-w-2xl mx-auto text-center">
               <motion.h1
@@ -165,9 +162,9 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
               >
-                Turn articles into
+                Paste an article.
                 <br />
-                playable games
+                Get a playable game.
               </motion.h1>
 
               <motion.p
@@ -176,18 +173,17 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15, duration: 0.6, ease: 'easeOut' }}
               >
-                Paste a{' '}
+                Drop a{' '}
                 <ConceptTooltip
                   term="Paragraph"
                   explanation="A publishing platform for writers and creators. Many crypto and tech writers publish there."
                 >
                   <span className="underline decoration-dotted underline-offset-2 cursor-help text-foreground font-medium">Paragraph</span>
                 </ConceptTooltip>{' '}
-                article URL. Get a{' '}
-                <span className="text-foreground font-medium">free Wordle puzzle</span>{' '}
+                article URL. AI reads it and turns it into a{' '}
+                <span className="text-foreground font-medium">free word puzzle</span>{' '}
                 or a{' '}
-                <span className="text-foreground font-medium">5-panel interactive comic</span>{' '}
-                you can play, customise, and collect.
+                <span className="text-foreground font-medium">5-panel interactive comic</span>.
               </motion.p>
 
               {gameCount !== null && gameCount.publicGames >= 10 && (
@@ -202,7 +198,7 @@ export default function HomePage() {
                 </motion.p>
               )}
 
-              {/* Primary CTA card */}
+              {/* Primary CTA card — just URL input, no wallet, no payment toggle */}
               <motion.div
                 className="max-w-xl mx-auto"
                 initial={{ opacity: 0, y: 16 }}
@@ -212,10 +208,8 @@ export default function HomePage() {
                 <ErrorBoundary>
                   <div className="p-6 rounded-2xl bg-card border border-border shadow-xl space-y-4 text-left">
                     <SimpleGameForm
-                      paymentPath={paymentPath}
                       onGenerate={(url: string) => {
-                        const params = new URLSearchParams({ url, pay: paymentPath })
-                        window.location.href = `/generate?${params.toString()}`
+                        window.location.href = `/generate?${new URLSearchParams({ url }).toString()}`
                       }}
                       isGenerating={false}
                     />
@@ -225,8 +219,7 @@ export default function HomePage() {
                         type="button"
                         onClick={() => {
                           const demoUrl = 'https://paragraph.com/@papajams/the-infra-problem-defi-struggled-to-solve'
-                          const params = new URLSearchParams({ url: demoUrl, pay: paymentPath })
-                          window.location.href = `/generate?${params.toString()}`
+                          window.location.href = `/generate?${new URLSearchParams({ url: demoUrl }).toString()}`
                         }}
                         className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                       >
@@ -234,20 +227,17 @@ export default function HomePage() {
                       </button>
                       <a
                         href="/generate?mode=wordle"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 border border-amber-500/30 rounded-full px-3 py-1.5 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1.5 transition-colors"
                       >
                         <Puzzle className="w-3.5 h-3.5" />
-                        Free Wordle
+                        Free Wordle — no wallet
                       </a>
-</div>
+                    </div>
                   </div>
                 </ErrorBoundary>
               </motion.div>
 
-              {/* Writer-coin hint — shows the 5 launch writers whose articles
-                  auto-pay with their token. Tapping a pill deep-links to the
-                  writer's page where the reader can see games, copy the
-                  contract address, and read on Paragraph. */}
+              {/* Social proof — just the writer names, no chain/coin mentions */}
               <motion.div
                 className="mt-6 flex flex-col items-center gap-2"
                 initial={{ opacity: 0 }}
@@ -255,88 +245,21 @@ export default function HomePage() {
                 transition={{ delay: 0.45, duration: 0.5 }}
               >
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Paste from a launch writer to pay with their coin
+                  Works with articles from
                 </span>
                 <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xl">
                   {WRITER_COINS.map((coin) => (
-                    <a
+                    <span
                       key={coin.id}
-                      href={`/writers/${coin.id}`}
-                      className="group inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground border border-border/60 hover:border-blue-500/40 rounded-full px-2.5 py-1 transition-colors"
-                      title={`${coin.writer} — ${coin.symbol} on Base`}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground border border-border/60 rounded-full px-2.5 py-1"
                     >
                       <span className="font-mono text-blue-600 dark:text-blue-400">{coin.symbol}</span>
                       <span className="hidden sm:inline truncate max-w-[8rem]">{coin.writer}</span>
-                    </a>
+                    </span>
                   ))}
-                  <a
-                    href="/writers"
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-                  >
-                    All writers →
-                  </a>
+                  <span className="text-[11px] text-muted-foreground">and more</span>
                 </div>
               </motion.div>
-
-              {/* Trust badges — subtle, below the fold. Now link to /learn/chains
-                  so the user gets a real explanation rather than an external site. */}
-              <motion.div
-                className="flex flex-wrap items-center justify-center gap-3 mt-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.5 }}
-              >
-                <Link
-                  href="/learn/chains"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  Story Protocol
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-                <Link
-                  href="/learn/chains"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
-                  Mezo
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-                <Link
-                  href="/learn/chains"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-full px-3 py-1"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-                  Base
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              </motion.div>
-            </div>
-          </section>
-
-          {/* Daily Wordle — free, no wallet */}
-          <section className="px-4 py-12 sm:py-16 border-t-0 bg-gradient-to-r from-amber-500/5 to-purple-500/5">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                  <Puzzle className="w-8 h-8 text-amber-400" aria-hidden="true" />
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h2 className="text-lg font-bold text-foreground mb-1">
-                    Free Wordle Puzzle
-                    <span className="ml-2 text-[10px] font-bold uppercase tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-0.5 align-middle">No wallet</span>
-                  </h2>
-                  <p className="text-sm text-muted-foreground max-w-lg">
-                    Article-derived word puzzles, free to play. No wallet needed. Guess the word in 6 tries, then share your score. The fastest way to see what WritersArcade can do.
-                  </p>
-                </div>
-                <a
-                  href="/generate?mode=wordle"
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-amber-700 sm:w-auto sm:flex-shrink-0"
-                >
-                  Play Wordle <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                </a>
-              </div>
             </div>
           </section>
 

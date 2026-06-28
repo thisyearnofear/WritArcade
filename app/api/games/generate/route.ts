@@ -13,6 +13,7 @@ import { config, logger } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
 import { getMintConfig, getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
+import { deduplicateGeneration, buildGenerationCacheKey } from '@/lib/ai-cache'
 
 // Request validation schema
 const generateGameSchema = z.object({
@@ -245,8 +246,21 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       }
 
       // Generate game using consolidated AI service with user preferences
+      // Request deduplication: concurrent identical requests share one in-flight promise
       console.log('Calling GameAIService.generateGame with prompt length:', gameRequest.promptText?.length)
-      const aiGameData = await GameAIService.generateGame(gameRequest, 0, userPreferences)
+      const cacheKey = validatedData.url
+        ? buildGenerationCacheKey({
+            url: validatedData.url,
+            genre: validatedData.customization?.genre,
+            difficulty: validatedData.customization?.difficulty,
+            mode: 'story',
+          })
+        : undefined
+
+      const aiGameData = await (cacheKey
+        ? deduplicateGeneration(cacheKey, () => GameAIService.generateGame(gameRequest, 0, userPreferences))
+        : GameAIService.generateGame(gameRequest, 0, userPreferences))
+
       console.log('AI generation successful:', { title: aiGameData.title, genre: aiGameData.genre })
 
       gameData = {

@@ -41,12 +41,21 @@ writarcade/
 ├── domains/                # Business logic by domain
 │   ├── games/              # Game generation & management
 │   ├── assets/             # Asset creation & marketplace
-│   ├── payments/           # Payment processing (Strategy Pattern)
+│   ├── payments/           # Payment processing (Strategy Pattern + Factory)
 │   ├── content/            # Article processing
 │   └── users/              # User management
+├── services/               # Domain-adjacent services moved from lib/
+│   ├── analytics.ts        # Event tracking
+│   ├── error-handler.ts    # User-facing error formatting
+│   ├── rate-limit.ts       # API rate limiting
+│   └── auth.ts             # Authentication helpers
 ├── hooks/                  # Custom React hooks
 │   └── useMezoBalance.ts   # On-chain MEZO balance detection
 ├── lib/                    # Cross-cutting infrastructure
+│   ├── api-response.ts     # Standardized API response helpers (ok/fail/paginated)
+│   ├── request-dedup.ts    # In-flight request deduplication
+│   ├── ai-cache.ts         # AI generation result caching + dedup
+│   ├── latency-monitor.ts  # P50/P95/P99 latency monitoring
 │   ├── wallet/             # Runtime wallet abstraction
 │   ├── story-protocol.*    # Story Protocol integration
 │   ├── lit-protocol.*      # Legacy Lit Protocol encryption
@@ -56,6 +65,47 @@ writarcade/
 ├── prisma/                 # Database schema
 └── scripts/                # Operational scripts
 ```
+
+### API Response Standardization
+
+All API routes should use the helpers from `lib/api-response.ts`:
+
+```ts
+import { ok, fail, notFound, unauthorized, paginated } from '@/lib/api-response'
+
+// Success
+return ok({ gameId: '...' })
+
+// Error with status
+return fail('Game not found', 404)
+
+// Paginated list
+return paginated(items, total, { limit, offset })
+```
+
+### Request Deduplication
+
+`lib/request-dedup.ts` prevents concurrent duplicate API calls:
+
+```ts
+const data = await deduplicate('games:featured', () =>
+  prisma.game.findMany({ where: { featured: true } })
+)
+```
+
+### AI Generation Caching + Dedup
+
+`lib/ai-cache.ts` provides:
+- `buildGenerationCacheKey()` — deterministic key from URL + genre + difficulty + mode
+- `getCachedGeneration()` / `setCachedGeneration()` — 24h TTL cache via shared `lib/cache.ts`
+- `deduplicateGeneration()` — wraps in-flight promise sharing so concurrent identical AI calls share one request
+
+### Latency Monitoring
+
+`lib/latency-monitor.ts` provides:
+- `monitorLatency(route, handler)` — wraps route handlers with timing instrumentation
+- `reportLatency()` — logs p50/p95/p99 from the 10K-sample ring buffer
+- `getLatencyStats()` — returns raw stats for dashboards
 
 ### Domain Layer
 
@@ -69,11 +119,12 @@ writarcade/
 - Asset CRUD, marketplace discovery, Story Protocol integration
 - Game composition from marketplace assets
 
-**`domains/payments/`** - Centralized payment logic (Strategy Pattern)
+**`domains/payments/`** - Centralized payment logic (Strategy Pattern + Factory)
 - `PaymentCostService` - Pricing and revenue splits
 - `strategies/` - Multi-chain payment strategies
     - `writer-coin.strategy.ts` - Base Mainnet WriterCoin payments
     - `musd.strategy.ts` - Mezo Matsnet MUSD payments via Splitter contract
+- `services/payment-strategy-factory.service.ts` - Singleton factory for DI: `PaymentStrategyFactory.getInstance().getStrategy(token)`
 
 **`domains/content/`** - Article processing  
 - `ContentProcessorService` - Fetching and cleaning articles
@@ -110,6 +161,7 @@ writarcade/
 **`lib/contracts.ts`** - On-chain helpers  
 - WriterCoinPayment + GameNFT via viem (Base)
 - MezoPaymentSplitter configuration (Mezo)
+- Uses shared `cacheGet`/`cacheSet` from `lib/cache.ts` (consolidated, no duplicate `__splitCache`)
 
 ## Data Models
 
@@ -192,5 +244,7 @@ WriterCoin
 2. **Domain separation** - Quick Games vs Asset Marketplace share infrastructure
 3. **Centralized payments** - All payment logic through `domains/payments`
 4. **Client-side IP ownership** - Users sign Story Protocol transactions with their wallet
-5. **Non-blocking enrichment** - Lit Protocol encryption and Hypercerts run async post-creation
+5. **Non-blocking enrichment** - CDR vaulting, image generation, and Hypercerts run async post-creation
 6. **Confidentiality by Design** - Transitioning to TEE-backed vaults (CDR) to protect **Prompt IP** and **Trade Secrets**. Ensures creator "prompts" are treated as valuable, private intellectual property rather than public metadata.
+7. **Progressive disclosure** - Entry flow avoids wallet/chain/payment on first view. Users paste a URL → play a game → optionally connect wallet for on-chain actions.
+8. **Loading/Error boundaries** - Every route segment has `loading.tsx` and `error.tsx` with shimmer skeletons and contextual error cards.

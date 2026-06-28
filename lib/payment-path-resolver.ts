@@ -18,7 +18,8 @@
  */
 
 import { getWriterCoinByAuthor, type WriterCoin } from './writerCoins'
-import type { PaymentPath } from '@/domains/games/components/simple-game-form'
+
+type PaymentPath = 'writercoin' | 'musd'
 
 export type ResolutionReason =
   | 'writer-coin-match'   // URL author matches a whitelisted writer coin

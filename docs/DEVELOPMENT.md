@@ -25,6 +25,8 @@ pnpm build            # Production build (Prisma db push + Next.js webpack)
 pnpm start            # Start production server
 pnpm lint             # ESLint with auto-fix
 pnpm type-check       # TypeScript type checking (no emit)
+pnpm test             # Run all tests (Vitest)
+pnpm test:watch       # Run tests in watch mode
 ```
 
 ### Database (Prisma + PostgreSQL)
@@ -40,6 +42,13 @@ pnpm db:setup         # Generate client + push schema
 - Dev uses Turbopack (`next dev --turbopack`)
 - Production builds use webpack (`next build --webpack`)
 - `pnpm build` runs `prisma db push` before building - ensure `DATABASE_URL` is correct
+
+### CI Pipeline
+A CI workflow (`.github/workflows/ci.yml`) runs on every push:
+1. `pnpm type-check` - catches type errors
+2. `pnpm lint` - catches code quality issues
+3. `pnpm test` - runs Vitest test suite (37+ payment tests)
+4. `pnpm build` - verifies production build succeeds
 
 #### Mezo Passport build configuration
 `@mezo-org/passport` and its `@mezo-org/orangekit*` dependencies were authored
@@ -107,17 +116,31 @@ See `.env.example` for full list.
 app/                    # Next.js App Router
 ├── api/                # API routes (shared by web + mini-app)
 ├── mini-app/           # Farcaster mini-app (call sdk.actions.ready())
-└── games/              # Web app gameplay routes
+├── games/              # Web app gameplay (+ loading.tsx / error.tsx)
+├── my-games/           # User library (+ loading.tsx / error.tsx)
+├── generate/           # Game generation (+ loading.tsx / error.tsx)
+├── profile/            # User profile (+ loading.tsx / error.tsx)
+└── writers/[coinId]/   # Writer pages (+ loading.tsx / error.tsx)
 
 domains/                # Business logic (no UI)
 ├── games/              # Quick Games services
 ├── assets/             # Asset Marketplace services
-├── payments/           # Payment processing
+├── payments/           # Payment processing (Strategy + Factory)
 ├── content/            # Article processing
 └── users/              # User management
 
+services/               # Domain-adjacent services (from lib/ split)
+├── analytics.ts        # Event tracking
+├── error-handler.ts    # Error formatting
+├── rate-limit.ts       # API rate limiting
+└── auth.ts             # Authentication
+
 lib/                    # Cross-cutting infrastructure
 ├── wallet/             # Runtime wallet abstraction
+├── api-response.ts     # Standardized API responses
+├── request-dedup.ts    # In-flight request deduplication
+├── ai-cache.ts         # AI generation caching
+├── latency-monitor.ts  # P95 latency monitoring
 ├── story-protocol.*    # Story Protocol SDK
 ├── lit-protocol.*      # Lit Protocol encryption
 ├── hypercerts.*        # Impact certificates
@@ -223,7 +246,24 @@ modal deploy modal_image_gen.py   # Redeploy
 
 ## Testing
 
-No automated test runner currently. Testing is manual:
+### Automated Tests (Vitest)
+
+```bash
+pnpm test             # Run all tests
+pnpm test:watch       # Run tests in watch mode
+npx vitest run tests/payments/  # Run payment tests only
+```
+
+Tests live in `tests/` and mirror the `domains/` structure:
+- `tests/payments/payment-cost-service.test.ts` — 18 tests: revenue splits, caching, edge cases
+- `tests/payments/strategies.test.ts` — 16 tests: WriterCoin + MUSD strategy with fake timers
+- `tests/payments/initiate-route.test.ts` — 3 tests: payment initiation endpoint
+
+Total: **37 tests** across 3 files.
+
+Tests use Vitest with mocked Prisma and fake timers for retry/backoff logic. Tests run automatically in CI.
+
+### Manual Testing
 1. Start dev server: `pnpm dev`
 2. Test web app at `http://localhost:3000`
 3. Test mini-app at `http://localhost:3000/mini-app`

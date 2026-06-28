@@ -7,6 +7,7 @@
 
 import { encodeFunctionData, createPublicClient, http } from 'viem'
 import { getWriterCoinById } from './writerCoins'
+import { cacheGet, cacheSet } from './cache'
 
 const BASE_MAINNET_PAYMENT_ADDRESS =
   process.env.NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET ||
@@ -184,16 +185,7 @@ export function getWriterCoinPaymentAddress(chainId: number = getDefaultChainId(
   return CONTRACT_ADDRESSES[network].WriterCoinPayment as `0x${string}`
 }
 
-const __splitCache = new Map<string, { at: number; data: unknown }>()
 const __SPLIT_TTL_MS = 60_000
-
-function __getCache(key: string) {
-  const hit = __splitCache.get(key)
-  if (!hit) return null
-  if (Date.now() - hit.at > __SPLIT_TTL_MS) { __splitCache.delete(key); return null }
-  return hit.data
-}
-function __setCache<T>(key: string, data: T) { __splitCache.set(key, { at: Date.now(), data }) }
 
 async function readWithRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 250): Promise<T> {
   try { return await fn() } catch (e) {
@@ -205,7 +197,7 @@ async function readWithRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 250
 
 export async function fetchGenerationDistributionOnChain(coinAddress: `0x${string}`, chainId: number = getDefaultChainId()) {
   const cacheKey = `gen:${chainId}:${coinAddress}`
-  const cached = __getCache(cacheKey)
+  const cached = cacheGet<{ writerBP: number; platformBP: number; creatorBP: number }>(cacheKey, __SPLIT_TTL_MS)
   if (cached) return cached
   const client = getPublicClient(chainId)
   const contractAddress = getWriterCoinPaymentAddress(chainId)
@@ -221,13 +213,13 @@ export async function fetchGenerationDistributionOnChain(coinAddress: `0x${strin
     platformBP: Number(platformShare),
     creatorBP: Number(creatorPoolShare),
   };
-  __setCache(cacheKey, res);
+  cacheSet(cacheKey, res);
   return res;
 }
 
 export async function fetchMintDistributionOnChain(coinAddress: `0x${string}`, chainId: number = getDefaultChainId()) {
   const cacheKey = `mint:${chainId}:${coinAddress}`
-  const cached = __getCache(cacheKey)
+  const cached = cacheGet<{ creatorBP: number; writerBP: number; platformBP: number }>(cacheKey, __SPLIT_TTL_MS)
   if (cached) return cached
   const client = getPublicClient(chainId)
   const contractAddress = getWriterCoinPaymentAddress(chainId)
@@ -243,13 +235,13 @@ export async function fetchMintDistributionOnChain(coinAddress: `0x${string}`, c
     writerBP: Number(writerShare),
     platformBP: Number(platformShare),
   }
-  __setCache(cacheKey, res)
+  cacheSet(cacheKey, res)
   return res
 }
 
 export async function fetchConfiguredGameNFT(chainId: number = getDefaultChainId()): Promise<`0x${string}`> {
   const cacheKey = `gameNFT:${chainId}`
-  const cached = __getCache(cacheKey)
+  const cached = cacheGet<string>(cacheKey, __SPLIT_TTL_MS)
   if (cached) return cached as `0x${string}`
 
   const client = getPublicClient(chainId)
@@ -260,7 +252,7 @@ export async function fetchConfiguredGameNFT(chainId: number = getDefaultChainId
     functionName: 'gameNFT',
   })) as `0x${string}`
 
-  __setCache(cacheKey, address)
+  cacheSet(cacheKey, address)
   return address
 }
 

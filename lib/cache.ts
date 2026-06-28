@@ -16,3 +16,13 @@ export function cacheClear(prefix?: string) {
   if (!prefix) return CACHE.clear()
   Array.from(CACHE.keys()).forEach(k => { if (k.startsWith(prefix)) CACHE.delete(k) })
 }
+
+/** Invalidate a single cache entry by key */
+export function cacheDelete(key: string): void {
+  CACHE.delete(key)
+}
+
+/** Get cache stats for monitoring */
+export function cacheStats(): { size: number } {
+  return { size: CACHE.size }
+}

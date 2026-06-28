@@ -10,8 +10,7 @@ import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { useMezoBalance } from '@/hooks/useMezoBalance'
 import { useMUSDBalance } from '@/hooks/useMUSDBalance'
 import { Loader2, Wallet, ExternalLink, ArrowRight, Banknote } from 'lucide-react'
-import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
-import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
+import { PaymentStrategyFactory } from '@/domains/payments/services/payment-strategy-factory.service'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -135,7 +134,7 @@ export function PaymentFlow({
     trackEvent('payment_started', { action, token: tokenSymbol, network: isMUSD ? 'mezo' : 'base', amount: requiredAmount })
 
     try {
-      const strategy = isMUSD ? new MUSDStrategy() : new WriterCoinStrategy()
+      const strategy = PaymentStrategyFactory.getInstance().getStrategy(paymentToken)
       const amount = (action === 'generate-game' ? config.gameGenerationCost : config.mintCost).toString()
       const paymentResult = await strategy.executePayment({
         walletClient, userAddress, token: paymentToken, action, amount, onStep: setCurrentStep,
