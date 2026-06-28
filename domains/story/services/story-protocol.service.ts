@@ -212,7 +212,7 @@ function parseTransactionError(error: unknown): string {
     if (message.includes('nonce')) {
       return 'Transaction nonce error. Please try again.';
     }
-    if (message.includes('chain')) {
+    if (message.includes('switch to story') || message.includes('wrong chain') || (message.includes('chain') && message.includes('not supported'))) {
       return 'Network error. Please switch to Story Network and try again.';
     }
     return `Transaction failed: ${error.message}`;

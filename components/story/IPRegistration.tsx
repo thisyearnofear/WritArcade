@@ -16,10 +16,6 @@ import { registerGameAsIP, IPRegistrationResult } from "@/lib/story-protocol.ser
 import { uploadToIPFS } from "@/lib/ipfs-utils";
 import { Address } from "viem";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface GameIPMetadata {
   gameId: string;
   title: string;
@@ -30,7 +26,7 @@ export interface GameIPMetadata {
   authorWalletAddress: string;
   genre: "horror" | "comedy" | "mystery";
   difficulty: "easy" | "hard";
-  gameMetadataUri?: string; // Optional - will upload if not provided
+  gameMetadataUri?: string;
 }
 
 interface IPRegistrationProps {
@@ -38,77 +34,49 @@ interface IPRegistrationProps {
   onRegistrationComplete?: (result: IPRegistrationResult) => void | Promise<void>;
 }
 
-// Royalty configuration (basis points - divide by 100 for percentage)
 const ROYALTY_CONFIG = {
-  authorShare: 6000,   // 60%
-  creatorShare: 3000,  // 30%
-  platformShare: 1000, // 10%
+  authorShare: 6000,
+  creatorShare: 3000,
+  platformShare: 1000,
 };
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
-/**
- * IP Registration Component - Client-Side Wallet Signing
- * 
- * Now integrated with useStoryProtocolFlow hook for orchestrated user flow.
- * Can render as:
- * - Card (existing full UI)
- * - Modal (via parent container)
- * - Inline (minimal mode)
- * 
- * Flow:
- * 1. User views value proposition
- * 2. Pre-requisites check (wallet + network)
- * 3. User confirms with context
- * 4. Wallet signature requested
- * 5. Success: show IP details and next steps
- */
 export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationProps) {
-  // Wallet state from wagmi
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const { data: walletClient } = useWalletClient();
 
-  // Component state (legacy for backward compatibility, can be replaced with hook)
   const [isRegistering, setIsRegistering] = useState(false);
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
   const [result, setResult] = useState<IPRegistrationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [selectedLicenseId, setSelectedLicenseId] = useState<bigint>(2n); // Default to Commercial Remix
+  const [selectedLicenseId, setSelectedLicenseId] = useState<bigint>(2n);
 
-  // Derived state
   const onStoryNetwork = isOnStoryNetwork(chainId);
   const isRegistered = result !== null;
 
-  // Switch to Story network
   const handleSwitchChain = useCallback(async () => {
     if (!switchChain) return;
-
     setIsSwitchingChain(true);
     setError(null);
-
     try {
       await switchChain({ chainId: STORY_CHAIN_ID });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to switch network");
+      const msg = err instanceof Error ? err.message : "Failed to switch network";
+      setError(`Could not switch to Story Network (ID: ${STORY_CHAIN_ID}). ${msg}`);
     } finally {
       setIsSwitchingChain(false);
     }
   }, [switchChain]);
 
-  // Register IP - USER SIGNS THIS TRANSACTION
   const handleRegisterIP = useCallback(async () => {
     if (!walletClient || !address) {
       setError("Please connect your wallet");
       return;
     }
-
     if (!onStoryNetwork) {
-      setError("Please switch to Story network first");
+      setError(`Please switch to Story Network (ID: ${STORY_CHAIN_ID}). Your wallet is on chain ${chainId}.`);
       return;
     }
 
@@ -116,16 +84,13 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
     setError(null);
 
     try {
-      // 1. Create Story client from user's wallet
       const storyClient = createStoryClientFromWallet(walletClient);
       if (!storyClient) {
-        throw new Error("Failed to initialize Story Protocol client");
+        throw new Error("Failed to initialize Story Protocol client. Check console for details.");
       }
 
-      // 2. Upload metadata to IPFS if not provided
       let metadataUri = game.gameMetadataUri;
       if (!metadataUri) {
-        console.log("📤 Uploading game metadata to IPFS...");
         metadataUri = await uploadToIPFS({
           name: game.title,
           description: game.description,
@@ -138,8 +103,6 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
         });
       }
 
-      // 3. Register IP - THIS PROMPTS WALLET SIGNATURE
-      console.log("🔏 Requesting wallet signature for IP registration...");
       console.log(`📄 Using license terms ID: ${selectedLicenseId}`);
       const registrationResult = await registerGameAsIP(storyClient, {
         title: game.title,
@@ -157,8 +120,6 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
 
       await onRegistrationComplete?.(registrationResult);
       setResult(registrationResult);
-
-      console.log("✅ IP Registration complete:", registrationResult.ipId);
     } catch (err) {
       console.error("IP Registration error:", err);
       const message = err instanceof Error ? err.message : "Registration failed";
@@ -166,16 +127,15 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
     } finally {
       setIsRegistering(false);
     }
-  }, [walletClient, address, onStoryNetwork, game, selectedLicenseId, onRegistrationComplete]);
+  }, [walletClient, address, onStoryNetwork, chainId, game, selectedLicenseId, onRegistrationComplete]);
 
-  // Copy to clipboard
   const copyToClipboard = async (text: string, field: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
+    } catch {
+      console.error("Failed to copy");
     }
   };
 
@@ -184,12 +144,11 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Story Protocol branding */}
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
               <span className="text-white font-bold text-lg">S</span>
             </div>
             <div>
-              <CardTitle className="text-lg text-white">Register Your IP</CardTitle>
+              <CardTitle className="text-lg text-white">Register IP</CardTitle>
               <CardDescription className="text-sm text-white/65">
                 Own your creation on Story Protocol
               </CardDescription>
@@ -199,285 +158,133 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
-        {/* Pre-Registration: Value Proposition */}
+      <CardContent className="space-y-4">
         {!isRegistered && (
           <>
-            {/* Ownership Explainer */}
-            <div className="rounded-md border border-white/10 bg-white/[0.04] p-4">
-              <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                Your Signature = Your Ownership
-              </h3>
-              <p className="text-sm text-white/80 mb-3">
-                When you sign this transaction, <strong>YOU</strong> become the on-chain owner of this IP.
-                Not us. Your wallet. Your IP.
-              </p>
-              <ul className="text-sm text-white/70 space-y-1.5">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Registered on Story Protocol blockchain</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Commercial remix license (others can build on your work)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Automatic royalties from derivatives</span>
-                </li>
-              </ul>
+            <div className="rounded-md border border-white/10 bg-white/[0.04] p-3 text-sm text-white/80">
+              Sign with your wallet to register this game as IP on Story Protocol. You retain full ownership.
             </div>
 
-            {/* Royalty Distribution Visual */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-white/65">Royalty split</label>
+              <div className="h-3 rounded-full overflow-hidden flex bg-white/10">
+                <div className="bg-blue-500 h-full" style={{ width: '60%' }} title="Author 60%" />
+                <div className="bg-purple-500 h-full" style={{ width: '30%' }} title="You 30%" />
+                <div className="bg-white/45 h-full" style={{ width: '10%' }} title="Platform 10%" />
+              </div>
+              <div className="flex justify-between text-[11px] text-white/60">
+                <span>Author 60%</span><span>You 30%</span><span>Platform 10%</span>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white">
-                Royalty Distribution
-              </label>
-              <div className="h-4 rounded-full overflow-hidden flex bg-white/10">
-                <div
-                  className="bg-blue-500 h-full flex items-center justify-center"
-                  style={{ width: `${ROYALTY_CONFIG.authorShare / 100}%` }}
-                  title={`Author: ${ROYALTY_CONFIG.authorShare / 100}%`}
-                />
-                <div
-                  className="bg-purple-500 h-full flex items-center justify-center"
-                  style={{ width: `${ROYALTY_CONFIG.creatorShare / 100}%` }}
-                  title={`Creator: ${ROYALTY_CONFIG.creatorShare / 100}%`}
-                />
-                <div
-                  className="bg-white/45 h-full flex items-center justify-center"
-                  style={{ width: `${ROYALTY_CONFIG.platformShare / 100}%` }}
-                  title={`Platform: ${ROYALTY_CONFIG.platformShare / 100}%`}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-white/65">
-                <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  Author 60%
-                </span>
-                <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-purple-500" />
-                  You 30%
-                </span>
-                <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-white/45" />
-                  Platform 10%
-                </span>
-              </div>
-            </div>
-
-            {/* License Selection */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-white">
-                License Type
-              </label>
-              <div className="grid grid-cols-1 gap-2">
+              <label className="text-xs font-semibold text-white/65">License type</label>
+              <div className="grid gap-1.5">
                 {[
-                  { id: 2, name: 'Commercial Remix', description: 'Others can build on your work and sell derivatives', recommended: true },
-                  { id: 3, name: 'Commercial Use', description: 'Others can use your work commercially', recommended: false },
-                  { id: 1, name: 'Non-Commercial', description: 'Free to use but no commercial derivatives', recommended: false }
+                  { id: 2, name: 'Commercial Remix' },
+                  { id: 3, name: 'Commercial Use' },
+                  { id: 1, name: 'Non-Commercial' },
                 ].map((license) => (
-                  <div
-                    key={license.id}
-                    className={`relative flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                      license.recommended
+                  <label key={license.id}
+                    className={`flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer text-sm ${
+                      license.id === 2
                         ? 'border-purple-400/60 bg-purple-500/15'
                         : 'border-white/10 bg-white/[0.03] hover:border-white/25'
-                    }`}
-                  >
-                    <div className="flex items-center h-5">
-                      <input
-                        type="radio"
-                        name="license"
-                        value={license.id}
-                        checked={selectedLicenseId === BigInt(license.id)}
-                        onChange={() => setSelectedLicenseId(BigInt(license.id))}
-                        className="h-4 w-4 text-purple-600 border-border focus:ring-purple-500"
-                      />
+                    }`}>
+                    <input type="radio" name="license" value={license.id}
+                      checked={selectedLicenseId === BigInt(license.id)}
+                      onChange={() => setSelectedLicenseId(BigInt(license.id))}
+                      className="h-4 w-4 text-purple-600" />
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-white">{license.name}</span>
+                      {license.id === 2 && (
+                        <Badge className="text-[10px] bg-purple-500/20 text-purple-100 border border-purple-400/30">
+                          Recommended
+                        </Badge>
+                      )}
                     </div>
-                    <div className="ml-3 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-white">
-                          {license.name}
-                        </span>
-                        {license.recommended && (
-                          <Badge className="text-xs bg-purple-500/20 text-purple-100 border border-purple-400/30">
-                            Recommended
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-white/60 mt-0.5">
-                        {license.description}
-                      </p>
-                    </div>
-                  </div>
+                  </label>
                 ))}
               </div>
             </div>
 
-            {/* Network Status */}
-            <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-400/30 rounded-lg">
+            <div className="flex items-center justify-between p-2.5 bg-amber-500/10 border border-amber-400/30 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${onStoryNetwork ? 'bg-green-500' : 'bg-amber-500'}`} />
-                <span className="text-sm font-medium text-amber-100">
-                  {onStoryNetwork ? 'Connected to Story Network' : 'Switch to Story Network'}
+                <span className="text-sm text-amber-100">
+                  {onStoryNetwork ? 'Connected to Story Network' : `Switch to Story (chain ${chainId || '?'})`}
                 </span>
               </div>
-              <Badge variant="outline" className="text-xs border-amber-400/40 text-amber-100">
-                Testnet
-              </Badge>
+              <Badge variant="outline" className="text-xs border-amber-400/40 text-amber-100">Testnet</Badge>
             </div>
 
-            {/* Error Display */}
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4 flex gap-3">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="rounded-lg border border-red-700/50 bg-red-900/20 p-3 flex gap-2">
+                <AlertCircle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-red-900 dark:text-red-100">Registration Failed</p>
-                  <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+                  <p className="font-semibold text-red-100 text-sm">Registration failed</p>
+                  <p className="text-sm text-red-300">{error}</p>
                 </div>
               </div>
             )}
 
-            {/* Action Buttons */}
             {!isConnected ? (
               <Button disabled className="w-full" size="lg">
                 <Wallet className="mr-2 h-4 w-4" />
-                Connect Wallet First
+                Connect wallet first
               </Button>
             ) : !onStoryNetwork ? (
-              <Button
-                onClick={handleSwitchChain}
+              <Button onClick={handleSwitchChain}
                 disabled={isSwitching || isSwitchingChain}
-                className="w-full bg-amber-500 text-black hover:bg-amber-400"
-                size="lg"
-              >
+                className="w-full bg-amber-500 text-black hover:bg-amber-400" size="lg">
                 {(isSwitching || isSwitchingChain) ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Switching Network...
-                  </>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Switching…</>
                 ) : (
-                  <>
-                    <ArrowRightLeft className="mr-2 h-4 w-4" />
-                    Switch to Story Network
-                  </>
+                  <><ArrowRightLeft className="mr-2 h-4 w-4" /> Switch to Story Network</>
                 )}
               </Button>
             ) : (
-              <Button
-                onClick={handleRegisterIP}
-                disabled={isRegistering}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                size="lg"
-              >
+              <Button onClick={handleRegisterIP} disabled={isRegistering}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" size="lg">
                 {isRegistering ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Awaiting Signature...
-                  </>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Awaiting signature…</>
                 ) : (
-                  <>
-                    <PenLine className="mr-2 h-4 w-4" />
-                    Sign & Register IP
-                  </>
+                  <><PenLine className="mr-2 h-4 w-4" /> Sign & register IP</>
                 )}
               </Button>
             )}
 
             <p className="text-xs text-center text-white/55">
-              This is optional. You can skip and mint on Base without IP registration.
+              Optional. You can skip and mint on Base without IP registration.
             </p>
           </>
         )}
 
-        {/* Post-Registration: Success State */}
         {isRegistered && result && (
           <div className="space-y-4">
-            {/* Success Banner */}
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
-              <div className="flex gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                <h3 className="font-semibold text-green-900 dark:text-green-100">
-                  IP Registration Complete!
-                </h3>
+            <div className="rounded-lg border border-green-700/50 bg-green-900/20 p-4">
+              <div className="flex gap-2 mb-1.5">
+                <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
+                <h3 className="font-semibold text-green-100">IP registered!</h3>
               </div>
-              <p className="text-sm text-green-800 dark:text-green-200">
-                You now own this IP on Story Protocol. Others can license derivatives from you.
+              <p className="text-sm text-green-300">
+                You own this IP on Story Protocol. Others can license derivatives from you.
               </p>
             </div>
 
-            {/* Royalty Pool Info */}
-            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
-              <div className="flex gap-2 mb-1">
-                <span className="text-sm">🏦</span>
-                <h4 className="font-semibold text-purple-900 dark:text-purple-100 text-sm">
-                  Royalty Pool Created
-                </h4>
-              </div>
-              <p className="text-xs text-purple-700 dark:text-purple-300">
-                Your IP has been added to your writer royalty pool. All future games you register will be
-                pooled together — royalties from derivatives flow here and are distributed evenly.
-                Claim anytime from your <strong>Dashboard</strong>.
-              </p>
-            </div>
-
-            {/* IP Asset ID */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Your IP Asset ID
-              </label>
-              <div className="flex items-center gap-2 bg-muted border border-border rounded-lg p-3">
-                <code className="text-sm font-mono text-foreground flex-1 break-all">
-                  {result.ipId}
-                </code>
-                <button
-                  onClick={() => copyToClipboard(result.ipId, "ipId")}
-                  className="p-1.5 hover:bg-muted/80 rounded transition-colors"
-                  title="Copy to clipboard"
-                >
-                  {copiedField === "ipId" ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4 text-muted-foreground" />
-                  )}
+              <label className="text-sm font-medium text-white">IP Asset ID</label>
+              <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-lg p-3">
+                <code className="text-sm font-mono text-white/90 flex-1 break-all">{result.ipId}</code>
+                <button onClick={() => copyToClipboard(result.ipId, "ipId")}
+                  className="p-1.5 hover:bg-white/10 rounded transition-colors">
+                  {copiedField === "ipId" ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-white/60" />}
                 </button>
               </div>
             </div>
 
-            {/* Transaction Hash */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Transaction
-              </label>
-              <div className="flex items-center gap-2 bg-muted border border-border rounded-lg p-3">
-                <code className="text-xs font-mono text-muted-foreground flex-1 truncate">
-                  {result.txHash}
-                </code>
-                <a
-                  href={result.txExplorerUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 hover:bg-muted/80 rounded transition-colors"
-                  title="View on Explorer"
-                >
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </a>
-              </div>
-            </div>
-
-            {/* View on Story Protocol */}
-            <Button
-              variant="outline"
-              className="w-full"
-              asChild
-            >
-              <a
-                href={result.explorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+            <Button variant="outline" className="w-full" asChild>
+              <a href={result.explorerUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View on Story Protocol
               </a>
@@ -489,38 +296,13 @@ export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationP
   );
 }
 
-// ============================================================================
-// Badge Component (for compact displays)
-// ============================================================================
-
-/**
- * Compact IP registration status badge for game cards/previews
- */
-export function IPRegistrationBadge({
-  isRegistered,
-  ipId
-}: {
-  isRegistered: boolean;
-  ipId?: string;
-}) {
+export function IPRegistrationBadge({ isRegistered, ipId }: { isRegistered: boolean; ipId?: string }) {
   if (!isRegistered) {
-    return (
-      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700">
-        Register IP
-      </Badge>
-    );
+    return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700">Register IP</Badge>;
   }
-
   return (
-    <a
-      href={ipId ? getIPAssetExplorerUrl(ipId) : "#"}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex"
-    >
-      <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
-        ✓ IP Registered
-      </Badge>
+    <a href={ipId ? getIPAssetExplorerUrl(ipId) : "#"} target="_blank" rel="noopener noreferrer" className="inline-flex">
+      <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">✓ IP Registered</Badge>
     </a>
   );
 }

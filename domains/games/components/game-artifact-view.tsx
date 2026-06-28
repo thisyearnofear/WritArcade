@@ -13,7 +13,6 @@ import {
   Loader2,
   Lock,
   RefreshCw,
-  ShieldCheck,
   Sparkles,
   User,
   Wallet,
@@ -41,29 +40,8 @@ function shortAddress(value?: string | null) {
 function formatDate(value?: Date) {
   if (!value) return 'Unknown'
   return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+    month: 'short', day: 'numeric', year: 'numeric',
   }).format(new Date(value))
-}
-
-function getChainName(chainId?: number) {
-  if (chainId === 8453) return 'Base'
-  if (chainId === 31611) return 'Mezo Matsnet'
-  if (chainId === 31612) return 'Mezo'
-  return chainId ? `Chain ${chainId}` : 'Base'
-}
-
-function getTxUrl(hash?: string, chainId?: number) {
-  if (!hash) return null
-  if (chainId === 31611) return `https://explorer.test.mezo.org/tx/${hash}`
-  return `https://basescan.org/tx/${hash}`
-}
-
-function getContractUrl(address?: string, chainId?: number) {
-  if (!address) return null
-  if (chainId === 31611) return `https://explorer.test.mezo.org/address/${address}`
-  return `https://basescan.org/address/${address}`
 }
 
 function getTokenLabel(game: Game) {
@@ -83,22 +61,19 @@ function getRemixHref(game: Game) {
 }
 
 function DetailRow({ label, value, href }: { label: string; value: string; href?: string | null }) {
+  const content = href ? (
+    <a href={href} target="_blank" rel="noopener noreferrer"
+      className="inline-flex max-w-full items-center gap-1 text-sm text-white hover:text-emerald-200">
+      <span className="truncate">{value}</span>
+      <ExternalLink className="h-3 w-3 shrink-0" />
+    </a>
+  ) : (
+    <span className="text-sm text-white truncate">{value}</span>
+  )
   return (
-    <div className="border-b border-white/10 py-3 last:border-b-0">
-      <div className="text-[10px] font-semibold uppercase tracking-widest text-white/45">{label}</div>
-      {href ? (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-1 inline-flex max-w-full items-center gap-1.5 text-sm text-white hover:text-emerald-200"
-        >
-          <span className="truncate">{value}</span>
-          <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
-        </a>
-      ) : (
-        <div className="mt-1 truncate text-sm text-white">{value}</div>
-      )}
+    <div className="flex items-center justify-between gap-2 py-1.5 border-b border-white/8 last:border-0">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">{label}</span>
+      {content}
     </div>
   )
 }
@@ -112,8 +87,6 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
   const hasSuperRareRecord = Boolean(game.superrareTokenId || game.superrareMintedAt)
   const savedPanels = game.savedPanels || []
   const hasSavedPanels = savedPanels.length > 0
-  const nftTxUrl = getTxUrl(game.nftTransactionHash, game.nftChainId)
-  const nftContractUrl = getContractUrl(game.nftContractAddress, game.nftChainId)
   const remixHref = useMemo(() => getRemixHref(game), [game])
 
   const [superrareMinting, setSuperrareMinting] = useState(false)
@@ -124,12 +97,12 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
     setSuperrareMinting(true)
     setSuperrareError(null)
     try {
-      const response = await fetch('/api/superrare/mint', {
+      const res = await fetch('/api/superrare/mint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameId: game.id, wallet: address }),
       })
-      const data = await response.json()
+      const data = await res.json()
       if (!data.success) throw new Error(data.error)
     } catch (err) {
       setSuperrareError(err instanceof Error ? err.message : 'Minting failed')
@@ -140,253 +113,197 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      <section className="relative min-h-[78vh] overflow-hidden border-b border-white/10">
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-white/10">
         {game.imageUrl ? (
-          <img
-            src={game.imageUrl}
-            alt={game.title}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <img src={game.imageUrl} alt={game.title}
+            className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <div className="absolute inset-0 bg-zinc-950" />
         )}
         <div className="absolute inset-0 bg-black/65" />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,.2),#000_92%)]" />
 
-        <div className="relative mx-auto flex min-h-[78vh] max-w-6xl flex-col px-4 py-6">
+        <div className="relative mx-auto flex max-w-6xl flex-col px-4 py-5">
           <div className="flex items-center justify-between">
-            <Link
-              href="/games"
-              className="inline-flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Arcade
+            <Link href="/games"
+              className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors">
+              <ArrowLeft className="h-4 w-4" /> Arcade
             </Link>
-            <div className="inline-flex items-center gap-2 rounded border border-white/15 bg-black/35 px-2.5 py-1.5 text-xs text-white/70 backdrop-blur">
-              <BookOpen className="h-3.5 w-3.5" />
-              Saved creation
-            </div>
+            <span className="inline-flex items-center gap-1.5 rounded border border-white/15 bg-black/35 px-2.5 py-1 text-xs text-white/70 backdrop-blur">
+              <BookOpen className="h-3.5 w-3.5" /> Saved creation
+            </span>
           </div>
 
-          <div className="grid flex-1 items-end gap-8 py-12 lg:grid-cols-[1fr_360px]">
-            <div className="max-w-3xl">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <span className="rounded border border-white/15 bg-white/10 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-white/75">
+          <div className="grid gap-6 pt-8 lg:grid-cols-[1fr_320px]">
+            <div className="min-w-0">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="rounded border border-white/15 bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/75">
                   {game.genre}
                 </span>
-                <span className="rounded border border-white/15 bg-white/10 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-white/75">
-                  {tokenLabel}
+                <span className="rounded border border-white/15 bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/75">
+                  ${tokenLabel}
                 </span>
                 {hasMintRecord ? (
-                  <span className="inline-flex items-center gap-1 rounded border border-emerald-400/35 bg-emerald-400/10 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-200">
-                    <BadgeCheck className="h-3.5 w-3.5" />
-                    NFT minted
+                  <span className="inline-flex items-center gap-1 rounded border border-emerald-400/35 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
+                    <BadgeCheck className="h-3 w-3" /> Minted
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded border border-white/15 bg-white/10 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-white/65">
-                    <Lock className="h-3.5 w-3.5" />
-                    Not minted
+                  <span className="inline-flex items-center gap-1 rounded border border-white/15 bg-white/10 px-2 py-0.5 text-[11px] text-white/65">
+                    <Lock className="h-3 w-3" /> Not minted
                   </span>
                 )}
               </div>
 
-              <h1 className="font-serif text-4xl font-semibold leading-tight tracking-normal text-white sm:text-5xl md:text-6xl">
+              <h1 className="font-serif text-3xl font-semibold leading-tight text-white sm:text-4xl">
                 {game.title}
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-white/72 sm:text-lg">
-                {game.description}
-              </p>
+              <p className="mt-2 text-sm leading-6 text-white/70 line-clamp-2">{game.description}</p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                  href="#panels"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-100"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  {hasSavedPanels ? 'View panels' : 'View saved record'}
-                </a>
-                <Link
-                  href={remixHref}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/18 bg-white/8 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/35 hover:bg-white/12"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Create your version
-                </Link>
+              <div className="mt-5 flex flex-wrap gap-2">
                 {isOwner && !hasMintRecord ? (
-                  <Link
-                    href={`/games/${game.slug}?play=1`}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-md border border-emerald-300/35 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/15"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Complete a mintable session
+                  <Link href={`/games/${game.slug}?play=1`}
+                    className="inline-flex h-10 items-center gap-1.5 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors">
+                    <Sparkles className="h-4 w-4" /> Play & mint as NFT
                   </Link>
                 ) : (
-                  <Link
-                    href={`/games/${game.slug}?play=1`}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/14 bg-black/25 px-4 py-2 text-sm font-semibold text-white/74 transition hover:border-white/28 hover:text-white"
-                  >
-                    <Gamepad2 className="h-4 w-4" />
-                    Start a new session
+                  <Link href={`/games/${game.slug}?play=1`}
+                    className="inline-flex h-10 items-center gap-1.5 rounded-md bg-white px-4 text-sm font-semibold text-black hover:bg-emerald-100 transition-colors">
+                    <Gamepad2 className="h-4 w-4" /> Play game
                   </Link>
                 )}
+                {hasSavedPanels ? (
+                  <a href="#panels"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-md border border-white/18 bg-white/8 px-4 text-sm font-semibold text-white hover:border-white/35 transition-colors">
+                    <BookOpen className="h-4 w-4" /> View panels
+                  </a>
+                ) : null}
+                <Link href={remixHref}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-md border border-white/18 bg-white/8 px-4 text-sm font-semibold text-white hover:border-white/35 transition-colors">
+                  <RefreshCw className="h-4 w-4" /> Remix
+                </Link>
               </div>
             </div>
 
-            <aside className="rounded-lg border border-white/12 bg-black/55 p-5 backdrop-blur">
-              <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-                <ShieldCheck className="h-4 w-4 text-emerald-200" />
-                Creation record
-              </div>
+            {/* Sidebar */}
+            <aside className="rounded-lg border border-white/10 bg-black/50 p-4 backdrop-blur text-sm">
               <DetailRow label="Creator" value={shortAddress(ownerAddress)} />
               <DetailRow label="Writer" value={game.authorParagraphUsername || game.publicationName || tokenLabel} />
-              <DetailRow label="Source" value={game.articleUrl || 'No source URL saved'} href={game.articleUrl} />
+              <DetailRow label="Source" value={game.articleUrl || '—'} href={game.articleUrl} />
               <DetailRow label="Created" value={formatDate(game.createdAt)} />
-              <DetailRow label="Mode" value={game.mode === 'wordle' ? 'Word puzzle' : '5-panel comic game'} />
+              <DetailRow label="Mode" value={game.mode === 'wordle' ? 'Word puzzle' : '5-panel comic'} />
             </aside>
           </div>
         </div>
       </section>
 
-      <section id="panels" className="border-b border-white/10 bg-black px-4 py-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-emerald-300">Saved artifact</p>
-              <h2 className="mt-2 font-serif text-3xl font-semibold tracking-normal text-white">
-                Panels and provenance
-              </h2>
+      {/* Panels + Play Trend + Details in a 2-col grid */}
+      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_320px]">
+        {/* Left column */}
+        <div className="space-y-6">
+          {/* Panels */}
+          <div id="panels">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-emerald-300">Panels</h2>
+              <span className="text-xs text-white/50">
+                {hasSavedPanels ? `${savedPanels.length} saved` : 'No panels saved'}
+              </span>
             </div>
-            <div className="rounded border border-white/12 bg-white/5 px-3 py-2 text-sm text-white/64">
-              {hasSavedPanels ? `${savedPanels.length} panel${savedPanels.length === 1 ? '' : 's'} saved` : 'No canonical panels saved'}
-            </div>
-          </div>
-
-          {hasSavedPanels ? (
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {savedPanels.map(panel => (
-                <article
-                  key={panel.id}
-                  className="rounded-lg border border-white/10 bg-zinc-950 p-5"
-                >
-                  {panel.imageUrl && (
-                    <div className="mb-4 aspect-video overflow-hidden rounded-md border border-white/10 bg-black">
-                      <img
-                        src={panel.imageUrl}
-                        alt={`Panel ${panel.panelNumber}`}
-                        className="h-full w-full object-cover"
-                      />
+            {hasSavedPanels ? (
+              <div className="grid gap-3 md:grid-cols-2">
+                {savedPanels.map(panel => (
+                  <div key={panel.id} className="rounded-lg border border-white/10 bg-zinc-950 p-3">
+                    {panel.imageUrl && (
+                      <div className="mb-2 aspect-video overflow-hidden rounded border border-white/10 bg-black">
+                        <img src={panel.imageUrl} alt={`Panel ${panel.panelNumber}`}
+                          className="h-full w-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+                        Panel {panel.panelNumber}
+                      </span>
+                      <span className="text-[11px] text-white/40">{panel.imageModel || formatDate(panel.createdAt)}</span>
                     </div>
-                  )}
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">
-                      Panel {panel.panelNumber}
-                    </div>
-                    <div className="text-xs text-white/42">{panel.imageModel || formatDate(panel.createdAt)}</div>
+                    <p className="text-sm leading-5 text-white/75 line-clamp-3">{panel.narrativeText}</p>
+                    {panel.userChoice && (
+                      <div className="mt-2 rounded border border-white/8 bg-white/[0.02] px-2.5 py-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/35">Choice</span>
+                        <p className="mt-0.5 text-xs text-white/60">{panel.userChoice}</p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm leading-6 text-white/78">{panel.narrativeText}</p>
-                  {panel.userChoice && (
-                    <div className="mt-4 rounded border border-white/10 bg-white/[0.03] p-3">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-white/38">Creator choice</div>
-                      <p className="mt-1 text-sm leading-5 text-white/66">{panel.userChoice}</p>
-                    </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-zinc-950 p-4">
+                <p className="text-sm text-white/55">
+                  This game was created but no panels were saved to the artifact. Playing it will generate a fresh session.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Play Trend */}
+          <PlayTrendChart slug={game.slug} />
+        </div>
+
+        {/* Right column — details sidebar */}
+        <div className="space-y-4">
+          {/* Attribution */}
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-4">
+            <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/70 mb-2">
+              <User className="h-3.5 w-3.5" /> Attribution
+            </h3>
+            <DetailRow label="Owner" value={shortAddress(ownerAddress)} />
+            <DetailRow label="Author" value={game.authorParagraphUsername || shortAddress(game.authorWallet)} />
+            <DetailRow label="Publication" value={game.publicationName || '—'} />
+            <DetailRow label="Token" value={`$${tokenLabel}`} />
+          </div>
+
+          {/* Base NFT */}
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-4">
+            <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-white/70 mb-2">
+              <Wallet className="h-3.5 w-3.5" /> NFT
+            </h3>
+            <DetailRow label="Status"
+              value={hasMintRecord ? (game.nftTokenId ? 'Minted' : 'Pending') : 'Not minted'} />
+            {hasMintRecord && (
+              <>
+                <DetailRow label="Token ID" value={game.nftTokenId || '—'} />
+                <DetailRow label="Chain" value="Base" />
+                <DetailRow label="Contract" value={shortAddress(game.nftContractAddress)}
+                  href={game.nftContractAddress ? `https://basescan.org/address/${game.nftContractAddress}` : null} />
+                <DetailRow label="Tx" value={shortAddress(game.nftTransactionHash)}
+                  href={game.nftTransactionHash ? `https://basescan.org/tx/${game.nftTransactionHash}` : null} />
+              </>
+            )}
+          </div>
+
+          {/* SuperRare */}
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-4">
+            <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-pink-400 mb-2">
+              <GalleryHorizontalEnd className="h-3.5 w-3.5" /> SuperRare
+            </h3>
+            {hasSuperRareRecord ? (
+              <DetailRow label="Status" value="Minted" />
+            ) : isOwner ? (
+              <>
+                <p className="text-sm text-white/60 mb-3">Mint as a collectible on SuperRare.</p>
+                <button onClick={handleSuperrareMint} disabled={superrareMinting}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-500 disabled:opacity-50 transition-colors">
+                  {superrareMinting ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Preparing…</>
+                  ) : (
+                    <><GalleryHorizontalEnd className="h-4 w-4" /> Mint on SuperRare</>
                   )}
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-6 rounded-lg border border-white/10 bg-zinc-950 p-5">
-              <p className="max-w-3xl text-sm leading-6 text-white/62">
-                This creation has saved game metadata and provenance, but it does not yet have a durable completed panel set attached to the public artifact. Starting a new session will create a fresh playthrough instead of reconstructing the original creator's panels.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-6">
-        <PlayTrendChart slug={game.slug} />
-      </section>
-
-      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[1fr_1fr]">
-        <div className="rounded-lg border border-white/10 bg-zinc-950 p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-            <User className="h-4 w-4 text-white/70" />
-            Attribution
+                </button>
+                {superrareError && <p className="mt-1.5 text-xs text-red-400">{superrareError}</p>}
+              </>
+            ) : (
+              <p className="text-sm text-white/55">Only the owner can mint this.</p>
+            )}
           </div>
-          <DetailRow label="Game owner" value={shortAddress(ownerAddress)} />
-          <DetailRow label="Article author" value={game.authorParagraphUsername || shortAddress(game.authorWallet)} />
-          <DetailRow label="Publication" value={game.publicationName || 'Unknown'} />
-          <DetailRow label="Payment token" value={tokenLabel} />
-        </div>
-
-        <div className="rounded-lg border border-white/10 bg-zinc-950 p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-            <Wallet className="h-4 w-4 text-white/70" />
-            Base NFT
-          </div>
-          {hasMintRecord ? (
-            <>
-              <DetailRow label="Status" value={game.nftTokenId ? 'Minted' : 'Mint transaction recorded'} />
-              <DetailRow label="Token ID" value={game.nftTokenId || 'Pending confirmation'} />
-              <DetailRow label="Chain" value={getChainName(game.nftChainId)} />
-              <DetailRow label="Contract" value={shortAddress(game.nftContractAddress)} href={nftContractUrl} />
-              <DetailRow label="Mint transaction" value={shortAddress(game.nftTransactionHash)} href={nftTxUrl} />
-              <DetailRow label="NFT metadata" value={game.nftMetadataUri || 'Not saved'} href={game.nftMetadataUri} />
-              <DetailRow label="Artifact manifest" value={game.artifactManifestUri || game.gameMetadataUri || 'Not saved'} href={game.artifactManifestUri || game.gameMetadataUri} />
-            </>
-          ) : (
-            <>
-              <DetailRow label="Status" value="Not minted yet" />
-              <DetailRow label="Chain" value={getChainName(game.nftChainId)} />
-              <DetailRow label="Artifact manifest" value={game.artifactManifestUri || game.gameMetadataUri || 'Not saved'} href={game.artifactManifestUri || game.gameMetadataUri} />
-              <p className="mt-4 text-sm leading-6 text-white/58">
-                Minting is available to the creator after completing a fresh session. Public visitors stay on the saved artifact unless they explicitly start a new session.
-              </p>
-            </>
-          )}
-        </div>
-
-        <div className="rounded-lg border border-white/10 bg-zinc-950 p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-            <GalleryHorizontalEnd className="h-4 w-4 text-pink-400" />
-            SuperRare Collectible
-          </div>
-          {hasSuperRareRecord ? (
-            <>
-              <DetailRow label="Status" value="Minted on SuperRare" />
-              <DetailRow label="Token ID" value={game.superrareTokenId || '—'} />
-              <DetailRow label="Contract" value={shortAddress(game.superrareContract)} />
-              <DetailRow label="Minted" value={game.superrareMintedAt ? formatDate(game.superrareMintedAt) : '—'} />
-              <p className="mt-4 text-sm leading-6 text-white/58">
-                This game artifact has been collected as a SuperRare NFT.
-              </p>
-            </>
-          ) : isOwner ? (
-            <>
-              <DetailRow label="Status" value="Available to mint" />
-              <p className="mt-2 text-sm leading-6 text-white/58">
-                Mint this game as a SuperRare collectible. Character cards, story artifacts, and limited-edition endings are eligible.
-              </p>
-              <button
-                onClick={handleSuperrareMint}
-                disabled={superrareMinting}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-pink-500 disabled:opacity-50"
-              >
-                {superrareMinting ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Preparing mint…</>
-                ) : (
-                  <><GalleryHorizontalEnd className="h-4 w-4" /> Collect as SuperRare NFT</>
-                )}
-              </button>
-              {superrareError && (
-                <p className="mt-2 text-xs text-red-400">{superrareError}</p>
-              )}
-            </>
-          ) : (
-            <p className="text-sm leading-6 text-white/58">
-              Only the game owner can mint this as a SuperRare collectible.
-            </p>
-          )}
         </div>
       </section>
     </main>
