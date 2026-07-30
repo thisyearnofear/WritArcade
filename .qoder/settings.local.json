@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(grep -n \"dark:\\\\|bg-white\\\\|bg-black\\\\|bg-background\" /Users/udingethe/Dev/writersarcade/components/layout/header.tsx /Users/udingethe/Dev/writersarcade/components/layout/footer.tsx | head -40)",
-      "Bash(ls /Users/udingethe/Dev/writersarcade && cat /Users/udingethe/Dev/writersarcade/package.json 2>/dev/null | head -80)"
-    ]
-  }
-}
