@@ -1,18 +1,17 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, X, ChevronDown, ExternalLink } from 'lucide-react'
+import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, ChevronDown, ExternalLink } from 'lucide-react'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { PaymentOption } from '@/components/game/PaymentOption'
-import { SuccessModal } from '@/components/success/SuccessModal'
 import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
-import { ArticleFidelityReview } from '@/components/game/article-fidelity-review'
 import { type WriterCoin, WRITER_COINS, validateArticleUrl } from '@/lib/writerCoins'
 import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
@@ -63,6 +62,7 @@ interface GameGeneratorFormProps {
 }
 
 export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath = 'musd', initialMode }: GameGeneratorFormProps) {
+  const router = useRouter()
   const { isConnected, address: accountAddress } = useAccount()
   const [isGenerating, setIsGenerating] = useState(false)
   const [url, setUrl] = useState(initialUrl || '')
@@ -75,19 +75,8 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
   const paymentTxHashRef = useRef<string | undefined>(undefined)
   const paymentIdRef = useRef<string | undefined>(undefined)
   const [error, setError] = useState<GenerateErrorState | null>(null)
-  const [successData, setSuccessData] = useState<{
-    gameSlug: string
-    title: string
-    author?: string
-  } | null>(null)
-  const [generatedGame, setGeneratedGame] = useState<{
-    id: string
-    slug: string
-    title: string
-    description: string
-    imageUrl?: string
-  } | null>(null)
-  const [showFidelityReview, setShowFidelityReview] = useState(false)
+  // Game data is captured locally only long enough to redirect the user to the
+  // playable game. No modal state is kept.
   const [paymentPath, setPaymentPath] = useState<PaymentPath>(initialPaymentPath)
   const [selectedCoin, setSelectedCoin] = useState<WriterCoin>(DEFAULT_WRITER_COIN)
   const [showWriterSelector, setShowWriterSelector] = useState(false)
@@ -132,9 +121,22 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     }
   }, [paymentApproved, isDesktop, mobileStep])
 
-  // Auto-detect writer coin from URL
+  // Auto-detect writer coin from URL and resolve the payment path automatically.
+  // If the URL matches a supported writer coin, prefer that path; otherwise
+  // fall back to MUSD/credits. Users can still override via advanced options.
   const detectedCoin = useMemo(() => detectWriterCoinFromUrl(url), [url])
   const isAutoDetected = Boolean(detectedCoin) && paymentPath === 'musd' && !showAdvancedPayment
+
+  useEffect(() => {
+    if (!detectedCoin) return
+    if (showAdvancedPayment) return
+    if (paymentPath === 'writercoin' && selectedCoin.id === detectedCoin.id) return
+    if (detectedCoin.paymentEnabled) {
+      setPaymentPath('writercoin')
+      setSelectedCoin(detectedCoin)
+      resetPaymentProgress()
+    }
+  }, [detectedCoin, paymentPath, selectedCoin.id, showAdvancedPayment])
 
   type LoadingStep = 'payment' | 'validate' | 'extract' | 'generate' | 'save'
   type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
@@ -241,7 +243,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     return null
   }
 
-  const previewArticle = async () => {
+  const previewArticle = useCallback(async () => {
     if (!url.trim()) {
       setError(articleError('Please provide a Paragraph.xyz article URL.'))
       return null
@@ -300,7 +302,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     } finally {
       setIsPreviewingArticle(false)
     }
-  }
+  }, [url, paymentPath, mode, isMusdPath, writerCoin.id])
 
   const generateGame = async (paymentTransactionHash?: string) => {
     setIsGenerating(true)
@@ -353,7 +355,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               url: url.trim(),
               mode,
               wallet: accountAddress || undefined,
-              ...(hasPaymentProof && showCustomization && {
+              ...(hasPaymentProof && {
                 customization: {
                   genre,
                   difficulty,
@@ -438,12 +440,6 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         description: result.data.description || '',
         imageUrl: result.data.imageUrl,
       }
-      setGeneratedGame(gameData)
-      setSuccessData({
-        gameSlug: gameData.slug,
-        title: gameData.title,
-        author: undefined,
-      })
       trackEvent('game_generated', {
         mode,
         paymentPath,
@@ -453,7 +449,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
       })
 
       onGameGenerated?.(result.data)
-      // State resets handled in onClose callback to avoid blank form before modal dismisses
+
+      // Streamlined flow: skip modals dead-ends and take the user straight to the game.
+      router.push(`/games/${gameData.slug}`)
     } catch (err) {
       const message = isAbortError(err)
         ? 'Game generation timed out before the server returned a result.'
@@ -553,6 +551,26 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     // Run only for URL arrivals; user edits are handled by the explicit preview button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialUrl, url, hasPreviewedCurrentUrl, isPreviewingArticle])
+
+  // Auto-preview on URL paste/edit after a short debounce so the user doesn't
+  // have to click "Preview article". Manual preview remains a fallback.
+  const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    const normalizedUrl = url.trim()
+    if (!normalizedUrl || normalizedUrl === previewedUrl) return
+    if (autoPreviewedUrlRef.current === normalizedUrl) return
+    if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current)
+
+    previewTimeoutRef.current = setTimeout(() => {
+      if (normalizedUrl.startsWith('http')) {
+        previewArticle()
+      }
+    }, 800)
+
+    return () => {
+      if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current)
+    }
+  }, [url, previewedUrl, previewArticle])
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -674,7 +692,10 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
             )}
           </div>
 
-          {!hasPreviewedCurrentUrl && (
+          {/* Mode toggle is only shown when the user explicitly enters via
+              ?mode=wordle. The default /generate path is always Story so we
+              remove one decision from the happy path. */}
+          {!hasPreviewedCurrentUrl && initialMode === 'wordle' && (
           <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <Label className="text-sm font-medium">Game Type</Label>
@@ -1318,60 +1339,9 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
         difficulty={difficulty}
       />
 
-      {generatedGame && (
-        <ArticleFidelityReview
-          isOpen={showFidelityReview}
-          game={{
-            id: generatedGame.id,
-            slug: generatedGame.slug,
-            title: generatedGame.title,
-            description: generatedGame.description,
-            imageUrl: generatedGame.imageUrl,
-          }}
-          articleUrl={url}
-          onApprove={() => {
-            setShowFidelityReview(false)
-            setSuccessData({
-              gameSlug: generatedGame.slug,
-              title: generatedGame.title,
-              author: undefined,
-            })
-          }}
-          onReject={() => {
-            setShowFidelityReview(false)
-            setSuccessData({
-              gameSlug: generatedGame.slug,
-              title: generatedGame.title,
-              author: undefined,
-            })
-          }}
-        />
-      )}
-
-      <SuccessModal
-        isOpen={!!successData}
-        onClose={() => {
-          setSuccessData(null)
-          setGeneratedGame(null)
-          setUrl('')
-          resetPaymentProgress()
-        }}
-        title={successData?.title || 'Game Created Successfully!'}
-        description="Your playable story is ready. Play it now, share it, or make another."
-        gameSlug={successData?.gameSlug}
-        action="generate"
-        authorName={successData?.author}
-        onMakeAnother={() => {
-          setSuccessData(null)
-          setGeneratedGame(null)
-          setUrl('')
-          resetPaymentProgress()
-        }}
-        onReviewSource={generatedGame ? () => {
-          setSuccessData(null)
-          setShowFidelityReview(true)
-        } : undefined}
-      />
+      {/* Generation success now auto-redirects to /games/[slug] so the user
+          lands on the playable game immediately. Article fidelity review is
+          reserved for a future creator dashboard. */}
 
       {/* Mobile bottom nav — back button + step dots */}
       {!isGenerating && (
