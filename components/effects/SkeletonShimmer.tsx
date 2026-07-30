@@ -51,7 +51,7 @@ export function SkeletonShimmer({
   )
 }
 
-function ShimmerBox({ className, style }: { className?: string; style?: React.CSSProperties }) {
+export function ShimmerBox({ className, style }: { className?: string; style?: React.CSSProperties }) {
   const prefersReducedMotion = useReducedMotion()
 
   if (prefersReducedMotion) {

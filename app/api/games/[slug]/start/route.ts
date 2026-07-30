@@ -7,6 +7,8 @@ import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 
 const startGameSchema = z.object({
   sessionId: z.string().uuid(),
+  ref: z.string().max(200).optional(),
+  embedded: z.boolean().optional(),
 })
 
 export async function POST(
@@ -17,7 +19,7 @@ export async function POST(
     const params = await context.params
 
     const body = await request.json()
-    const { sessionId } = startGameSchema.parse(body)
+    const { sessionId, ref, embedded } = startGameSchema.parse(body)
     
     // Get game by slug
     const game = await GameDatabaseService.getGameBySlug(params.slug)
@@ -39,6 +41,27 @@ export async function POST(
         { success: false, error: 'Invalid session' },
         { status: 400 }
       )
+    }
+
+    // Resonance: record the start once per (game, session). Non-blocking.
+    try {
+      const existingStart = await prisma.gamePlayEvent.findFirst({
+        where: { gameId: game.id, sessionId, type: 'started' },
+        select: { id: true },
+      })
+      if (!existingStart) {
+        await prisma.gamePlayEvent.create({
+          data: {
+            gameId: game.id,
+            type: 'started',
+            sessionId,
+            referrer: ref || request.headers.get('referer')?.slice(0, 200) || null,
+            embedded: embedded ?? false,
+          },
+        })
+      }
+    } catch (eventError) {
+      console.error('Start event write failed (non-blocking):', eventError)
     }
     
     // Create system message for game start

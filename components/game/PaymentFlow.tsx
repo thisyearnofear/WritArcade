@@ -176,7 +176,7 @@ export function PaymentFlow({
       const response = await fetch('/api/credits/spend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: userAddress, action }),
+        body: JSON.stringify({ action }),
       })
       const data = await response.json()
       if (!data.success) throw new Error(data.error)
@@ -184,7 +184,9 @@ export function PaymentFlow({
       setCreditBalance(data.data.creditsRemaining)
       setCurrentStep(null)
       setCreditSuccess(true)
-      onPaymentSuccess?.({ transactionHash: `credits:${Date.now()}`, paymentId: `credits:${action}:${Date.now()}` })
+      // Server-issued paymentId is the verification handle; the sentinel
+      // transactionHash is display-only and never sent to the generate route.
+      onPaymentSuccess?.({ transactionHash: `credits:${data.data.paymentId}`, paymentId: data.data.paymentId })
     } catch (err) {
       const message = getUserMessage(err)
       setError(message)

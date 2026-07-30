@@ -49,7 +49,7 @@ export interface GameSessionState {
 
 export interface GameSessionActions {
   startGame: () => Promise<void>
-  sendMessage: (message: string) => Promise<void>
+  sendMessage: (message: string, optionId?: number) => Promise<void>
   handleOptionClick: (optionId: number, optionText: string) => void
   handleImageGenerated: (messageId: string, result: ImageGenerationResult) => void
   handleImageRegenerate: (messageId: string, narrativeText: string, customPrompt?: string, theme?: string) => Promise<void>
@@ -62,7 +62,12 @@ export interface GameSessionActions {
 
 const MAX_COMIC_PANELS = 5
 
-export function useGameSession(game: Game): GameSessionState & GameSessionActions {
+export interface GameSessionOptions {
+  embedded?: boolean
+  ref?: string
+}
+
+export function useGameSession(game: Game, options?: GameSessionOptions): GameSessionState & GameSessionActions {
   const { toast } = useToast()
   const { preferences } = useVisualConfig()
 
@@ -159,7 +164,11 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       const startResponse = await fetch(`/api/games/${game.slug}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: newSessionId }),
+        body: JSON.stringify({
+          sessionId: newSessionId,
+          ...(options?.embedded ? { embedded: true } : {}),
+          ...(options?.ref ? { ref: options.ref } : {}),
+        }),
       })
 
       if (!startResponse.ok) {
@@ -250,7 +259,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       console.error('Failed to start game:', error)
       setIsStarting(false)
     }
-  }, [game, toast, handleImageGenerated])
+  }, [game, toast, handleImageGenerated, options?.embedded, options?.ref])
 
   /**
    * Generate epilogue + reflection after game completes
@@ -353,7 +362,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
    * Send message - continues the game conversation
    */
    
-  const sendMessage = useCallback(async (message: string) => {
+  const sendMessage = useCallback(async (message: string, optionId?: number) => {
     if (!sessionId || !message.trim()) return
 
     setIsWaitingForResponse(true)
@@ -379,6 +388,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
           sessionId,
           gameId: game.id,
           message: message.trim(),
+          ...(optionId ? { optionId } : {}),
         }),
       })
 
@@ -548,7 +558,7 @@ export function useGameSession(game: Game): GameSessionState & GameSessionAction
       hope: prev.hope + (lowerText.includes('help') || lowerText.includes('trust') ? 2 : -1)
     }))
 
-    sendMessage(optionText)
+    sendMessage(optionText, optionId)
   }, [assistantMessageCount, sendMessage])
 
   /**

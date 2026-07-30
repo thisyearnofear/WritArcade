@@ -86,4 +86,64 @@ export function sessionCookieOptions() {
   }
 }
 
-export { SESSION_COOKIE_NAME }
+/**
+ * Typed session subjects for non-wallet identities:
+ * `g:<guestKey>` (anonymous guest) and `u:<userId>` (email-verified user).
+ * Wallet sessions keep the legacy raw-address format above.
+ */
+
+const GUEST_COOKIE_NAME = 'guest_session'
+const USER_COOKIE_NAME = 'user_session'
+
+export type SessionSubject =
+  | { kind: 'guest'; guestKey: string }
+  | { kind: 'user'; userId: string }
+
+const SUBJECT_PREFIX: Record<SessionSubject['kind'], string> = {
+  guest: 'g',
+  user: 'u',
+}
+
+/** Create the signed cookie value for a guest/user subject. */
+export function signSubject(subject: SessionSubject): string {
+  const secret = getSessionSecret()
+  if (!secret) {
+    throw new Error(
+      'AUTH_SECRET (>= 16 chars) is required in production to issue sessions'
+    )
+  }
+  const id = subject.kind === 'guest' ? subject.guestKey : subject.userId
+  const payload = `${SUBJECT_PREFIX[subject.kind]}:${id}`
+  return `${payload}.${hmac(payload, secret)}`
+}
+
+/** Verify a signed subject cookie value, or return null if forged/malformed. */
+export function verifySubject(value: string | undefined | null): SessionSubject | null {
+  if (!value) return null
+
+  const secret = getSessionSecret()
+  if (!secret) return null
+
+  const lastDot = value.lastIndexOf('.')
+  if (lastDot <= 0) return null
+
+  const payload = value.slice(0, lastDot)
+  const providedMac = value.slice(lastDot + 1)
+
+  const match = /^([gu]):([A-Za-z0-9_-]{8,64})$/.exec(payload)
+  if (!match || !/^[0-9a-f]{64}$/.test(providedMac)) {
+    return null
+  }
+
+  const provided = Buffer.from(providedMac, 'utf8')
+  const expected = Buffer.from(hmac(payload, secret), 'utf8')
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+    return null
+  }
+
+  return match[1] === 'g'
+    ? { kind: 'guest', guestKey: match[2] }
+    : { kind: 'user', userId: match[2] }
+}
+
+export { SESSION_COOKIE_NAME, GUEST_COOKIE_NAME, USER_COOKIE_NAME }

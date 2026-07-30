@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service';
 import { RevenueDistribution } from '@/domains/payments/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/effects';
 
 interface RevenueForecastProps {
   writerCoinId: string;

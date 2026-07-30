@@ -37,6 +37,8 @@ interface GameplayScreenProps {
   availableThemes: any[]
   generateAIPromptSuggestions: (content: string) => string[]
   handleAIPromptSelect: (prompt: string) => void
+  // Embed mode: no in-iframe navigation to frame-denied pages
+  embedded?: boolean
 }
 
 export function GameplayScreen({
@@ -69,6 +71,7 @@ export function GameplayScreen({
   generateAIPromptSuggestions,
    
   handleAIPromptSelect,
+  embedded = false,
 }: GameplayScreenProps) {
 
   const handleShare = async () => {
@@ -276,10 +279,22 @@ export function GameplayScreen({
 
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
-              <button onClick={() => router.push('/games')} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronDown className="w-3.5 h-3.5" />
-                Back to Games
-              </button>
+              {embedded ? (
+                <a
+                  href={`/games/${game.slug}?utm_source=embed&utm_campaign=${game.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                  Open on WritersArcade
+                </a>
+              ) : (
+                <button onClick={() => router.push('/games')} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                  Back to Games
+                </button>
+              )}
               {!canAddMorePanels && !isGeneratingEpilogue ? (
                 <>
                   <button onClick={handleShare} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-colors">

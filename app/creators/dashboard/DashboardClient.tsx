@@ -417,26 +417,34 @@ function RecentGamesSection({ games }: { games: CreatorStudioSummary['games']['r
       ) : (
         <div className="space-y-2">
           {games.map((game) => (
-            <Link
+            <div
               key={game.id}
-              href={`/games/${game.slug}`}
               className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 hover:border-purple-500/40 transition-colors"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                <Gamepad2 className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground truncate">
-                    {game.title}
-                  </span>
-                  <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">
-                    {game.genre}
-                  </Badge>
+              <Link href={`/games/${game.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  <Gamepad2 className="h-4 w-4" />
                 </div>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground truncate">
+                      {game.title}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">
+                      {game.genre}
+                    </Badge>
+                  </div>
+                </div>
+              </Link>
+              <Link
+                href={`/games/${game.slug}/insights`}
+                className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+                title="Resonance insights"
+              >
+                Insights
+              </Link>
               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-            </Link>
+            </div>
           ))}
         </div>
       )}

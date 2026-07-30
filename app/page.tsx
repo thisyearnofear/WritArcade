@@ -136,7 +136,7 @@ function WriterTicker() {
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
-  const { showOnboarding, dismissOnboarding } = useOnboarding()
+  const { showOnboarding, dismissOnboarding } = useOnboarding('welcome')
   const gameCount = useGameCount()
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
   const featuredLoadedRef = useRef(false)

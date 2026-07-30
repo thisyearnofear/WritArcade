@@ -441,12 +441,14 @@ export class GameDatabaseService {
         // Plays in the last 24 hours
         prisma.gamePlayEvent.count({
           where: {
+            type: 'completed',
             playedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
           },
         }),
         // Plays in the last 7 days
         prisma.gamePlayEvent.count({
           where: {
+            type: 'completed',
             playedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
           },
         }),
@@ -489,6 +491,7 @@ export class GameDatabaseService {
       const events = await prisma.gamePlayEvent.findMany({
         where: {
           gameId: game.id,
+          type: 'completed',
           playedAt: { gte: thirtyDaysAgo },
         },
         select: { playedAt: true },

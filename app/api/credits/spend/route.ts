@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { getActor } from '@/services/auth'
 import { z } from 'zod'
 
 const spendSchema = z.object({
-  walletAddress: z.string().min(1),
   action: z.enum(['generate-game', 'mint-nft', 'play-wordle']),
   gameId: z.string().optional(),
 })
@@ -13,24 +14,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validated = spendSchema.parse(body)
-    const { walletAddress, action } = validated
+    const { action } = validated
+
+    // Identity comes from the signed session cookie, never the request body.
+    const actor = await getActor()
+    if (!actor) {
+      return NextResponse.json(
+        { error: 'Sign in to spend credits.' },
+        { status: 401 }
+      )
+    }
+    const user = actor.user
 
     const cost = CREDITS_CONFIG.cost[action]
     if (!cost) {
       return NextResponse.json(
         { error: `Unknown action: ${action}` },
         { status: 400 }
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { walletAddress: walletAddress.toLowerCase() },
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found. Connect your wallet first.' },
-        { status: 404 }
       )
     }
 
@@ -45,7 +45,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const [updatedUser] = await prisma.$transaction([
+    // Sentinel hash: never collides with real 0x tx hashes, satisfies the
+    // unique constraint, and lets the generate route verify credits funding
+    // through the same Payment lookup as on-chain payments.
+    const sentinelHash = `credits:${randomBytes(16).toString('hex')}`
+
+    const [updatedUser, , payment] = await prisma.$transaction([
       prisma.user.update({
         where: { id: user.id },
         data: { credits: { decrement: cost } },
@@ -59,6 +64,18 @@ export async function POST(request: NextRequest) {
           completedAt: new Date(),
         },
       }),
+      prisma.payment.create({
+        data: {
+          transactionHash: sentinelHash,
+          action,
+          amount: cost,
+          status: 'verified',
+          verifiedAt: new Date(),
+          writerCoinId: 'credits',
+          userId: user.id,
+          walletAddress: user.walletAddress ?? null,
+        },
+      }),
     ])
 
     return NextResponse.json({
@@ -67,6 +84,7 @@ export async function POST(request: NextRequest) {
         creditsRemaining: updatedUser.credits,
         cost,
         action,
+        paymentId: payment.id,
         message: `Paid ${cost} credits for ${action}`,
       },
     })

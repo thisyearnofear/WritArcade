@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Gamepad2, PenTool, Sparkles, Library } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useIsActive } from '@/hooks/useIsActive';
@@ -17,6 +18,9 @@ const navItems = [
 
 export function MobileBottomNav() {
   const isActive = useIsActive();
+  const pathname = usePathname();
+
+  if (pathname?.startsWith('/embed')) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border md:hidden z-50">

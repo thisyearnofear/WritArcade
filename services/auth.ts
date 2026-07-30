@@ -1,7 +1,14 @@
 
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/database'
-import { SESSION_COOKIE_NAME, verifySessionValue } from '@/services/session'
+import {
+  SESSION_COOKIE_NAME,
+  GUEST_COOKIE_NAME,
+  USER_COOKIE_NAME,
+  verifySessionValue,
+  verifySubject,
+} from '@/services/session'
+import type { User } from '@prisma/client'
 
 export interface AuthUser {
   id: string
@@ -12,6 +19,13 @@ export interface AuthUser {
   isAdmin: boolean
   // Note: username, avatar, bio fetched from Farcaster at runtime
   // Use getFarcasterProfile(walletAddress) in components
+}
+
+export type ActorIdentity = 'wallet' | 'email' | 'guest'
+
+export interface Actor {
+  user: User
+  identity: ActorIdentity
 }
 
 /**
@@ -32,7 +46,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       where: { walletAddress: { equals: walletAddress, mode: 'insensitive' } },
     })
 
-    if (!user) {
+    if (!user || !user.walletAddress) {
       return null
     }
 
@@ -47,6 +61,41 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   } catch (error) {
     console.error('Get current user error:', error)
+    return null
+  }
+}
+
+/**
+ * Resolve the current actor across all identity kinds.
+ * Precedence: wallet session → email user session → guest session.
+ */
+export async function getActor(): Promise<Actor | null> {
+  try {
+    const cookieStore = await cookies()
+
+    const walletAddress = verifySessionValue(cookieStore.get(SESSION_COOKIE_NAME)?.value)
+    if (walletAddress) {
+      const user = await prisma.user.findFirst({
+        where: { walletAddress: { equals: walletAddress, mode: 'insensitive' } },
+      })
+      if (user) return { user, identity: 'wallet' }
+    }
+
+    const userSubject = verifySubject(cookieStore.get(USER_COOKIE_NAME)?.value)
+    if (userSubject?.kind === 'user') {
+      const user = await prisma.user.findUnique({ where: { id: userSubject.userId } })
+      if (user) return { user, identity: 'email' }
+    }
+
+    const guestSubject = verifySubject(cookieStore.get(GUEST_COOKIE_NAME)?.value)
+    if (guestSubject?.kind === 'guest') {
+      const user = await prisma.user.findUnique({ where: { guestKey: guestSubject.guestKey } })
+      if (user) return { user, identity: 'guest' }
+    }
+
+    return null
+  } catch (error) {
+    console.error('Get actor error:', error)
     return null
   }
 }

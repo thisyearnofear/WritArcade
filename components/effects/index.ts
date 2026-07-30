@@ -12,7 +12,4 @@ export { AnimatedText, StreamingTypewriter, GradientText, RevealText, CountUp } 
 export { PretextContainer, useTextLayout } from './PretextLayout'
 
 // Skeleton Loaders
-export { SkeletonShimmer, CardSkeleton, GridSkeleton } from './SkeletonShimmer'
-
-// Page Transitions
-export { PageTransition, StaggerContainer, StaggerItem, FadeIn, ScaleIn, SlideIn } from './PageTransition'
+export { SkeletonShimmer, CardSkeleton, GridSkeleton, ShimmerBox as Skeleton } from './SkeletonShimmer'

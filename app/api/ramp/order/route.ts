@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createOrder } from '@/lib/etherfuse'
+import { getActor } from '@/services/auth'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 
 const orderSchema = z.object({
   quoteId: z.string().min(1),
-  walletAddress: z.string().min(1),
   fiatAmount: z.number().positive(),
   fiatCurrency: z.string().default('USD'),
   redirectUrl: z.string().optional(),
@@ -17,6 +17,37 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = orderSchema.parse(body)
 
+    // Identity comes from the signed session cookie, never the request body.
+    const actor = await getActor()
+    if (!actor) {
+      return NextResponse.json(
+        { error: 'Sign in to buy credits.' },
+        { status: 401 }
+      )
+    }
+    const user = actor.user
+
+    // Anonymous guests must attach an email before purchasing so the
+    // purchase survives cookie loss (magic-link recovery).
+    if (!user.walletAddress && !user.email) {
+      return NextResponse.json(
+        { error: 'Add an email to buy credits.', code: 'EMAIL_REQUIRED' },
+        { status: 409 }
+      )
+    }
+
+    // Settlement address: buyer wallet when present, otherwise the platform
+    // treasury (credits are ledger entries; the crypto leg lands with us).
+    const settlementAddress =
+      user.walletAddress || process.env.ETHERFUSE_TREASURY_ADDRESS
+    if (!settlementAddress) {
+      console.error('[Ramp Order] ETHERFUSE_TREASURY_ADDRESS not configured for wallet-less purchase')
+      return NextResponse.json(
+        { error: 'Credit purchases are temporarily unavailable.' },
+        { status: 503 }
+      )
+    }
+
     const idempotencyKey = uuidv4()
     const redirectUrl =
       validated.redirectUrl ||
@@ -26,24 +57,13 @@ export async function POST(request: NextRequest) {
 
     const order = await createOrder({
       quoteId: validated.quoteId,
-      walletAddress: validated.walletAddress,
+      walletAddress: settlementAddress,
       redirectUrl,
       webhookUrl,
       idempotencyKey,
     })
 
     const creditAmount = Math.floor(validated.fiatAmount / 10)
-
-    const user = await prisma.user.findUnique({
-      where: { walletAddress: validated.walletAddress.toLowerCase() },
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found. Connect your wallet first.' },
-        { status: 404 }
-      )
-    }
 
     await prisma.creditTransaction.create({
       data: {

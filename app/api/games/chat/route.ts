@@ -8,12 +8,14 @@ const chatSchema = z.object({
   sessionId: z.string().uuid(),
   gameId: z.string(),
   message: z.string().min(1),
+  // Which of the panel's 4 enumerated options was clicked (resonance analytics)
+  optionId: z.number().int().min(1).max(4).optional(),
 })
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { sessionId, gameId, message } = chatSchema.parse(body)
+    const { sessionId, gameId, message, optionId } = chatSchema.parse(body)
     
     // Get session and game with article context
     const session = await prisma.session.findFirst({
@@ -68,6 +70,25 @@ export async function POST(request: NextRequest) {
     const assistantMessageCount = chatHistory.filter(m => m.role === 'assistant').length
     const currentPanelNumber = assistantMessageCount + 1
     const maxPanels = 5 // Match MAX_COMIC_PANELS from frontend
+
+    // Resonance: record which framing the player chose on the panel they
+    // just answered. Directional metric — non-blocking.
+    if (optionId) {
+      try {
+        await prisma.gamePlayEvent.create({
+          data: {
+            gameId,
+            type: 'choice',
+            sessionId,
+            panelIndex: assistantMessageCount,
+            choiceIndex: optionId,
+            choiceText: message.slice(0, 500),
+          },
+        })
+      } catch (eventError) {
+        console.error('Choice event write failed (non-blocking):', eventError)
+      }
+    }
     
     // CRITICAL: Prevent generation beyond max panels
     if (assistantMessageCount >= maxPanels) {

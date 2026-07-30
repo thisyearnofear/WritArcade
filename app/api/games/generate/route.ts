@@ -6,20 +6,24 @@ import { ContentProcessorService } from '@/domains/content/services/content-proc
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { vaultWordleAnswer } from '@/domains/story/services/cdr.service'
 import type { GameGenerationResponse } from '@/domains/games/types'
-import { optionalAuth } from '@/services/auth'
+import { getActor } from '@/services/auth'
+import { DemoEntitlementService, FREE_DEMO_OWNERSHIP_SOURCE } from '@/domains/games/services/demo-entitlement.service'
 import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 import { config, logger } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
 import { getMintConfig, getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
+import { buildMarketingCopyPrompt } from '@/domains/games/services/generation-prompts'
 import { deduplicateGeneration, buildGenerationCacheKey } from '@/lib/ai-cache'
 import { reportServerError } from '@/services/error-reporting'
 
 // Request validation schema
 const generateGameSchema = z.object({
-  promptText: z.string().optional(),
+  promptText: z.string().max(20_000).optional(),
   url: z.string().url().optional(),
+  // "marketing-copy" wraps promptText in a marketing-framing preamble (studio flow)
+  contentType: z.enum(['marketing-copy']).optional(),
   // Optional game mode: "story" (default) or "wordle" (article-derived word puzzle)
   mode: z.enum(['story', 'wordle']).optional(),
   customization: z.object({
@@ -55,9 +59,10 @@ export async function POST(request: NextRequest) {
     const validatedData = generateGameSchema.parse(body)
     const mode = validatedData.mode ?? 'story'
 
-    // Get current user (optional)
-    const user = await optionalAuth()
-    console.log('User auth result:', { userId: user?.id, userWallet: user?.walletAddress })
+    // Resolve current actor (wallet, email, or guest — all optional)
+    const actor = await getActor()
+    const user = actor?.user ?? null
+    console.log('User auth result:', { userId: user?.id, identity: actor?.identity, userWallet: user?.walletAddress })
 
     // Get user AI preferences
     const userPreferences = await UserAIPreferenceService.getUserPreferences()
@@ -70,15 +75,26 @@ export async function POST(request: NextRequest) {
         : null
 
     // Enforce payment for story mode before content extraction or AI generation.
+    // Exception: one free demo game per actor (marketer tier entry point).
+    let isFreeDemo = false
     if (mode === 'story' && !fundingLookup) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Story mode requires payment. Complete payment before generating.',
-          code: 'PAYMENT_REQUIRED',
-        },
-        { status: 402 }
-      )
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+      const entitled =
+        actor &&
+        DemoEntitlementService.checkBurstLimit(actor.user.id, ip) &&
+        (await DemoEntitlementService.canGenerateFreeGame(actor.user.id))
+
+      if (!entitled) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Story mode requires payment. Complete payment before generating.',
+            code: 'PAYMENT_REQUIRED',
+          },
+          { status: 402 }
+        )
+      }
+      isFreeDemo = true
     }
 
     const fundingContext = fundingLookup
@@ -113,6 +129,7 @@ export async function POST(request: NextRequest) {
       mode === 'story' &&
       validatedData.url &&
       canonicalWriterCoinId &&
+      canonicalWriterCoinId !== 'credits' &&
       !canonicalWriterCoinId.startsWith('musd') &&
       !validateArticleUrl(validatedData.url, canonicalWriterCoinId)
     ) {
@@ -148,6 +165,13 @@ export async function POST(request: NextRequest) {
 
     let processedPrompt = validatedData.promptText || ''
     let processedContent: import('@/domains/content/services/content-processor.service').ProcessedContent | undefined
+
+    // Marketing copy (studio flow): clean the pasted markdown and frame it
+    // for resonance-testing narrative generation.
+    if (validatedData.contentType === 'marketing-copy' && validatedData.promptText) {
+      const cleaned = await ContentProcessorService.processMarkdown(validatedData.promptText)
+      processedPrompt = buildMarketingCopyPrompt(cleaned)
+    }
 
     // If URL provided, extract and process content
     if (validatedData.url && ContentProcessorService.isValidUrl(validatedData.url)) {
@@ -291,9 +315,12 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     }
 
     const ownership = GameFundingService.buildOwnership(fundingContext, {
-      siweWallet: user?.walletAddress,
+      siweWallet: actor?.identity === 'wallet' ? actor.user.walletAddress : undefined,
       connectedWallet: validatedData.wallet,
     })
+    if (isFreeDemo) {
+      ownership.ownershipSource = FREE_DEMO_OWNERSHIP_SOURCE
+    }
 
     // Save to database using enhanced database service
     const miniAppData = processedContent ? {

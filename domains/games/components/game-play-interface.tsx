@@ -127,7 +127,11 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     })
 
     // Increment play count on the server
-    fetch(`/api/games/${liveGame.slug}/play`, { method: 'PATCH' }).catch(() => {
+    fetch(`/api/games/${liveGame.slug}/play`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: session.sessionId }),
+    }).catch(() => {
       // Non-critical — don't block the user if this fails
     })
   }

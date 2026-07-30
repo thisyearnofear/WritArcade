@@ -28,6 +28,26 @@ const nextConfig = {
     '@rainbow-me/rainbowkit',
     '@wagmi/connectors',
   ],
+  async headers() {
+    return [
+      {
+        // /embed is the only frameable surface — the customer-site iframe player
+        source: '/embed/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: 'frame-ancestors *' },
+        ],
+      },
+      {
+        // Everything else denies framing (clickjacking hardening).
+        // /mini-app is exempt — Farcaster clients render it inside an iframe/webview.
+        source: '/((?!embed|mini-app).*)',
+        headers: [
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+          { key: 'X-Frame-Options', value: 'DENY' },
+        ],
+      },
+    ]
+  },
   async rewrites() {
     return {
       // beforeFiles rewrites run before Next.js API routes — ensures Hetzner backend takes priority

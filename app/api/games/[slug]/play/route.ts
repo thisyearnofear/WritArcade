@@ -7,11 +7,17 @@ import { prisma } from '@/lib/database'
  * Called when a play session completes.
  */
 export async function PATCH(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
     const { slug } = params
+
+    // Optional sessionId ties the completion to its started/choice events
+    const sessionId: string | null = await request
+      .json()
+      .then((body) => (typeof body?.sessionId === 'string' ? body.sessionId.slice(0, 64) : null))
+      .catch(() => null)
 
     const game = await prisma.game.update({
       where: { slug },
@@ -25,6 +31,8 @@ export async function PATCH(
     await prisma.gamePlayEvent.create({
       data: {
         gameId: game.id,
+        type: 'completed',
+        sessionId,
         playedAt: new Date(),
       },
     })

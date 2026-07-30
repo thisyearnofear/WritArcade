@@ -24,11 +24,15 @@ export function BuyCreditsButton() {
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [widgetUrl, setWidgetUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [needsEmail, setNeedsEmail] = useState(false)
+  const [email, setEmail] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
 
   useEffect(() => {
-    if (!address) return
     setLoading(true)
-    fetch(`/api/ramp/credits?wallet=${encodeURIComponent(address)}`)
+    // Wallet users are keyed by address; guests/email users by session cookie.
+    const query = address ? `?wallet=${encodeURIComponent(address)}` : ''
+    fetch(`/api/ramp/credits${query}`)
       .then(r => r.json())
       .then(data => {
         if (data.success) setCredits(data.data)
@@ -38,7 +42,6 @@ export function BuyCreditsButton() {
   }, [address])
 
   const handleBuyCredits = async () => {
-    if (!address) return
     setQuoteLoading(true)
     setError(null)
     try {
@@ -55,11 +58,14 @@ export function BuyCreditsButton() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quoteId: quoteData.data.quoteId,
-          walletAddress: address,
           fiatAmount: selectedAmount,
         }),
       })
       const orderData = await orderRes.json()
+      if (orderRes.status === 409 && orderData.code === 'EMAIL_REQUIRED') {
+        setNeedsEmail(true)
+        return
+      }
       if (!orderData.success) throw new Error(orderData.error)
 
       if (orderData.data.widgetUrl) {
@@ -72,7 +78,32 @@ export function BuyCreditsButton() {
     }
   }
 
-  if (!isConnected) return null
+  const handleSendMagicLink = async () => {
+    setQuoteLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/auth/email/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          redirect: typeof window !== 'undefined' ? window.location.pathname : '/studio',
+        }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error || 'Failed to send link')
+      setEmailSent(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send link')
+    } finally {
+      setQuoteLoading(false)
+    }
+  }
+
+  // Show for wallet users and for no-wallet actors with a credit balance
+  // (guests/email users from the studio flow). Fresh anonymous visitors with
+  // no session see nothing until they generate their first game.
+  if (!isConnected && credits === null) return null
 
   return (
     <>
@@ -128,6 +159,50 @@ export function BuyCreditsButton() {
                     className="text-sm text-muted-foreground hover:text-foreground"
                   >
                     Close
+                  </button>
+                </div>
+              ) : needsEmail ? (
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-foreground">Add your email first</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Your credits need a home that survives cleared cookies.
+                      We'll send you a sign-in link — no password, no wallet.
+                    </p>
+                  </div>
+                  {emailSent ? (
+                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-foreground">
+                      Check your inbox — click the link, then come back and buy credits.
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full rounded-lg border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      />
+                      {error && <p className="text-xs text-red-400">{error}</p>}
+                      <Button
+                        onClick={handleSendMagicLink}
+                        disabled={quoteLoading || !email.includes('@')}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+                        size="lg"
+                      >
+                        {quoteLoading ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+                        ) : (
+                          'Send sign-in link'
+                        )}
+                      </Button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => { setNeedsEmail(false); setEmailSent(false); setError(null) }}
+                    className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Back
                   </button>
                 </div>
               ) : (

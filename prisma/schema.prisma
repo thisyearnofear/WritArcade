@@ -12,7 +12,9 @@ datasource db {
 // Social profiles (username, avatar, bio) fetched from Farcaster at runtime
 model User {
   id            String   @id @default(cuid())
-  walletAddress String   @unique // Primary identifier
+  walletAddress String?  @unique // Wallet identity (optional — guests/email users have none)
+  email         String?  @unique // Magic-link identity
+  guestKey      String?  @unique // Anonymous guest identity (random key in signed cookie)
 
   // Game generation preferences (user-specific settings)
   preferredModel String  @default("gpt-4o-mini")
@@ -177,15 +179,24 @@ model Game {
   @@map("games")
 }
 
-// Play event log for trend analytics — one row per play completion
+// Resonance event log — 'started' | 'choice' | 'completed' (default keeps legacy rows correct)
 model GamePlayEvent {
   id     String   @id @default(cuid())
   gameId String
   game   Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   playedAt DateTime @default(now())
 
+  type        String  @default("completed")
+  sessionId   String? // Play-session UUID (Session.sessionId)
+  panelIndex  Int?    // 1-5, for 'choice'
+  choiceIndex Int?    // 1-4, for 'choice'
+  choiceText  String? @db.Text
+  referrer    String? // ?ref= attribution from embeds
+  embedded    Boolean @default(false)
+
   @@index([gameId, playedAt])
   @@index([playedAt])
+  @@index([gameId, type, playedAt])
   @@map("game_play_events")
 }
 

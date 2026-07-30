@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { SiweMessage, type SiweMessage as SiweMessageType } from 'siwe'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/database'
-import { SESSION_COOKIE_NAME, sessionCookieOptions, signSessionValue } from '@/services/session'
+import { SESSION_COOKIE_NAME, GUEST_COOKIE_NAME, USER_COOKIE_NAME, sessionCookieOptions, signSessionValue } from '@/services/session'
+import { getActor } from '@/services/auth'
 
 export async function POST(req: Request) {
     let message: string | SiweMessageType | undefined;
@@ -46,21 +47,59 @@ export async function POST(req: Request) {
         // User is authenticated!
         const walletAddress = fields.address
 
-        // Upsert user in database
-        const user = await prisma.user.upsert({
-            where: { walletAddress },
-            update: { updatedAt: new Date() },
-            create: {
-                walletAddress,
-                preferredModel: 'gpt-4o-mini',
-            },
-        })
+        // Adopt or merge any current guest/email identity so games and
+        // credits survive the upgrade to a wallet account.
+        const actor = await getActor()
+        let user
+        if (actor && !actor.user.walletAddress) {
+            const existingWalletUser = await prisma.user.findUnique({ where: { walletAddress } })
+            if (!existingWalletUser) {
+                user = await prisma.user.update({
+                    where: { id: actor.user.id },
+                    data: { walletAddress },
+                })
+            } else {
+                user = await prisma.$transaction(async (tx) => {
+                    await tx.game.updateMany({
+                        where: { userId: actor.user.id },
+                        data: { userId: existingWalletUser.id },
+                    })
+                    await tx.creditTransaction.updateMany({
+                        where: { userId: actor.user.id },
+                        data: { userId: existingWalletUser.id },
+                    })
+                    const merged = await tx.user.update({
+                        where: { id: existingWalletUser.id },
+                        data: {
+                            credits: { increment: actor.user.credits },
+                            totalCreditsPurchased: { increment: actor.user.totalCreditsPurchased },
+                            email: existingWalletUser.email ?? actor.user.email,
+                        },
+                    })
+                    await tx.user.delete({ where: { id: actor.user.id } })
+                    return merged
+                })
+            }
+        } else {
+            user = await prisma.user.upsert({
+                where: { walletAddress },
+                update: { updatedAt: new Date() },
+                create: {
+                    walletAddress,
+                    preferredModel: 'gpt-4o-mini',
+                },
+            })
+        }
 
         // Create session
         const response = NextResponse.json({ success: true, user })
 
         // Set the app's main session cookie (HMAC-signed so it can't be forged)
         response.cookies.set(SESSION_COOKIE_NAME, signSessionValue(walletAddress), sessionCookieOptions())
+
+        // Wallet session supersedes guest/email sessions
+        response.cookies.delete(GUEST_COOKIE_NAME)
+        response.cookies.delete(USER_COOKIE_NAME)
 
         // Clear nonce
         response.cookies.delete('siwe-nonce')

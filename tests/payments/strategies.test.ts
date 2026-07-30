@@ -265,11 +265,14 @@ describe('WriterCoinStrategy', () => {
         action: 'generate-game',
         amount: '100',
       })
+      // Attach the assertion immediately so the rejection is handled while
+      // we advance the fake timers (avoids unhandled rejection warning).
+      const assertion = expect(executePromise).rejects.toThrow('Server error')
 
       // Advance through all 3 verify delays (3s * 3 = 9s) + some buffer
       await vi.advanceTimersByTimeAsync(10000)
 
-      await expect(executePromise).rejects.toThrow('Server error')
+      await assertion
     })
   })
 })

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Game } from '../types'
-import { Play, Zap, Crown, Trash2, Eye, EyeOff, Settings, Share2 } from 'lucide-react'
+import { Play, Zap, Crown, Trash2, Eye, EyeOff, Settings, Share2, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAccount } from 'wagmi'
 import { isAdmin } from '@/lib/constants'
@@ -249,6 +249,17 @@ export function GameCardEnhanced({
                 label="Share"
                 title="Share game"
               />
+
+              {isUserGame && (
+                <Link
+                  href={`/games/${game.slug}/insights`}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  title="Resonance insights"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Insights
+                </Link>
+              )}
 
               {isUserGame && (
                 <ActionButton

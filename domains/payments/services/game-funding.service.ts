@@ -4,8 +4,9 @@ import type { Game } from '@/domains/games/types'
 export interface GameFundingContext {
   paymentId: string
   writerCoinId: string
-  walletAddress: string
-  ownershipSource: 'payment_wallet'
+  walletAddress: string | null
+  userId?: string | null
+  ownershipSource: 'payment_wallet' | 'credits_user'
 }
 
 type PaymentLookup =
@@ -24,6 +25,7 @@ export class GameFundingService {
         status: true,
         writerCoinId: true,
         walletAddress: true,
+        userId: true,
         user: { select: { walletAddress: true } },
       },
     })
@@ -37,7 +39,20 @@ export class GameFundingService {
       return null
     }
 
-    const walletAddress = payment.walletAddress || payment.user?.walletAddress
+    const walletAddress = payment.walletAddress || payment.user?.walletAddress || null
+
+    // Credits-funded generations have no wallet; ownership rides on games.userId.
+    if (payment.writerCoinId === 'credits') {
+      if (!payment.userId) return null
+      return {
+        paymentId: payment.id,
+        writerCoinId: payment.writerCoinId,
+        walletAddress,
+        userId: payment.userId,
+        ownershipSource: 'credits_user',
+      }
+    }
+
     if (!walletAddress) return null
 
     return {
@@ -80,10 +95,18 @@ export class GameFundingService {
     fallback: { siweWallet?: string | null; connectedWallet?: string | null }
   ): Pick<Game, 'ownerWallet' | 'ownershipSource' | 'creatorWallet' | 'paymentId'> {
     if (funding) {
+      if (funding.ownershipSource === 'credits_user') {
+        const wallet = funding.walletAddress || fallback.siweWallet || undefined
+        return {
+          ...(wallet ? { ownerWallet: wallet, creatorWallet: wallet } : {}),
+          ownershipSource: funding.ownershipSource,
+          paymentId: funding.paymentId,
+        }
+      }
       return {
-        ownerWallet: funding.walletAddress,
+        ownerWallet: funding.walletAddress ?? undefined,
         ownershipSource: funding.ownershipSource,
-        creatorWallet: funding.walletAddress,
+        creatorWallet: funding.walletAddress ?? undefined,
         paymentId: funding.paymentId,
       }
     }

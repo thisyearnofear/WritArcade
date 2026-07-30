@@ -42,7 +42,7 @@ export interface Game {
 
   // Attribution data - preserves source material author
   ownerWallet?: string
-  ownershipSource?: 'payment_wallet' | 'siwe_user' | 'legacy_creator_wallet'
+  ownershipSource?: 'payment_wallet' | 'siwe_user' | 'legacy_creator_wallet' | 'credits_user' | 'free_demo'
   creatorWallet?: string
   authorWallet?: string
   authorParagraphUsername?: string
@@ -179,7 +179,7 @@ export interface GameGenerationResponse {
   // Optional game mode metadata ("story" | "wordle")
   mode?: GameMode
   ownerWallet?: string
-  ownershipSource?: 'payment_wallet' | 'siwe_user' | 'legacy_creator_wallet'
+  ownershipSource?: 'payment_wallet' | 'siwe_user' | 'legacy_creator_wallet' | 'credits_user' | 'free_demo'
   creatorWallet?: string
   paymentId?: string
   imageUrl?: string | null

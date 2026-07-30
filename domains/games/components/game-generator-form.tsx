@@ -363,9 +363,15 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               ...(hasPaymentProof && {
                 payment: {
                   paymentId: currentPaymentId,
-                  writerCoinId: isMusdPath ? 'musd-testnet' : writerCoin.id,
+                  // Credits payments use the server-issued paymentId; their
+                  // sentinel hash is not a 0x tx hash and must not be sent.
+                  writerCoinId: currentPaymentTxHash?.startsWith('credits:')
+                    ? 'credits'
+                    : isMusdPath ? 'musd-testnet' : writerCoin.id,
                   paymentPath,
-                  transactionHash: currentPaymentTxHash,
+                  transactionHash: currentPaymentTxHash?.startsWith('0x')
+                    ? currentPaymentTxHash
+                    : undefined,
                 },
               }),
               _attempt: attempt,
