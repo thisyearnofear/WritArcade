@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Share2, Twitter, MessageCircle, Linkedin } from 'lucide-react'
 import { socialShareService, type ComicShareData } from '@/lib/services/social-share.service'
 import { trackEvent } from '@/services/analytics'
+import { useMobileOptimizations } from '@/hooks/useMobileOptimizations'
 
 interface ShareDropdownProps {
   data: ComicShareData
@@ -29,6 +30,7 @@ export function ShareDropdown({
 }: ShareDropdownProps) {
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const { isMobile } = useMobileOptimizations()
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -71,13 +73,21 @@ export function ShareDropdown({
     setShowMenu(false)
   }
 
+  const handleButtonClick = () => {
+    if (isMobile && typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      handleGenericShare()
+      return
+    }
+    setShowMenu((prev) => !prev)
+  }
+
   return (
     <div className={`relative ${className}`} ref={menuRef}>
       <Button
         variant={variant}
         size={size}
         className={`gap-2 ${buttonClassName}`}
-        onClick={() => setShowMenu(!showMenu)}
+        onClick={handleButtonClick}
         title="Share your comic"
       >
         <Share2 className="w-4 h-4" />

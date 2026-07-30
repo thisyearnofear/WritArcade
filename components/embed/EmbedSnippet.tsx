@@ -47,7 +47,11 @@ export function EmbedSnippet({ slug }: EmbedSnippetProps) {
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto rounded-lg bg-black/60 p-3 text-xs leading-relaxed text-white/70">
+      <pre
+        onClick={handleCopy}
+        title="Click to copy"
+        className="overflow-x-auto rounded-lg bg-black/60 p-3 text-xs leading-relaxed text-white/70 cursor-pointer transition-colors hover:bg-black/50"
+      >
         <code>{snippet}</code>
       </pre>
       <p className="mt-2 text-xs text-muted-foreground">

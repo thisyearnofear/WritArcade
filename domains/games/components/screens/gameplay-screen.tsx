@@ -151,9 +151,73 @@ export function GameplayScreen({
             </div>
           </div>
         ) : (
-          <div className="w-full flex flex-col items-center justify-center min-h-full p-4 md:p-8 py-6 md:py-8 animate-slide-in">
+          <div className="w-full flex flex-col lg:grid lg:grid-cols-[280px_1fr] lg:gap-8 min-h-full p-4 md:p-8 py-6 md:py-8 animate-slide-in">
+            {/* Desktop sidebar */}
+            <aside className="hidden lg:flex lg:flex-col gap-6 sticky top-24 h-fit">
+              <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+                <h3 className="text-sm font-bold text-white mb-3">Story Progress</h3>
+                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min((assistantMessageCount / MAX_COMIC_PANELS) * 100, 100)}%`,
+                      backgroundColor: game.primaryColor || '#8b5cf6',
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {assistantMessageCount >= MAX_COMIC_PANELS ? 'Story complete' : `Panel ${assistantMessageCount} of ${MAX_COMIC_PANELS}`}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+                <h3 className="text-sm font-bold text-white mb-2">World Mood</h3>
+                <MoodIndicator mood={worldMood} />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Your choices shift the story's emotional tone.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+                <h3 className="text-sm font-bold text-white mb-2">Keyboard Shortcuts</h3>
+                <ul className="space-y-2 text-xs text-muted-foreground">
+                  <li>
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-white/70 mr-1">1-3</kbd>
+                    Choose option
+                  </li>
+                  <li>
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-white/70 mr-1">V</kbd>
+                    View comic
+                  </li>
+                  <li>
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-white/70 mr-1">S</kbd>
+                    Share
+                  </li>
+                </ul>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+                <h3 className="text-sm font-bold text-white mb-3">Story Map</h3>
+                <div className="flex flex-wrap gap-2">
+                  {messages.filter(m => m.role === 'assistant').map((m, idx) => (
+                    <div
+                      key={m.id}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${
+                        idx === assistantMessageCount - 1
+                          ? 'bg-white/20 border-white/40 text-white'
+                          : 'bg-white/5 border-white/10 text-muted-foreground'
+                      }`}
+                    >
+                      {idx + 1}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            <main className="flex flex-col items-center w-full lg:col-span-1">
             {/* Story Progress Bar */}
-            <div className="w-full max-w-5xl mb-8 pb-6 border-b border-white/10">
+            <div className="w-full max-w-5xl mb-8 pb-6 border-b border-white/10 lg:hidden">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Story Progress</p>
                 <div className="flex items-center gap-4">
@@ -239,7 +303,8 @@ export function GameplayScreen({
               </div>
 
             <div ref={messagesEndRef} className="h-8" />
-          </div>
+          </main>
+        </div>
         )}
       </div>
 

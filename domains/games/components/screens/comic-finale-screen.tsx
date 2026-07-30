@@ -8,20 +8,25 @@ import { Loader2, ArrowRightLeft, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ComicBookFinale, type ComicBookFinalePanelData } from '../comic-book-finale'
 import { PostGameCompletion } from '../post-game-completion'
-import { Game, ChatMessage } from '../../types'
+import { Game } from '../../types'
+import type { ChatEntry } from '../../hooks/use-game-session'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/domains/story/services/story-sdk-client'
-import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG, type PaymentToken } from '@/lib/writerCoins'
+import { type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
+import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG } from '@/lib/writerCoins'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 
 interface ComicFinaleScreenProps {
   game: Game
-  messages: ChatMessage[]
+  messages: ChatEntry[]
   userChoices: Array<{ panelIndex: number; choice: string; timestamp: string }>
   showComicFinale: boolean
   setShowComicFinale: (show: boolean) => void
   isMinting: boolean
-  handleMintComic: (panelData: ComicBookFinalePanelData[], metadata?: any) => Promise<void>
+  handleMintComic: (
+    panelData: ComicBookFinalePanelData[],
+    metadata?: { nftMetadataUri: string; gameMetadataUri: string; creator: GameCreator; author: GameAuthor }
+  ) => Promise<void>
   onArtifactSaved?: (updates: Partial<Game>) => void
   onStoryRegistrationComplete?: (result: { ipId: string; txHash: string }) => void
   handlePanelTextChange: (panelIndex: number, newText: string) => void
@@ -34,7 +39,6 @@ interface ComicFinaleScreenProps {
   isSwitchingChain: boolean
   handleRegisterDerivativeIp: () => Promise<void>
   isRegisteringDerivative: boolean
-  maxPanels: number
   epilogueReflection?: string | null
 }
 
@@ -58,7 +62,6 @@ export function ComicFinaleScreen({
   isSwitchingChain,
   handleRegisterDerivativeIp,
   isRegisteringDerivative,
-  maxPanels,
   epilogueReflection,
 }: ComicFinaleScreenProps) {
   const router = useRouter()
@@ -87,9 +90,11 @@ export function ComicFinaleScreen({
   // Only offer fund button when writer coin exists on Base — no MUSD fallback
   // (MUSD lives on Mezo; cross-chain fallback would require chain switching)
    
-  const fundingToken: PaymentToken | undefined = resolvableCoin
-    ? { type: 'writercoin' as const, coin: resolvableCoin }
-    : undefined
+  const fundingToken = useMemo(() => {
+    return resolvableCoin
+      ? ({ type: 'writercoin' as const, coin: resolvableCoin })
+      : undefined
+  }, [resolvableCoin])
 
   // Formatted cost for the fund button
   const fundCost = resolvableCoin
@@ -176,10 +181,8 @@ export function ComicFinaleScreen({
       return {
         id: message.id,
         narrativeText: message.content,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        imageUrl: (message as any).narrativeImage || null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        imageModel: (message as any).imageModel || 'unknown',
+        imageUrl: message.narrativeImage || null,
+        imageModel: message.imageModel || 'unknown',
         userChoice: nextUserMessage?.content || undefined,
       }
     })

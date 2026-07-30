@@ -110,19 +110,21 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   }
 
   const previouslyIncompleteRef = useRef(true)
-   
+
   const storyComplete = !!session.epilogueReflection || session.assistantMessageCount >= MAX_COMIC_PANELS
-  if (storyComplete && previouslyIncompleteRef.current) {
+
+  useEffect(() => {
+    if (!storyComplete || !previouslyIncompleteRef.current) return
+
     previouslyIncompleteRef.current = false
 
     const panelCount = session.assistantMessageCount
-    const completionTimestamp = Date.now()
 
     trackEvent('story_completed', {
       gameSlug: liveGame.slug,
       panelCount,
       maxPanels: MAX_COMIC_PANELS,
-      completionTimestamp,
+      completionTimestamp: Date.now(),
       epilogueGenerated: !!session.epilogueReflection,
     })
 
@@ -134,7 +136,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     }).catch(() => {
       // Non-critical — don't block the user if this fails
     })
-  }
+  }, [storyComplete, liveGame.slug, session.assistantMessageCount, session.epilogueReflection, session.sessionId])
   const renderEnrichment = () => (
     <GameEnrichment
       gameId={liveGame.id}
@@ -199,7 +201,6 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           isSwitchingChain={blockchain.isSwitchingChain}
           handleRegisterDerivativeIp={blockchain.handleRegisterDerivativeIp}
           isRegisteringDerivative={blockchain.isRegisteringDerivative}
-          maxPanels={MAX_COMIC_PANELS}
           epilogueReflection={session.epilogueReflection}
         />
         {renderEnrichment()}
