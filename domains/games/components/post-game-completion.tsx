@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Gamepad2, Share2, Sparkles, Trophy, BarChart3, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react'
+import { Gamepad2, Sparkles, Trophy, BarChart3, ExternalLink } from 'lucide-react'
 import type { Game, ChatMessage } from '../types'
-import { shareGame } from '@/domains/farcaster/services/farcaster-sharing.service'
+import { ShareDropdown } from '@/components/ui/share-dropdown'
 
 interface PostGameCompletionProps {
   game: Game
@@ -14,8 +14,6 @@ interface PostGameCompletionProps {
 }
 
 export function PostGameCompletion({ game, messages, userChoices }: PostGameCompletionProps) {
-  const [isSharing, setIsSharing] = useState(false)
-  const [shareSuccess, setShareSuccess] = useState(false)
   const [playCount, setPlayCount] = useState<number | null>(null)
 
   // Fetch play count for social proof
@@ -31,18 +29,28 @@ export function PostGameCompletion({ game, messages, userChoices }: PostGameComp
   const panelCount = messages.filter(m => m.role === 'assistant').length
   const totalChoices = userChoices.length
 
-  const handleShare = async () => {
-    setIsSharing(true)
-    try {
-      await shareGame(game)
-      setShareSuccess(true)
-      setTimeout(() => setShareSuccess(false), 3000)
-    } catch {
-      // Sharing failed silently
-    } finally {
-      setIsSharing(false)
-    }
-  }
+  const gameUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/games/${game.slug}`
+    : `/games/${game.slug}`
+
+  const lastChoice = userChoices[userChoices.length - 1]?.choice
+  const truncatedChoice = lastChoice && lastChoice.length > 80 ? `${lastChoice.slice(0, 80)}…` : lastChoice
+  const endingText = truncatedChoice
+    ? `My story ended with: ${truncatedChoice}`
+    : `I just finished "${game.title}" on WritersArcade`
+
+  const shareData = useMemo(
+    () => ({
+      title: game.title,
+      text: endingText,
+      url: gameUrl,
+      genre: game.genre,
+      panelCount,
+      gameTitle: game.title,
+      author: game.authorParagraphUsername || undefined,
+    }),
+    [game.title, game.genre, game.authorParagraphUsername, endingText, gameUrl, panelCount]
+  )
 
   return (
     <motion.div
@@ -98,6 +106,30 @@ export function PostGameCompletion({ game, messages, userChoices }: PostGameComp
         </div>
       </motion.div>
 
+      {/* Viral share card */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
+        className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-5 mb-8"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-white mb-1">Share your ending</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {endingText}
+            </p>
+          </div>
+          <ShareDropdown
+            data={shareData}
+            surface="post_game_completion"
+            variant="default"
+            size="default"
+            buttonClassName="shrink-0 bg-white text-black hover:bg-white/90"
+          />
+        </div>
+      </motion.div>
+
       {/* CTA buttons */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -132,20 +164,13 @@ export function PostGameCompletion({ game, messages, userChoices }: PostGameComp
               More from @{game.authorParagraphUsername}
             </Link>
           )}
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-5 py-3 text-sm font-medium text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all disabled:opacity-60"
+          <Link
+            href="/games"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
           >
-            {isSharing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : shareSuccess ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            ) : (
-              <Share2 className="w-4 h-4" />
-            )}
-            {shareSuccess ? 'Shared!' : isSharing ? 'Sharing...' : 'Share on Farcaster'}
-          </button>
+            <Gamepad2 className="w-4 h-4" />
+            Play another
+          </Link>
         </div>
       </motion.div>
 

@@ -89,6 +89,34 @@
 - ✅ Daily Wordle section on homepage
 - ✅ CDR Hackathon integration (May 27–June 5): store Wordle answers and secret panels in CDR vaults; lazy-load SDK/WASM; gate secret panels by completed gameplay + minted Game NFT ownership
 
+### Phase 18-21: Identity, Resonance & Embeds (July 2026)
+
+A four-phase push to remove wallet friction at the top of the funnel and give creators analytics on how their stories perform.
+
+#### Phase 18 — Progressive Identity ✅
+- Nullable `walletAddress`; new `email` and `guestKey` columns on `User`
+- HMAC-signed cookies for wallet, email, and guest sessions
+- `getActor()` precedence: wallet → email → guest
+- Automatic merge of games, credits, and payments on identity upgrade
+
+#### Phase 19 — Server-Verified Credits & Magic Link ✅
+- Credit balance derived from signed session, not request body
+- `credits:<hash>` sentinel `Payment` rows unify credit and on-chain funding lookups
+- Magic-link email auth via Resend; required at fiat credit purchase time (409 → email link → merge)
+- Guest/email users can buy credits and generate games without a wallet
+
+#### Phase 20 — `/studio` Free Demo ✅
+- `/studio` page: paste marketing copy, pick tone, generate a playable story
+- First story is free; subsequent stories prompt for credits
+- No crypto required to create or play
+
+#### Phase 21 — Resonance, Embeds & Insights ✅
+- `GamePlayEvent` extended with `type`, `sessionId`, `panelIndex`, `choiceIndex`, `choiceText`, `referrer`, `embedded`
+- `/embed/[slug]` wallet-free iframe player with `?ref=` attribution and "Made with WritersArcade" backlink
+- `/games/[slug]/insights` owner dashboard: resonance score, panel funnel, choice splits, referrers, embed snippet
+
+---
+
 ### Phase 1-4: 8.5/10 Product Polish (June 2026)
 
 Complete rewrite of the product foundation across 4 phases:

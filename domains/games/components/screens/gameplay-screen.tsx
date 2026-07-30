@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, ChevronDown, Share2 } from 'lucide-react'
+import { BookOpen, ChevronDown, Share2, Sparkles } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import type { Game, GameplayOption } from '../../types'
@@ -34,7 +34,7 @@ interface GameplayScreenProps {
   epilogueReflection: string | null
   epilogueGenerationFailed: boolean
   // UI Enhancements
-  availableThemes: any[]
+  availableThemes: Array<{ name: string; value: string; label: string; description: string }>
   generateAIPromptSuggestions: (content: string) => string[]
   handleAIPromptSelect: (prompt: string) => void
   // Embed mode: no in-iframe navigation to frame-denied pages
@@ -74,7 +74,7 @@ export function GameplayScreen({
   embedded = false,
 }: GameplayScreenProps) {
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     trackEvent('share_clicked', {
       gameSlug: game.slug,
       panelCount: assistantMessageCount,
@@ -95,15 +95,15 @@ export function GameplayScreen({
     } catch {
       // Non-fatal
     }
-  }
+  }, [game.slug, game.title, game.genre, assistantMessageCount])
 
-  const handleViewComic = () => {
+  const handleViewComic = useCallback(() => {
     trackEvent('view_comic_clicked', {
       gameSlug: game.slug,
       panelCount: assistantMessageCount,
     })
     setShowComicFinale(true)
-  }
+  }, [game.slug, assistantMessageCount, setShowComicFinale])
 
   const router = useRouter()
 
@@ -124,7 +124,7 @@ export function GameplayScreen({
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [messages, onOptionClick])
+  }, [messages, onOptionClick, handleShare, handleViewComic])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -280,15 +280,27 @@ export function GameplayScreen({
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
               {embedded ? (
-                <a
-                  href={`/games/${game.slug}?utm_source=embed&utm_campaign=${game.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ChevronDown className="w-3.5 h-3.5" />
-                  Open on WritersArcade
-                </a>
+                !canAddMorePanels ? (
+                  <a
+                    href={`/generate?utm_source=embed&utm_campaign=${encodeURIComponent(game.slug)}&ref=embed_end`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-black hover:bg-white/90 transition-colors shadow-lg"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Turn any article into a game
+                  </a>
+                ) : (
+                  <a
+                    href={`/games/${game.slug}?utm_source=embed&utm_campaign=${game.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    Open on WritersArcade
+                  </a>
+                )
               ) : (
                 <button onClick={() => router.push('/games')} className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronDown className="w-3.5 h-3.5" />

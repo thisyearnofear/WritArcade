@@ -4,11 +4,15 @@ Turn Paragraph.xyz articles into interactive, mintable games. Players pay with w
 
 ## What it does
 
-- Generate playable games from article URLs (mini-app and web)
+- **Generate playable stories** from article URLs, marketing copy, or any pasted text (`/studio`)
+- **No wallet required to start**: try one free story, then upgrade with credits or crypto
+- **Interactive comic player**: 5-panel narratives where reader choices shape the outcome
+- **Embeddable player**: wallet-free iframe (`/embed/[slug]`) with `?ref=` attribution and a "Made with WritersArcade" backlink
+- **Resonance analytics**: creator dashboard showing starts, completions, panel funnel, and which choices framings readers prefer
 - **Advanced Customization**: Edit extracted assets (characters, story beats) in the Workshop
 - **Creative Control**: Regenerate panel images and edit narrative text before minting
 - Mint games as NFTs on Base; browse and play recent games
-- Pay with writer coins (ERC-20 on Base) using RainbowKit/WalletConnect
+- Pay with writer coins (ERC-20 on Base) using RainbowKit/WalletConnect, or buy credits with fiat
 - **Story Protocol Integration**: Register games and assets as IP with configurable licenses
 - **Lit Protocol Integration**: NFT-gated "Secret Panels" — encrypted epilogues only NFT holders can decrypt
 - **Hypercerts Integration**: Auto-created impact certificates certifying creative collaboration

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Wand2, Gamepad2, Coins, ShieldCheck } from 'lucide-react'
+import { X, Wand2, Gamepad2, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface OnboardingModalProps {
@@ -15,32 +15,25 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
 
   const steps = [
     {
-      icon: Wand2,
-      title: 'Paste an article, get a game',
+      icon: Gamepad2,
+      title: 'Play first, no wallet needed',
       description:
-        'Drop any Paragraph.xyz article URL into the form. AI reads it and generates a unique 5-panel interactive comic you can play.',
-      tip: 'We auto-pick the cheapest chain for your article — start with a short one for the best results.',
+        'Paste any Paragraph.xyz article URL and play a free 5-panel interactive comic or Wordle. No wallet, no payment, no signup required.',
+      tip: 'Try the free Wordle mode for zero-friction fun.',
     },
     {
-      icon: Gamepad2,
-      title: 'Play and customise',
+      icon: Wand2,
+      title: 'Create your own game',
       description:
-        'Make choices that shape the story. Regenerate panels, edit text, and tweak the genre and difficulty to your liking.',
+        'Turn any article or piece of marketing copy into a playable story in seconds. AI reads the source and builds choices, visuals, and a finale.',
       tip: null,
     },
     {
       icon: Coins,
-      title: 'Own what you create',
+      title: 'Own and earn',
       description:
-        'Mint your game as an NFT. Register as IP on Story Protocol — your works are pooled into a royalty group so you earn automatically every time.',
-      tip: 'You can play for free with Wordle — no wallet needed.',
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Your royalty pool',
-      description:
-        'Every IP you register joins your writer royalty pool. When derivatives earn revenue, royalties flow into the pool and are distributed evenly across all your games.',
-      tip: 'Claim anytime from your creator dashboard.',
+        'Ready to go deeper? Connect a wallet to mint your game as an NFT, register it as IP on Story Protocol, and earn from every play.',
+      tip: 'Wallet connection is only required for on-chain actions — gameplay is free.',
     },
   ]
 

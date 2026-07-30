@@ -1,7 +1,8 @@
 # Platform Features
 
-## Core Flow
+## Core Flows
 
+### Article → Game (Classic)
 1. **Input**: Paste article URL → AI extracts assets
 2. **Customize** (Optional): Edit characters & mechanics in Workshop
 3. **Generate**: Compile assets into 5-panel comic story
@@ -9,13 +10,49 @@
 5. **Register**: Mint NFT & register IP on Story Protocol (user-owned)
 6. **Revenue**: Splits executed on-chain (Writer/Platform/Creator)
 
+### Marketing Copy → Playable Story (`/studio`)
+1. **Input**: Paste landing page copy, email, or campaign text
+2. **Choose tone**: Mystery, Comedy, or Horror
+3. **Generate**: AI turns the copy into an interactive 5-panel story
+4. **Play / embed**: Try it, share the embed code, or buy credits for more
+5. **Analyze**: Use Resonance insights to see which framings readers choose
+
+This flow is wallet-free for the first story and targets marketers, copywriters, and brand teams who want to test messaging through play.
+
 ## Key Features
 
 ### AI Game Generation
-- Article URL → AI extracts characters, story beats, mechanics
+- Article URL or pasted marketing copy → AI extracts characters, story beats, mechanics
 - Generates 5-panel comic with narrative
-- Genre selection (horror, sci-fi, fantasy, etc.)
+- Genre selection (horror, sci-fi, fantasy, mystery, comedy, etc.)
 - Multi-model AI pipeline (OpenAI, Anthropic via ai-sdk)
+
+### Progressive Identity (No Wallet Required)
+- Start instantly as an anonymous guest
+- Attach an email at any time via magic link to preserve progress across devices
+- Connect a wallet later to mint NFTs, register IP, or receive on-chain revenue
+- Automatic merge: games, credits, and payments follow the user across identity upgrades
+
+### `/studio` — Copy-to-Story
+- Paste up to 20,000 characters of marketing copy
+- Pick a tone (mystery, comedy, horror)
+- First story is free (one demo per actor/IP); subsequent stories cost credits
+- One-click upgrade to credit packs when the free demo is used
+
+### Embeddable Wallet-Free Player
+- `/embed/[slug]` serves an lightweight iframe player
+- No wallet connection required; readers play inside the host page
+- `?ref=YOUR_CAMPAIGN` attribution tracked in Resonance analytics
+- "Made with WritersArcade" backlink drives organic acquisition
+- ISR-cached for fast loads
+
+### Resonance Dashboard
+Owner-gated analytics at `/games/[slug]/insights`:
+- **Resonance score**: completions / starts (shown once ≥ 5 starts)
+- **Panel funnel**: drop-off at each panel and choice
+- **Choice splits**: percentage of readers choosing each option
+- **Referrers**: which campaigns / placements drive starts
+- **Embed snippet**: copy-paste HTML with `?ref=` tracking
 
 ### Asset Workshop
 - **Decomposition Engine**: Breaks articles into reusable assets

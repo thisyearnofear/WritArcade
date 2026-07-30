@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Play } from 'lucide-react'
 
 import type { Game } from '../types'
@@ -19,13 +20,9 @@ interface EmbedGamePlayerProps {
  * No wagmi, no mint/IP chrome — play, choose, complete, link out.
  */
 export function EmbedGamePlayer({ game }: EmbedGamePlayerProps) {
-  // ?ref= must be read client-side: the page is ISR-cached and
-  // server searchParams would force dynamic rendering.
-  const [embedRef, setEmbedRef] = useState<string | undefined>(undefined)
-  useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get('ref')
-    if (ref) setEmbedRef(ref.slice(0, 200))
-  }, [])
+  // ?ref= is read client-side because the embed page is ISR-cached.
+  const searchParams = useSearchParams()
+  const embedRef = searchParams.get('ref')?.slice(0, 200)
 
   const session = useGameSession(game, { embedded: true, ref: embedRef })
   const messagesEndRef = useRef<HTMLDivElement>(null)

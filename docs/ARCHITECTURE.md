@@ -167,7 +167,9 @@ const data = await deduplicate('games:featured', () =>
 
 ```
 User
-├─ id, farcasterId, walletAddress
+├─ id, farcasterId, walletAddress (nullable)
+├─ email (nullable), guestKey (nullable, unique)
+├─ credits, totalCreditsPurchased
 ├─ isCreator, isAdmin
 └─ createdAt
 
@@ -177,6 +179,13 @@ Game
 ├─ secretPanelCiphertext, secretPanelDataHash
 ├─ hypercertUri, hypercertCid
 └─ createdAt
+
+GamePlayEvent  (Resonance telemetry)
+├─ id, gameId, sessionId
+├─ type: 'started' | 'choice' | 'completed'
+├─ panelIndex, choiceIndex, choiceText (nullable; only for 'choice')
+├─ referrer, embedded
+└─ playedAt
 
 Asset
 ├─ id, userId, articleUrl, title
@@ -246,5 +255,26 @@ WriterCoin
 4. **Client-side IP ownership** - Users sign Story Protocol transactions with their wallet
 5. **Non-blocking enrichment** - CDR vaulting, image generation, and Hypercerts run async post-creation
 6. **Confidentiality by Design** - Transitioning to TEE-backed vaults (CDR) to protect **Prompt IP** and **Trade Secrets**. Ensures creator "prompts" are treated as valuable, private intellectual property rather than public metadata.
-7. **Progressive disclosure** - Entry flow avoids wallet/chain/payment on first view. Users paste a URL → play a game → optionally connect wallet for on-chain actions.
-8. **Loading/Error boundaries** - Every route segment has `loading.tsx` and `error.tsx` with shimmer skeletons and contextual error cards.
+7. **Progressive disclosure** - Entry flow avoids wallet/chain/payment on first view. Users paste a URL or marketing copy → play a game → optionally connect wallet or buy credits for on-chain actions.
+8. **Progressive identity** - Users can start anonymously (guest cookie), attach an email for continuity, and later link a wallet. Identities merge automatically so games and credits survive the upgrade.
+9. **Loading/Error boundaries** - Every route segment has `loading.tsx` and `error.tsx` with shimmer skeletons and contextual error cards.
+
+## Progressive Identity
+
+Identity is resolved from HMAC-signed cookies on every request. Three cookie types are supported:
+
+- `wallet_session` — signed wallet address (highest precedence)
+- `user_session` — signed email-verified user id (`u:<userId>`)
+- `guest_session` — signed anonymous guest id (`g:<guestKey>`)
+
+`services/auth.ts:getActor()` returns the strongest available identity. When a guest verifies an email or connects a wallet, their games, credits, and payments are merged into the canonical account and the temporary identity is deleted.
+
+## Resonance Telemetry
+
+Gameplay events are stored in `GamePlayEvent` for creator analytics:
+
+- `started` — logged once per (game, session) when the player begins
+- `choice` — logged when the player picks one of the panel's enumerated options
+- `completed` — logged when the player finishes the 5-panel story
+
+Events carry `sessionId` for funnel analysis, `referrer`/`embedded` for attribution, and `panelIndex`/`choiceIndex`/`choiceText` for choice-split analytics.

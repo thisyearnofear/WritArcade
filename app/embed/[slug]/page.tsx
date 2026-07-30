@@ -29,12 +29,14 @@ export default async function EmbedGamePage({ params }: EmbedPageProps) {
       {/* Distribution loop: every embed carries the backlink */}
       <footer className="border-t border-white/10 bg-black px-4 py-2 text-center">
         <a
-          href={`/?utm_source=embed&utm_campaign=${encodeURIComponent(game.slug)}`}
+          href={`/generate?utm_source=embed&utm_campaign=${encodeURIComponent(game.slug)}&ref=${encodeURIComponent('embed_footer')}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
-          Made with <span className="font-semibold">WritersArcade</span>
+          <span>Made with <span className="font-semibold">WritersArcade</span></span>
+          <span className="hidden sm:inline text-white/30">·</span>
+          <span className="hidden sm:inline text-foreground font-medium underline underline-offset-2">Turn your article into a game</span>
         </a>
       </footer>
     </div>

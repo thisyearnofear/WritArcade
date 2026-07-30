@@ -162,12 +162,28 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 
 ## API Endpoints
 
+### Identity
+- `POST /api/session/guest` - Provision an anonymous guest identity (idempotent)
+- `POST /api/auth/email/request` - Send a magic-link email
+- `GET /api/auth/email/verify` - Verify magic-link token and set `user_session` cookie
+- `POST /api/auth/verify` - Verify SIWE message and set wallet session cookie; merges guest/email identity
+
 ### Games
-- `POST /api/games/generate` - Generate game from article URL (requires payment for story mode; returns 402 if unpaid)
+- `POST /api/games/generate` - Generate game from article URL or marketing copy (`contentType: 'marketing-copy'`)
 - `POST /api/games/mint` - Mint game as NFT with WriterCoinPayment
 - `GET /api/games/my-games` - List user's games
 - `POST /api/games/[slug]/fund` - Link a verified payment to an unfunded game (enables minting)
 - `POST /api/games/[slug]/secret-panel` - Decrypt NFT-gated content
+- `POST /api/games/[slug]/start` - Start a game session; logs `started` resonance event
+- `POST /api/games/[slug]/play` - Increment play counter; logs `completed` resonance event
+- `POST /api/games/chat` - Process a player choice; logs `choice` resonance event
+- `GET /api/games/[slug]/insights` - Owner-gated resonance analytics
+
+### Credits
+- `GET /api/ramp/credits` - Query current actor's credit balance
+- `POST /api/ramp/order` - Create a fiat onramp order
+- `POST /api/ramp/webhook` - Receive payment confirmation from Etherfuse
+- `POST /api/credits/spend` - Spend credits for an action (identity from session cookie)
 
 ### Assets
 - `POST /api/assets/generate` - Generate assets from article
