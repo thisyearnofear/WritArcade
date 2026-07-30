@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { optionalAuth } from '@/lib/auth'
+import { optionalAuth } from '@/services/auth'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import { getWriterCoinById } from '@/lib/writerCoins'
 

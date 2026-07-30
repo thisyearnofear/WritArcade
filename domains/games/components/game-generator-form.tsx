@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,15 +13,13 @@ import { PaymentOption } from '@/components/game/PaymentOption'
 import { SuccessModal } from '@/components/success/SuccessModal'
 import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
 import { ArticleFidelityReview } from '@/components/game/article-fidelity-review'
-import { type WriterCoin, WRITER_COINS, validateArticleUrl, type PaymentToken } from '@/lib/writerCoins'
+import { type WriterCoin, WRITER_COINS, validateArticleUrl } from '@/lib/writerCoins'
 import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
-import { retryWithBackoff } from '@/lib/error-handler'
+import { retryWithBackoff } from '@/services/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
-
-type PaymentPath = 'writercoin' | 'musd'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
   DesktopStepIndicator,
@@ -31,276 +29,37 @@ import {
   getStepIndex,
   GENERATE_STEPS,
 } from '@/components/ui/step-indicator'
+import {
+  type PaymentPath,
+  type ImageQuality,
+  type GenerateErrorState,
+  type ArticlePreview,
+  ARTICLE_PREVIEW_TIMEOUT_MS,
+  GAME_GENERATION_TIMEOUT_MS,
+  PAYMENT_RECOVERY_TIMEOUT_MS,
+  PAYMENT_RECOVERY_INTERVAL_MS,
+  paymentTokenForPath,
+  getGenerationErrorMessage,
+  isAbortError,
+  shortTxHash,
+  paymentExplorerUrl,
+  fetchWithTimeout,
+  articleError,
+  paymentError,
+  generationError,
+  articlePreviewMeta,
+  articleGamePremise,
+  StylePreview,
+  GenerateErrorPanel,
+} from './game-generator-helpers'
+
+const DEFAULT_WRITER_COIN = WRITER_COINS[0]
 
 interface GameGeneratorFormProps {
   onGameGenerated?: (game: { id: string; title: string; slug: string; genre: string }) => void
   initialUrl?: string
   initialPaymentPath?: PaymentPath
   initialMode?: 'story' | 'wordle'
-}
-
-const DEFAULT_WRITER_COIN = WRITER_COINS[0]
-const ARTICLE_PREVIEW_TIMEOUT_MS = 15000
-const GAME_GENERATION_TIMEOUT_MS = 120000
-const PAYMENT_RECOVERY_TIMEOUT_MS = 45000
-const PAYMENT_RECOVERY_INTERVAL_MS = 3000
-
-type GenerateErrorPhase = 'article' | 'payment' | 'generation'
-
-interface GenerateErrorState {
-  phase: GenerateErrorPhase
-  title: string
-  message: string
-  retryLabel: string
-  suggestions: string[]
-}
-
-function paymentTokenForPath(path: PaymentPath, writerCoin: WriterCoin): PaymentToken {
-  return path === 'musd'
-    ? { type: 'musd', network: 'testnet' }
-    : { type: 'writercoin', coin: writerCoin }
-}
-
-function getGenerationErrorMessage(errorData: { error?: string; code?: string }, status: number, statusText: string): string {
-  switch (errorData.code) {
-    case 'CONTENT_PROCESSING_FAILED':
-      return 'We could not read that article URL. Please ensure it is public and try another Paragraph link.'
-    case 'AI_GENERATION_FAILED':
-      return 'Game generation model failed this time. Please retry in a moment.'
-    case 'DB_SAVE_FAILED':
-      return 'Your game was generated but failed to save. Please retry to persist it.'
-    case 'PAYMENT_REQUIRED':
-      return 'Payment was not recognized. Your tokens are safe — retry to continue.'
-    case 'PAYMENT_NOT_VERIFIED':
-      return 'Payment is still being confirmed on-chain. Wait a moment and retry.'
-    default:
-      if (status === 402) return 'Payment required before generating. Your tokens are safe — retry to continue.'
-      return errorData.error || `Generation failed (${status}): ${statusText}`
-  }
-}
-
-function isAbortError(error: unknown) {
-  return error instanceof DOMException && error.name === 'AbortError'
-}
-
-function shortTxHash(hash: string) {
-  return `${hash.slice(0, 8)}...${hash.slice(-6)}`
-}
-
-function paymentExplorerUrl(path: PaymentPath, hash: string) {
-  const baseUrl = path === 'musd'
-    ? 'https://explorer.test.mezo.org/tx'
-    : 'https://basescan.org/tx'
-  return `${baseUrl}/${hash}`
-}
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
-
-  try {
-    return await fetch(url, {
-      ...init,
-      signal: controller.signal,
-    })
-  } finally {
-    window.clearTimeout(timeoutId)
-  }
-}
-
-function articleError(message: string): GenerateErrorState {
-  const lowerMessage = message.toLowerCase()
-  const isUnsupportedUrl = lowerMessage.includes('url') || lowerMessage.includes('paragraph') || lowerMessage.includes('writer')
-  const isTimeout = lowerMessage.includes('timed out') || lowerMessage.includes('timeout')
-
-  return {
-    phase: 'article',
-    title: isTimeout ? 'Article preview timed out' : isUnsupportedUrl ? 'Article link needs attention' : 'Article preview failed',
-    message,
-    retryLabel: 'Check article again',
-    suggestions: [
-      'Use a public Paragraph.xyz article URL.',
-      'Open the article in a private browser tab to confirm it is accessible.',
-      'If writer coin mode is selected, switch to MUSD for any public Paragraph article.',
-    ],
-  }
-}
-
-function paymentError(message: string): GenerateErrorState {
-  return {
-    phase: 'payment',
-    title: 'Payment did not complete',
-    message,
-    retryLabel: 'Try payment again',
-    suggestions: [
-      'Confirm your wallet is unlocked and connected.',
-      'Check that you are on the requested network before approving.',
-      'Confirm your token balance covers the generation cost and gas.',
-    ],
-  }
-}
-
-function generationError(message: string): GenerateErrorState {
-  const lowerMessage = message.toLowerCase()
-  const isTimeout = lowerMessage.includes('timed out') || lowerMessage.includes('timeout')
-  const isPaymentError = lowerMessage.includes('payment') || lowerMessage.includes('402')
-  const isQuota = lowerMessage.includes('quota') || lowerMessage.includes('429')
-
-  if (isPaymentError) {
-    return {
-      phase: 'generation',
-      title: 'Payment not found',
-      message: 'Your payment was sent but the server did not recognize it yet. This happens when blockchain indexing is slow. Retry to continue — your tokens are safe.',
-      retryLabel: 'Retry generation',
-      suggestions: [
-        'Wait 5-10 seconds for the transaction to be indexed.',
-        'Retry once — the payment should be found on the next attempt.',
-        'If retry fails, check your wallet to confirm the payment succeeded.',
-      ],
-    }
-  }
-
-  return {
-    phase: 'generation',
-    title: isTimeout ? 'Generation is taking too long' : isQuota ? 'Generation limit reached' : 'Game generation failed',
-    message,
-    retryLabel: 'Generate again',
-    suggestions: [
-      isTimeout ? 'Retry with Fast image quality if the article is long.' : isQuota ? 'Our AI quota is temporarily full — retry in a few minutes.' : 'Retry once; model failures are often temporary.',
-      'Try a shorter article or switch to Wordle for a free article-derived result.',
-      'Keep this tab open while generation is running.',
-    ],
-  }
-}
-
-function previewStyleFor(genre: GameGenre, difficulty: GameDifficulty) {
-  const genreMap: Record<GameGenre, { gradient: string; blurb: string }> = {
-    horror: { gradient: 'from-indigo-900 via-red-900 to-black', blurb: 'Dark, tense pacing with dramatic contrasts.' },
-    comedy: { gradient: 'from-pink-600 via-blue-600 to-indigo-700', blurb: 'Light, playful tone with punchy beats.' },
-    mystery: { gradient: 'from-blue-900 via-indigo-900 to-black', blurb: 'Moody, investigative with slow reveals.' },
-  }
-  const diffMap: Record<GameDifficulty, string> = {
-    easy: 'Simpler choices, faster progression',
-    hard: 'Deeper branches, more complex narratives',
-  }
-  const g = genreMap[genre]
-  return { ...g, diff: diffMap[difficulty] }
-}
-
-function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: GameDifficulty }) {
-  const s = previewStyleFor(genre, difficulty)
-  const prefersReducedMotion = useReducedMotion()
-  return (
-    <div className="mx-auto max-w-md w-full">
-      <motion.div
-        key={`${genre}-${difficulty}`}
-        className={`rounded-lg border border-purple-700/60 p-3 bg-gradient-to-br ${s.gradient} text-purple-100 shadow-md flex items-start gap-2`}
-        initial={{ opacity: 0 }}
-        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1 }}
-        transition={{ duration: 0.25 }}
-      >
-        <div className="mt-0.5">
-          {genre === 'horror' && (
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400 shadow" />
-          )}
-          {genre === 'comedy' && (
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-yellow-300 shadow" />
-          )}
-          {genre === 'mystery' && (
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-300 shadow" />
-          )}
-        </div>
-        <div className="text-xs">
-          <div className="font-semibold mb-1">Live Preview — {genre} • {difficulty}</div>
-          <div className="opacity-95">{s.blurb}</div>
-          <div className="opacity-90">{s.diff}</div>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
-function GenerateErrorPanel({
-  error,
-  onRetry,
-  onDismiss,
-}: {
-  error: GenerateErrorState
-  onRetry: () => void
-  onDismiss: () => void
-}) {
-  return (
-    <div className="rounded-lg border border-red-600/50 bg-red-950/30 p-4">
-      <div className="flex items-start gap-3">
-        <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-red-300/80">
-                {error.phase}
-              </p>
-              <h3 className="mt-1 text-base font-semibold text-red-100">{error.title}</h3>
-            </div>
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="rounded-md p-1 text-red-300/70 transition hover:bg-red-500/10 hover:text-red-200"
-              aria-label="Dismiss error"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <p className="mt-2 text-sm text-red-100/85">{error.message}</p>
-          <ul className="mt-3 space-y-1 text-xs text-red-100/70">
-            {error.suggestions.map((suggestion) => (
-              <li key={suggestion}>- {suggestion}</li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20 sm:w-auto"
-          >
-            <RefreshCw className="h-4 w-4" />
-            {error.retryLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export type ImageQuality = 'fast' | 'quality'
-
-interface ArticlePreview {
-  title: string
-  author: string
-  publicationName?: string
-  publishedAt?: string
-  wordCount: number
-  estimatedReadTime: number
-  excerpt: string
-  sourceUrl: string
-}
-
-function articlePreviewMeta(preview: ArticlePreview) {
-  return [
-    preview.author,
-    preview.publicationName && preview.publicationName !== preview.author ? preview.publicationName : undefined,
-    preview.wordCount > 50 ? `${preview.wordCount.toLocaleString()} words` : undefined,
-    preview.estimatedReadTime > 1 ? `${preview.estimatedReadTime} min read` : undefined,
-  ].filter(Boolean).join(' · ')
-}
-
-function articleGamePremise(preview: ArticlePreview, genre: GameGenre) {
-  const title = preview.title.replace(/[.!?]+$/, '')
-  const genreTone: Record<GameGenre, string> = {
-    horror: 'a tense interactive comic about pressure, hidden risk, and difficult tradeoffs',
-    comedy: 'a playful interactive comic that turns the article ideas into sharp choices and reversals',
-    mystery: 'an investigative interactive comic where each choice uncovers what the article is really arguing',
-  }
-
-  return `"${title}" becomes ${genreTone[genre]}.`
 }
 
 export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath = 'musd', initialMode }: GameGeneratorFormProps) {

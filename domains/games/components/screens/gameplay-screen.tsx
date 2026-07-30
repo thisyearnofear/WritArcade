@@ -7,7 +7,7 @@ import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 
  
 const MAX_COMIC_PANELS = 5

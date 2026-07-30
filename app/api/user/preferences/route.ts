@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/database'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/services/auth'
 import { z } from 'zod'
 
 const preferencesSchema = z.object({

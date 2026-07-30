@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { uploadToIPFS } from '@/domains/story/services/ipfs-utils'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit } from '@/services/rate-limit'
 
 const uploadIpfsSchema = z.object({
   metadata: z.record(z.string(), z.unknown()),

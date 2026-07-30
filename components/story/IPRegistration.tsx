@@ -11,9 +11,9 @@ import {
   isOnStoryNetwork,
   STORY_CHAIN_ID,
   getIPAssetExplorerUrl
-} from "@/lib/story-sdk-client";
-import { registerGameAsIP, IPRegistrationResult } from "@/lib/story-protocol.service";
-import { uploadToIPFS } from "@/lib/ipfs-utils";
+} from "@/domains/story/services/story-sdk-client";
+import { registerGameAsIP, IPRegistrationResult } from "@/domains/story/services/story-protocol.service";
+import { uploadToIPFS } from "@/domains/story/services/ipfs-utils";
 import { Address } from "viem";
 
 export interface GameIPMetadata {

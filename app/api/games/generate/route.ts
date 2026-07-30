@@ -6,7 +6,7 @@ import { ContentProcessorService } from '@/domains/content/services/content-proc
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { vaultWordleAnswer } from '@/domains/story/services/cdr.service'
 import type { GameGenerationResponse } from '@/domains/games/types'
-import { optionalAuth } from '@/lib/auth'
+import { optionalAuth } from '@/services/auth'
 import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 import { config, logger } from '@/lib/config'
@@ -14,6 +14,7 @@ import { prisma } from '@/lib/prisma'
 import { getMintConfig, getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 import { deduplicateGeneration, buildGenerationCacheKey } from '@/lib/ai-cache'
+import { reportServerError } from '@/services/error-reporting'
 
 // Request validation schema
 const generateGameSchema = z.object({
@@ -402,11 +403,7 @@ Your game MUST authentically interpret this article's core themes. Players shoul
 
   } catch (error) {
     console.error('Game generation error:', error)
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace',
-      name: error instanceof Error ? error.name : 'Unknown'
-    })
+    reportServerError(error, { route: '/api/games/generate' })
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

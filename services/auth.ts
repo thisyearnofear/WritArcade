@@ -1,6 +1,7 @@
 
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/database'
+import { SESSION_COOKIE_NAME, verifySessionValue } from '@/services/session'
 
 export interface AuthUser {
   id: string
@@ -20,8 +21,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const cookieStore = await cookies()
 
-    // Check for wallet session
-    const walletAddress = cookieStore.get('wallet_session')?.value
+    // Check for wallet session (HMAC-signed; forged cookies are rejected)
+    const walletAddress = verifySessionValue(cookieStore.get(SESSION_COOKIE_NAME)?.value)
 
     if (!walletAddress) {
       return null

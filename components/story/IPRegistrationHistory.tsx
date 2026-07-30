@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Copy, Shield, Clock } from 'lucide-react'
-import { getIPAssetExplorerUrl, getTxExplorerUrl } from '@/lib/story-sdk-client'
-import { verifyIPRegistration } from '@/lib/story-protocol.service'
+import { getIPAssetExplorerUrl, getTxExplorerUrl } from '@/domains/story/services/story-sdk-client'
+import { verifyIPRegistration } from '@/domains/story/services/story-protocol.service'
 import { motion } from 'framer-motion'
 
 // ============================================================================

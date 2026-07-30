@@ -123,6 +123,12 @@ export function validateConfig(): void {
       errors.push('DATABASE_URL environment variable is required in production')
     }
 
+    // Production requires a session signing secret (unsigned cookies are forgeable)
+    const sessionSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+    if (!sessionSecret || sessionSecret.length < 16) {
+      errors.push('AUTH_SECRET environment variable (>= 16 chars) is required in production for session signing')
+    }
+
     // Production requires Story Protocol SPG contract
     const spgContract = process.env.NEXT_PUBLIC_STORY_SPG_CONTRACT
     if (!spgContract) {

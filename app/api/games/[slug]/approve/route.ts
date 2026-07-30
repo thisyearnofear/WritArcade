@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { optionalAuth } from '@/lib/auth'
+import { optionalAuth } from '@/services/auth'
 import { isAdmin } from '@/lib/constants'
 import { authorizeGameOwner } from '@/domains/games/services/game-ownership.service'
 import { z } from 'zod'

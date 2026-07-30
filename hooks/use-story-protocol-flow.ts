@@ -21,9 +21,9 @@ import {
   isOnStoryNetwork,
   STORY_CHAIN_ID,
   STORY_SPG_CONTRACT,
-} from '@/lib/story-sdk-client';
-import { registerGameAsIP, estimateGas, IPRegistrationResult } from '@/lib/story-protocol.service';
-import { uploadToIPFS } from '@/lib/ipfs-utils';
+} from '@/domains/story/services/story-sdk-client';
+import { registerGameAsIP, estimateGas, IPRegistrationResult } from '@/domains/story/services/story-protocol.service';
+import { uploadToIPFS } from '@/domains/story/services/ipfs-utils';
 
 // ============================================================================
 // Types
@@ -62,7 +62,7 @@ export interface RegistrationFlowStateObj {
 }
 
 // Re-export from story service
-export type { IPRegistrationResult } from '@/lib/story-protocol.service';
+export type { IPRegistrationResult } from '@/domains/story/services/story-protocol.service';
 
 export interface RegistrationFlowActions {
   startFlow: () => Promise<void>;

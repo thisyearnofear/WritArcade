@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Lightbulb } from 'lucide-react'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
+import { StylePreview } from '@/domains/games/components/game-generator-helpers'
 
 interface CustomizationStepProps {
   genre: GameGenre
@@ -15,52 +16,6 @@ interface CustomizationStepProps {
   onDifficultyChange: (difficulty: GameDifficulty) => void
   onResetDefaults: () => void
   isGenerating: boolean
-}
-
-function previewStyleFor(genre: GameGenre, difficulty: GameDifficulty) {
-  const genreMap: Record<GameGenre, { gradient: string; blurb: string }> = {
-    horror: { gradient: 'from-indigo-900 via-red-900 to-black', blurb: 'Dark, tense pacing with dramatic contrasts.' },
-    comedy: { gradient: 'from-pink-600 via-blue-600 to-indigo-700', blurb: 'Light, playful tone with punchy beats.' },
-    mystery: { gradient: 'from-blue-900 via-indigo-900 to-black', blurb: 'Moody, investigative with slow reveals.' },
-  }
-  const diffMap: Record<GameDifficulty, string> = {
-    easy: 'Simpler choices, faster progression',
-    hard: 'Deeper branches, more complex narratives',
-  }
-  const g = genreMap[genre]
-  return { ...g, diff: diffMap[difficulty] }
-}
-
-function StylePreview({ genre, difficulty }: { genre: GameGenre; difficulty: GameDifficulty }) {
-  const s = previewStyleFor(genre, difficulty)
-  return (
-    <div className="mx-auto max-w-md w-full">
-      <motion.div
-        key={`${genre}-${difficulty}`}
-        className={`rounded-lg border border-purple-700/60 p-3 bg-gradient-to-br ${s.gradient} text-purple-100 shadow-md flex items-start gap-2`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.25 }}
-      >
-        <div className="mt-0.5">
-          {genre === 'horror' && (
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400 shadow" />
-          )}
-          {genre === 'comedy' && (
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-yellow-300 shadow" />
-          )}
-          {genre === 'mystery' && (
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-300 shadow" />
-          )}
-        </div>
-        <div className="text-xs">
-          <div className="font-semibold mb-1">Live Preview — {genre} • {difficulty}</div>
-          <div className="opacity-95">{s.blurb}</div>
-          <div className="opacity-90">{s.diff}</div>
-        </div>
-      </motion.div>
-    </div>
-  )
 }
 
 export function CustomizationStep({

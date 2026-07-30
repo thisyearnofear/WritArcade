@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createPublicClient, http, type Chain } from 'viem'
 import { prisma } from '@/lib/database'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/services/auth'
 import { logger } from '@/lib/config'
+import { reportServerError } from '@/services/error-reporting'
 import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
 import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
 
@@ -182,6 +183,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     logger.error('[Payment Verify] Error', error)
+    reportServerError(error, { route: '/api/payments/verify' })
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -267,6 +269,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     logger.error('[Payment Status] Error', error)
+    reportServerError(error, { route: '/api/payments/verify (status)' })
     return NextResponse.json(
       { error: 'Failed to check payment status' },
       { status: 500 }

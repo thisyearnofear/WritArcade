@@ -6,7 +6,7 @@ import { useAccount } from 'wagmi'
 import { Game } from '../types'
 import { useGameSession } from '../hooks/use-game-session'
 import { useGameBlockchain } from '../hooks/use-game-blockchain'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 
 // Screen Components
 import { HeroScreen } from './screens/hero-screen'

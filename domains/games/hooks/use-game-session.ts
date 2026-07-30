@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useVisualConfig } from '@/contexts/visual-config.context'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 import { MoodModifierService } from '../services/mood-modifier.service'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
-import { optionalAuth } from '@/lib/auth'
+import { optionalAuth } from '@/services/auth'
 import { z } from 'zod'
 
 // Validation Schema

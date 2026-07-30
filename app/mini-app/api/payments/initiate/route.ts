@@ -4,7 +4,7 @@ import { PaymentCostService } from '@/domains/payments/services/payment-cost.ser
 import type { PaymentInitiateRequest, PaymentInfo } from '@/domains/payments/types'
 import { prisma } from '@/lib/database'
 import { gameToMetadata } from '@/lib/contracts'
-import { uploadToIPFS } from '@/lib/ipfs-utils'
+import { uploadToIPFS } from '@/domains/story/services/ipfs-utils'
 import { z } from 'zod'
 
 /**

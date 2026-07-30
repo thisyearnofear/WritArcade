@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 
 interface SuccessModalProps {
   isOpen: boolean

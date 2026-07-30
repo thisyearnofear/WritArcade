@@ -5,8 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { optionalAuth } from '@/lib/auth'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { optionalAuth } from '@/services/auth'
+import { checkRateLimit } from '@/services/rate-limit'
 import { z } from 'zod'
 
 const registerIpSchema = z.object({

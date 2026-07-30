@@ -1,6 +1,6 @@
 import { AlertCircle, Lightbulb, RefreshCw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { formatError } from '@/lib/error-handler'
+import { formatError } from '@/services/error-handler'
 
 interface ErrorCardProps {
   error: unknown

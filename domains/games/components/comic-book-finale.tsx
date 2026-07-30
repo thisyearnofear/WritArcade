@@ -11,25 +11,10 @@ import type { GameCreator, GameAuthor } from '@/lib/services/ipfs-metadata.servi
 import { PostGameFeedback } from '@/components/game/post-game-feedback'
 import { VoiceNarrationService } from '../services/voice-narration.service'
 import { StreamingTypewriter, PretextContainer } from '@/components/effects'
-
-const FEEDBACK_DISABLED_KEY = 'writersarcade.feedback.disabled'
-const FEEDBACK_COMPLETIONS_KEY = 'writersarcade.feedback.completions'
-const FEEDBACK_INTERVAL = 10
-
-function shouldShowFeedbackPrompt() {
-  if (typeof window === 'undefined') return false
-  if (window.localStorage.getItem(FEEDBACK_DISABLED_KEY) === 'true') return false
-
-  const currentCount = Number(window.localStorage.getItem(FEEDBACK_COMPLETIONS_KEY) || '0')
-  const nextCount = Number.isFinite(currentCount) ? currentCount + 1 : 1
-  window.localStorage.setItem(FEEDBACK_COMPLETIONS_KEY, String(nextCount))
-  return nextCount % FEEDBACK_INTERVAL === 0
-}
-
-function disableFeedbackPrompts() {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(FEEDBACK_DISABLED_KEY, 'true')
-}
+import {
+  shouldShowFeedbackPrompt,
+  disableFeedbackPrompts,
+} from './feedback-prompt'
 
 export interface ComicBookFinalePanelData {
   id: string

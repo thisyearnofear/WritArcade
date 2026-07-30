@@ -10,7 +10,7 @@ import {
     STORY_CHAIN_ID,
     WIP_TOKEN_ADDRESS,
     ROYALTY_POLICY_LAP,
-} from '@/lib/story-sdk-client';
+} from '@/domains/story/services/story-sdk-client';
 
 export function LicenseConfigurator({ writerCoin }: { writerCoin: WriterCoin }) {
     const [royalty, setRoyalty] = useState(writerCoin.revenueDistribution.writer);

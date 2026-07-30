@@ -14,8 +14,8 @@ import {
   createStoryClientFromWallet,
   isOnStoryNetwork,
   STORY_CHAIN_ID,
-} from '@/lib/story-sdk-client'
-import { mintLicenseTokens } from '@/lib/story-license.service'
+} from '@/domains/story/services/story-sdk-client'
+import { mintLicenseTokens } from '@/domains/story/services/story-license.service'
 import {
   Gamepad2,
   Eye,
@@ -156,7 +156,7 @@ export function DashboardClient({ initialSummary }: DashboardClientProps) {
       if (!storyClient) throw new Error('Failed to initialize Story client')
 
       const { collectAndDistributeGroupRoyalties } = await import(
-        '@/lib/story-grouping.service'
+        '@/domains/story/services/story-grouping.service'
       )
       const memberIpIds = summary.ip.registeredGames
         .map((g) => g.storyIpId as `0x${string}`)

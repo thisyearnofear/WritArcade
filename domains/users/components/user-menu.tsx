@@ -18,8 +18,8 @@ import {
 import { useAccount, useDisconnect } from 'wagmi'
 import { useAccountModal } from '@rainbow-me/rainbowkit'
 import { WalletConnect } from '@/components/ui/wallet-connect'
-import { getFarcasterProfile } from '@/lib/farcaster'
-import type { FarcasterProfile } from '@/lib/farcaster'
+import { getFarcasterProfile } from '@/domains/farcaster/services/farcaster'
+import type { FarcasterProfile } from '@/domains/farcaster/services/farcaster'
 import { useDarkMode } from '@/components/providers/DarkModeProvider'
 import { NetworkIndicatorCompact } from '@/components/layout/NetworkIndicator'
 

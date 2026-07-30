@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { SiweMessage, type SiweMessage as SiweMessageType } from 'siwe'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/database'
+import { SESSION_COOKIE_NAME, sessionCookieOptions, signSessionValue } from '@/services/session'
 
 export async function POST(req: Request) {
     let message: string | SiweMessageType | undefined;
@@ -58,14 +59,8 @@ export async function POST(req: Request) {
         // Create session
         const response = NextResponse.json({ success: true, user })
 
-        // Set the app's main session cookie
-        response.cookies.set('wallet_session', walletAddress, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 24 * 7, // 1 week
-        })
+        // Set the app's main session cookie (HMAC-signed so it can't be forged)
+        response.cookies.set(SESSION_COOKIE_NAME, signSessionValue(walletAddress), sessionCookieOptions())
 
         // Clear nonce
         response.cookies.delete('siwe-nonce')

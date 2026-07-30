@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { getDisplayName, getAvatarUrl } from '@/lib/farcaster'
+import { getDisplayName, getAvatarUrl } from '@/domains/farcaster/services/farcaster'
 import { UserPreferencesForm } from '@/domains/users/components/user-profile-form'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'

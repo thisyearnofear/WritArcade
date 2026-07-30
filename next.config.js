@@ -5,6 +5,8 @@ const API_BACKEND_URL = process.env.API_BACKEND_URL || 'https://api.snel.famile.
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('path');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { withSentryConfig } = require('@sentry/nextjs');
 
 const nextConfig = {
   output: 'standalone',
@@ -133,4 +135,19 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+// Sentry is only wired into the build when a DSN is configured, so local
+// development and CI without Sentry env vars are unaffected.
+const sentryEnabled = Boolean(process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)
+
+module.exports = sentryEnabled
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+      // Only upload sourcemaps when an auth token is available (CI/Vercel)
+      sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+      disableLogger: true,
+      automaticVercelMonitors: false,
+    })
+  : nextConfig

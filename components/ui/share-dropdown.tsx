@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Share2, Twitter, MessageCircle, Linkedin } from 'lucide-react'
 import { socialShareService, type ComicShareData } from '@/lib/services/social-share.service'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 
 interface ShareDropdownProps {
   data: ComicShareData

@@ -4,6 +4,7 @@ import {
   type RampWebhookPayload,
   verifyWebhookSignature,
 } from '@/lib/etherfuse'
+import { reportServerError } from '@/services/error-reporting'
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('[Ramp Webhook] Error:', error)
+    reportServerError(error, { route: '/api/ramp/webhook' })
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }

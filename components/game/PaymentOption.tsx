@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PaymentAction } from '@/domains/payments/types'
 import { AlertCircle, ArrowRightLeft } from 'lucide-react'
 import { PaymentTokenSelector } from './PaymentTokenSelector'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/chains'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 

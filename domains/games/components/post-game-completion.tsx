@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Gamepad2, Share2, Sparkles, Trophy, BarChart3, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react'
 import type { Game, ChatMessage } from '../types'
-import { shareGame } from '@/lib/farcaster-sharing.service'
+import { shareGame } from '@/domains/farcaster/services/farcaster-sharing.service'
 
 interface PostGameCompletionProps {
   game: Game

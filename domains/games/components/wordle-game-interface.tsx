@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Game } from '../types'
 import { WordleService, type WordleGuessResult, type WordleLetterState } from '../services/wordle.service'
-import { shareGame } from '@/lib/farcaster-sharing.service'
+import { shareGame } from '@/domains/farcaster/services/farcaster-sharing.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useWalletClient, useAccount } from 'wagmi'

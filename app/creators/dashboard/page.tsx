@@ -1,4 +1,4 @@
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/services/auth'
 import { getCreatorStudioSummary } from '@/domains/creators/stats.service'
 import { DashboardClient } from './DashboardClient'
 import { redirect } from 'next/navigation'

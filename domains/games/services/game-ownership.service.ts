@@ -1,4 +1,4 @@
-import type { AuthUser } from '@/lib/auth'
+import type { AuthUser } from '@/services/auth'
 
 export const WALLET_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { readyMiniApp, getFarcasterContext, isInFarcasterContext, openUrl, type FarcasterUser } from '@/lib/farcaster'
+import { readyMiniApp, getFarcasterContext, isInFarcasterContext, openUrl, type FarcasterUser } from '@/domains/farcaster/services/farcaster'
 import { WriterCoinSelector } from '../components/WriterCoinSelector'
 import { ArticleInput } from '../components/ArticleInput'
 import { GameCustomizer } from '../components/GameCustomizer'

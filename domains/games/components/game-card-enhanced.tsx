@@ -9,7 +9,7 @@ import { useAccount } from 'wagmi'
 import { isAdmin } from '@/lib/constants'
 import { HypercertBadge } from './hypercert-badge'
 import { ProtocolLifecycle } from './protocol-lifecycle'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent } from '@/services/analytics'
 
 interface GameCardEnhancedProps {
   game: Game

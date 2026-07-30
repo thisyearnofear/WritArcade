@@ -4,7 +4,7 @@
  * Consolidates ENS, Farcaster, and wallet address resolution
  */
 
-import { getFarcasterProfile } from '@/lib/farcaster'
+import { getFarcasterProfile } from '@/domains/farcaster/services/farcaster'
 import { GameCreator, GameAuthor } from './ipfs-metadata.service'
 
 interface ENSProfile {

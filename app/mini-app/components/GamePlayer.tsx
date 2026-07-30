@@ -7,7 +7,7 @@ import type { Game } from "@/domains/games/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { triggerHaptic, cn } from "@/lib/utils";
 import { Share2, ExternalLink, ShieldCheck, Trophy } from "lucide-react";
-import { shareGame } from "@/lib/farcaster-sharing.service";
+import { shareGame } from "@/domains/farcaster/services/farcaster-sharing.service";
 
 interface GamePlayerProps {
   game: Game;
