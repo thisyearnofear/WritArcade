@@ -28,20 +28,33 @@
 
 # misc
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 *.log
 
 # env files (secrets)
+.env
 .env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+.env.modal
+*.env.backup
 
 # foundry/forge build artifacts
 contracts/out/
 contracts/cache/
-lib/openzeppelin-contracts/
 cache/
-*.pem
-.AppleDouble
-.LSOverride
-Thumbs.db
+cache-forge/
+broadcast/
+.gas-snapshot
+lib/openzeppelin-contracts/
 
 # debug
 npm-debug.log*
@@ -51,16 +64,7 @@ ts-debug.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# local env files
-.env
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.production
-.env.modal
-
-# Modal
+# modal / image gen outputs
 modal_test_output.png
 scripts/modal/*.png
 scripts/modal/test-output/
@@ -79,6 +83,13 @@ next-env.d.ts
 # prisma
 /prisma/migrations/*_migration/
 node_modules/.prisma
+*.sqlite
+*.sqlite-journal
+*.db
+
+# sentry
+.sentryclirc
+sentry-*.log
 
 # IDE
 .vscode/*
@@ -96,14 +107,36 @@ node_modules/.prisma
 *.sublime-workspace
 *.sublime-project
 
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# AI / local agent folders
+.junie
+.qwen
+.blackboxcli
+.gemini
+.qoder
+.zenflow
+.zencoder
+.claude
+.commandcode
+.cursor
+.pnpm/
+.pnpm-store/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Temporary folders
+tmp/
+temp/
+
+# Output of 'npm pack'
+*.tgz
+
+# deployment artifacts
+deploy_output.txt
 
 # Optional npm cache directory
 .npm
@@ -113,42 +146,3 @@ Thumbs.db
 
 # Optional REPL history
 .node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Temporary folders
-tmp/
-temp/
-.blackboxcli/
-.gemini/
-.junie/
-.qwen/
-.zencoder/
-.zenflow/
-.claude/
-.pnpm/
-.cursor/
-.pnpm-store/
-node_modules/
-
-# IDE
-.vscode/
-.idea/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-
-# Test scripts (temporary)
-scripts/test-*.ts
-scripts/test-*.js
-test-*.mjs
-test-*.js
-
-.junie
-.qwen
-.commandcode/
