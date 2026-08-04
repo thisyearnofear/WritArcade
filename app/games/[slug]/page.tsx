@@ -173,7 +173,10 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
   const query = await searchParams
   const isUnlockShare = Boolean(query?.unlocked)
   const siteUrl = getSiteUrl()
-  const unlockOgImage = `${siteUrl}/api/games/${encodeURIComponent(slug)}/unlock-og`
+  // Branded composite card (cover + title + genre + panel strip + Animated badge).
+  const ogImage = isUnlockShare
+    ? `${siteUrl}/api/games/${encodeURIComponent(slug)}/unlock-og`
+    : `${siteUrl}/api/games/${encodeURIComponent(slug)}/og`
 
   return {
     title: isUnlockShare
@@ -188,13 +191,13 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
         ? 'Verified unlock proof with vault UUID and gate NFT context.'
         : game.description,
       type: 'article',
-      images: isUnlockShare ? [unlockOgImage] : game.imageUrl ? [game.imageUrl] : [],
+      images: [{ url: ogImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
       title: isUnlockShare ? `I unlocked the secret CDR vault of ${game.title}` : game.title,
       description: isUnlockShare ? 'Verified unlock proof on writersarcade.' : game.description,
-      images: isUnlockShare ? [unlockOgImage] : game.imageUrl ? [game.imageUrl] : [],
+      images: [ogImage],
     },
   }
 }
