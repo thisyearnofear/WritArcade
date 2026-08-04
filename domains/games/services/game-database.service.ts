@@ -203,6 +203,47 @@ export class GameDatabaseService {
   }
 
   /**
+   * Get public games by a list of slugs (for "recently played" feeds).
+   * Returns games in the order of the input slug list, filtering out
+   * private games. Only public games are returned.
+   */
+  static async getGamesBySlugs(slugs: string[]): Promise<Game[]> {
+    if (slugs.length === 0) return []
+
+    try {
+      const games = await prisma.game.findMany({
+        where: {
+          slug: { in: slugs },
+          private: false,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              walletAddress: true,
+            }
+          },
+          payment: {
+            select: {
+              writerCoinId: true,
+            },
+          },
+        },
+      })
+
+      // Preserve the input order (most-recently-played first)
+      const bySlug = new Map(games.map((g) => [g.slug, g]))
+      return slugs
+        .map((s) => bySlug.get(s))
+        .filter((g): g is typeof games[0] => Boolean(g))
+        .map(this.mapPrismaGameToGame.bind(this))
+    } catch (error) {
+      console.error('Failed to get games by slugs:', error)
+      return []
+    }
+  }
+
+  /**
    * Get games with pagination and filtering
    */
   static async getGames(options: {

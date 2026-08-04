@@ -7,6 +7,7 @@ import { Game } from '../types'
 import { useGameSession } from '../hooks/use-game-session'
 import { useGameBlockchain } from '../hooks/use-game-blockchain'
 import { trackEvent } from '@/services/analytics'
+import { useRecentlyPlayed } from '@/hooks/use-recently-played'
 
 // Screen Components
 import { HeroScreen } from './screens/hero-screen'
@@ -23,6 +24,7 @@ const MAX_COMIC_PANELS = 5
 
 export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const [liveGame, setLiveGame] = useState(game)
+  const { trackPlay } = useRecentlyPlayed()
 
   useEffect(() => {
     setLiveGame(game)
@@ -136,7 +138,10 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     }).catch(() => {
       // Non-critical — don't block the user if this fails
     })
-  }, [storyComplete, liveGame.slug, session.assistantMessageCount, session.epilogueReflection, session.sessionId])
+
+    // Track in localStorage for the "Continue playing" homepage section
+    trackPlay(liveGame.slug, liveGame.title)
+  }, [storyComplete, liveGame.slug, liveGame.title, session.assistantMessageCount, session.epilogueReflection, session.sessionId, trackPlay])
   const renderEnrichment = () => (
     <GameEnrichment
       gameId={liveGame.id}

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
 import { SimpleGameForm } from '@/domains/games/components/simple-game-form'
+import { RecentlyPlayedSection } from '@/domains/games/components/recently-played-section'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -262,6 +263,9 @@ export default function HomePage() {
               </motion.div>
             </div>
           </section>
+
+          {/* Continue playing — only renders for returning users with play history */}
+          <RecentlyPlayedSection />
 
           {/* Featured Works */}
           {hasFeatured !== false && (
