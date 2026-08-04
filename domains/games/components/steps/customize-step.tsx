@@ -13,6 +13,7 @@ import {
   articleGamePremise,
   StylePreview,
 } from '@/domains/games/components/game-generator-helpers'
+import { PanelStripMockup } from './panel-strip-mockup'
 
 interface CustomizeStepProps {
   isStoryMode: boolean
@@ -239,6 +240,15 @@ export function CustomizeStep({
                   ? `A word puzzle derived from the language and themes in "${articlePreview?.title}".`
                   : articleGamePremise(articlePreview!, genre)}
               </p>
+
+              {/* Visual mockup of the 5-panel comic structure */}
+              {mode === 'story' && articlePreview && (
+                <PanelStripMockup
+                  genre={genre}
+                  articleTitle={articlePreview.title}
+                  primaryColor={undefined}
+                />
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                 <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-cyan-100">
                   {mode === 'wordle' ? 'Free' : 'Paid'}
