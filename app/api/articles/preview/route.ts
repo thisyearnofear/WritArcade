@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
 import { getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
+import { ok, fail } from '@/lib/api-response'
 import { z } from 'zod'
 
 const previewSchema = z.object({
@@ -15,29 +16,17 @@ export async function POST(request: NextRequest) {
     const { url, paymentPath = 'musd', writerCoinId } = previewSchema.parse(body)
 
     if (!ContentProcessorService.isValidUrl(url)) {
-      return NextResponse.json(
-        { success: false, error: 'Please enter a valid public article URL.' },
-        { status: 400 }
-      )
+      return fail('Please enter a valid public article URL.')
     }
 
     if (paymentPath === 'writercoin' && writerCoinId && !validateArticleUrl(url, writerCoinId)) {
       const detectedWriterCoin = getWriterCoinByArticleUrl(url)
-      return NextResponse.json(
-        {
-          success: false,
-          error: detectedWriterCoin
-            ? `This article belongs to ${detectedWriterCoin.name}. Use ${detectedWriterCoin.symbol}, or switch to MUSD for any public Paragraph article.`
-            : 'This URL does not match the selected writer. Switch to MUSD for any Paragraph article, or choose the matching writer coin.',
-          detectedWriterCoin: detectedWriterCoin
-            ? {
-                id: detectedWriterCoin.id,
-                name: detectedWriterCoin.name,
-                symbol: detectedWriterCoin.symbol,
-              }
-            : undefined,
-        },
-        { status: 400 }
+      return fail(
+        detectedWriterCoin
+          ? `This article belongs to ${detectedWriterCoin.name}. Use ${detectedWriterCoin.symbol}, or switch to MUSD for any public Paragraph article.`
+          : 'This URL does not match the selected writer. Switch to MUSD for any Paragraph article, or choose the matching writer coin.',
+        400,
+        { code: 'ARTICLE_WRITER_MISMATCH' },
       )
     }
 
@@ -46,24 +35,21 @@ export async function POST(request: NextRequest) {
       ? `${content.text.slice(0, 220).trim()}...`
       : content.text
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        title: content.title || 'Untitled article',
-        author: content.author || 'Unknown author',
-        publicationName: content.publicationName,
-        publishedAt: content.publishedAt?.toISOString(),
-        wordCount: content.wordCount,
-        estimatedReadTime: content.estimatedReadTime,
-        excerpt,
-        sourceUrl: url,
-      },
+    return ok({
+      title: content.title || 'Untitled article',
+      author: content.author || 'Unknown author',
+      publicationName: content.publicationName,
+      publishedAt: content.publishedAt?.toISOString(),
+      wordCount: content.wordCount,
+      estimatedReadTime: content.estimatedReadTime,
+      excerpt,
+      sourceUrl: url,
     })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return fail('Invalid request data', 400, { details: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`) })
+    }
     const message = error instanceof Error ? error.message : 'Could not preview this article.'
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 400 }
-    )
+    return fail(message, 400)
   }
 }

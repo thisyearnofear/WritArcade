@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
+import { ok, fail } from '@/lib/api-response'
 
 /**
  * GET /api/games/by-slugs?slugs=slug-a,slug-b,slug-c
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
       .filter(Boolean)
 
     if (slugs.length === 0) {
-      return NextResponse.json({ success: true, data: [] })
+      return ok([])
     }
 
     // Cap at 12 to prevent abuse
@@ -28,12 +29,9 @@ export async function GET(request: NextRequest) {
 
     const games = await GameDatabaseService.getGamesBySlugs(cappedSlugs)
 
-    return NextResponse.json({ success: true, data: games })
+    return ok(games)
   } catch (error) {
     console.error('GET /api/games/by-slugs error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch games' },
-      { status: 500 }
-    )
+    return fail('Failed to fetch games', 500)
   }
 }

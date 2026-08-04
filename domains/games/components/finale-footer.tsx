@@ -1,0 +1,185 @@
+'use client'
+
+import { Button } from '@/components/ui/button'
+import { ChevronLeft, Download, Zap, Loader2, Wallet } from 'lucide-react'
+import { ShareDropdown } from '@/components/ui/share-dropdown'
+import { AttributionPair } from '@/components/ui/user-attribution'
+import { NarrationControls } from './finale-narration'
+import { VideoUpsellCTA } from './finale-video-screen'
+import type { useVideoMotion } from './finale-video-motion'
+import type { useNarration } from './finale-narration'
+import type { ComicBookFinalePanelData } from './comic-book-finale'
+
+interface FinaleFooterProps {
+  gameTitle: string
+  genre: string
+  totalPanels: number
+  primaryColor: string
+  creatorWallet: string
+  authorParagraphUsername: string
+  authorWallet?: string
+  articleUrl: string
+  panels: ComicBookFinalePanelData[]
+  currentPanel?: ComicBookFinalePanelData
+  currentPanelIndex: number
+  shareData: {
+    gameTitle: string
+    genre: string
+    panelCount: number
+    title: string
+    text: string
+    url: string
+    author: string
+    videoUrl?: string
+  }
+  narration: ReturnType<typeof useNarration>
+  video: ReturnType<typeof useVideoMotion>
+  isMinting: boolean
+  mintAvailable: boolean
+  onBack: () => void
+  onDownload: () => void
+  onMint: () => void
+  // Video upsell
+  onOpenVideoStyleModal: () => void
+  onWatchCinematic: () => void
+  // Funding fallback
+  onFundGame?: () => void
+  onConnectWallet?: (() => void) | undefined
+  isFunding?: boolean
+  fundCostLabel?: string
+  // IP registration
+  ipRegistrationReady: boolean
+  showIPRegistration: boolean
+  onShowIPRegistration: () => void
+}
+
+/**
+ * Footer bar with attribution, narration controls, share, download, and mint.
+ * Extracted from ComicBookFinale to reduce its size.
+ */
+export function FinaleFooter({
+  gameTitle,
+  genre,
+  totalPanels,
+  primaryColor,
+  creatorWallet,
+  authorParagraphUsername,
+  authorWallet,
+  articleUrl,
+  panels,
+  currentPanel,
+  currentPanelIndex,
+  shareData,
+  narration,
+  video,
+  isMinting,
+  mintAvailable,
+  onBack,
+  onDownload,
+  onMint,
+  onFundGame,
+  onConnectWallet,
+  isFunding,
+  fundCostLabel,
+  ipRegistrationReady,
+  showIPRegistration,
+  onShowIPRegistration,
+  onOpenVideoStyleModal,
+  onWatchCinematic,
+}: FinaleFooterProps) {
+  return (
+    <div
+      className="border-t border-white/10 p-4 md:p-6 bg-gradient-to-t from-black via-black/80 to-transparent backdrop-blur-md"
+      style={{ boxShadow: `0 -4px 20px ${primaryColor}10` }}
+    >
+      <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
+        {/* Attribution & Info */}
+        <div className="space-y-3">
+          <AttributionPair
+            creatorWallet={creatorWallet}
+            authorParagraphUsername={authorParagraphUsername}
+            authorWallet={authorWallet}
+            size="sm"
+            layout="horizontal"
+          />
+          <div className="text-xs text-muted-foreground">
+            {totalPanels} panels • {genre} • Inspired by <a href={articleUrl} target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground underline">original article</a>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3 flex-wrap items-center">
+          <NarrationControls
+            narration={narration}
+            panels={panels}
+            currentPanelId={currentPanel?.id}
+            currentPanelIndex={currentPanelIndex}
+            primaryColor={primaryColor}
+          />
+
+          <ShareDropdown data={shareData} variant="outline" />
+
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={onDownload}
+            title="Download your comic as image"
+          >
+            <Download className="w-4 h-4" />
+            Download
+          </Button>
+
+          <VideoUpsellCTA
+            video={video}
+            onOpenStyleModal={onOpenVideoStyleModal}
+            onWatch={onWatchCinematic}
+          />
+
+          {mintAvailable ? (
+            <Button
+              onClick={onMint}
+              disabled={isMinting}
+              className="gap-2"
+              style={{ backgroundColor: primaryColor, color: 'white' }}
+            >
+              <Zap className="w-4 h-4" />
+              {isMinting ? 'Preparing NFT...' : 'Mint as NFT'}
+            </Button>
+          ) : onFundGame ? (
+            <Button
+              onClick={onFundGame}
+              disabled={isFunding}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+              {isFunding ? 'Paying…' : `Pay ${fundCostLabel || ''} to Mint`}
+            </Button>
+          ) : onConnectWallet ? (
+            <Button
+              onClick={onConnectWallet}
+              className="gap-2 bg-purple-600 hover:bg-purple-500 text-white"
+            >
+              <Wallet className="w-4 h-4" />
+              Connect to Mint
+            </Button>
+          ) : (
+            <Button disabled className="gap-2">
+              <Zap className="w-4 h-4" />
+              Mint as NFT
+            </Button>
+          )}
+
+          {ipRegistrationReady && !showIPRegistration && (
+            <Button
+              variant="outline"
+              className="gap-2 border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/10"
+              onClick={onShowIPRegistration}
+            >
+              Register Game IP
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,21 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { optionalAuth } from '@/services/auth'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import { getWriterCoinById } from '@/lib/writerCoins'
+import { ok, fail } from '@/lib/api-response'
 
 /**
  * GET /api/games/my-games
  * Fetch all games created by the authenticated user
- * 
+ *
  * Query params:
  * - wallet: string (user's wallet address)
  * - limit: number (default 20)
  * - offset: number (default 0)
  */
 export async function GET(request: NextRequest) {
-  // Try to infer wallet from session if not provided
-
   try {
     const { searchParams } = new URL(request.url)
     let wallet = searchParams.get('wallet')
@@ -34,18 +33,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (!wallet) {
-      return NextResponse.json(
-        { error: 'Wallet address required' },
-        { status: 400 }
-      )
+      return fail('Wallet address required')
     }
 
     // Validate wallet format
     if (!wallet.match(/^0x[a-fA-F0-9]{40}$/)) {
-      return NextResponse.json(
-        { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
+      return fail('Invalid wallet address format')
     }
 
     // Fetch user
@@ -54,17 +47,14 @@ export async function GET(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          wallet,
-          games: [],
-          total: 0,
-          stats: {
-            totalGames: 0,
-            mintedGames: 0,
-            totalPlaytime: 0,
-          },
+      return ok({
+        wallet,
+        games: [],
+        total: 0,
+        stats: {
+          totalGames: 0,
+          mintedGames: 0,
+          totalPlaytime: 0,
         },
       })
     }
@@ -152,25 +142,19 @@ export async function GET(request: NextRequest) {
       }
     }))
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        wallet,
-        games: formattedGames,
-        total,
-        limit,
-        offset,
-        stats: {
-          totalGames: total,
-          mintedGames,
-        },
+    return ok({
+      wallet,
+      games: formattedGames,
+      total,
+      limit,
+      offset,
+      stats: {
+        totalGames: total,
+        mintedGames,
       },
     })
   } catch (error) {
     console.error('My games fetch error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch games' },
-      { status: 500 }
-    )
+    return fail('Failed to fetch games', 500)
   }
 }

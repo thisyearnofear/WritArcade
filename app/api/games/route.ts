@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { cacheGet, cacheSet } from '@/lib/cache'
+import { ok, fail } from '@/lib/api-response'
 
 // NOTE: The POST (game creation) endpoint lives at /api/games/generate.
 // This file handles the GET listing only, so client components can call
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     if (cacheKey) {
       const cached = cacheGet<unknown>(cacheKey, CACHE_TTL_MS)
       if (cached) {
-        return NextResponse.json({ success: true, data: cached })
+        return ok(cached)
       }
     }
 
@@ -55,12 +56,9 @@ export async function GET(request: NextRequest) {
 
     if (cacheKey) cacheSet(cacheKey, result)
 
-    return NextResponse.json({ success: true, data: result })
+    return ok(result)
   } catch (error) {
     console.error('GET /api/games error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch games' },
-      { status: 500 }
-    )
+    return fail('Failed to fetch games', 500)
   }
 }

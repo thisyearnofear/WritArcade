@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/database'
+import { ok, fail } from '@/lib/api-response'
 
 /**
  * PATCH /api/games/[slug]/play
@@ -37,15 +38,9 @@ export async function PATCH(
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: { playCount: game.playCount, lastPlayedAt: game.lastPlayedAt },
-    })
+    return ok({ playCount: game.playCount, lastPlayedAt: game.lastPlayedAt })
   } catch (error) {
     console.error('[play-route] Failed to increment play count:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to increment play count' },
-      { status: 500 }
-    )
+    return fail('Failed to increment play count', 500)
   }
 }

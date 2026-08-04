@@ -3,8 +3,10 @@ import { type GameGenre } from '@/components/game/GenreSelector'
 import { type GameDifficulty } from '@/components/game/DifficultySelector'
 import type { GameMode } from '@/domains/games/types'
 import type { WriterCoin } from '@/lib/writerCoins'
+import type { PaymentPath, ImageQuality, GenerateErrorState, ArticlePreview } from '@/domains/games/components/game-generator-helpers'
+import type { GenerateStep } from '@/components/ui/step-indicator'
 
-export type LoadingStep = 'validate' | 'extract' | 'generate' | 'save'
+export type LoadingStep = 'payment' | 'validate' | 'extract' | 'generate' | 'save'
 export type StepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
 
 export interface GeneratedGame {
@@ -15,124 +17,149 @@ export interface GeneratedGame {
   imageUrl?: string
 }
 
-interface GameGeneratorState {
-  selectedCoin: WriterCoin | null
-  mode: GameMode
-  url: string
-  genre: GameGenre
-  difficulty: GameDifficulty
-  
-  showCustomization: boolean
-  showPayment: boolean
-  paymentApproved: boolean
-  showFidelityReview: boolean
-  
-  isGenerating: boolean
-  loadingStep: LoadingStep | null
-  stepStatuses: Record<LoadingStep, StepStatus>
-  generatedGame: GeneratedGame | null
-  error: string | null
-  successData: { gameSlug: string; title: string; author?: string } | null
-  
-  setSelectedCoin: (coin: WriterCoin | null) => void
-  setMode: (mode: GameMode) => void
-  setUrl: (url: string) => void
-  setGenre: (genre: GameGenre) => void
-  setDifficulty: (difficulty: GameDifficulty) => void
-  toggleCustomization: () => void
-  setShowPayment: (show: boolean) => void
-  setPaymentApproved: (approved: boolean) => void
-  
-  startGeneration: () => void
-  setLoadingStep: (step: LoadingStep | null) => void
-  setStepStatus: (step: LoadingStep, status: StepStatus) => void
-  setGeneratedGame: (game: GeneratedGame | null) => void
-  completeGeneration: (data: { gameSlug: string; title: string; author?: string }) => void
-  setError: (error: string | null) => void
-  reset: () => void
-  resetForm: () => void
-}
-
 const initialStepStatuses: Record<LoadingStep, StepStatus> = {
+  payment: 'pending',
   validate: 'pending',
   extract: 'pending',
   generate: 'pending',
   save: 'pending',
 }
 
+interface GameGeneratorState {
+  // ── Core form state ──────────────────────────────────────────────────
+  url: string
+  mode: GameMode
+  genre: GameGenre
+  difficulty: GameDifficulty
+  imageQuality: ImageQuality
+  paymentPath: PaymentPath
+  selectedCoin: WriterCoin | null
+
+  // ── Article preview ──────────────────────────────────────────────────
+  articlePreview: ArticlePreview | null
+  previewedUrl: string
+  isPreviewingArticle: boolean
+
+  // ── UI toggles ───────────────────────────────────────────────────────
+  showCustomization: boolean
+  showAdvancedPayment: boolean
+  showWriterSelector: boolean
+  mobileStep: GenerateStep
+
+  // ── Payment ─────────────────────────────────────────────────────────
+  paymentApproved: boolean
+
+  // ── Generation ───────────────────────────────────────────────────────
+  isGenerating: boolean
+  loadingStep: LoadingStep | null
+  stepStatuses: Record<LoadingStep, StepStatus>
+  error: GenerateErrorState | null
+
+  // ── Actions ─────────────────────────────────────────────────────────
+  setUrl: (url: string) => void
+  setMode: (mode: GameMode) => void
+  setGenre: (genre: GameGenre) => void
+  setDifficulty: (difficulty: GameDifficulty) => void
+  setImageQuality: (quality: ImageQuality) => void
+  setPaymentPath: (path: PaymentPath) => void
+  setSelectedCoin: (coin: WriterCoin | null) => void
+
+  setArticlePreview: (preview: ArticlePreview | null) => void
+  setPreviewedUrl: (url: string) => void
+  setIsPreviewingArticle: (previewing: boolean) => void
+
+  toggleCustomization: () => void
+  toggleAdvancedPayment: () => void
+  toggleWriterSelector: () => void
+  setMobileStep: (step: GenerateStep) => void
+
+  setPaymentApproved: (approved: boolean) => void
+  resetPaymentProgress: () => void
+
+  startGeneration: () => void
+  setIsGenerating: (isGenerating: boolean) => void
+  setLoadingStep: (step: LoadingStep | null) => void
+  setStepStatus: (step: LoadingStep, status: StepStatus) => void
+  setStepStatuses: (statuses: Record<LoadingStep, StepStatus>) => void
+  setError: (error: GenerateErrorState | null) => void
+
+  reset: () => void
+  resetForm: () => void
+}
+
 export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
-  selectedCoin: null,
-  mode: 'story',
+  // ── Initial state ────────────────────────────────────────────────────
   url: '',
+  mode: 'story',
   genre: 'horror' as GameGenre,
   difficulty: 'easy' as GameDifficulty,
-  showCustomization: true,
-  showPayment: false,
+  imageQuality: 'fast' as ImageQuality,
+  paymentPath: 'musd' as PaymentPath,
+  selectedCoin: null,
+
+  articlePreview: null,
+  previewedUrl: '',
+  isPreviewingArticle: false,
+
+  showCustomization: false,
+  showAdvancedPayment: false,
+  showWriterSelector: false,
+  mobileStep: 'article',
+
   paymentApproved: false,
-  showFidelityReview: false,
+
   isGenerating: false,
   loadingStep: null,
   stepStatuses: { ...initialStepStatuses },
-  generatedGame: null,
   error: null,
-  successData: null,
-  
-  setSelectedCoin: (coin) => set({ selectedCoin: coin }),
-  
-  setMode: (mode) => set((state) => {
-    if (mode === 'wordle') {
-      return {
-        mode,
-        showCustomization: false,
-        showPayment: false,
-        paymentApproved: false,
-      }
-    }
-    return { mode }
-  }),
-  
+
+  // ── Actions ─────────────────────────────────────────────────────────
   setUrl: (url) => set({ url }),
+  setMode: (mode) => set({ mode }),
   setGenre: (genre) => set({ genre }),
   setDifficulty: (difficulty) => set({ difficulty }),
-   
-  toggleCustomization: () => set((state) => ({ showCustomization: !state.showCustomization })),
-  setShowPayment: (show) => set({ showPayment: show }),
-  setPaymentApproved: (approved) => set({ paymentApproved: approved }),
-  
+  setImageQuality: (imageQuality) => set({ imageQuality }),
+  setPaymentPath: (paymentPath) => set({ paymentPath }),
+  setSelectedCoin: (selectedCoin) => set({ selectedCoin }),
+
+  setArticlePreview: (articlePreview) => set({ articlePreview }),
+  setPreviewedUrl: (previewedUrl) => set({ previewedUrl }),
+  setIsPreviewingArticle: (isPreviewingArticle) => set({ isPreviewingArticle }),
+
+  toggleCustomization: () => set((s) => ({ showCustomization: !s.showCustomization })),
+  toggleAdvancedPayment: () => set((s) => ({ showAdvancedPayment: !s.showAdvancedPayment })),
+  toggleWriterSelector: () => set((s) => ({ showWriterSelector: !s.showWriterSelector })),
+  setMobileStep: (mobileStep) => set({ mobileStep }),
+
+  setPaymentApproved: (paymentApproved) => set({ paymentApproved }),
+  resetPaymentProgress: () => set({ paymentApproved: false }),
+
   startGeneration: () => set({
     isGenerating: true,
     error: null,
     stepStatuses: { ...initialStepStatuses },
   }),
-  
-  setLoadingStep: (step) => set({ loadingStep: step }),
-  
-  setStepStatus: (step, status) => set((state) => ({
-    stepStatuses: { ...state.stepStatuses, [step]: status },
+
+  setIsGenerating: (isGenerating) => set({ isGenerating }),
+  setLoadingStep: (loadingStep) => set({ loadingStep }),
+  setStepStatus: (step, status) => set((s) => ({
+    stepStatuses: { ...s.stepStatuses, [step]: status },
   })),
-  
-  setGeneratedGame: (game) => set({ generatedGame: game, showFidelityReview: !!game }),
-  
-  completeGeneration: (data) => set({
-    generatedGame: null,
-    successData: data,
-  }),
-  
+  setStepStatuses: (stepStatuses) => set({ stepStatuses }),
   setError: (error) => set({ error }),
-  
+
   reset: () => set({
     isGenerating: false,
     loadingStep: null,
     stepStatuses: { ...initialStepStatuses },
-    generatedGame: null,
     error: null,
-    successData: null,
-    showFidelityReview: false,
   }),
-  
+
   resetForm: () => set({
     url: '',
     paymentApproved: false,
-    showPayment: false,
+    articlePreview: null,
+    previewedUrl: '',
+    error: null,
   }),
 }))

@@ -47,7 +47,21 @@ describe('/api/image-proxy', () => {
     expect(json.error).toBe('Only http/https URLs are supported')
   })
 
-  it('proxies a valid image with CORS headers', async () => {
+  it('returns 403 for non-allowlisted hostname (SSRF protection)', async () => {
+    global.fetch = vi.fn()
+
+    const { GET } = await import('@/app/api/image-proxy/route')
+    const request = new Request(
+      'http://localhost:3000/api/image-proxy?url=https%3A%2F%2Fexample.com%2Fimage.png'
+    )
+    const response = await GET(request)
+
+    expect(response.status).toBe(403)
+    const json = await response.json()
+    expect(json.error).toContain('Blocked')
+  })
+
+  it('proxies a valid image from allowlisted hostname with CORS headers', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
       headers: new Headers({ 'Content-Type': 'image/png' }),
@@ -56,7 +70,7 @@ describe('/api/image-proxy', () => {
 
     const { GET } = await import('@/app/api/image-proxy/route')
     const request = new Request(
-      'http://localhost:3000/api/image-proxy?url=https%3A%2F%2Fexample.com%2Fimage.png'
+      'http://localhost:3000/api/image-proxy?url=https%3A%2F%2Fipfs.io%2Fimage.png'
     )
     const response = await GET(request)
 
@@ -73,7 +87,7 @@ describe('/api/image-proxy', () => {
 
     const { GET } = await import('@/app/api/image-proxy/route')
     const request = new Request(
-      'http://localhost:3000/api/image-proxy?url=https%3A%2F%2Fexample.com%2Fmissing.png'
+      'http://localhost:3000/api/image-proxy?url=https%3A%2F%2Fipfs.io%2Fmissing.png'
     )
     const response = await GET(request)
 

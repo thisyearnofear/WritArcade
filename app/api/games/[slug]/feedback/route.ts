@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { optionalAuth } from '@/services/auth'
+import { ok, notFound, fail } from '@/lib/api-response'
 import { z } from 'zod'
 
 const feedbackSchema = z.object({
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params
     const user = await optionalAuth()
-    
+
     const body = await request.json()
     const validated = feedbackSchema.parse(body)
 
@@ -33,10 +34,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
     if (!game) {
-      return NextResponse.json(
-        { success: false, error: 'Game not found' },
-        { status: 404 }
-      )
+      return notFound('Game not found')
     }
 
     // Create feedback record
@@ -59,27 +57,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const avgNps = allFeedback.reduce((sum, f) => sum + f.npsScore, 0) / allFeedback.length
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: feedback.id,
-        averageNPS: avgNps,
-      },
+    return ok({
+      id: feedback.id,
+      averageNPS: avgNps,
     })
   } catch (error) {
     console.error('Feedback submission error:', error)
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid feedback data', details: error.errors },
-        { status: 400 }
-      )
+      return fail('Invalid feedback data', 400, { details: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`) })
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Failed to submit feedback' },
-      { status: 500 }
-    )
+    return fail('Failed to submit feedback', 500)
   }
 }
 
@@ -93,30 +82,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const game = await prisma.game.findUnique({
       where: { slug },
-      include: {
-        feedbacks: true,
-      },
+      include: { feedbacks: true },
     })
 
     if (!game) {
-      return NextResponse.json(
-        { success: false, error: 'Game not found' },
-        { status: 404 }
-      )
+      return notFound('Game not found')
     }
 
     const feedbacks = game.feedbacks
-    
+
     if (feedbacks.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          totalRatings: 0,
-          averageNPS: null,
-          averageFidelity: null,
-          averageNarrative: null,
-          averageEngagement: null,
-        },
+      return ok({
+        totalRatings: 0,
+        averageNPS: null,
+        averageFidelity: null,
+        averageNarrative: null,
+        averageEngagement: null,
       })
     }
 
@@ -125,30 +106,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const narrativeRatings = feedbacks.filter((f) => f.narrativeQuality !== null)
     const engagementRatings = feedbacks.filter((f) => f.engagementScore !== null)
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        totalRatings: feedbacks.length,
-        averageNPS: Math.round(avgNps * 10) / 10,
-        averageFidelity:
-          fidelityRatings.length > 0
-            ? Math.round((fidelityRatings.reduce((sum, f) => sum + (f.fidelityRating || 0), 0) / fidelityRatings.length) * 10) / 10
-            : null,
-        averageNarrative:
-          narrativeRatings.length > 0
-            ? Math.round((narrativeRatings.reduce((sum, f) => sum + (f.narrativeQuality || 0), 0) / narrativeRatings.length) * 10) / 10
-            : null,
-        averageEngagement:
-          engagementRatings.length > 0
-            ? Math.round((engagementRatings.reduce((sum, f) => sum + (f.engagementScore || 0), 0) / engagementRatings.length) * 10) / 10
-            : null,
-      },
+    return ok({
+      totalRatings: feedbacks.length,
+      averageNPS: Math.round(avgNps * 10) / 10,
+      averageFidelity:
+        fidelityRatings.length > 0
+          ? Math.round((fidelityRatings.reduce((sum, f) => sum + (f.fidelityRating || 0), 0) / fidelityRatings.length) * 10) / 10
+          : null,
+      averageNarrative:
+        narrativeRatings.length > 0
+          ? Math.round((narrativeRatings.reduce((sum, f) => sum + (f.narrativeQuality || 0), 0) / narrativeRatings.length) * 10) / 10
+          : null,
+      averageEngagement:
+        engagementRatings.length > 0
+          ? Math.round((engagementRatings.reduce((sum, f) => sum + (f.engagementScore || 0), 0) / engagementRatings.length) * 10) / 10
+          : null,
     })
   } catch (error) {
     console.error('Feedback retrieval error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to retrieve feedback' },
-      { status: 500 }
-    )
+    return fail('Failed to retrieve feedback', 500)
   }
 }

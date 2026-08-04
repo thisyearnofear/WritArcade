@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/database'
 import { getCurrentUser } from '@/services/auth'
+import { ok, unauthorized, fail } from '@/lib/api-response'
 import { z } from 'zod'
 
 const preferencesSchema = z.object({
@@ -13,10 +13,7 @@ export async function PATCH(req: Request) {
         const user = await getCurrentUser()
 
         if (!user) {
-            return NextResponse.json(
-                { success: false, error: 'Unauthorized' },
-                { status: 401 }
-            )
+            return unauthorized()
         }
 
         const body = await req.json()
@@ -30,12 +27,9 @@ export async function PATCH(req: Request) {
             },
         })
 
-        return NextResponse.json({ success: true, user: updatedUser })
+        return ok({ user: updatedUser })
     } catch (error) {
         console.error('Preferences update error:', error)
-        return NextResponse.json(
-            { success: false, error: 'Failed to update preferences' },
-            { status: 500 }
-        )
+        return fail('Failed to update preferences', 500)
     }
 }
