@@ -198,12 +198,14 @@ We are transitioning our "Secret Panel" logic from Lit Protocol (ERC-721 gating)
 | Image Generation | ✅ Production | Multi-provider fallback |
 | Payments | ✅ Production | 5 writer coins |
 | Marketplace | ✅ Production | Browse + compose |
+| Panel Narration | ✅ Shipped | ElevenLabs TTS with auto-play (`useNarration`) |
+| Panel Animation (I2V) | ✅ Shipped | Luma/Fal/Replicate registry (`useVideoMotion`), 50-credit upsell |
 
 ## Future Roadmap
 
 ### Phase 13: Media Expansion
-- ElevenLabs audio narration for panels
-- Video export of comics
+- ~~ElevenLabs audio narration for panels~~ (shipped — `useNarration` + `NarrationControls`)
+- ~~Video export of comics~~ (shipped — per-panel I2V animation via `useVideoMotion`; full-game trailer fusing panels remains)
 - Social sharing integrations
 - Animated panel transitions
 

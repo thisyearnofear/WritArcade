@@ -16,6 +16,7 @@ export interface ComicShareData extends ShareData {
   gameTitle: string
   twist?: string // User's IRL insight or creative twist
   author?: string // Original article author
+  videoUrl?: string | null // Optional animated video URL
 }
 
 export class SocialShareService {
@@ -33,13 +34,15 @@ export class SocialShareService {
    */
   public shareToTwitter(data: ComicShareData): void {
     let tweetText = ''
+    const videoSuffix = data.videoUrl ? `\n\n🎬 Watch it move: ${data.videoUrl}` : ''
 
     if (data.twist && data.author) {
       // Viral flow format
-      tweetText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it on @StoryProtocol using @writersarcade! 🎮📚\n\nCheck out "${data.gameTitle}" 👇`
+      tweetText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it on @StoryProtocol using @writersarcade! 🎮📚${videoSuffix}\n\nCheck out "${data.gameTitle}" 👇`
     } else {
-      // Standard format
-      tweetText = `Just created "${data.gameTitle}" - an epic ${data.genre} comic with @writersarcade! 🎮📚\n\n✨ ${data.panelCount} panels of interactive storytelling\n🎨 Unique AI-generated visuals\n🎯 My choices shaped the story\n\nThe future of IP is here! 🚀\n\n#writersarcade #StoryProtocol #AIComics`
+      // Standard format — keep it tight; the URL below is auto-appended as a link card.
+      const animatedNote = data.videoUrl ? ' Animated panels included 🎬' : ''
+      tweetText = `Just created "${data.gameTitle}" — an interactive ${data.genre} comic where your choices shape the story.${animatedNote} 🎮📚${videoSuffix}\n\n#writersarcade #AIComics`
     }
 
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(data.url || window.location.href)}`
@@ -51,12 +54,13 @@ export class SocialShareService {
    */
   public shareToFarcaster(data: ComicShareData): void {
     let castText = ''
+    const videoLine = data.videoUrl ? `\n\n🎬 Animated version: ${data.videoUrl}` : ''
 
     if (data.twist && data.author) {
       // Viral flow format
-      castText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it!\n\nCheck out "${data.gameTitle}" on writersarcade 👇`
+      castText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it!${videoLine}\n\nCheck out "${data.gameTitle}" on writersarcade 👇`
     } else {
-      castText = `Just dropped my new comic "${data.gameTitle}" on writersarcade! 🎮📚\n\n${data.genre} story • ${data.panelCount} interactive panels • AI-generated art\n\nEvery choice I made shaped the narrative. Minted on @StoryProtocol 🚀`
+      castText = `Just dropped my new comic "${data.gameTitle}" on writersarcade! 🎮📚\n\n${data.genre} story • ${data.panelCount} interactive panels${data.videoUrl ? ' • Animated panels 🎬' : ''} • every choice shapes the narrative${videoLine}`
     }
 
     const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(data.url || window.location.href)}`

@@ -86,6 +86,23 @@ WritersArcade supports the Mezo ecosystem via a dedicated MUSD payment track:
 - **Narrative Editing**: Hover-to-edit text in finale before minting
 - **Real-time Downloads**: Edited text exported in PNG comic download
 
+### Comic Finale — Narration & Animation
+The post-game finale (`domains/games/components/comic-book-finale.tsx`) is layered over
+self-contained hooks + presentational components so each feature stays testable:
+
+- **Voice Narration** (`finale-narration.tsx`): `useNarration` owns per-panel TTS
+  caching, batch generation with progress %, per-panel regeneration, play/pause, and
+  cinematic auto-play that advances panels. `NarrationControls` renders the toolbar
+  (Narration button, Play/Pause, regenerate, Cinematic toggle). Panel 1 audio is
+  pre-generated on mount; the next panel's image+audio are prefetched for snappy nav.
+- **Video Animation Upsell** (`finale-video-motion.tsx` + `finale-video-screen.tsx`):
+  `useVideoMotion(gameSlug)` owns status polling (only while `pending`), per-panel
+  lookup, the start request, and style/error state. UI pieces are `VideoUpsellCTA`
+  (Animate → Animated), `CinematicToggleButton`, `VideoStyleModal` (Radix `Dialog`),
+  and `FinaleCinematicView` (`VideoShowcase` + `CreatorStats`). Completed animations
+  surface in `FinaleCinematicView` and mark the game card with an "Animated" badge,
+  plus attach a video URL to Twitter/Farcaster share copy.
+
 ### NFT Minting
 - Mint games as NFTs on Base mainnet
 - WriterCoinPayment contract handles payments + revenue splits

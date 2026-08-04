@@ -1,15 +1,23 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Download, Zap, Grid3X3, Eye, Pencil, Check, X, Volume2, VolumeX, Play, Pause, Loader2, Wallet, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, Download, Zap, Grid3X3, Eye, Pencil, Check, X, Loader2, Wallet, AlertTriangle } from 'lucide-react'
+import { useGameInsights } from '../hooks/use-game-insights'
 import { ImageLightbox } from './image-lightbox'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
+import { useVideoMotion } from './finale-video-motion'
+import {
+  VideoUpsellCTA,
+  CinematicToggleButton,
+  VideoStyleModal,
+  FinaleCinematicView,
+} from './finale-video-screen'
+import { useNarration, NarrationControls } from './finale-narration'
 import { UserAttribution, AttributionPair } from '@/components/ui/user-attribution'
 import { IPRegistration } from '@/components/story/IPRegistration'
 import type { GameCreator, GameAuthor } from '@/lib/services/ipfs-metadata.service'
 import { PostGameFeedback } from '@/components/game/post-game-feedback'
-import { VoiceNarrationService } from '../services/voice-narration.service'
 import { StreamingTypewriter, PretextContainer } from '@/components/effects'
 import {
   shouldShowFeedbackPrompt,
@@ -56,6 +64,8 @@ interface ComicBookFinaleProps {
   onPanelAudioChange?: (panelIndex: number, audioUrl: string | null) => void
   // Epilogue reflection
   epilogueReflection?: string
+  // Whether the current user owns the game (used to gate owner-only analytics)
+  isOwner?: boolean
   mintAvailable?: boolean
   mintUnavailableReason?: string
   mintTokenLabel?: string
@@ -96,6 +106,7 @@ export function ComicBookFinale({
   regeneratingMessageId,
   onPanelAudioChange,
   epilogueReflection,
+  isOwner = false,
   mintAvailable = true,
   mintUnavailableReason,
   mintTokenLabel,
@@ -111,31 +122,39 @@ export function ComicBookFinale({
 }: ComicBookFinaleProps) {
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
   const [isImageExpanded, setIsImageExpanded] = useState(false)
-  const [viewMode, setViewMode] = useState<'single' | 'grid' | 'nft-preview'>('grid')
+  const [viewMode, setViewMode] = useState<'single' | 'grid' | 'nft-preview' | 'cinematic'>('grid')
   const [showIPRegistration, setShowIPRegistration] = useState(false)
   const [isEditingText, setIsEditingText] = useState(false)
   const [editedText, setEditedText] = useState('')
   const [showCustomPrompt, setShowCustomPrompt] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [showFeedback, setShowFeedback] = useState(false) // Show feedback modal after gameplay
-  
-  // Audio narration state
-  const [panelAudioUrls, setPanelAudioUrls] = useState<Map<string, string>>(() => {
-    // Initialize from panel data if audio already exists
-    const initial = new Map<string, string>()
-    panels.forEach(p => {
-      if (p.audioUrl) initial.set(p.id, p.audioUrl)
-    })
-    return initial
+
+  // Video upsell — data flow extracted to useVideoMotion; UI pieces are the
+  // finale-video-screen components below. Only the modal-open state stays here.
+  const [showVideoStyleModal, setShowVideoStyleModal] = useState(false)
+  const video = useVideoMotion(gameSlug)
+  const videoStatus = video.status
+  const getPanelVideo = video.getPanelVideo
+  const { insights: gameInsights, isLoading: insightsLoading } = useGameInsights(gameSlug, isOwner)
+
+  // Audio narration — extracted to useNarration; the hook owns panel audio
+  // URLs, generation/playback/autoplay state, and its keyboard shortcut.
+  const narration = useNarration({
+    panels,
+    genre,
+    currentPanelIndex,
+    onAdvancePanel: setCurrentPanelIndex,
+    onPanelAudioChange,
+    navigationBlocked: isImageExpanded || isEditingText,
   })
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
-  const [generatingPanelId, setGeneratingPanelId] = useState<string | null>(null) // Track per-panel generation
-  const [audioGenerationProgress, setAudioGenerationProgress] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isAutoPlayMode, setIsAutoPlayMode] = useState(false)
-  const [audioError, setAudioError] = useState<string | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  
+  const {
+    audioRef,
+    setIsPlaying,
+    handleAudioEnded,
+    handleAudioError,
+  } = narration
+
   const [fontsLoaded, setFontsLoaded] = useState(false)
   
   // Font loading gate
@@ -149,7 +168,6 @@ export function ComicBookFinale({
 
   const currentPanel = panels[currentPanelIndex]
   const totalPanels = panels.length
-  const currentAudioUrl = panelAudioUrls.get(currentPanel?.id || '') || currentPanel?.audioUrl
   const ipRegistrationReady = (nftMinted || showIPRegistration) && !storyIpId
 
   useEffect(() => {
@@ -157,6 +175,9 @@ export function ComicBookFinale({
       setShowIPRegistration(true)
     }
   }, [nftMinted, storyIpId])
+
+  // Find the first completed video URL for sharing
+  const firstVideoUrl = video.firstVideoUrl
 
   // Prepare share data using existing game props
   const shareData = {
@@ -167,6 +188,7 @@ export function ComicBookFinale({
     text: `Check out my ${genre} comic "${gameTitle}" created with writersarcade! ${totalPanels} panels of interactive storytelling.`,
     url: typeof window !== 'undefined' ? window.location.href : '',
     author: authorParagraphUsername,
+    videoUrl: firstVideoUrl,
   }
 
   const handleNext = () => {
@@ -203,218 +225,6 @@ export function ComicBookFinale({
     setEditedText('')
     setIsEditingText(false)
   }
-
-  // Audio narration handlers
-  const generateAllNarration = useCallback(async () => {
-    if (isGeneratingAudio) return
-    
-    setIsGeneratingAudio(true)
-    setAudioGenerationProgress(0)
-    setAudioError(null)
-    
-    const newAudioUrls = new Map(panelAudioUrls)
-    let errorCount = 0
-    
-    for (let i = 0; i < panels.length; i++) {
-      const panel = panels[i]
-      setGeneratingPanelId(panel.id)
-      
-      // Skip if already generated
-      if (newAudioUrls.has(panel.id) || panel.audioUrl) {
-        setAudioGenerationProgress(((i + 1) / panels.length) * 100)
-        continue
-      }
-      
-      try {
-        const result = await VoiceNarrationService.generateNarration(
-          panel.narrativeText,
-          genre
-        )
-        
-        if (result.audioUrl) {
-          newAudioUrls.set(panel.id, result.audioUrl)
-          // Persist to panel data if callback provided
-          if (onPanelAudioChange) {
-            onPanelAudioChange(i, result.audioUrl)
-          }
-        } else {
-          errorCount++
-        }
-      } catch (error) {
-        console.error(`Failed to generate audio for panel ${i + 1}:`, error)
-        errorCount++
-      }
-      
-      setAudioGenerationProgress(((i + 1) / panels.length) * 100)
-    }
-    
-    setPanelAudioUrls(newAudioUrls)
-    setIsGeneratingAudio(false)
-    setGeneratingPanelId(null)
-    
-    if (errorCount > 0) {
-      setAudioError(`Failed to generate ${errorCount} of ${panels.length} panels`)
-    }
-  }, [panels, genre, isGeneratingAudio, panelAudioUrls, onPanelAudioChange])
-
-  // Generate audio for a single panel (per-panel regeneration)
-  const regeneratePanelAudio = useCallback(async (panelIndex: number) => {
-    const panel = panels[panelIndex]
-    if (!panel || generatingPanelId) return
-    
-    setGeneratingPanelId(panel.id)
-    setAudioError(null)
-    
-    try {
-      const result = await VoiceNarrationService.generateNarration(
-        panel.narrativeText,
-        genre,
-        { force: true } // Force regeneration
-      )
-      
-      if (result.audioUrl) {
-        setPanelAudioUrls(prev => {
-          const updated = new Map(prev)
-          updated.set(panel.id, result.audioUrl!)
-          return updated
-        })
-        // Persist to panel data if callback provided
-        if (onPanelAudioChange) {
-          onPanelAudioChange(panelIndex, result.audioUrl)
-        }
-      } else {
-        setAudioError('Failed to regenerate audio')
-      }
-    } catch (error) {
-      console.error(`Failed to regenerate audio for panel ${panelIndex + 1}:`, error)
-      setAudioError('Failed to regenerate audio')
-    }
-    
-    setGeneratingPanelId(null)
-  }, [panels, genre, generatingPanelId, onPanelAudioChange])
-
-  const togglePlayPause = useCallback(() => {
-    if (!audioRef.current || !currentAudioUrl) return
-    
-    setAudioError(null)
-    if (isPlaying) {
-      audioRef.current.pause()
-    } else {
-      audioRef.current.play().catch(err => {
-        console.error('Audio playback failed:', err)
-        setAudioError('Audio playback failed')
-      })
-    }
-    setIsPlaying(!isPlaying)
-  }, [isPlaying, currentAudioUrl])
-
-  const handleAudioEnded = useCallback(() => {
-    setIsPlaying(false)
-    
-    // Auto-advance to next panel in auto-play mode
-    if (isAutoPlayMode && currentPanelIndex < totalPanels - 1) {
-      setCurrentPanelIndex(prev => prev + 1)
-    } else if (isAutoPlayMode && currentPanelIndex === totalPanels - 1) {
-      setIsAutoPlayMode(false) // Stop auto-play at end
-    }
-  }, [isAutoPlayMode, currentPanelIndex, totalPanels])
-
-  const handleAudioError = useCallback(() => {
-    setIsPlaying(false)
-    setAudioError('Audio playback error')
-  }, [])
-
-  const startCinematicMode = useCallback(async () => {
-    // Generate all audio first if not already done
-    const generatedCount = panelAudioUrls.size + panels.filter(p => p.audioUrl).length
-    if (generatedCount < panels.length) {
-      await generateAllNarration()
-    }
-    
-    setCurrentPanelIndex(0)
-    setIsAutoPlayMode(true)
-  }, [panels, panelAudioUrls.size, generateAllNarration])
-
-  // Pre-generate first panel audio on mount (faster cinematic mode entry)
-  useEffect(() => {
-    const firstPanel = panels[0]
-    if (!firstPanel || panelAudioUrls.has(firstPanel.id) || firstPanel.audioUrl) return
-    // Fire-and-forget — don't block or show loading for this
-    VoiceNarrationService.generateNarration(firstPanel.narrativeText, genre)
-      .then(result => {
-        if (result.audioUrl) {
-          setPanelAudioUrls(prev => {
-            const updated = new Map(prev)
-            updated.set(firstPanel.id, result.audioUrl!)
-            return updated
-          })
-          onPanelAudioChange?.(0, result.audioUrl)
-        }
-      })
-      .catch(() => { /* silent — will retry when user taps cinematic */ })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run once on mount
-
-  // Prefetch next panel assets
-  useEffect(() => {
-    if (currentPanelIndex < totalPanels - 1) {
-      const nextPanel = panels[currentPanelIndex + 1]
-      
-      // Prefetch image
-      if (nextPanel.imageUrl) {
-        const img = new Image()
-        img.src = nextPanel.imageUrl
-      }
-      
-      // Prefetch audio
-      const nextAudioUrl = panelAudioUrls.get(nextPanel.id) || nextPanel.audioUrl
-      if (nextAudioUrl) {
-        const audio = new Audio()
-        audio.src = nextAudioUrl
-        audio.preload = 'auto'
-      }
-    }    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPanelIndex, panels, panelAudioUrls])
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Don't handle if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (isImageExpanded || isEditingText) return
-      
-      // Spacebar: toggle play/pause
-      if (e.code === 'Space' && currentAudioUrl) {
-        e.preventDefault()
-        togglePlayPause()
-      }
-    }
-    
-    window.addEventListener('keydown', handleGlobalKeyDown)
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [currentAudioUrl, togglePlayPause, isImageExpanded, isEditingText])
-
-  // Auto-play audio when panel changes in auto-play mode
-  useEffect(() => {
-    if (isAutoPlayMode && currentAudioUrl && audioRef.current) {
-      audioRef.current.src = currentAudioUrl
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(err => {
-        console.error('Auto-play failed:', err)
-        setAudioError('Auto-play failed')
-        setIsAutoPlayMode(false)
-      })
-    }
-  }, [currentPanelIndex, isAutoPlayMode, currentAudioUrl])
-
-  // Update audio source when panel changes (manual navigation)
-  useEffect(() => {
-    if (audioRef.current && currentAudioUrl && !isAutoPlayMode) {
-      audioRef.current.src = currentAudioUrl
-      setIsPlaying(false)
-    }
-    // Clear error when changing panels
-    setAudioError(null)
-  }, [currentPanelIndex, currentAudioUrl, isAutoPlayMode])
 
   const handleMintWithMetadata = async () => {
     if (!mintAvailable) return
@@ -719,6 +529,12 @@ export function ComicBookFinale({
                 <Zap className="w-4 h-4" />
                 NFT Preview
               </Button>
+              <CinematicToggleButton
+                video={video}
+                active={viewMode === 'cinematic'}
+                primaryColor={primaryColor}
+                onClick={() => setViewMode('cinematic')}
+              />
             </div>
 
             {/* Panel counter (only show in single mode) */}
@@ -749,12 +565,21 @@ export function ComicBookFinale({
                   backgroundColor: 'rgba(0,0,0,0.4)',
                 }}
               >
-                {/* Image */}
+                {/* Image / Video */}
                 <div
                   className="w-full aspect-video overflow-hidden bg-black relative group cursor-pointer"
                   onClick={() => currentPanel.imageUrl && setIsImageExpanded(true)}
                 >
-                  {currentPanel.imageUrl ? (
+                  {getPanelVideo(currentPanel.id)?.videoUrl ? (
+                    <video
+                      src={getPanelVideo(currentPanel.id)?.videoUrl ?? undefined}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  ) : currentPanel.imageUrl ? (
                     <>
                       <img
                         src={currentPanel.imageUrl}
@@ -954,7 +779,16 @@ export function ComicBookFinale({
                       onClick={() => setCurrentPanelIndex(idx)}
                     >
                       <div className="aspect-square overflow-hidden bg-black">
-                        {panel.imageUrl ? (
+                        {getPanelVideo(panel.id)?.videoUrl ? (
+                          <video
+                            src={getPanelVideo(panel.id)?.videoUrl ?? undefined}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
+                        ) : panel.imageUrl ? (
                           <img
                             src={panel.imageUrl}
                             alt={`Panel ${idx + 1}`}
@@ -1017,6 +851,19 @@ export function ComicBookFinale({
                   </div>
                 )}
               </>
+            )}
+
+            {/* CINEMATIC VIEW */}
+            {viewMode === 'cinematic' && videoStatus === 'completed' && (
+              <FinaleCinematicView
+                video={video}
+                panels={panels}
+                primaryColor={primaryColor}
+                gameTitle={gameTitle}
+                genre={genre}
+                gameInsights={gameInsights}
+                insightsLoading={insightsLoading}
+              />
             )}
 
             {/* NFT PREVIEW */}
@@ -1286,90 +1133,16 @@ export function ComicBookFinale({
 
             {/* Action buttons */}
             <div className="flex gap-3 flex-wrap items-center">
-              {/* Audio error indicator */}
-              {audioError && (
-                <span className="text-xs text-red-400 px-2 py-1 bg-red-500/10 rounded">
-                  {audioError}
-                </span>
-              )}
-              
-              {/* Audio narration controls */}
-              {panelAudioUrls.size === 0 && !panels.some(p => p.audioUrl) ? (
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={generateAllNarration}
-                  disabled={isGeneratingAudio}
-                  title="Generate voice narration for all panels (Spacebar to play/pause)"
-                >
-                  {isGeneratingAudio ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {Math.round(audioGenerationProgress)}%
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="w-4 h-4" />
-                      Narration
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <>
-                  {/* Play/Pause current panel audio */}
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={togglePlayPause}
-                    disabled={!currentAudioUrl || generatingPanelId === currentPanel?.id}
-                    title={isPlaying ? 'Pause narration (Space)' : 'Play narration (Space)'}
-                  >
-                    {generatingPanelId === currentPanel?.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isPlaying ? (
-                      <Pause className="w-4 h-4" />
-                    ) : (
-                      <Play className="w-4 h-4" />
-                    )}
-                    {generatingPanelId === currentPanel?.id ? 'Generating...' : isPlaying ? 'Pause' : 'Play'}
-                  </Button>
-                  
-                  {/* Regenerate current panel audio */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1 text-xs"
-                    onClick={() => regeneratePanelAudio(currentPanelIndex)}
-                    disabled={!!generatingPanelId || isAutoPlayMode}
-                    title="Regenerate audio for this panel"
-                  >
-                    🔄
-                  </Button>
-                  
-                  {/* Cinematic auto-play mode */}
-                  <Button
-                    variant={isAutoPlayMode ? 'default' : 'outline'}
-                    className="gap-2"
-                    onClick={() => isAutoPlayMode ? setIsAutoPlayMode(false) : startCinematicMode()}
-                    disabled={isGeneratingAudio}
-                    style={{
-                      backgroundColor: isAutoPlayMode ? primaryColor : undefined,
-                      borderColor: primaryColor,
-                    }}
-                    title={isAutoPlayMode ? 'Stop cinematic mode' : 'Start cinematic auto-play'}
-                  >
-                    {isGeneratingAudio ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isAutoPlayMode ? (
-                      <VolumeX className="w-4 h-4" />
-                    ) : (
-                      <Volume2 className="w-4 h-4" />
-                    )}
-                    {isAutoPlayMode ? 'Stop' : 'Cinematic'}
-                  </Button>
-                </>
-              )}
-              
+              {/* Audio narration controls (extracted) */}
+              <NarrationControls
+                narration={narration}
+                panels={panels}
+                currentPanelId={currentPanel?.id}
+                currentPanelIndex={currentPanelIndex}
+                primaryColor={primaryColor}
+              />
+
+
               <ShareDropdown
                 data={shareData}
                 variant="outline"
@@ -1384,6 +1157,13 @@ export function ComicBookFinale({
                 <Download className="w-4 h-4" />
                 Download
               </Button>
+
+              {/* Video upsell CTA */}
+              <VideoUpsellCTA
+                video={video}
+                onOpenStyleModal={() => setShowVideoStyleModal(true)}
+                onWatch={() => setViewMode('cinematic')}
+              />
 
               {mintAvailable ? (
                 <Button
@@ -1434,6 +1214,20 @@ export function ComicBookFinale({
             </div>
           </div>
         </div>
+
+        {/* Video style selection modal */}
+        {showVideoStyleModal && (
+          <VideoStyleModal
+            style={video.style}
+            onStyleChange={video.setStyle}
+            primaryColor={primaryColor}
+            onClose={() => setShowVideoStyleModal(false)}
+            onStart={() => {
+              setShowVideoStyleModal(false)
+              void video.start()
+            }}
+          />
+        )}
 
         {/* Story Protocol IP Registration */}
         {ipRegistrationReady && showIPRegistration && (

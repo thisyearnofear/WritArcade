@@ -15,15 +15,13 @@ const buttonVariants = cva(
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        // CONSOLIDATION: Removed writarcade variants - use default/secondary instead
-        // CONSOLIDATION: Removed link variant - use ghost variant for links
       },
       size: {
         default: "h-10 px-4 py-2",
         sm: "h-9 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
-        mobile: "h-12 px-6 min-h-[48px]", // CONSOLIDATION: Simplified mobile sizing
+        mobile: "h-12 px-6 min-h-[48px]",
       },
     },
     defaultVariants: {
@@ -34,7 +32,12 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  // Omit drag/animation handler props whose DOM signatures clash with
+  // framer-motion's HTMLMotionProps overriding handlers.
+  extends Omit<
+      React.ButtonHTMLAttributes<HTMLButtonElement>,
+      'onDrag' | 'onDragStart' | 'onDragEnd' | 'onDragEnter' | 'onDragLeave' | 'onDragOver' | 'onDrop' | 'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'
+    >,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
   arcade?: boolean
@@ -42,50 +45,44 @@ export interface ButtonProps
   animated?: boolean
 }
 
+// Render motion directly on the <button> element — wrapping in motion.div
+// broke flex baselines, disabled hit-slop semantics, and form layout at call
+// sites. Scale micro-interaction only; hover shine removed.
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, arcade = false, mobile = false, animated = true, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
     const { isMobile } = useMobileOptimizations()
     const prefersReducedMotion = useReducedMotion()
-    
+
     const arcadeClasses = arcade ? "arcade-button" : ""
     const mobileClasses = (mobile || isMobile) ? "min-h-[48px] min-w-[48px] px-6 py-3" : ""
-    
-    // Animated button with micro-interactions
+    const classes = cn(buttonVariants({ variant, size, className }), arcadeClasses, mobileClasses)
+
+    if (asChild) {
+      return (
+        <Slot
+          className={classes}
+          ref={ref}
+          {...props}
+        />
+      )
+    }
+
     if (animated && !prefersReducedMotion) {
       return (
-        <motion.div
+        <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
-          <Comp
-            className={cn(buttonVariants({ variant, size, className }), arcadeClasses, mobileClasses, "relative overflow-hidden")}
-            ref={ref}
-            {...props}
-          >
-            {/* Shine effect overlay */}
-            <motion.span
-              className="absolute inset-0 pointer-events-none"
-              initial={{ x: "-100%" }}
-              whileHover={{ x: "100%" }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              style={{
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
-              }}
-            />
-            {/* Content wrapper to keep above shine */}
-            <span className="relative z-10">
-              {props.children}
-            </span>
-          </Comp>
-        </motion.div>
+          className={classes}
+          ref={ref}
+          {...props}
+        />
       )
     }
-    
+
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }), arcadeClasses, mobileClasses)}
+      <button
+        className={classes}
         ref={ref}
         {...props}
       />
