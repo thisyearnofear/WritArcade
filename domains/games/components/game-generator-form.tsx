@@ -3,17 +3,10 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles, Info, Lightbulb, AlertTriangle, CheckCircle2, FileText, RefreshCw, ChevronDown, ExternalLink } from 'lucide-react'
-import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
-import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
-import { PaymentOption } from '@/components/game/PaymentOption'
+import { type GameGenre } from '@/components/game/GenreSelector'
+import { type GameDifficulty } from '@/components/game/DifficultySelector'
 import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
 import { type WriterCoin, WRITER_COINS, validateArticleUrl } from '@/lib/writerCoins'
-import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
 import { retryWithBackoff } from '@/services/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
@@ -37,20 +30,18 @@ import {
   GAME_GENERATION_TIMEOUT_MS,
   PAYMENT_RECOVERY_TIMEOUT_MS,
   PAYMENT_RECOVERY_INTERVAL_MS,
-  paymentTokenForPath,
   getGenerationErrorMessage,
   isAbortError,
-  shortTxHash,
   paymentExplorerUrl,
   fetchWithTimeout,
   articleError,
   paymentError,
   generationError,
-  articlePreviewMeta,
-  articleGamePremise,
-  StylePreview,
-  GenerateErrorPanel,
 } from './game-generator-helpers'
+import { ArticleStep } from './steps/article-step'
+import { CustomizeStep } from './steps/customize-step'
+import { PaymentStep } from './steps/payment-step'
+import { GenerateStep as GenerateStepButton } from './steps/generate-step'
 
 const DEFAULT_WRITER_COIN = WRITER_COINS[0]
 
@@ -572,6 +563,124 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
     }
   }, [url, previewedUrl, previewArticle])
 
+  // ── Step-component callbacks (encapsulate multi-step state updates) ──
+
+  const handleUrlChange = useCallback((value: string) => {
+    setUrl(value)
+    resetPaymentProgress()
+    setError(null)
+    setArticlePreview(null)
+    setPreviewedUrl('')
+    paymentPathExposureRef.current = null
+  }, [])
+
+  const handleUseDetectedCoin = useCallback(() => {
+    if (!detectedCoin) return
+    setPaymentPath('writercoin')
+    setSelectedCoin(detectedCoin)
+    setShowAdvancedPayment(true)
+    resetPaymentProgress()
+    trackEvent('payment_path_auto_detected', {
+      writer: detectedCoin.id,
+      symbol: detectedCoin.symbol,
+      path: 'writercoin',
+      source: 'auto_detect_banner',
+    })
+  }, [detectedCoin])
+
+  const handleSelectStory = useCallback(() => {
+    setMode('story')
+    resetPaymentProgress()
+    trackEvent('game_mode_selected', { mode: 'story', paymentPath })
+  }, [paymentPath])
+
+  const handleSelectWordle = useCallback(() => {
+    setMode('wordle')
+    resetPaymentProgress()
+    trackEvent('game_mode_selected', { mode: 'wordle', paymentPath })
+  }, [paymentPath])
+
+  const handleSetMusdPath = useCallback(() => {
+    setPaymentPath('musd')
+    resetPaymentProgress()
+    setArticlePreview(null)
+    setPreviewedUrl('')
+    paymentPathExposureRef.current = null
+    setError(null)
+    trackEvent('payment_path_selected', { paymentPath: 'musd', mode, source: 'recommended_click' })
+  }, [mode])
+
+  const handleSetWriterCoinPath = useCallback(() => {
+    if (!writerCoin.paymentEnabled) return
+    setPaymentPath('writercoin')
+    resetPaymentProgress()
+    setArticlePreview(null)
+    setPreviewedUrl('')
+    paymentPathExposureRef.current = null
+    setError(null)
+    trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, source: 'advanced_click', writerCoinId: writerCoin.id })
+  }, [mode, writerCoin])
+
+  const handleToggleWriterSelector = useCallback(() => {
+    setShowWriterSelector((v) => !v)
+  }, [])
+
+  const handleWriterCoinSelect = useCallback((coin: WriterCoin) => {
+    setSelectedCoin(coin)
+    resetPaymentProgress()
+    setShowWriterSelector(false)
+    setArticlePreview(null)
+    setPreviewedUrl('')
+    paymentPathExposureRef.current = null
+    setError(null)
+  }, [])
+
+  const handleSetModeWordle = useCallback(() => {
+    setMode('wordle')
+    resetPaymentProgress()
+    trackEvent('game_mode_selected', { mode: 'wordle', paymentPath, source: 'post_preview_link' })
+  }, [paymentPath])
+
+  const handleToggleCustomization = useCallback(() => {
+    setShowCustomization((v) => !v)
+  }, [])
+
+  const handleToggleAdvancedPayment = useCallback(() => {
+    setShowAdvancedPayment((v) => !v)
+    if (!showAdvancedPayment) {
+      trackEvent('payment_path_advanced_opened', {
+        paymentPath,
+        mode,
+        writerCoinId: writerCoin.id,
+      })
+    }
+  }, [showAdvancedPayment, paymentPath, mode, writerCoin.id])
+
+  const handleResetDefaults = useCallback(() => {
+    setGenre('horror')
+    setDifficulty('easy')
+  }, [])
+
+  const handleRetry = useCallback(() => {
+    if (error?.phase === 'article') {
+      previewArticle()
+      return
+    }
+    if (error?.phase === 'generation') {
+      generateGame(paymentTxHashRef.current)
+      return
+    }
+    setError(null)
+  }, [error, previewArticle, generateGame, paymentTxHashRef])
+
+  const handlePaymentStart = useCallback(() => {
+    setIsGenerating(true)
+    setStepStatuses({ payment: 'in-progress', validate: 'pending', extract: 'pending', generate: 'pending', save: 'pending' })
+    setLoadingStep('payment')
+  }, [])
+
+
+
   return (
     <div className="w-full max-w-2xl mx-auto">
       {/* Step indicator — desktop phase bar, mobile header */}
@@ -583,739 +692,101 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
 
           {/* ── STEP 1: Article ── */}
           <div className={`${mobileStep === 'article' || isDesktop ? 'block' : 'hidden'}`}>
-          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Paste the article</h2>
-              <p className="text-sm text-muted-foreground">
-                Start with a public Paragraph article.
-              </p>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Label htmlFor="url" className="text-sm font-medium">
-                  Paragraph.xyz Article URL
-                </Label>
-              </div>
-              <Input
-                  id="url"
-                  type="url"
-                  placeholder={isMusdPath ? 'https://paragraph.xyz/... (any article)' : 'https://paragraph.xyz/...'}
-                  value={url}
-                  onChange={(e) => {
-                    setUrl(e.target.value)
-                    resetPaymentProgress()
-                    setError(null)
-                    setArticlePreview(null)
-                    setPreviewedUrl('')
-                    paymentPathExposureRef.current = null
-                  }}
-                className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-              />
-            </div>
-
-            {/* Auto-detected writer coin recommendation */}
-            {isAutoDetected && detectedCoin && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-4 py-3"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold uppercase tracking-wider text-purple-300">
-                        {detectedCoin.symbol} detected
-                      </p>
-                      <span className="rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-200">
-                        Writer Coin
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-purple-200/70">
-                      This article is by {detectedCoin.name}. Pay with {detectedCoin.symbol} on Base to support them directly.
-                    </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentPath('writercoin')
-                        setSelectedCoin(detectedCoin)
-                        setShowAdvancedPayment(true)
-                        resetPaymentProgress()
-                        trackEvent('payment_path_auto_detected', {
-                        writer: detectedCoin.id,
-                        symbol: detectedCoin.symbol,
-                        path: 'writercoin',
-                        source: 'auto_detect_banner',
-                      })
-                    }}
-                    className="flex-shrink-0 inline-flex items-center gap-1 rounded-md bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-500 transition-colors"
-                  >
-                    Use {detectedCoin.symbol}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {articlePreview && hasPreviewedCurrentUrl && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-md bg-emerald-500/20 p-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">Article ready</p>
-                    <h3 className="mt-1 text-sm font-semibold text-foreground">{articlePreview.title}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {articlePreviewMeta(articlePreview)}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {!articlePreview && (
-              <button
-                type="button"
-                onClick={previewArticle}
-                disabled={isPreviewingArticle || !url.trim()}
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isPreviewingArticle ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                {isPreviewingArticle ? 'Checking article...' : 'Preview article'}
-              </button>
-            )}
-          </div>
-
-          {/* Mode toggle is only shown when the user explicitly enters via
-              ?mode=wordle. The default /generate path is always Story so we
-              remove one decision from the happy path. */}
-          {!hasPreviewedCurrentUrl && initialMode === 'wordle' && (
-          <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium">Game Type</Label>
-              <motion.div
-                className="relative group"
-                whileHover={{ scale: 1.1 }}
-              >
-                <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                <motion.div
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-muted border border-border rounded-lg text-xs text-foreground z-50 pointer-events-none"
-                  initial={{ opacity: 0, y: 5 }}
-                  whileHover={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  Choose between Story (narrative adventure) or Wordle (word puzzle) game types
-                </motion.div>
-              </motion.div>
-            </div>
-              <div className="grid grid-cols-1 gap-2 rounded-lg bg-muted/40 border border-border p-1 min-[420px]:grid-cols-2">
-                <motion.button
-                  type="button"
-                  onClick={() => {
-                    setMode('story')
-                    resetPaymentProgress()
-                    trackEvent('game_mode_selected', { mode: 'story', paymentPath })
-                  }}
-                className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                  mode === 'story'
-                    ? 'bg-purple-600 text-white shadow'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-              >
-                  <span className="font-semibold">Story</span>
-                  <span className={`text-[10px] font-bold ${mode === 'story' ? 'text-purple-200' : 'text-purple-400'}`}>
-                    5-panel · NFT · CDR
-                  </span>
-              </motion.button>
-                <motion.button
-                  type="button"
-                  onClick={() => {
-                    setMode('wordle')
-                    resetPaymentProgress()
-                    trackEvent('game_mode_selected', { mode: 'wordle', paymentPath })
-                  }}
-                className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                  mode === 'wordle'
-                    ? 'bg-amber-600 text-white shadow'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-              >
-                  <span className="font-semibold">Wordle</span>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider rounded-sm px-1 py-0.5 ${
-                    mode === 'wordle'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                  }`}>
-                    Free
-                  </span>
-              </motion.button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {mode === 'story'
-                ? 'Story creates a 5-panel narrative game with AI-generated artwork, branching choices, mood tracking, and an encrypted CDR epilogue unlocked by the minted NFT.'
-                : 'Wordle creates a free word puzzle derived from your article vocabulary. No payment or wallet needed — a quick taste of the engine.'}
-            </p>
-          </div>
-          )}
+            <ArticleStep
+              url={url}
+              onUrlChange={handleUrlChange}
+              isMusdPath={isMusdPath}
+              detectedCoin={detectedCoin}
+              isAutoDetected={isAutoDetected}
+              onUseDetectedCoin={handleUseDetectedCoin}
+              articlePreview={articlePreview}
+              hasPreviewedCurrentUrl={hasPreviewedCurrentUrl}
+              isPreviewingArticle={isPreviewingArticle}
+              onPreview={previewArticle}
+              initialMode={initialMode}
+              mode={mode}
+              onSelectStory={handleSelectStory}
+              onSelectWordle={handleSelectWordle}
+            />
           </div>
           {/* ── Close Step 1: Article ── */}
 
           {/* ── STEP 2: Customize ── */}
           <div className={`${mobileStep === 'customize' || isDesktop ? 'block' : 'hidden'}`}>
-
-          {isStoryMode && hasPreviewedCurrentUrl && (
-            <div className="rounded-xl border border-border bg-card">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAdvancedPayment((value) => !value)
-                    if (!showAdvancedPayment) {
-                      trackEvent('payment_path_advanced_opened', {
-                        paymentPath,
-                        mode,
-                        writerCoinId: writerCoin.id,
-                      })
-                    }
-                  }}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-                >
-                  <span>
-                    <span className="block text-sm font-semibold text-foreground">Advanced payment options</span>
-                  </span>
-                  <ChevronDown className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${showAdvancedPayment ? 'rotate-180' : ''}`} />
-                </button>
-
-                <AnimatePresence>
-                  {showAdvancedPayment && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="space-y-4 border-t border-border p-4">
-                        <div className={`rounded-lg border p-3 ${
-                          isMusdPath
-                            ? 'border-amber-400/50 bg-amber-500/10'
-                            : 'border-border bg-muted/30'
-                        }`}>
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-sm font-bold text-foreground">MUSD · Mezo</p>
-                                <span className="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
-                                  Recommended
-                                </span>
-                              </div>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                Works with any public Paragraph article.
-                              </p>
-                            </div>
-                            {isMusdPath ? (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                Selected
-                              </span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPaymentPath('musd')
-                                    resetPaymentProgress()
-                                    setArticlePreview(null)
-                                    setPreviewedUrl('')
-                                    paymentPathExposureRef.current = null
-                                    setError(null)
-                                  trackEvent('payment_path_selected', { paymentPath: 'musd', mode, source: 'recommended_click' })
-                                }}
-                                className="inline-flex min-h-10 items-center justify-center rounded-md bg-amber-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-amber-500"
-                              >
-                                Use MUSD
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className={`rounded-lg border p-3 ${
-                          !isMusdPath
-                            ? 'border-purple-400/50 bg-purple-500/10'
-                            : 'border-purple-500/20 bg-slate-950/30'
-                        }`}>
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-foreground">Writer coin · Base</p>
-                              <p className="text-xs text-muted-foreground">
-                                Best when you already know the article belongs to a supported writer.
-                              </p>
-                              <p className={`mt-1.5 text-[11px] font-semibold ${writerCoin.paymentEnabled ? 'text-emerald-300/90' : 'text-amber-200/90'}`}>
-                                {writerCoin.paymentEnabled
-                                  ? `${writerCoin.writer} auto-receives 60% of every transaction.`
-                                  : `${writerCoin.symbol} is not enabled on the Base payment contract yet. Use MUSD.`}
-                              </p>
-                            </div>
-                            {!isMusdPath ? (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/15 px-2.5 py-1 text-xs font-semibold text-purple-200">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                Selected
-                              </span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (!writerCoin.paymentEnabled) return
-                                    setPaymentPath('writercoin')
-                                    resetPaymentProgress()
-                                    setArticlePreview(null)
-                                    setPreviewedUrl('')
-                                    paymentPathExposureRef.current = null
-                                    setError(null)
-                                  trackEvent('payment_path_selected', { paymentPath: 'writercoin', mode, source: 'advanced_click', writerCoinId: writerCoin.id })
-                                }}
-                                disabled={!writerCoin.paymentEnabled}
-                                className={`inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-wider transition ${
-                                  writerCoin.paymentEnabled
-                                    ? 'border-purple-500/40 bg-purple-500/10 text-purple-100 hover:bg-purple-500/20'
-                                    : 'cursor-not-allowed border-slate-600/40 bg-slate-800/40 text-slate-400'
-                                }`}
-                              >
-                                {writerCoin.paymentEnabled ? 'Use writer coin' : 'Use MUSD instead'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {!isMusdPath && (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-foreground">Selected writer</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {writerCoin.writer} · {writerCoin.symbol}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setShowWriterSelector((value) => !value)}
-                                className="text-xs text-purple-400 hover:text-purple-300 underline decoration-dotted"
-                              >
-                                {showWriterSelector ? 'Done' : 'Change writer'}
-                              </button>
-                            </div>
-
-                            <div className="rounded-lg border border-purple-500/20 bg-purple-950/20 p-3 text-xs text-purple-100/80">
-                              {writerCoin.paymentEnabled
-                                ? 'The article URL must match this writer. If it does not, switch back to MUSD.'
-                                : `${writerCoin.symbol} payments are not active on Base yet. MUSD remains available for this writer's articles.`}
-                            </div>
-
-                            <AnimatePresence>
-                              {showWriterSelector && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="overflow-hidden"
-                                  >
-                                    <WriterCoinSelector onSelect={(coin) => {
-                                      setSelectedCoin(coin)
-                                      resetPaymentProgress()
-                                      setShowWriterSelector(false)
-                                      setArticlePreview(null)
-                                      setPreviewedUrl('')
-                                      paymentPathExposureRef.current = null
-                                      setError(null)
-                                  }} />
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-            </div>
-          )}
-
-          {hasPreviewedCurrentUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-lg bg-cyan-500/20 p-2">
-                  <Sparkles className="h-4 w-4 text-cyan-200" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80">
-                    Your game
-                  </p>
-                  <h3 className="mt-1 text-base font-semibold text-foreground">
-                    {mode === 'wordle' ? 'Free article Wordle' : '5-panel playable comic'}
-                  </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {mode === 'wordle'
-                      ? `A word puzzle derived from the language and themes in "${articlePreview.title}".`
-                      : articleGamePremise(articlePreview, genre)}
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-cyan-100">
-                      {mode === 'wordle' ? 'Free' : 'Paid'}
-                    </span>
-                    {mode === 'story' && (
-                      <span className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground">
-                        {genre} · {difficulty}
-                      </span>
-                    )}
-                    {mode === 'story' && (
-                      <button
-                        type="button"
-                        onClick={() => setShowCustomization((value) => !value)}
-                        className="rounded-full border border-cyan-500/30 bg-black/20 px-2.5 py-1 text-cyan-100 transition hover:bg-cyan-500/10"
-                      >
-                        Customize
-                      </button>
-                    )}
-                      {mode === 'story' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMode('wordle')
-                            resetPaymentProgress()
-                            trackEvent('game_mode_selected', { mode: 'wordle', paymentPath, source: 'post_preview_link' })
-                          }}
-                        className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground transition hover:text-foreground"
-                      >
-                        Make free Wordle instead
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {!isGenerating && isStoryMode && hasPreviewedCurrentUrl && showCustomization && (
-            <motion.div
-              className="pt-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              <AnimatePresence>
-                  <motion.div
-                    className="mt-4 space-y-4 p-5 rounded-xl border-2 border-indigo-500/40 bg-gradient-to-br from-slate-900/80 to-indigo-950/60 shadow-lg"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  >
-                    <motion.div
-                      className="space-y-4"
-                      initial={{ y: -10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.1, duration: 0.3 }}
-                    >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-purple-100">Customize style</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="text-xs text-indigo-300 hover:text-indigo-200 underline decoration-dotted disabled:opacity-50"
-                          onClick={() => { setGenre('horror'); setDifficulty('easy') }}
-                          disabled={isGenerating}
-                        >
-                          Reset to defaults
-                        </button>
-                      </div>
-
-                      <StylePreview genre={genre} difficulty={difficulty} />
-
-                      <div className="flex justify-center gap-2 text-xs">
-                        <span className="inline-flex items-center rounded-full bg-purple-800/80 border border-purple-500/80 px-3 py-1 text-purple-100 font-medium">
-                          {genre}
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-purple-800/80 border border-purple-500/80 px-3 py-1 text-purple-100 font-medium">
-                          {difficulty}
-                        </span>
-                      </div>
-
-                      <div>
-                        <GenreSelector value={genre} onChange={setGenre} disabled={isGenerating} />
-                      </div>
-
-                      <div>
-                        <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={isGenerating} />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-purple-100">
-                          Image Quality
-                        </label>
-                        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
-                          <button
-                            type="button"
-                            onClick={() => setImageQuality('fast')}
-                            disabled={isGenerating}
-                            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                              imageQuality === 'fast'
-                                ? 'bg-purple-600 text-white border-2 border-purple-400'
-                                : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
-                            }`}
-                          >
-                            Fast (Turbo)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setImageQuality('quality')}
-                            disabled={isGenerating}
-                            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                              imageQuality === 'quality'
-                                ? 'bg-purple-600 text-white border-2 border-purple-400'
-                                : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
-                            }`}
-                          >
-                            High Quality
-                          </button>
-                        </div>
-                        <p className="text-xs text-purple-300/70">
-                          {imageQuality === 'fast'
-                            ? 'Optimized for narrative flow - faster generation'
-                            : 'Higher-end models - better visual fidelity'
-                          }
-                        </p>
-                      </div>
-
-                      <motion.div
-                        className="p-3 rounded-lg bg-purple-900/50 border border-purple-500/30 text-sm text-purple-100 flex items-start gap-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.3 }}
-                      >
-                        <Lightbulb className="w-4 h-4 mt-0.5 flex-shrink-0 text-yellow-300" />
-                        <div className="space-y-1 text-xs">
-                          <div>• <strong>Genre</strong> shapes narrative tone and visual style</div>
-                          <div>• <strong>Difficulty</strong> controls branching complexity</div>
-                        </div>
-                      </motion.div>
-                    </motion.div>
-                  </motion.div>
-              </AnimatePresence>
-            </motion.div>
-          )}
+            <CustomizeStep
+              isStoryMode={isStoryMode}
+              hasPreviewedCurrentUrl={hasPreviewedCurrentUrl}
+              showAdvancedPayment={showAdvancedPayment}
+              onToggleAdvancedPayment={handleToggleAdvancedPayment}
+              paymentPath={paymentPath}
+              mode={mode}
+              writerCoin={writerCoin}
+              isMusdPath={isMusdPath}
+              onSetMusdPath={handleSetMusdPath}
+              onSetWriterCoinPath={handleSetWriterCoinPath}
+              showWriterSelector={showWriterSelector}
+              onToggleWriterSelector={handleToggleWriterSelector}
+              onWriterCoinSelect={handleWriterCoinSelect}
+              onSetModeWordle={handleSetModeWordle}
+              showCustomization={showCustomization}
+              onToggleCustomization={handleToggleCustomization}
+              genre={genre}
+              onGenreChange={setGenre}
+              difficulty={difficulty}
+              onDifficultyChange={setDifficulty}
+              imageQuality={imageQuality}
+              onImageQualityChange={setImageQuality}
+              onResetDefaults={handleResetDefaults}
+              isGenerating={isGenerating}
+              articlePreview={articlePreview}
+            />
           </div>
           {/* ── Close Step 2: Customize ── */}
 
           {/* ── STEP 3: Payment ── */}
           <div className={`${mobileStep === 'payment' || isDesktop ? 'block' : 'hidden'}`}>
-
-        {error && (
-          <GenerateErrorPanel
-            error={{
-              ...error,
-              retryLabel: error.phase === 'generation' && activePaymentTxHash
-                ? 'Continue generation'
-                : error.retryLabel,
-            }}
-            onRetry={() => {
-              if (error.phase === 'article') {
-                previewArticle()
-                return
-              }
-              if (error.phase === 'generation') {
-                generateGame(paymentTxHashRef.current)
-                return
-              }
-              setError(null)
-            }}
-            onDismiss={() => setError(null)}
-          />
-        )}
-
-        {isStoryMode && !isMusdPath && balance && !paymentApproved && userBalance !== null && userBalance < requiredAmount && (
-          <div className="rounded-lg bg-red-900/20 border border-red-500/50 p-3 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="text-red-200 font-medium">Insufficient {writerCoin.symbol} Balance</p>
-              <p className="text-red-300/80">
-                You have {balance.formattedBalance} {writerCoin.symbol} but need {requiredAmount} {writerCoin.symbol} to generate a game.
-                {!isLoadingBalance && <span className="block mt-1">Your balance will be checked before payment.</span>}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Payment section — appears after the article is ready. */}
-        {isStoryMode && hasPreviewedCurrentUrl && (
-          <div className="space-y-4 rounded-lg border border-cyan-500/40 bg-gradient-to-br from-slate-950/90 to-cyan-950/50 p-4 shadow-xl sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-cyan-300" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80 mb-1">Ready to build</p>
-                <h3 className="font-semibold text-lg text-cyan-50">Pay and generate</h3>
-                <p className="text-xs text-cyan-300/70 mt-1">
-                  Why pay? Story games use AI to generate 5 custom panels with artwork, music, and branching narratives. The fee covers AI computation, on-chain registration, and supports the original writer.{' '}
-                  <span className="text-cyan-200 font-medium">You can read the comic for free afterward — no recurring costs.</span>
-                </p>
-              </div>
-            </div>
-
-            {activePaymentTxHash ? (
-              <div className="rounded-lg border border-emerald-500/35 bg-emerald-500/10 p-3">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-md bg-emerald-500/20 p-1.5">
-                    {isGenerating ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
-                    ) : (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-                      {isGenerating ? 'Generation running' : 'Payment received'}
-                    </p>
-                    <p className="mt-1 text-sm text-emerald-50">
-                      {paymentApproved
-                        ? 'Your payment is confirmed. Continue generation without paying again.'
-                        : 'Your transaction is saved for this attempt. Continue generation without paying again.'}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-md border border-emerald-400/25 bg-black/20 px-2 py-1 font-mono text-emerald-100">
-                        {shortTxHash(activePaymentTxHash)}
-                      </span>
-                      {activePaymentExplorerUrl && (
-                        <a
-                          href={activePaymentExplorerUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md border border-emerald-400/25 px-2 py-1 font-semibold text-emerald-100 transition hover:bg-emerald-500/10"
-                        >
-                          View transaction
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => generateGame(activePaymentTxHash)}
-                      disabled={isGenerating || isPreviewingArticle}
-                      className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                    >
-                      {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      {isGenerating ? 'Generating...' : 'Continue generation'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <PaymentOption
-                key={`${paymentPath}-${writerCoin.id}`}
-                writerCoin={writerCoin}
-                initialToken={paymentTokenForPath(paymentPath, writerCoin)}
-                action="generate-game"
-                onPaymentStart={() => {
-                  setIsGenerating(true)
-                  setStepStatuses({ payment: 'in-progress', validate: 'pending', extract: 'pending', generate: 'pending', save: 'pending' })
-                  setLoadingStep('payment')
-                }}
-                onPaymentSuccess={handlePaymentSuccess}
-                onPaymentError={(err) => setError(paymentError(err))}
-                onPaymentPathChange={(path) => setPaymentPath(path)}
-                disabled={isGenerating || !url.trim()}
-                compact
-              />
-            )}
-            <details className="rounded-lg border border-cyan-500/20 bg-black/20 p-3 text-xs text-cyan-100/75">
-              <summary className="cursor-pointer font-medium text-cyan-100">Details</summary>
-              <p className="mt-2 leading-relaxed">
-                {isMusdPath
-                  ? 'MUSD supports any public Paragraph article on Mezo.'
-                  : `${writerCoin.symbol} is the curated writer coin path on Base for supported writers.`}
-              </p>
-            </details>
-          </div>
-        )}
-
-        {isStoryMode && !hasPreviewedCurrentUrl && (
-          <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            Preview the article to unlock paid story generation options.
-          </div>
-        )}
-
+            <PaymentStep
+              error={error}
+              onRetry={handleRetry}
+              onDismiss={() => setError(null)}
+              isStoryMode={isStoryMode}
+              isMusdPath={isMusdPath}
+              balance={balance}
+              paymentApproved={paymentApproved}
+              userBalance={userBalance}
+              requiredAmount={requiredAmount}
+              isLoadingBalance={isLoadingBalance}
+              writerCoin={writerCoin}
+              hasPreviewedCurrentUrl={hasPreviewedCurrentUrl}
+              isGenerating={isGenerating}
+              isPreviewingArticle={isPreviewingArticle}
+              activePaymentTxHash={activePaymentTxHash}
+              activePaymentExplorerUrl={activePaymentExplorerUrl}
+              onContinueGeneration={() => generateGame(activePaymentTxHash)}
+              paymentPath={paymentPath}
+              onPaymentStart={handlePaymentStart}
+              onPaymentSuccess={handlePaymentSuccess}
+              onPaymentError={(err) => setError(paymentError(err))}
+              onPaymentPathChange={(path) => setPaymentPath(path)}
+              url={url}
+            />
           </div>
           {/* ── Close Step 3: Payment ── */}
 
           {/* ── STEP 4: Generate ── */}
           <div className={`${mobileStep === 'generate' || isDesktop ? 'block' : 'hidden'}`}>
-
-        {/* Submit button — visible until the paid story payment CTA takes over. */}
-        {(!isStoryMode || !hasPreviewedCurrentUrl) && (
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-          >
-            <Button
-              type="submit"
-              disabled={isGenerating || isPreviewingArticle || (isStoryMode && hasPreviewedCurrentUrl && !paymentApproved)}
-              className="relative w-full whitespace-normal bg-purple-600 text-white hover:bg-purple-700 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
-              size="mobile"
-              arcade
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating Game...
-                  <motion.div
-                    className="absolute inset-0 rounded-lg opacity-0"
-                    style={{
-                      background: 'radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0) 70%)',
-                      filter: 'blur(10px)',
-                    }}
-                    animate={{
-                      opacity: [0.3, 0.6, 0.3],
-                      scale: [1, 1.1, 1],
-                    }}
-                    transition={{
-                      opacity: { duration: 2, repeat: Infinity },
-                      scale: { duration: 2, repeat: Infinity },
-                    }}
-                  />
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {!hasPreviewedCurrentUrl
-                    ? isPreviewingArticle
-                      ? 'Checking Article...'
-                      : 'Preview Article'
-                    : isStoryMode
-                    ? paymentApproved
-                      ? `Generate Custom ${genre.charAt(0).toUpperCase() + genre.slice(1)} Game`
-                      : url.trim()
-                        ? 'Complete Payment to Generate'
-                        : 'Paste Article to Start'
-                    : 'Create Wordle Game (Free)'}
-                </>
-              )}
-            </Button>
-          </motion.div>
-        )}
+            {/* Submit button — visible until the paid story payment CTA takes over. */}
+            {(!isStoryMode || !hasPreviewedCurrentUrl) && (
+              <GenerateStepButton
+                isGenerating={isGenerating}
+                hasPreviewedCurrentUrl={hasPreviewedCurrentUrl}
+                isPreviewingArticle={isPreviewingArticle}
+                isStoryMode={isStoryMode}
+                paymentApproved={paymentApproved}
+                genre={genre}
+                url={url}
+              />
+            )}
           </div>
           {/* ── Close Step 4: Generate ── */}
 

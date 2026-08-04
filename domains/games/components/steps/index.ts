@@ -1,4 +1,4 @@
-export { CoinSelectionStep } from './coin-selection-step'
-export { GameTypeSelectionStep } from './game-type-selection-step'
-export { CustomizationStep } from './customization-step'
+export { ArticleStep } from './article-step'
+export { CustomizeStep } from './customize-step'
 export { PaymentStep } from './payment-step'
+export { GenerateStep } from './generate-step'
