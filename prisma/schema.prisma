@@ -132,7 +132,11 @@ model Game {
   // Monetization & Discovery
   playFee          String?   // Fee to play in tokens (BigInt as String)
   featured         Boolean   @default(false)
-  
+
+  // Video upsell tracking
+  videoUpsoldAt DateTime?
+  videoUpsellStatus String @default("idle") // 'idle' | 'pending' | 'completed' | 'failed'
+
   // Play tracking — incremented each time a game session completes
   playCount    Int      @default(0)
   lastPlayedAt DateTime? // Last time the game was played
@@ -213,11 +217,20 @@ model GameArtifactPanel {
   userChoice String? @db.Text
   audioUrl String?
 
+  // AI-generated video upsell (per panel)
+  videoUrl String?      // CDN URL of the generated MP4 (persistent storage)
+  videoProvider String? // Provider slug, e.g. "luma" | "fal" | "replicate" | "mock"
+  videoModel String?    // Specific model/version used, e.g. "ray-2"
+  videoJobId String?    // Provider job id used for polling/status updates
+  videoStatus String @default("idle") // 'idle' | 'pending' | 'completed' | 'failed'
+  videoError String?    // Failure reason for support/debugging
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([gameId, panelIndex])
   @@index([gameId, panelIndex])
+  @@index([videoStatus, updatedAt])
   @@map("game_artifact_panels")
 }
 

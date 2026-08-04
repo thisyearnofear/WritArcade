@@ -76,11 +76,12 @@ export function ComicFinaleScreen({
   const [fundError, setFundError] = useState<string | null>(null)
   const [savedArtifactKey, setSavedArtifactKey] = useState<string | null>(null)
   const ownerAddress = game.ownerWallet || game.creatorWallet
-  const canSaveArtifact = Boolean(
+  const isOwner = Boolean(
     userAddress &&
     ownerAddress &&
     userAddress.toLowerCase() === ownerAddress.toLowerCase()
   )
+  const canSaveArtifact = isOwner
 
   // Determine if this game can be funded (unfunded but writer coin resolvable)
   const isUnfunded = !game.writerCoinId && !game.paymentId
@@ -299,6 +300,7 @@ export function ComicFinaleScreen({
         hasEnoughToFund={hasEnoughToFund}
         fundError={fundError}
         onDismissFundError={() => setFundError(null)}
+        isOwner={isOwner}
         mintTokenLabel={mintToken?.symbol}
         mintCostLabel={mintCostLabel}
       />

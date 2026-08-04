@@ -169,6 +169,7 @@ export function GameGrid({
             symbol={getGameSymbol(game)}
             playCount={game.playCount}
             lastPlayedAt={game.lastPlayedAt?.toISOString() ?? null}
+            hasAnimation={game.videoUpsellStatus === 'completed'}
           />
         </motion.div>
       ))}

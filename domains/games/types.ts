@@ -111,6 +111,10 @@ export interface Game {
   superrareContract?: string
   superrareMintedAt?: Date
 
+  // Video upsell status
+  videoUpsellStatus?: 'idle' | 'pending' | 'completed' | 'failed'
+  videoUpsoldAt?: Date
+
   // Timestamps
   createdAt: Date
   updatedAt: Date

@@ -18,6 +18,7 @@ interface ShareDropdownProps {
   className?: string
   buttonClassName?: string
   surface?: string
+  videoUrl?: string | null
 }
 
 export function ShareDropdown({
@@ -27,6 +28,7 @@ export function ShareDropdown({
   className = '',
   buttonClassName = '',
   surface,
+  videoUrl,
 }: ShareDropdownProps) {
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -46,15 +48,17 @@ export function ShareDropdown({
     }
   }, [showMenu])
 
+  const shareData = { ...data, videoUrl: videoUrl ?? data.videoUrl }
+
   const handleTwitterShare = () => {
     trackEvent('share_clicked', { surface, channel: 'twitter', url: data.url })
-    socialShareService.shareToTwitter(data)
+    socialShareService.shareToTwitter(shareData)
     setShowMenu(false)
   }
 
   const handleFarcasterShare = () => {
     trackEvent('share_clicked', { surface, channel: 'farcaster', url: data.url })
-    socialShareService.shareToFarcaster(data)
+    socialShareService.shareToFarcaster(shareData)
     setShowMenu(false)
   }
 

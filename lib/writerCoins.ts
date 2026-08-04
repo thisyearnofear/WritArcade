@@ -347,21 +347,21 @@ export const MEZO_CONFIG = {
 export type PaymentToken = 
     | { type: 'writercoin'; coin: WriterCoin }
     | { type: 'musd'; network: 'testnet' | 'mainnet' }
-    | { type: 'credits' }
-
-/** Credit-based payment config */
+    | { type: 'credits' }/** Credit-based payment config */
 export const CREDITS_CONFIG = {
-    address: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-    decimals: 0,
-    symbol: 'Credits',
-    name: 'Credits',
-    gameGenerationCost: 10n, // 10 credits per game generation
-    mintCost: 5n,            // 5 credits per NFT mint
-    cost: {
-        'generate-game': 10,
-        'mint-nft': 5,
-        'play-wordle': 1,
-    } as Record<string, number>,
+  address: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  decimals: 0,
+  symbol: 'Credits',
+  name: 'Credits',
+  gameGenerationCost: 10n, // 10 credits per game generation
+  mintCost: 5n,            // 5 credits per NFT mint
+  videoUpsellCost: 50n,    // 50 credits to animate a completed comic
+  cost: {
+    'generate-game': 10,
+    'mint-nft': 5,
+    'play-wordle': 1,
+    'video-upsell': 50,
+  } as Record<string, number>,
 } as const
 
 /**
