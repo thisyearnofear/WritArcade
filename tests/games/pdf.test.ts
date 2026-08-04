@@ -1,32 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('pdfmake/src/printer', () => ({
-  default: class MockPdfPrinter {
-    createPdfKitDocument() {
-      const handlers = new Map<string, ((...args: unknown[]) => void)[]>()
-      return {
-        on(event: string, handler: (...args: unknown[]) => void) {
-          const existing = handlers.get(event) ?? []
-          handlers.set(event, [...existing, handler])
-        },
-        end() {
-          const dataHandlers = handlers.get('data') ?? []
-          const endHandlers = handlers.get('end') ?? []
-          const buffer = Buffer.from('fake-pdf-buffer')
-          dataHandlers.forEach((h) => h(buffer))
-          endHandlers.forEach((h) => h())
-        },
-      }
-    }
+const fakePdfBuffer = Buffer.from('fake-pdf-buffer')
+
+vi.mock('pdfmake', () => ({
+  default: {
+    setFonts: vi.fn(),
+    addFonts: vi.fn(),
+    createPdf: vi.fn(() => ({
+      getBuffer: vi.fn(async () => fakePdfBuffer),
+      getBase64: vi.fn(async () => fakePdfBuffer.toString('base64')),
+      getStream: vi.fn(async () => ({})),
+    })),
   },
 }))
 
 vi.mock('pdfmake/build/vfs_fonts', () => ({
   default: {
-    'Roboto-Regular.ttf': 'ZmFrZQ==',
-    'Roboto-Medium.ttf': 'ZmFrZQ==',
-    'Roboto-Italic.ttf': 'ZmFrZQ==',
-    'Roboto-MediumItalic.ttf': 'ZmFrZQ==',
+    'Roboto-Regular.ttf': Buffer.from('fake-regular').toString('base64'),
+    'Roboto-Medium.ttf': Buffer.from('fake-bold').toString('base64'),
+    'Roboto-Italic.ttf': Buffer.from('fake-italic').toString('base64'),
+    'Roboto-MediumItalic.ttf': Buffer.from('fake-bold-italic').toString('base64'),
   },
 }))
 

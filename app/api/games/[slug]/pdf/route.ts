@@ -1,28 +1,58 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { NextResponse } from 'next/server'
-import PdfPrinter from 'pdfmake/src/printer'
+import pdfMake from 'pdfmake'
 import vfs from 'pdfmake/build/vfs_fonts'
 import type { TDocumentDefinitions, Content } from 'pdfmake/interfaces'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { getActor } from '@/services/auth'
 
-function getFontBuffer(fileName: string): Buffer {
-  const data = vfs[fileName]
+// pdfmake ships the Roboto fonts as base64 strings in `pdfmake/build/vfs_fonts`.
+// Standalone/serverless builds don't copy the physical .ttf files, so we write
+// the decoded fonts to a temporary directory once and reference them by path.
+const FONT_DIR = path.join(os.tmpdir(), 'pdfmake-fonts', 'Roboto')
+const FONT_NAMES = [
+  'Roboto-Regular.ttf',
+  'Roboto-Medium.ttf',
+  'Roboto-Italic.ttf',
+  'Roboto-MediumItalic.ttf',
+]
+
+function getFontBase64(fileName: string): string {
+  const data = (vfs as Record<string, string>)[fileName]
   if (!data) {
     throw new Error(`Missing pdfmake font: ${fileName}`)
   }
-  return Buffer.from(data, 'base64')
+  return data
 }
 
-function createPrinter() {
-  const fonts = {
+function ensureFontFiles(): string[] {
+  fs.mkdirSync(FONT_DIR, { recursive: true })
+  return FONT_NAMES.map((fileName) => {
+    const fontPath = path.join(FONT_DIR, fileName)
+    // Always rewrite the files. In local dev the temp directory may already
+    // contain stale/mock font data (e.g. from a test run), and checking
+    // existence alone would reuse those invalid files.
+    fs.writeFileSync(fontPath, Buffer.from(getFontBase64(fileName), 'base64'))
+    return fontPath
+  })
+}
+
+let fontsConfigured = false
+
+function configureFonts() {
+  if (fontsConfigured) return
+  const [normal, bold, italics, bolditalics] = ensureFontFiles()
+  pdfMake.setFonts({
     Roboto: {
-      normal: getFontBuffer('Roboto-Regular.ttf'),
-      bold: getFontBuffer('Roboto-Medium.ttf'),
-      italics: getFontBuffer('Roboto-Italic.ttf'),
-      bolditalics: getFontBuffer('Roboto-MediumItalic.ttf'),
+      normal,
+      bold,
+      italics,
+      bolditalics,
     },
-  }
-  return new PdfPrinter(fonts)
+  })
+  fontsConfigured = true
 }
 
 async function fetchImageAsDataUri(url: string): Promise<string | null> {
@@ -157,18 +187,10 @@ export async function GET(
       },
     }
 
-    const printer = createPrinter()
-    const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
-      try {
-        const doc = printer.createPdfKitDocument(docDefinition)
-        const chunks: Buffer[] = []
-        doc.on('data', (chunk: Buffer) => chunks.push(chunk))
-        doc.on('end', () => resolve(Buffer.concat(chunks)))
-        doc.end()
-      } catch (err) {
-        reject(err)
-      }
-    })
+    configureFonts()
+
+    const pdfDocument = pdfMake.createPdf(docDefinition)
+    const pdfBuffer = await pdfDocument.getBuffer()
 
     return new NextResponse(new Uint8Array(pdfBuffer).buffer, {
       headers: {

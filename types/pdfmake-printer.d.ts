@@ -1,14 +1,22 @@
-declare module 'pdfmake/src/printer' {
-  import type { TDocumentDefinitions } from 'pdfmake/interfaces'
+declare module 'pdfmake' {
+  import type {
+    TDocumentDefinitions,
+    TFontDictionary,
+    BufferOptions,
+    TCreatedPdf,
+  } from 'pdfmake/interfaces'
 
-  class PdfPrinter {
-    constructor(fonts: Record<string, Record<string, Buffer | string>>)
-    createPdfKitDocument(
-      docDefinition: TDocumentDefinitions
-    ): NodeJS.ReadableStream & { end(): void }
+  interface PdfMakeSingleton {
+    createPdf(
+      documentDefinitions: TDocumentDefinitions,
+      options?: BufferOptions
+    ): TCreatedPdf
+    setFonts(fonts: TFontDictionary): void
+    addFonts(fonts: TFontDictionary): void
   }
 
-  export = PdfPrinter
+  const pdfMake: PdfMakeSingleton
+  export default pdfMake
 }
 
 declare module 'pdfmake/build/vfs_fonts' {

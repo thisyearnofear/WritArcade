@@ -27,6 +27,9 @@ const nextConfig = {
   serverExternalPackages: [
     '@rainbow-me/rainbowkit',
     '@wagmi/connectors',
+    // pdfmake must run as a Node package so it can use PDFKit streams.
+    // Bundling it with webpack causes `TypeError: b.on is not a function` at runtime.
+    'pdfmake',
   ],
   async headers() {
     return [
