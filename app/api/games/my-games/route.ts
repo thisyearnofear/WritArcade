@@ -73,7 +73,18 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate stats
-    const mintedGames = games.filter((g: { nftTokenId?: string | null }) => g.nftTokenId).length
+    const mintedGames = games.filter((g) => g.nftTokenId).length
+    const registeredGames = games.filter((g) => g.storyIpId).length
+    const playedGames = games.filter((g) => g.playCount > 0).length
+
+    const gameIds = games.map((g) => g.id)
+    const dailySessions = gameIds.length
+      ? await prisma.dailyChallengeSession.findMany({
+          where: { gameId: { in: gameIds } },
+          select: { gameId: true },
+        })
+      : []
+    const dailyGameIds = new Set(dailySessions.map((s) => s.gameId))
 
     const formattedGames = await Promise.all(games.map(async (game) => {
       let writerMintReceipt: {
@@ -137,6 +148,14 @@ export async function GET(request: NextRequest) {
         private: game.private,
         playFee: game.playFee,
         featured: game.featured ?? false,
+        playCount: game.playCount ?? 0,
+        lastPlayedAt: game.lastPlayedAt,
+        promptVaultUuid: game.promptVaultUuid,
+        wordleAnswerVaultUuid: game.wordleAnswerVaultUuid,
+        secretPanelGenerated: game.secretPanelGenerated ?? false,
+        storyIpId: game.storyIpId,
+        superrareTokenId: game.superrareTokenId,
+        hasDailySession: dailyGameIds.has(game.id),
         createdAt: game.createdAt,
         updatedAt: game.updatedAt,
       }
@@ -151,6 +170,8 @@ export async function GET(request: NextRequest) {
       stats: {
         totalGames: total,
         mintedGames,
+        registeredGames,
+        playedGames,
       },
     })
   } catch (error) {

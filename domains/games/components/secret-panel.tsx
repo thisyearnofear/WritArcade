@@ -181,7 +181,7 @@ export function SecretPanel({
             color: primaryColor,
           }}
         >
-          SECRET PANEL
+          SECRET EPILOGUE
         </span>
         {unlocked ? (
           <Eye className="w-3.5 h-3.5" style={{ color: primaryColor }} />
@@ -230,107 +230,84 @@ export function SecretPanel({
                 </p>
                 <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Unlock className="w-3 h-3" />
-                  <span>Unlocked via Inco</span>
+                  <span>Secret epilogue unlocked</span>
                 </div>
-                {accessPolicy && (
-                  <div className="mt-3 grid gap-2 rounded-md border border-emerald-500/20 bg-emerald-950/20 p-3 text-[11px] text-emerald-100">
-                    <div className="flex items-center gap-1.5 font-semibold">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>Inco access policy satisfied</span>
-                    </div>
+                {(accessPolicy || promptVaultUuid) && (
+                  <details className="mt-4 rounded-md border border-white/10 bg-white/[0.03] p-3 text-left">
+                    <summary className="cursor-pointer text-xs font-semibold text-foreground list-none">
+                      Share & verify unlock
+                    </summary>
+                    {accessPolicy && (
+                      <div className="mt-3 grid gap-2 rounded-md border border-emerald-500/20 bg-emerald-950/20 p-3 text-[11px] text-emerald-100">
+                        <div className="flex items-center gap-1.5 font-semibold">
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          <span>Access verified on-chain</span>
+                        </div>
 
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-emerald-200/80">
-                      <dt className="text-emerald-300/60">Encryption</dt>
-                      <dd className="font-mono">Inco (Base mainnet)</dd>
-
-                      <dt className="text-emerald-300/60">Gate NFT</dt>
-                      <dd className="font-mono flex items-center gap-1">
-                        <span>{accessPolicy.nftContract.slice(0, 6)}…{accessPolicy.nftContract.slice(-4)}</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(accessPolicy.nftContract, 'nft')}
-                          className="text-emerald-300/60 hover:text-emerald-200"
-                          aria-label="Copy NFT contract address"
-                        >
-                          {copiedField === 'nft' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        </button>
-                      </dd>
-
-                      <dt className="text-emerald-300/60">Token ID</dt>
-                      <dd className="font-mono">#{accessPolicy.nftTokenId} (chain {accessPolicy.nftChainId})</dd>
-
-                      <dt className="text-emerald-300/60">Panels completed</dt>
-                      <dd className="font-mono">{accessPolicy.completedPanels} / 5</dd>
-
-                      {promptVaultUuid && (
-                        <>
-                          <dt className="text-emerald-300/60">Vault ID</dt>
-                          <dd className="font-mono flex items-center gap-1 break-all">
-                            <span>{promptVaultUuid.length > 14 ? `${promptVaultUuid.slice(0, 8)}…${promptVaultUuid.slice(-4)}` : promptVaultUuid}</span>
+                        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-emerald-200/80">
+                          <dt className="text-emerald-300/60">Gate NFT</dt>
+                          <dd className="font-mono flex items-center gap-1">
+                            <span>#{accessPolicy.nftTokenId} on Base</span>
                             <button
                               type="button"
-                              onClick={() => copyToClipboard(promptVaultUuid, 'uuid')}
+                              onClick={() => copyToClipboard(accessPolicy.nftContract, 'nft')}
                               className="text-emerald-300/60 hover:text-emerald-200"
-                              aria-label="Copy vault ID"
+                              aria-label="Copy NFT contract address"
                             >
-                              {copiedField === 'uuid' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                              {copiedField === 'nft' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                             </button>
                           </dd>
-                        </>
-                      )}
-                    </dl>
-                  </div>
-                )}
-                {promptVaultUuid && (
-                  <div className="mt-3 rounded-md border border-white/10 bg-white/[0.03] p-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                      <Share2 className="h-3.5 w-3.5" />
-                      <span>Shareable proof of unlock</span>
-                    </div>
-                    <dl className="mt-2 grid gap-1.5 text-[11px] text-muted-foreground">
-                      <div className="flex items-center justify-between gap-3">
-                        <dt>Vault ID</dt>
-                        <dd className="font-mono text-foreground">{promptVaultUuid.length > 18 ? `${promptVaultUuid.slice(0, 10)}…${promptVaultUuid.slice(-6)}` : promptVaultUuid}</dd>
+
+                          <dt className="text-emerald-300/60">Panels completed</dt>
+                          <dd className="font-mono">{accessPolicy.completedPanels} / 5</dd>
+
+                          {promptVaultUuid && (
+                            <>
+                              <dt className="text-emerald-300/60">On-chain ref</dt>
+                              <dd className="font-mono flex items-center gap-1 break-all">
+                                <span>{promptVaultUuid.length > 14 ? `${promptVaultUuid.slice(0, 8)}…${promptVaultUuid.slice(-4)}` : promptVaultUuid}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => copyToClipboard(promptVaultUuid, 'uuid')}
+                                  className="text-emerald-300/60 hover:text-emerald-200"
+                                  aria-label="Copy on-chain reference"
+                                >
+                                  {copiedField === 'uuid' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                </button>
+                              </dd>
+                            </>
+                          )}
+                        </dl>
                       </div>
-                      {accessPolicy && (
-                        <>
-                          <div className="flex items-center justify-between gap-3">
-                            <dt>Gate NFT</dt>
-                            <dd className="font-mono text-foreground">#{accessPolicy.nftTokenId} on Base</dd>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <dt>Verify</dt>
-                            <dd className="font-mono text-foreground">{accessPolicy.nftContract.slice(0, 6)}…{accessPolicy.nftContract.slice(-4)}</dd>
-                          </div>
-                        </>
-                      )}
-                    </dl>
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(shareUrl, 'share')}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-white/10"
-                      >
-                        {copiedField === 'share' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                        Copy deep link
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const text = `I unlocked the secret panel for ${gameSlug}: ${shareUrl}`
-                          if (navigator.share) {
-                            navigator.share({ title: 'Secret panel unlocked', text, url: shareUrl }).catch(() => {})
-                          } else {
-                            copyToClipboard(text, 'share-text')
-                          }
-                        }}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-500 px-3 py-2 text-xs font-bold text-black hover:bg-emerald-400"
-                      >
-                        <Share2 className="h-3.5 w-3.5" />
-                        Share unlock
-                      </button>
-                    </div>
-                  </div>
+                    )}
+                    {promptVaultUuid && (
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(shareUrl, 'share')}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-white/10"
+                        >
+                          {copiedField === 'share' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                          Copy deep link
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const text = `I unlocked the secret epilogue for ${gameSlug}: ${shareUrl}`
+                            if (navigator.share) {
+                              navigator.share({ title: 'Secret epilogue unlocked', text, url: shareUrl }).catch(() => {})
+                            } else {
+                              copyToClipboard(text, 'share-text')
+                            }
+                          }}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-500 px-3 py-2 text-xs font-bold text-black hover:bg-emerald-400"
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
+                          Share unlock
+                        </button>
+                      </div>
+                    )}
+                  </details>
                 )}
               </div>
             </motion.div>
@@ -357,42 +334,33 @@ export function SecretPanel({
               </div>
 
               <h3 className="text-lg font-bold text-foreground mb-2">
-                A Secret Awaits
+                Secret epilogue locked
               </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-                This game holds a hidden epilogue encrypted on-chain via Inco. Unlock requires the minted game NFT and a completed 5-panel playthrough.
+                Finish the story and mint the game NFT to reveal a hidden epilogue stored on-chain.
               </p>
 
-              {/* Inco encryption indicator — visible to judges even before unlock */}
+              {/* Inco encryption indicator */}
               {promptVaultUuid && (
                 <div className="mb-5 mx-auto max-w-md rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-left">
                   <div className="flex items-center gap-2 text-xs text-emerald-300">
                     <Lock className="h-3.5 w-3.5" />
-                    <span className="font-semibold">Encrypted via Inco</span>
+                    <span className="font-semibold">Encrypted on-chain</span>
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-emerald-200/80">
-                    The epilogue is stored as an encrypted handle on Base mainnet. Only the NFT holder can decrypt it via Inco&apos;s attested decrypt — no off-chain servers, no WASM, no custody.
+                    Only the NFT holder can decrypt this epilogue after completing all 5 panels.
                   </p>
                   <details className="mt-2 group">
                     <summary className="cursor-pointer text-[10px] uppercase tracking-wider font-semibold text-emerald-400/80 hover:text-emerald-300 list-none flex items-center gap-1">
                       <span className="group-open:rotate-90 transition-transform">▸</span>
-                      What is Inco?
+                      How it works (Inco)
                     </summary>
                     <div className="mt-2 text-[10px] leading-relaxed text-emerald-200/70 space-y-1.5">
                       <p>
-                        <span className="font-semibold text-emerald-300">Inco</span> is a confidential compute layer for the EVM.
-                        Secret panel content is encrypted as an euint256 handle and stored on-chain. Access is granted via <code className="text-emerald-300">e.allow(handle, nftOwner)</code> — enforced by Inco&apos;s covalidators.
-                      </p>
-                      <p>
-                        The NFT holder decrypts in their browser using <code className="text-emerald-300">attestedDecrypt</code> — a signed covalidator attestation, not a trusted server.
+                        Content is encrypted as an on-chain handle on Base. Access is tied to NFT ownership and enforced by Inco confidential compute — no off-chain custody.
                       </p>
                     </div>
                   </details>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono text-emerald-400/70">
-                    <span>Base mainnet (8453)</span>
-                    <span className="text-emerald-600">·</span>
-                    <span>Inco Lightning</span>
-                  </div>
                 </div>
               )}
 
@@ -440,7 +408,7 @@ export function SecretPanel({
                       ) : (
                         <>
                           <Eye className="w-4 h-4" />
-                          Unlock Secure Panel
+                          Unlock secret epilogue
                         </>
                       )}
                     </button>
@@ -472,7 +440,7 @@ export function SecretPanel({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Vault access not available.
+                  Secret epilogue not available yet.
                 </p>
               )}
             </motion.div>

@@ -89,6 +89,8 @@ export interface Game {
   featured?: boolean
   playCount?: number  // Number of times game sessions have completed
   lastPlayedAt?: Date // Last time the game was played
+  hasDailySession?: boolean
+  secretPanelGenerated?: boolean
 
   // NEW: Approval workflow & quality metrics
   approvalStatus?: 'pending' | 'approved' | 'rejected'
@@ -99,7 +101,6 @@ export interface Game {
   // Inco: secret panel pre-encryption JSON (cleared after on-chain storage)
   secretPanelCiphertext?: string
   secretPanelImagePrompt?: string
-  secretPanelGenerated?: boolean
 
   // Hypercerts: Impact certificate
   hypercertUri?: string

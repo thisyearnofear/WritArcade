@@ -28,6 +28,7 @@ function ThemeToggle() {
 // Nav link definitions — single source of truth for desktop + mobile
 const NAV_LINKS = [
   { href: '/games',    label: 'Arcade',      title: 'Browse all generated games' },
+  { href: '/daily',    label: 'Daily',       title: 'Today\'s shared daily challenge' },
   { href: '/my-games', label: 'My Games',    title: 'Your game library' },
   { href: '/writers',  label: 'Writers',     title: 'Explore supported writers and their coins' },
 ]

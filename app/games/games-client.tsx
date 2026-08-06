@@ -8,6 +8,7 @@ import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Search, Filter, BookOpen, Compass, Zap, Brain, Sword, Store, ChevronLeft, ChevronRight, X, BarChart3, Clock } from 'lucide-react'
 import { GenreFilterList } from '@/domains/games/components/genre-filter-list'
 import type { GenreOption } from '@/domains/games/components/genre-filter-list'
+import { DailyChallengeBanner } from '@/components/daily-challenge/daily-challenge-banner'
 import { WRITER_COINS } from '@/lib/writerCoins'
 import Link from 'next/link'
 
@@ -73,6 +74,10 @@ export function GamesClient() {
                 </span>
               </div>
             </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 pb-4">
+            <DailyChallengeBanner compact />
           </div>
 
           <div className="lg:hidden px-4 pt-4 pb-2 flex flex-col gap-2 min-[420px]:flex-row">

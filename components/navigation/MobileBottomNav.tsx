@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Gamepad2, PenTool, Sparkles, Library } from 'lucide-react';
+import { Gamepad2, Sparkles, Library, CalendarDays } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useIsActive } from '@/hooks/useIsActive';
 
@@ -11,9 +11,9 @@ import { useIsActive } from '@/hooks/useIsActive';
 // CONSOLIDATION: Removed 'Home' (Logo link) and 'Profile' (Header UserMenu) to make room
 const navItems = [
   { href: '/games', label: 'Arcade', icon: Gamepad2 },
-  { href: '/writers', label: 'Writers', icon: PenTool },
+  { href: '/daily', label: 'Daily', icon: CalendarDays },
   { href: '/generate', label: 'Create', icon: Sparkles },
-  { href: '/my-games', label: 'My Games', icon: Library },
+  { href: '/my-games', label: 'Library', icon: Library },
 ];
 
 export function MobileBottomNav() {

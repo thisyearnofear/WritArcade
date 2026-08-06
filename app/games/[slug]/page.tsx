@@ -6,7 +6,9 @@ import { WordleGameInterface } from '@/domains/games/components/wordle-game-inte
 import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
 import { WordleService } from '@/domains/games/services/wordle.service'
 import { IPAttribution } from '@/domains/games/components/ip-attribution'
-import { ProtocolLifecycle } from '@/domains/games/components/protocol-lifecycle'
+import { GameOwnershipProgress } from '@/domains/games/components/game-ownership-progress'
+import { PlayWelcomeCoach } from '@/components/onboarding/play-welcome-coach'
+import { getSecretPanelStatus, formatSecretPanelDetail } from '@/lib/secret-panel-status'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -92,7 +94,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
     return (
       <div className="min-h-screen bg-black">
         <div className="mx-auto max-w-4xl px-4 pt-6">
-          <ProtocolLifecycle game={game} />
+          <GameOwnershipProgress game={game} variant="strip" />
         </div>
         <WordleGameInterface game={game} maxAttempts={WordleService.DEFAULT_MAX_ATTEMPTS} />
       </div>
@@ -121,8 +123,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
             </div>
             {game.promptVaultUuid && (
               <div className="rounded-md border border-emerald-500/20 bg-black/30 px-3 py-2 text-xs text-emerald-100">
-                <span className="text-emerald-300/70">Vault </span>
-                <span className="font-mono">{game.promptVaultUuid.slice(0, 10)}...{game.promptVaultUuid.slice(-6)}</span>
+                {formatSecretPanelDetail(getSecretPanelStatus(game))}
               </div>
             )}
           </div>
@@ -134,8 +135,9 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
         </div>
       )}
       <div className="mx-auto max-w-4xl px-4 pt-6">
-        <ProtocolLifecycle game={game} />
+        <GameOwnershipProgress game={game} variant="strip" />
       </div>
+      <PlayWelcomeCoach gameSlug={game.slug} />
       <ErrorBoundary>
         <GamePlayInterface game={game} />
       </ErrorBoundary>

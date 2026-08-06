@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { GameCardEnhanced } from '@/domains/games/components/game-card-enhanced'
+import { RecentlyPlayedSection } from '@/domains/games/components/recently-played-section'
 import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
@@ -62,15 +63,40 @@ export function MyGamesClient() {
   const [sessionAllowed, setSessionAllowed] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTab, setActiveTab] = useState<'games' | 'unlocked-vaults' | 'ip-registrations' | 'nft-gallery'>('games')
+  const [libraryFilter, setLibraryFilter] = useState<'all' | 'played' | 'unplayed' | 'minted' | 'daily'>('all')
   const [unlockedVaults, setUnlockedVaults] = useState<UnlockedVault[]>([])
   const [copiedVault, setCopiedVault] = useState<string | null>(null)
   const stats = useMemo(() => {
     const minted = games.filter(game => !!game.nftTokenId).length
     const registered = games.filter(game => !!game.storyIpId).length
     const publicGames = games.filter(game => !game.private).length
+    const played = games.filter(game => (game.playCount ?? 0) > 0).length
     const superrareMinted = games.filter(game => !!game.superrareTokenId).length
-    return { minted, registered, publicGames, superrareMinted }
+    return { minted, registered, publicGames, played, superrareMinted }
   }, [games])
+
+  const filteredGames = useMemo(() => {
+    switch (libraryFilter) {
+      case 'played':
+        return games.filter(game => (game.playCount ?? 0) > 0)
+      case 'unplayed':
+        return games.filter(game => (game.playCount ?? 0) === 0)
+      case 'minted':
+        return games.filter(game => !!game.nftTokenId)
+      case 'daily':
+        return games.filter(game => game.hasDailySession)
+      default:
+        return games
+    }
+  }, [games, libraryFilter])
+
+  const libraryFilters = [
+    { id: 'all' as const, label: 'All', count: games.length },
+    { id: 'played' as const, label: 'Played', count: stats.played },
+    { id: 'unplayed' as const, label: 'Not played', count: games.length - stats.played },
+    { id: 'minted' as const, label: 'Minted', count: stats.minted },
+    { id: 'daily' as const, label: 'Daily', count: games.filter(g => g.hasDailySession).length },
+  ]
 
   useEffect(() => {
     try {
@@ -356,7 +382,7 @@ export function MyGamesClient() {
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Library</p>
                 <h1 className="text-3xl sm:text-4xl font-bold">My Games</h1>
                 <p className="mt-3 max-w-2xl text-muted-foreground">
-                  Play your generated games first. Minting, IP registration, sharing, and settings live here when you are ready to manage ownership.
+                  Play your generated games first. Mint, secret epilogue unlock, and IP registration live under Ownership on each card.
                 </p>
               </div>
               <Link
@@ -368,14 +394,18 @@ export function MyGamesClient() {
               </Link>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-5">
-              <StatTile icon={Library} label="Games" value={games.length} />
-              <StatTile icon={Eye} label="Public" value={stats.publicGames} />
+            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <StatTile icon={Library} label="Ready to play" value={games.length} />
+              <StatTile icon={Gamepad2} label="Played" value={stats.played} />
               <StatTile icon={BadgeCheck} label="Minted" value={stats.minted} />
               <StatTile icon={Network} label="IP Registered" value={stats.registered} />
-              <StatTile icon={GalleryHorizontalEnd} label="SuperRare" value={stats.superrareMinted} />
-              <StatTile icon={Lock} label="Vaults" value={unlockedVaults.length} />
             </div>
+          </div>
+        </section>
+
+        <section className="px-4 pb-2">
+          <div className="max-w-6xl mx-auto">
+            <RecentlyPlayedSection />
           </div>
         </section>
 
@@ -416,7 +446,7 @@ export function MyGamesClient() {
                 }`}
               >
                 <Lock className="w-4 h-4" />
-                Unlocked Vaults
+                Unlocked secrets
                 <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
                   {unlockedVaults.length}
                 </span>
@@ -605,20 +635,57 @@ export function MyGamesClient() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">Playable Library</h2>
+                    <h2 className="text-lg font-semibold text-foreground">Playable library</h2>
                     <p className="text-sm text-muted-foreground">
                       {games.length} game{games.length !== 1 ? 's' : ''} ready to play or manage.
                     </p>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Primary action is always Play. Ownership actions stay grouped on each card.
-                  </div>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Play first. Expand Ownership on a card when you are ready to mint or register IP.
+                  </p>
                 </div>
 
+                <div className="flex flex-wrap gap-2">
+                  {libraryFilters.map((filter) => (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setLibraryFilter(filter.id)}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        libraryFilter === filter.id
+                          ? 'border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-300'
+                          : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {filter.label}
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px]">{filter.count}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {filteredGames.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border bg-card/50 px-4 py-10 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {libraryFilter === 'played' && 'No played games yet — pick one from All and hit Play.'}
+                      {libraryFilter === 'unplayed' && 'You have played every game in your library.'}
+                      {libraryFilter === 'minted' && 'No minted games yet. Finish a playthrough, then mint from Ownership on a card.'}
+                      {libraryFilter === 'daily' && 'No daily challenge sessions yet. Try today\'s modifier from the Daily tab.'}
+                    </p>
+                    {libraryFilter !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setLibraryFilter('all')}
+                        className="mt-4 text-sm font-medium text-purple-400 hover:text-purple-300"
+                      >
+                        Show all games
+                      </button>
+                    )}
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {games.map((game) => (
+                  {filteredGames.map((game) => (
                     <div key={game.id} id={game.id} className="scroll-mt-24">
                       <GameCardEnhanced
                         game={game}
@@ -633,6 +700,7 @@ export function MyGamesClient() {
                     </div>
                   ))}
                 </div>
+                )}
 
                 {(offset + games.length) < total && (
                   <div className="mt-8 text-center">

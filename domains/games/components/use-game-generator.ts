@@ -437,7 +437,7 @@ export function useGameGenerator({
       })
 
       onGameGenerated?.(result.data)
-      router.push(`/games/${result.data.slug}`)
+      router.push(`/games/${result.data.slug}?welcome=1`)
     } catch (err) {
       const message = isAbortError(err)
         ? 'Game generation timed out before the server returned a result.'

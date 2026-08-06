@@ -176,7 +176,7 @@ export function ArticleStep({
             >
               <span className="font-semibold">Story</span>
               <span className={`text-[10px] font-bold ${mode === 'story' ? 'text-purple-200' : 'text-purple-400'}`}>
-                5-panel · NFT · CDR
+                5-panel · NFT · Inco
               </span>
             </motion.button>
             <motion.button
@@ -203,7 +203,7 @@ export function ArticleStep({
           </div>
           <p className="text-xs text-muted-foreground">
             {mode === 'story'
-              ? 'Story creates a 5-panel narrative game with AI-generated artwork, branching choices, mood tracking, and an encrypted CDR epilogue unlocked by the minted NFT.'
+              ? 'Story creates a 5-panel narrative game with AI-generated artwork, branching choices, and an encrypted secret epilogue (Inco on Base) unlocked after you mint the NFT.'
               : 'Wordle creates a free word puzzle derived from your article vocabulary. No payment or wallet needed — a quick taste of the engine.'}
           </p>
         </div>

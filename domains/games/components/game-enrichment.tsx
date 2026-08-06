@@ -57,6 +57,15 @@ export function GameEnrichment({
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      {showDailyReveal && dailyState && !storyComplete && (
+        <div className="rounded-lg border border-purple-500/25 bg-purple-950/20 px-4 py-3 text-sm text-purple-100">
+          <p className="font-semibold text-purple-300">Daily Challenge active</p>
+          <p className="mt-1 text-purple-100/80 text-xs">
+            A hidden modifier card is shaping each panel. Your score unlocks at the finale.
+          </p>
+        </div>
+      )}
+
       {showDailyReveal && dailyState && (
         <ModifierReveal
           gameId={gameId}
