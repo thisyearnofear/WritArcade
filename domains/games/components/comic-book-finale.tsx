@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Grid3X3, Eye, Zap } from 'lucide-react'
+import { ChevronLeft, Clapperboard, Grid3X3, Eye, X, Zap } from 'lucide-react'
+import { useAccount } from 'wagmi'
+import { CREDITS_CONFIG } from '@/lib/writerCoins'
 import { useGameInsights } from '../hooks/use-game-insights'
 import { useVideoMotion } from './finale-video-motion'
 import {
@@ -29,6 +31,9 @@ export interface ComicBookFinalePanelData {
   userChoice?: string
   audioUrl?: string | null  // Audio narration URL
 }
+
+/** Story Protocol UI is opt-in — same flag semantics as Web3Provider. */
+const STORY_IP_UI_ENABLED = process.env.NEXT_PUBLIC_STORY_ENABLED !== 'false'
 
 interface ComicBookFinaleProps {
   gameId: string
@@ -123,6 +128,20 @@ export function ComicBookFinale({
   const [showFeedback, setShowFeedback] = useState(false)
   const [showVideoStyleModal, setShowVideoStyleModal] = useState(false)
 
+  // Video upsell auto-offer: surfaced once when the player actually has
+  // enough credits, instead of hiding behind discovery in the footer.
+  const { address: offerWalletAddress } = useAccount()
+  const [creditsBalance, setCreditsBalance] = useState<number | null>(null)
+  const videoOfferKey = `wa:video-offer:${gameSlug}`
+  const [videoOfferDismissed, setVideoOfferDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true
+    try {
+      return localStorage.getItem(videoOfferKey) === '1'
+    } catch {
+      return true
+    }
+  })
+
   // Video upsell — data flow extracted to useVideoMotion
   const video = useVideoMotion(gameSlug)
   const videoStatus = video.status
@@ -153,13 +172,48 @@ export function ComicBookFinale({
 
   const currentPanel = panels[currentPanelIndex]
   const totalPanels = panels.length
-  const ipRegistrationReady = (nftMinted || showIPRegistration) && !storyIpId
 
+  // Story Protocol IP registration is opt-in (Base-first product); the
+  // section never auto-opens — players reach it via the advanced link.
+  const ipRegistrationReady =
+    STORY_IP_UI_ENABLED && (nftMinted || showIPRegistration) && !storyIpId
+
+  // Fetch credits once for the auto-offer — cheap, silent on failure.
+  const videoStatusForOffer = video.status
   useEffect(() => {
-    if (nftMinted && !storyIpId) {
-      setShowIPRegistration(true)
+    if (videoStatusForOffer !== 'idle' && videoStatusForOffer !== 'failed') return
+    if (videoOfferDismissed) return
+    let cancelled = false
+    const query = offerWalletAddress ? `?wallet=${encodeURIComponent(offerWalletAddress)}` : ''
+    fetch(`/api/ramp/credits${query}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.success) setCreditsBalance(data.data.credits ?? 0)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
     }
-  }, [nftMinted, storyIpId])
+     
+  }, [videoStatusForOffer, videoOfferDismissed, offerWalletAddress])
+
+  const showVideoOffer =
+    !videoOfferDismissed &&
+    !showVideoStyleModal &&
+    (video.status === 'idle' || video.status === 'failed') &&
+    creditsBalance !== null &&
+    creditsBalance >= CREDITS_CONFIG.cost['video-upsell']
+
+  const dismissVideoOffer = (persist = true) => {
+    setVideoOfferDismissed(true)
+    if (persist) {
+      try {
+        localStorage.setItem(videoOfferKey, '1')
+      } catch {
+        // storage unavailable — session-only dismissal is fine
+      }
+    }
+  }
 
   const firstVideoUrl = video.firstVideoUrl
 
@@ -178,7 +232,6 @@ export function ComicBookFinale({
     if (!mintAvailable) return
     try {
       await onMint(panels)
-      setShowIPRegistration(true)
       setShowFeedback(shouldShowFeedbackPrompt())
     } catch (error) {
       console.error('Mint failed:', error)
@@ -471,6 +524,39 @@ export function ComicBookFinale({
           show={showFeedback}
           onClose={() => setShowFeedback(false)}
         />
+
+        {/* One-time video upsell offer (only when the balance covers it) */}
+        {showVideoOffer && (
+          <div className="fixed bottom-24 right-4 z-50 max-w-xs rounded-xl border border-purple-500/30 bg-card p-4 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => dismissVideoOffer()}
+              className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Dismiss animation offer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="flex items-center gap-2 mb-1">
+              <Clapperboard className="h-4 w-4 text-purple-400" aria-hidden />
+              <p className="text-sm font-semibold text-white">Make your comic move</p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Turn all {totalPanels} panels into a short animated cut — you have enough credits
+              ({creditsBalance}).
+            </p>
+            <Button
+              onClick={() => {
+                dismissVideoOffer(false)
+                setShowVideoStyleModal(true)
+              }}
+              className="w-full gap-2 bg-purple-600 hover:bg-purple-500 text-white"
+              size="sm"
+            >
+              <Clapperboard className="h-4 w-4" />
+              Animate · {CREDITS_CONFIG.cost['video-upsell']} credits
+            </Button>
+          </div>
+        )}
       </div>
     </>
   )

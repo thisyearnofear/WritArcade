@@ -171,13 +171,15 @@ export function FinaleFooter({
           )}
 
           {ipRegistrationReady && !showIPRegistration && (
-            <Button
-              variant="outline"
-              className="gap-2 border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/10"
+            // Demoted to a quiet advanced link: Story IP registration is a
+            // testnet chain-switch most players don't need at the payoff moment.
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-emerald-300 hover:underline"
               onClick={onShowIPRegistration}
             >
-              Register Game IP
-            </Button>
+              Advanced: register IP on Story (testnet)
+            </button>
           )}
         </div>
       </div>

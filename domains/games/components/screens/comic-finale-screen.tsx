@@ -12,6 +12,9 @@ import { SecretEpilogueFinaleCta } from '@/components/game/secret-epilogue-final
 import { Game } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/domains/story/services/story-sdk-client'
+
+/** Story Protocol UI is opt-in — same flag semantics as Web3Provider. */
+const STORY_IP_UI_ENABLED = process.env.NEXT_PUBLIC_STORY_ENABLED !== 'false'
 import { type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
 import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG } from '@/lib/writerCoins'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
@@ -308,7 +311,7 @@ export function ComicFinaleScreen({
         mintTokenLabel={mintToken?.symbol}
         mintCostLabel={mintCostLabel}
       />
-      {extractedAssetIds.length > 0 && !derivativeRegistered && !derivativePromptDismissed && (
+      {STORY_IP_UI_ENABLED && extractedAssetIds.length > 0 && !derivativeRegistered && !derivativePromptDismissed && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">
           <button
             type="button"
