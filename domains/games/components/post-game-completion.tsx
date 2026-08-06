@@ -9,14 +9,16 @@ import type { Game } from '../types'
 import type { ChatEntry } from '../hooks/use-game-session'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { useToast } from '@/components/ui/use-toast'
+import { SecretEpilogueFinaleCta } from '@/components/game/secret-epilogue-finale-cta'
 
 interface PostGameCompletionProps {
   game: Game
   messages: ChatEntry[]
   userChoices: Array<{ panelIndex: number; choice: string; timestamp: string }>
+  showEpilogueCta?: boolean
 }
 
-export function PostGameCompletion({ game, messages, userChoices }: PostGameCompletionProps) {
+export function PostGameCompletion({ game, messages, userChoices, showEpilogueCta = true }: PostGameCompletionProps) {
   const { toast } = useToast()
   const [playCount, setPlayCount] = useState<number | null>(null)
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null)
@@ -146,6 +148,10 @@ export function PostGameCompletion({ game, messages, userChoices }: PostGameComp
           </p>
         </div>
       </div>
+
+      {showEpilogueCta && (
+        <SecretEpilogueFinaleCta game={game} nftMinted={Boolean(game.nftTokenId)} className="mb-8" />
+      )}
 
       {/* Viral share card */}
       <motion.div

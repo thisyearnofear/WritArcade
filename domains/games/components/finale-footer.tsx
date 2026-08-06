@@ -89,6 +89,7 @@ export function FinaleFooter({
 }: FinaleFooterProps) {
   return (
     <div
+      id="finale-mint-section"
       className="border-t border-white/10 p-4 md:p-6 bg-gradient-to-t from-black via-black/80 to-transparent backdrop-blur-md"
       style={{ boxShadow: `0 -4px 20px ${primaryColor}10` }}
     >

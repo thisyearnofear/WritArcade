@@ -22,18 +22,21 @@ Prioritized checklist and tester script after the play-first library pass (Phase
 - [x] **Onboarding dedupe** — shorter welcome coach when global onboarding already completed
 - [x] **Empty library nudge** — link to browse public games before create
 
-## P1 — Next sprint
+## P1 — Shipped
 
-- [ ] **Hero player CTA** — “Play something now” secondary path on homepage above creator form
-- [ ] **Modifier felt in copy** — server returns category hint; optional subtle UI flavor per category
-- [ ] **Post-complete epilogue CTA** — on comic finale, primary next step toward mint/unlock
-- [ ] **Daily try-before-wallet** — read-only preview of today’s source without connect
+- [x] **Hero player CTA** — “Play something now” + today’s daily above creator form
+- [x] **Post-complete epilogue CTA** — mint/unlock banner on comic finale + post-game screen
+- [x] **Daily try-before-wallet** — source preview card; wallet only for dealing encrypted hand
+- [x] **Milestone prompts** — ownership tabs + nudge only after first mint/unlock/IP
+
+## P1 — Remaining
+
+- [ ] **Modifier felt in copy** — optional subtle UI flavor per category in panel narrative
 - [ ] **Wordle vs story explainer** — one line on generate + game cards for mode
 
 ## P2 — Polish
 
 - [ ] **Single “Arcade” identity** — rename/consolidate tabs to Library / Vault / Collectibles
-- [ ] **Milestone prompts** — surface IP/SuperRare only after mint or first unlock
 - [ ] **Session recap card** — shareable “my path + hidden hand” after daily complete
 - [ ] **Accessibility pass** — focus order on coach, filters, collapsible sections
 

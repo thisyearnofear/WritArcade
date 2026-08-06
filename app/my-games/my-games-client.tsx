@@ -99,6 +99,33 @@ export function MyGamesClient() {
     { id: 'daily' as const, label: 'Daily', count: games.filter(g => g.hasDailySession).length },
   ]
 
+  const hasOwnershipMilestone =
+    stats.minted > 0 ||
+    stats.registered > 0 ||
+    unlockedVaults.length > 0 ||
+    stats.superrareMinted > 0
+
+  const [milestoneNudgeDismissed, setMilestoneNudgeDismissed] = useState(false)
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('writersarcade.milestone-nudge-dismissed') === '1') {
+        setMilestoneNudgeDismissed(true)
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  const dismissMilestoneNudge = () => {
+    setMilestoneNudgeDismissed(true)
+    try {
+      sessionStorage.setItem('writersarcade.milestone-nudge-dismissed', '1')
+    } catch {
+      /* ignore */
+    }
+  }
+
   useEffect(() => {
     try {
       const stored = JSON.parse(window.localStorage.getItem(UNLOCKED_VAULTS_KEY) || '[]')
@@ -472,7 +499,7 @@ export function MyGamesClient() {
                   </>
                 )}
               </div>
-              {activeTab === 'games' && !showAdvancedTabs && (
+              {activeTab === 'games' && hasOwnershipMilestone && !showAdvancedTabs && (
                 <button
                   type="button"
                   onClick={() => setShowAdvancedTabs(true)}
@@ -480,7 +507,28 @@ export function MyGamesClient() {
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
                   Ownership & collectibles
+                  {(stats.registered > 0 || unlockedVaults.length > 0) && (
+                    <span className="rounded-full bg-purple-500/20 px-1.5 py-0.5 text-[10px] text-purple-400">New</span>
+                  )}
                 </button>
+              )}
+              {activeTab === 'games' && hasOwnershipMilestone && !showAdvancedTabs && !milestoneNudgeDismissed && stats.minted > 0 && (
+                <div className="rounded-lg border border-purple-500/25 bg-purple-500/5 px-4 py-3 text-sm">
+                  <p className="text-foreground">
+                    You minted {stats.minted} game{stats.minted !== 1 ? 's' : ''}. IP history, unlocked secrets, and collectibles are under{' '}
+                    <span className="font-medium text-purple-400">Ownership & collectibles</span>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAdvancedTabs(true)
+                      dismissMilestoneNudge()
+                    }}
+                    className="mt-2 text-xs font-semibold text-purple-400 hover:text-purple-300"
+                  >
+                    Show ownership tools →
+                  </button>
+                </div>
               )}
               {activeTab !== 'games' && (
                 <button

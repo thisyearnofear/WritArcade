@@ -236,6 +236,33 @@ export default function HomePage() {
                 </motion.p>
               )}
 
+              <motion.div
+                className="mb-6 flex flex-col items-center gap-3"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25, duration: 0.5 }}
+              >
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full max-w-md">
+                  <a
+                    href="/games"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-bold text-background hover:opacity-90 transition-opacity"
+                  >
+                    <Gamepad2 className="w-4 h-4" />
+                    Play something now
+                  </a>
+                  {config.features.dailyChallenge && (
+                    <a
+                      href="/daily"
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/40 bg-purple-500/10 px-5 py-3 text-sm font-semibold text-purple-700 dark:text-purple-200 hover:bg-purple-500/15 transition-colors"
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                      Today&apos;s daily
+                    </a>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">No wallet needed to play public games · or create your own below</p>
+              </motion.div>
+
               {/* Primary CTA card — just URL input, no wallet, no payment toggle */}
               <motion.div
                 className="max-w-xl mx-auto"

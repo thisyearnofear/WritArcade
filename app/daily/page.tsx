@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Trophy, Users, Sparkles, ArrowRight, Image as ImageIcon, Loader2, Wallet } from 'lucide-react'
+import { Trophy, Users, Sparkles, ArrowRight, Image as ImageIcon, Loader2, Wallet, Gamepad2, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { useAccount } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
@@ -118,11 +118,40 @@ export default function DailyChallengePage() {
             </span>
           </div>
           <h1 className="text-4xl font-bold">{challenge?.theme || "Today's Challenge"}</h1>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Connect your wallet on Base to draw 5 encrypted modifier cards from today&apos;s shuffled deck.
-            Same source, different story — provably fair via Inco.
+          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+            Preview today&apos;s source free — no wallet required. Connect on Base when you&apos;re ready to draw your encrypted modifier hand.
           </p>
+          <Link
+            href="/games"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-300 hover:text-purple-200"
+          >
+            <Gamepad2 className="w-3.5 h-3.5" />
+            Or browse the arcade first
+          </Link>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-emerald-500/20 bg-emerald-950/15 px-5 py-4"
+        >
+          <div className="flex items-start gap-3">
+            <Eye className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-left">
+              <p className="text-sm font-semibold text-emerald-100">Today&apos;s source preview</p>
+              <p className="text-xs text-emerald-100/75 leading-relaxed">
+                {challenge?.sourceType === 'basepaint'
+                  ? `BasePaint Day ${challenge.day} — everyone plays this canvas theme. Your five modifier cards are dealt uniquely on-chain when you connect.`
+                  : 'Same story seed for all players today. Your hidden modifier hand makes each run different.'}
+              </p>
+              {challenge?.promptText && (
+                <p className="text-xs text-muted-foreground pt-2 border-t border-emerald-500/10 mt-2 line-clamp-3">
+                  {challenge.promptText}
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -208,7 +237,9 @@ export default function DailyChallengePage() {
             )}
 
             <p className="text-xs text-muted-foreground text-center mt-3">
-              Requires Base ETH for Inco fees. Your modifier cards stay encrypted until the finale reveal.
+              {isConnected
+                ? 'Requires Base ETH for Inco fees. Modifier cards stay encrypted until the finale reveal.'
+                : 'Preview is free. Wallet connects only to deal your encrypted hand and submit a score.'}
             </p>
           </div>
         </motion.div>
