@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   getBasePaintDay,
   getBasePaintDailySource,
+  getBasePaintCanvasDescription,
   fetchBasePaintTheme,
   getBasePaintCanvasUrl,
 } from '@/lib/daily-challenge'
@@ -33,7 +34,11 @@ export async function GET(
     }
 
     const canvasUrl = getBasePaintCanvasUrl(day)
-    const source = await getBasePaintDailySource(day)
+    // Vision-describe what the community actually drew so generated stories
+    // are grounded in the artwork, not just the theme word. Cached per day;
+    // null is fine — the source falls back to a theme-only prompt.
+    const canvasDescription = await getBasePaintCanvasDescription(day)
+    const source = await getBasePaintDailySource(day, canvasDescription)
 
     return NextResponse.json({
       day,
@@ -42,6 +47,7 @@ export async function GET(
       palette: theme.palette,
       canvasSize: theme.size,
       canvasUrl,
+      canvasDescription: canvasDescription || undefined,
       promptText: source.promptText,
     })
   } catch (error) {

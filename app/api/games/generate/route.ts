@@ -16,7 +16,12 @@ import { GameFundingService } from '@/domains/payments/services/game-funding.ser
 import { buildMarketingCopyPrompt } from '@/domains/games/services/generation-prompts'
 import { deduplicateGeneration, buildGenerationCacheKey } from '@/lib/ai-cache'
 import { reportServerError } from '@/services/error-reporting'
-import { getBasePaintDay, getBasePaintDailySource } from '@/lib/daily-challenge'
+import {
+  getBasePaintDay,
+  getBasePaintDailySource,
+  getBasePaintCanvasDescription,
+  pickAccentColor,
+} from '@/lib/daily-challenge'
 
 // Request validation schema
 const generateGameSchema = z.object({
@@ -178,6 +183,7 @@ export async function POST(request: NextRequest) {
     }
 
     let processedPrompt = validatedData.promptText || ''
+    let basePaintPalette: string[] | undefined = validatedData.palette
     let processedContent: import('@/domains/content/services/content-processor.service').ProcessedContent | undefined
 
     // Marketing copy (studio flow): clean the pasted markdown and frame it
@@ -197,7 +203,8 @@ export async function POST(request: NextRequest) {
             palette: validatedData.palette,
             canvasUrl: validatedData.canvasUrl,
           }
-        : await getBasePaintDailySource(day)
+        : await getBasePaintDailySource(day, await getBasePaintCanvasDescription(day))
+      basePaintPalette = source.palette ?? validatedData.palette
       processedPrompt = source.promptText || `Create a game inspired by BasePaint Day ${day}: "${source.theme}".`
     }
 
@@ -319,6 +326,13 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       gameData = {
         ...aiGameData,
         mode: 'story' as const,
+      }
+
+      // Ground the game's visual identity in today's canvas palette — the
+      // play UI (background gradient, progress bars, accents) keys off this.
+      if (validatedData.contentType === 'basepaint') {
+        const accent = pickAccentColor(basePaintPalette)
+        if (accent) gameData.primaryColor = accent
       }
     }
 
