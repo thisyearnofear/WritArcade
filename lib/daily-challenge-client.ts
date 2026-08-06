@@ -26,6 +26,7 @@ export interface DailyChallengeStartResponse {
     vaultAddress: `0x${string}`
     day: number
     deckShuffled: boolean
+    deckSetupError?: string | null
     needsDeckSetup: boolean
     needsClientStartSession: boolean
   }
@@ -80,19 +81,6 @@ export async function fetchDailyChallengeStart(
   }
 
   return response.json()
-}
-
-export async function ensureDailyDeckShuffled(day: number): Promise<void> {
-  const response = await fetch('/api/daily-challenge/setup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ day }),
-  })
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new Error(data.error || 'Failed to shuffle daily deck')
-  }
 }
 
 export async function readStartSessionFee(publicClient: PublicClient): Promise<bigint> {

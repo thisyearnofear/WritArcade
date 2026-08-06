@@ -1,0 +1,40 @@
+name: Daily Challenge Shuffle
+
+# Backup cron for Hobby Vercel plans (best-effort daily cron + missed-run recovery).
+# Add repository secret: CRON_SECRET (same value as Vercel Production).
+
+on:
+  schedule:
+    # 00:10 UTC — shortly after Vercel cron (00:05 UTC window on Hobby)
+    - cron: '10 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  shuffle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Shuffle today's daily challenge deck
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.WRITERSARCADE_APP_URL }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET repository secret is not configured — skipping."
+            exit 1
+          fi
+
+          APP_URL="${APP_URL:-https://writersarcade.vercel.app}"
+
+          http_code=$(curl -sS -o /tmp/shuffle-response.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/daily-challenge/setup")
+
+          cat /tmp/shuffle-response.json
+          echo
+          echo "HTTP ${http_code}"
+
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            exit 1
+          fi

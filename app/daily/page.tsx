@@ -28,6 +28,8 @@ interface LeaderboardEntry {
 export default function DailyChallengePage() {
   const [challenge, setChallenge] = useState<DailyChallengeData | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [deckReady, setDeckReady] = useState(true)
+  const [deckSetupError, setDeckSetupError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [playError, setPlayError] = useState<string | null>(null)
@@ -50,6 +52,8 @@ export default function DailyChallengePage() {
         const data = await response.json()
         setChallenge(data.challenge || data.source)
         setLeaderboard(data.leaderboard || [])
+        setDeckReady(data.deckShuffled !== false)
+        setDeckSetupError(data.deckSetupError || null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load challenge')
       } finally {
@@ -161,13 +165,18 @@ export default function DailyChallengePage() {
           <div className="p-6">
             <button
               onClick={handlePlay}
-              disabled={isPlayBusy}
+              disabled={isPlayBusy || !deckReady}
               className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-60"
             >
               {isPlayBusy ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   {isSwitchingChain ? 'Switching to Base...' : 'Dealing encrypted cards...'}
+                </>
+              ) : !deckReady ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Preparing today&apos;s deck...
                 </>
               ) : !isConnected ? (
                 <>
@@ -194,6 +203,9 @@ export default function DailyChallengePage() {
             )}
 
             {playError && <p className="text-xs text-red-400 text-center mt-2">{playError}</p>}
+            {!deckReady && deckSetupError && (
+              <p className="text-xs text-amber-400/90 text-center mt-2">{deckSetupError}</p>
+            )}
 
             <p className="text-xs text-muted-foreground text-center mt-3">
               Requires Base ETH for Inco fees. Your modifier cards stay encrypted until the finale reveal.

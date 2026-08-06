@@ -5,7 +5,6 @@ import { useAccount, useChainId, usePublicClient, useSwitchChain, useWalletClien
 import {
   clearDailyChallengeState,
   DAILY_CHALLENGE_CHAIN_ID,
-  ensureDailyDeckShuffled,
   fetchDailyChallengeStart,
   loadDailyChallengeState,
   recordDailyChoice,
@@ -48,8 +47,8 @@ export function useDailyChallengeOnchain() {
       const startData = await fetchDailyChallengeStart('basepaint')
       const { challenge, onChain } = startData
 
-      if (onChain.needsDeckSetup) {
-        await ensureDailyDeckShuffled(onChain.day)
+      if (!onChain.deckShuffled) {
+        throw new Error(onChain.deckSetupError || 'Daily deck is not ready yet. Please try again.')
       }
 
       const onChainSession = await startOnChainSession({

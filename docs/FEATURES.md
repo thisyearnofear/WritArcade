@@ -68,7 +68,10 @@ Finale: completeAndReveal() → attestedDecrypt → leaderboard
 ```
 
 **Smart Contract**: [`DailyChallengeVault`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce) on Base mainnet  
-**Cron**: `vercel.json` shuffles the deck daily at 00:05 UTC (`CRON_SECRET` required)
+**Cron**: Three-layer deck shuffle (idempotent on-chain):
+1. **Vercel Cron** — `vercel.json` at ~00:05 UTC (`CRON_SECRET` bearer); Hobby timing is hour-granular
+2. **GitHub Actions** — `.github/workflows/daily-challenge-shuffle.yml` at 00:10 UTC backup (set repo secret `CRON_SECRET`)
+3. **Lazy shuffle** — `GET/POST /api/daily-challenge/start` shuffles if today's deck is missing when `/daily` loads or a session starts
 **SDK**: `@inco/lightning-js` — `attestedDecrypt` for modifier/score reveal
 **Modifier Deck**: `lib/modifiers.json` — 52 cards across 4 categories
 **Page**: `/daily` — challenge card, leaderboard, play button

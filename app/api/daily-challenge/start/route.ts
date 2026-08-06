@@ -5,11 +5,12 @@ import {
   getBasePaintDay,
   getBasePaintDailySource,
   getVaultAddress,
-  DAILY_CHALLENGE_VAULT_ABI,
-  createDailyChallengePublicClient,
+  ensureDailyDeckShuffled,
+  isDailyDeckShuffled,
   type DailyChallengeSource,
 } from '@/lib/daily-challenge'
-import { getActor } from '@/services/auth'
+
+export const maxDuration = 60
 
 /**
  * POST /api/daily-challenge/start
@@ -36,9 +37,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { sourceType } = body as { sourceType?: 'article' | 'marketing-copy' | 'basepaint' }
-
-    const actor = await getActor()
-    const walletAddress = actor?.user?.walletAddress || undefined
 
     // Resolve today's challenge source
     const today = new Date()
@@ -89,37 +87,33 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Check if the on-chain challenge + deck shuffle exists
-    const vaultAddress = getVaultAddress()
-    let onChainSessionId: string | null = null
+    // Ensure today's deck is shuffled before the client starts a session
     let deckShuffled = false
-    let needsDeckSetup = false
-    let needsClientStartSession = false
-    const modifierHandles: string[] = []
+    let deckSetupError: string | null = null
 
-    if (walletAddress) {
+    try {
+      const shuffleResult = await ensureDailyDeckShuffled(source.day)
+      deckShuffled = true
+      if (!shuffleResult.alreadyShuffled) {
+        logger.info('Daily challenge deck shuffled during session start', {
+          day: source.day,
+          txHash: shuffleResult.txHash,
+        })
+      }
+    } catch (err) {
+      deckSetupError = err instanceof Error ? err.message : 'Failed to shuffle daily deck'
+      logger.error('Daily challenge deck shuffle failed during session start', err, { day: source.day })
       try {
-        const publicClient = await createDailyChallengePublicClient()
-
-        const stats = await publicClient.readContract({
-          address: vaultAddress,
-          abi: DAILY_CHALLENGE_VAULT_ABI,
-          functionName: 'getChallengeStats',
-          args: [BigInt(source.day)],
-        }) as [bigint, bigint, boolean]
-
-        deckShuffled = stats[2]
-
-        if (!deckShuffled) {
-          needsDeckSetup = true
-          logger.info('Daily challenge deck not yet shuffled on-chain', { day: source.day })
-        } else {
-          needsClientStartSession = true
-        }
-      } catch (err) {
-        logger.error('Failed to check on-chain daily challenge', err, { day: source.day })
+        deckShuffled = await isDailyDeckShuffled(source.day)
+      } catch {
+        deckShuffled = false
       }
     }
+
+    const vaultAddress = getVaultAddress()
+    const onChainSessionId: string | null = null
+    const modifierHandles: string[] = []
+    const needsClientStartSession = deckShuffled
 
     return NextResponse.json({
       success: true,
@@ -138,7 +132,8 @@ export async function POST(request: NextRequest) {
         sessionId: onChainSessionId,
         modifierHandles,
         deckShuffled,
-        needsDeckSetup,
+        deckSetupError,
+        needsDeckSetup: !deckShuffled,
         needsClientStartSession,
         startSession: needsClientStartSession
           ? {
@@ -147,7 +142,6 @@ export async function POST(request: NextRequest) {
               payable: true,
             }
           : null,
-        setupEndpoint: needsDeckSetup ? '/api/daily-challenge/setup' : null,
       },
     })
   } catch (error) {
@@ -176,6 +170,28 @@ export async function GET() {
     const day = getBasePaintDay()
     const source = await getBasePaintDailySource(day)
 
+    let deckShuffled = false
+    let deckSetupError: string | null = null
+
+    try {
+      const shuffleResult = await ensureDailyDeckShuffled(day)
+      deckShuffled = true
+      if (!shuffleResult.alreadyShuffled) {
+        logger.info('Daily challenge deck shuffled on page load', {
+          day,
+          txHash: shuffleResult.txHash,
+        })
+      }
+    } catch (err) {
+      deckSetupError = err instanceof Error ? err.message : 'Failed to shuffle daily deck'
+      logger.error('Daily challenge deck shuffle failed on page load', err, { day })
+      try {
+        deckShuffled = await isDailyDeckShuffled(day)
+      } catch {
+        deckShuffled = false
+      }
+    }
+
     // Check DB for existing challenge
     const existing = await prisma.dailyChallenge.findUnique({
       where: { day },
@@ -203,6 +219,8 @@ export async function GET() {
         canvasUrl: source.canvasUrl,
       },
       source,
+      deckShuffled,
+      deckSetupError,
       leaderboard: leaderboard.map((entry) => ({
         playerAddress: entry.playerAddress,
         score: entry.score,

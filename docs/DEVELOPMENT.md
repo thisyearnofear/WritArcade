@@ -177,7 +177,10 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 - `POST /api/games/[slug]/secret-panel` - NFT-gated secret panel handle(s) for Inco decrypt
 - `POST /api/games/[slug]/inco-store` - Store secret panel on-chain after mint
 - `POST /api/daily-challenge/start` - Start / fetch today's challenge
-- `POST /api/daily-challenge/setup` - Shuffle on-chain modifier deck (also `GET` via Vercel Cron)
+- `GET /api/daily-challenge/setup` - Shuffle deck via Vercel Cron (`CRON_SECRET` bearer)
+- `POST /api/daily-challenge/setup` - Manual shuffle (same `CRON_SECRET` auth)
+- `GET/POST /api/daily-challenge/start` - Lazy-shuffles deck if missing when `/daily` loads or a session starts
+- GitHub Actions backup: `.github/workflows/daily-challenge-shuffle.yml` (repo secret `CRON_SECRET`)
 - `POST /api/daily-challenge/[id]/record-choice` - Record encrypted score delta
 - `POST /api/daily-challenge/[id]/reveal` - Submit leaderboard after on-chain reveal
 - `POST /api/games/[slug]/start` - Start a game session; logs `started` resonance event

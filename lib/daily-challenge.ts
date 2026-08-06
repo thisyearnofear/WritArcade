@@ -282,6 +282,74 @@ export async function createDailyChallengePublicClient() {
   })
 }
 
+/** ETypes.Uint256 enum value in @inco/lightning Types.sol */
+const ETYPE_UINT256 = 8
+
+export type ShuffleDailyDeckResult =
+  | { success: true; day: number; alreadyShuffled: true }
+  | { success: true; day: number; alreadyShuffled: false; txHash: `0x${string}` }
+
+export async function isDailyDeckShuffled(day: number): Promise<boolean> {
+  const publicClient = await createDailyChallengePublicClient()
+  const vaultAddress = getVaultAddress()
+
+  const stats = await publicClient.readContract({
+    address: vaultAddress,
+    abi: DAILY_CHALLENGE_VAULT_ABI,
+    functionName: 'getChallengeStats',
+    args: [BigInt(day)],
+  }) as [bigint, bigint, boolean]
+
+  return stats[2]
+}
+
+/**
+ * Shuffle today's modifier deck on-chain. Idempotent — no-op if already shuffled.
+ * Requires SESSION_MANAGER_ROLE on the server wallet.
+ */
+export async function shuffleDailyDeck(day: number): Promise<ShuffleDailyDeckResult> {
+  if (await isDailyDeckShuffled(day)) {
+    return { success: true, day, alreadyShuffled: true }
+  }
+
+  const { INCO_LIGHTNING_ABI, INCO_LIGHTNING_ADDRESS } = await import('./inco')
+
+  const vaultAddress = getVaultAddress()
+  const publicClient = await createDailyChallengePublicClient()
+
+  const listFee = await publicClient.readContract({
+    address: INCO_LIGHTNING_ADDRESS,
+    abi: INCO_LIGHTNING_ABI,
+    functionName: 'getEListFee',
+    args: [52, ETYPE_UINT256],
+  }) as bigint
+
+  const walletClient = await createSessionManagerWalletClient()
+  const [account] = await walletClient.getAddresses()
+
+  const txHash = await walletClient.writeContract({
+    address: vaultAddress,
+    abi: DAILY_CHALLENGE_VAULT_ABI,
+    functionName: 'createDailyChallenge',
+    args: [BigInt(day)],
+    value: listFee * 2n,
+    account,
+  })
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+
+  if (receipt.status !== 'success') {
+    throw new Error('On-chain deck shuffle failed')
+  }
+
+  return { success: true, day, txHash, alreadyShuffled: false }
+}
+
+/** Shuffle the deck if needed; safe to call from cron, page load, or session start. */
+export async function ensureDailyDeckShuffled(day: number): Promise<ShuffleDailyDeckResult> {
+  return shuffleDailyDeck(day)
+}
+
 // ── Server-side modifier decrypt (AI narrative only — never sent to client) ─
 
 function handleToModifierId(value: bigint): number {
