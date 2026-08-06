@@ -6,7 +6,10 @@ import { WordleService, type WordleGuessResult, type WordleLetterState } from '.
 import { shareGame } from '@/domains/farcaster/services/farcaster-sharing.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { RecoveryPanel } from '@/components/ui/recovery-panel'
+import { Lock, WifiOff } from 'lucide-react'
 import { useWalletClient, useAccount } from 'wagmi'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
 import type { WalletClient, Transport, Chain, Account } from 'viem'
 
 interface WordleGameInterfaceProps {
@@ -17,6 +20,7 @@ interface WordleGameInterfaceProps {
 export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfaceProps) {
   const { data: walletClient } = useWalletClient()
   const { address: walletAddress } = useAccount()
+  const { openConnectModal } = useConnectModal()
   const [decryptedAnswer, setDecryptedAnswer] = useState<string | null>(null)
   const [isDecrypting, setIsDecrypting] = useState(false)
   const [decryptError, setDecryptError] = useState<string | null>(null)
@@ -74,34 +78,81 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
 
   if (!game.wordleAnswerVaultUuid) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        <div className="text-center space-y-3">
-          <p className="text-amber-400 font-medium">Answer Not Yet Available</p>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            This puzzle's answer is encrypted on-chain via Inco after generation.
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-black px-4">
+        <RecoveryPanel
+          icon={Lock}
+          title="Puzzle still locking in"
+          description="This word puzzle's answer is being secured on-chain. Play a public story in the arcade, or create another free Wordle from an article."
+          primaryHref="/generate?mode=wordle"
+          primaryLabel="Create a word puzzle"
+          className="text-white [&_h1]:text-white [&_p]:text-muted-foreground"
+        />
       </div>
     )
   }
 
   if (decryptError) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        <div className="text-center space-y-3">
-          <p className="text-red-400">Failed to unlock game data</p>
-          <p className="text-sm text-muted-foreground">{decryptError}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-black px-4">
+        <RecoveryPanel
+          icon={WifiOff}
+          title="Couldn't unlock this puzzle"
+          description="Something blocked decrypting the answer. Connect your wallet on Base and retry, or play another game while we sort it out."
+          primaryHref="/generate?mode=wordle"
+          primaryLabel="Try another word puzzle"
+          onRetry={() => {
+            setDecryptError(null)
+            setDecryptedAnswer(null)
+          }}
+          className="text-white [&_h1]:text-white [&_p]:text-muted-foreground"
+        />
+      </div>
+    )
+  }
+
+  if (!walletClient || !walletAddress) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black px-4">
+        <RecoveryPanel
+          icon={Lock}
+          title="Connect to play this puzzle"
+          description="This word puzzle decrypts its answer through your wallet on Base. Connect to play, or try a free story game in the arcade."
+          showFunnel={false}
+          className="text-white [&_h1]:text-white [&_p]:text-muted-foreground"
+        >
+          <div className="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => openConnectModal?.()}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-amber-500 sm:w-auto"
+            >
+              Connect wallet
+            </button>
+            <a
+              href="/games"
+              className="text-sm font-medium text-purple-400 hover:text-purple-300"
+            >
+              Browse the arcade instead
+            </a>
+          </div>
+        </RecoveryPanel>
       </div>
     )
   }
 
   if (isDecrypting || !decryptedAnswer) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        <div className="text-center space-y-3">
+      <div className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
+        <div className="text-center space-y-4 max-w-sm">
           <div className="animate-spin w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full mx-auto" />
           <p className="text-sm text-muted-foreground">Decrypting secure game data from vault...</p>
+          <p className="text-xs text-muted-foreground/80">
+            Taking a while?{' '}
+            <a href="/games" className="text-purple-400 hover:text-purple-300 underline underline-offset-2">
+              Browse the arcade
+            </a>{' '}
+            while this finishes.
+          </p>
         </div>
       </div>
     )

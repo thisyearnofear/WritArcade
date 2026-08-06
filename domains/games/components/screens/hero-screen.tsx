@@ -1,8 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Loader2, Play, Lightbulb } from 'lucide-react'
+import { Loader2, Play, Lightbulb, RefreshCw, Gamepad2 } from 'lucide-react'
 import { NarrativePreviewModal } from '@/components/game/narrative-preview-modal'
 import type { Game } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
@@ -21,6 +22,8 @@ interface HeroScreenProps {
   onPaymentConfirm: () => void
   onClosePreview: () => void
   onClosePayment: () => void
+  startError?: string | null
+  onClearStartError?: () => void
   generateStoryboardPreview: () => Array<{
     title: string
     description: string
@@ -43,6 +46,8 @@ export function HeroScreen({
   onPaymentConfirm,
   onClosePreview,
   onClosePayment,
+  startError,
+  onClearStartError,
   generateStoryboardPreview,
 }: HeroScreenProps) {
   return (
@@ -97,6 +102,35 @@ export function HeroScreen({
             <p className="text-foreground text-sm sm:text-base md:text-lg max-w-xl drop-shadow-md leading-relaxed">
               {game.description}
             </p>
+
+            {startError && !isStarting && (
+              <div className="w-full max-w-md rounded-lg border border-amber-500/30 bg-black/60 px-4 py-3 text-left backdrop-blur-sm">
+                <p className="text-sm font-semibold text-amber-100">Couldn&apos;t start this story</p>
+                <p className="mt-1 text-xs text-amber-100/75 leading-relaxed">
+                  {startError} Try again, or explore other games in the arcade.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClearStartError?.()
+                      onStartClick()
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-200 hover:text-white"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Try again
+                  </button>
+                  <Link
+                    href="/games"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-300 hover:text-purple-200"
+                  >
+                    <Gamepad2 className="h-3.5 w-3.5" />
+                    Browse arcade
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {/* CTA Button with responsive sizing */}
             <div className="mt-6 sm:mt-8 pt-4">

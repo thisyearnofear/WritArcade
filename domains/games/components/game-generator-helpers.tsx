@@ -9,7 +9,8 @@
  */
 
 import { motion, useReducedMotion } from 'framer-motion'
-import { AlertTriangle, RefreshCw, X } from 'lucide-react'
+import Link from 'next/link'
+import { AlertTriangle, RefreshCw, X, Gamepad2, Sparkles } from 'lucide-react'
 import type { GameGenre } from '@/components/game/GenreSelector'
 import type { GameDifficulty } from '@/components/game/DifficultySelector'
 import type { WriterCoin, PaymentToken } from '@/lib/writerCoins'
@@ -134,6 +135,7 @@ export function paymentError(message: string): GenerateErrorState {
       'Confirm your wallet is unlocked and connected.',
       'Check that you are on the requested network before approving.',
       'Confirm your token balance covers the generation cost and gas.',
+      'Try free Wordle mode instead — no payment required.',
     ],
   }
 }
@@ -284,6 +286,25 @@ export function GenerateErrorPanel({
             <RefreshCw className="h-4 w-4" />
             {error.retryLabel}
           </button>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-red-500/20 pt-4">
+            <Link
+              href="/games"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-red-100/90 transition hover:text-red-50"
+            >
+              <Gamepad2 className="h-3.5 w-3.5" />
+              Browse the arcade
+            </Link>
+            {(error.phase === 'payment' || error.phase === 'generation') && (
+              <Link
+                href="/generate?mode=wordle"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-red-100/90 transition hover:text-red-50"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Try free Wordle
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -7,7 +7,8 @@ import { GameCard } from '@/components/ui/game-card'
 import { animationConfig } from '@/lib/animations'
 import { CardSkeleton } from '@/components/effects'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Gamepad2, SearchX } from 'lucide-react'
+import { RecoveryPanel } from '@/components/ui/recovery-panel'
+import { Gamepad2, SearchX, WifiOff } from 'lucide-react'
 import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
 
 interface GameGridProps {
@@ -104,15 +105,12 @@ export function GameGrid({
 
   if (error) {
     return (
-      <div className="text-center text-red-400 py-12">
-        <p>{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 text-purple-400 hover:text-purple-300"
-        >
-          Try again
-        </button>
-      </div>
+      <RecoveryPanel
+        icon={WifiOff}
+        title="Couldn't load games"
+        description="The arcade list didn't load — your connection or our servers may be busy. Browse from the homepage or try again."
+        onRetry={() => window.location.reload()}
+      />
     )
   }
 

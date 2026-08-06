@@ -256,6 +256,8 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           onPaymentConfirm={onPaymentConfirm}
           onClosePreview={() => setShowPreview(false)}
           onClosePayment={() => setShowPaymentModal(false)}
+          startError={session.startError}
+          onClearStartError={session.clearStartError}
           generateStoryboardPreview={generateStoryboardPreview}
         />
         {renderEnrichment()}

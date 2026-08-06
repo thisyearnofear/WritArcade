@@ -41,6 +41,7 @@ export interface GameSessionState {
   isGeneratingEpilogue: boolean
   epilogueReflection: string | null
   epilogueGenerationFailed: boolean
+  startError: string | null
   // Mood tracking
   worldMood: {
     tension: number
@@ -60,6 +61,7 @@ export interface GameSessionActions {
   handleImageRating: (messageId: string, rating: number) => void
   setMessages: React.Dispatch<React.SetStateAction<ChatEntry[]>>
   setIsPlaying: (value: boolean) => void
+  clearStartError: () => void
 }
 
 const MAX_COMIC_PANELS = 5
@@ -96,6 +98,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
   const [isGeneratingEpilogue, setIsGeneratingEpilogue] = useState(false)
   const [epilogueReflection, setEpilogueReflection] = useState<string | null>(null)
   const [epilogueGenerationFailed, setEpilogueGenerationFailed] = useState(false)
+  const [startError, setStartError] = useState<string | null>(null)
   const [worldMood, setWorldMood] = useState({ tension: 0, chaos: 0, hope: 0 })
 
   // Derived state
@@ -157,6 +160,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
    */
   const startGame = useCallback(async () => {
     setIsStarting(true)
+    setStartError(null)
     setLoadingProgress({ text: false, images: false })
 
     try {
@@ -208,11 +212,13 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
 
               if (data.type === 'error') {
                 console.error('Game start error from server:', data.error)
+                const message = data.error || 'AI generation failed. Please try again.'
                 toast({
                   title: "Failed to start game",
-                  description: data.error || "AI generation failed. Please try again.",
+                  description: message,
                   variant: "destructive"
                 })
+                setStartError(message)
                 setIsStarting(false)
                 return
               } else if (data.type === 'content') {
@@ -269,6 +275,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
       }
     } catch (error) {
       console.error('Failed to start game:', error)
+      setStartError('Could not start this story. Try again or pick another game in the arcade.')
       setIsStarting(false)
     }
   }, [game, toast, handleImageGenerated, options?.embedded, options?.ref])
@@ -645,6 +652,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
     isGeneratingEpilogue,
     epilogueReflection,
     epilogueGenerationFailed,
+    startError,
     // Actions
     startGame,
     sendMessage,
@@ -656,5 +664,6 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
     handleImageRating,
     setMessages,
     setIsPlaying,
+    clearStartError: () => setStartError(null),
   }
 }

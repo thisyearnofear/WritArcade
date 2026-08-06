@@ -128,7 +128,20 @@ export default function StudioPage() {
                 </div>
               </div>
 
-              {error && <p className="text-sm text-red-400">{error}</p>}
+              {error && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm space-y-2">
+                  <p className="font-semibold text-foreground">Generation didn&apos;t finish</p>
+                  <p className="text-muted-foreground">{error}</p>
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <Link href="/games" className="text-xs font-semibold text-purple-400 hover:text-purple-300">
+                      Browse the arcade
+                    </Link>
+                    <Link href="/generate?mode=wordle" className="text-xs font-semibold text-purple-400 hover:text-purple-300">
+                      Try free Wordle
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               {needsCredits && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
@@ -138,6 +151,11 @@ export default function StudioPage() {
                     <Link href="/my-games" className="text-primary underline underline-offset-2">
                       Get credits
                     </Link>
+                    {' '}or{' '}
+                    <Link href="/games" className="text-primary underline underline-offset-2">
+                      play public games
+                    </Link>
+                    {' '}in the arcade.
                   </p>
                 </div>
               )}

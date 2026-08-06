@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, BarChart3, Loader2 } from 'lucide-react'
+import { ArrowLeft, BarChart3, Loader2, Lock, WifiOff, Gamepad2 } from 'lucide-react'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { EmbedSnippet } from '@/components/embed/EmbedSnippet'
+import { RecoveryPanel } from '@/components/ui/recovery-panel'
 import type { GameInsights } from '@/domains/games/services/game-insights.service'
 
 export default function GameInsightsPage() {
@@ -72,8 +73,41 @@ export default function GameInsightsPage() {
           )}
 
           {error && !loading && (
-            <div className="mt-10 rounded-xl border border-red-500/20 bg-red-950/20 p-6 text-sm text-red-200">
-              {error}
+            <div className="mt-10">
+              <RecoveryPanel
+                icon={error.includes('owner') ? Lock : WifiOff}
+                title={error.includes('owner') ? 'Owner access only' : "Couldn't load insights"}
+                description={
+                  error.includes('owner')
+                    ? 'Resonance data is private to whoever created this game. Play the story publicly, or open your own library if you manage this game.'
+                    : 'Insights did not load this time. Play the game or browse the arcade while you retry.'
+                }
+                showFunnel={false}
+                onRetry={() => window.location.reload()}
+                className="py-8"
+              >
+                <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                  <Link
+                    href={`/games/${slug}?play=1`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-500 sm:w-auto"
+                  >
+                    <Gamepad2 className="h-5 w-5" />
+                    Play this game
+                  </Link>
+                  <Link
+                    href="/my-games"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 py-3 font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
+                  >
+                    My library
+                  </Link>
+                  <Link
+                    href="/games"
+                    className="text-sm font-medium text-purple-400 hover:text-purple-300"
+                  >
+                    Browse arcade
+                  </Link>
+                </div>
+              </RecoveryPanel>
             </div>
           )}
 

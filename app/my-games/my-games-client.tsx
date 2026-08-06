@@ -1,18 +1,19 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
+import { RecoveryPanel } from '@/components/ui/recovery-panel'
 import { GameCardEnhanced } from '@/domains/games/components/game-card-enhanced'
 import { RecentlyPlayedSection } from '@/domains/games/components/recently-played-section'
 import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
 import { IPRegistration } from '@/components/story/IPRegistration'
-import { Plus, Gamepad2, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink, AlertTriangle, Sparkles, ChevronDown } from 'lucide-react'
+import { Plus, Gamepad2, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink, AlertTriangle, Sparkles, ChevronDown, Wallet, Loader2, WifiOff } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { useDialogA11y } from '@/hooks/use-dialog-a11y'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -47,8 +48,8 @@ const UNLOCKED_VAULTS_KEY = 'writersarcade.unlockedVaults'
 
 export function MyGamesClient() {
   const { toast } = useToast()
-  const router = useRouter()
   const { address, isConnected, status } = useAccount()
+  const { openConnectModal } = useConnectModal()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -179,20 +180,19 @@ export function MyGamesClient() {
           if (data?.success && data?.user?.walletAddress) {
             setSessionAllowed(true)
           } else {
-            router.push('/')
+            setSessionAllowed(false)
           }
         })
-        .catch(() => router.push('/'))
+        .catch(() => setSessionAllowed(false))
         .finally(() => setAuthChecked(true))
       return
     }
     setAuthChecked(true)
     setSessionAllowed(true)
-  }, [isConnected, status, router])
+  }, [isConnected, status])
 
   useEffect(() => {
     if (!authChecked || !sessionAllowed) return
-    if (!address && isConnected !== true) return
 
     const loadGames = async () => {
       try {
@@ -404,8 +404,62 @@ export function MyGamesClient() {
     }
   }
 
-  if (!isConnected) {
-    return null
+  if (!authChecked || status === 'connecting' || status === 'reconnecting') {
+    return (
+      <ThemeWrapper theme="arcade">
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex flex-1 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+          </main>
+          <Footer />
+        </div>
+      </ThemeWrapper>
+    )
+  }
+
+  if (!sessionAllowed) {
+    return (
+      <ThemeWrapper theme="arcade">
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex flex-1 items-center justify-center">
+            <RecoveryPanel
+              icon={Wallet}
+              title="Your library lives in your wallet"
+              description="Connect to see games you created, minted, and played. No wallet? Browse public games in the arcade or create one from an article — both work without connecting."
+              showFunnel={false}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => openConnectModal?.()}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-500 sm:w-auto"
+                >
+                  <Wallet className="h-5 w-5" />
+                  Connect wallet
+                </button>
+                <Link
+                  href="/games"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 py-3 font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
+                >
+                  <Gamepad2 className="h-5 w-5" />
+                  Browse the arcade
+                </Link>
+                <Link
+                  href="/generate"
+                  className="inline-flex items-center justify-center gap-2 text-sm font-medium text-purple-400 hover:text-purple-300"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Create a game
+                </Link>
+              </div>
+            </RecoveryPanel>
+          </main>
+          <Footer />
+        </div>
+      </ThemeWrapper>
+    )
   }
 
   return (
@@ -682,15 +736,12 @@ export function MyGamesClient() {
                 ))}
               </div>
             ) : error ? (
-              <div className="text-center py-12">
-                <p className="text-red-400 mb-4">{error}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="text-purple-400 hover:text-purple-300 text-sm font-medium"
-                >
-                  Try again
-                </button>
-              </div>
+              <RecoveryPanel
+                icon={WifiOff}
+                title="Couldn't load your library"
+                description="Your games didn't load this time. Browse the arcade while you retry, or create something new from an article."
+                onRetry={() => window.location.reload()}
+              />
             ) : games.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border bg-card/50 px-4 py-12 text-center sm:py-16">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-purple-500/10 text-purple-300">
