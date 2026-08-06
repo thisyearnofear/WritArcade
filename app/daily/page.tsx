@@ -6,7 +6,6 @@ import { Trophy, Users, Sparkles, ArrowRight, Image as ImageIcon, Loader2, Walle
 import Link from 'next/link'
 import { useAccount } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
-import { config } from '@/lib/config'
 import { useDailyChallengeOnchain } from '@/hooks/use-daily-challenge-onchain'
 
 interface DailyChallengeData {
@@ -40,15 +39,12 @@ export default function DailyChallengePage() {
 
   useEffect(() => {
     async function fetchChallenge() {
-      if (!config.features.dailyChallenge) {
-        setError('Daily challenge is not enabled')
-        setLoading(false)
-        return
-      }
-
       try {
         const response = await fetch('/api/daily-challenge/start')
-        if (!response.ok) throw new Error('Failed to fetch challenge')
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}))
+          throw new Error(data.error || 'Failed to fetch challenge')
+        }
         const data = await response.json()
         setChallenge(data.challenge || data.source)
         setLeaderboard(data.leaderboard || [])

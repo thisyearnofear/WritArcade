@@ -11,6 +11,28 @@
  * Centralized toggle for non-core features.
  * Default everything OFF except the core Quick Games + IP Registration + CDR flow.
  */
+/**
+ * Daily challenge is enabled when explicitly turned on, or when the public
+ * vault address is configured (client-safe). Server-only FEATURE_DAILY_CHALLENGE
+ * alone does not reach the browser bundle — NEXT_PUBLIC_* or vault auto-enable
+ * is required for client components (/daily, banners, nav).
+ */
+function isDailyChallengeEnabled(): boolean {
+  if (
+    process.env.FEATURE_DAILY_CHALLENGE === 'false' ||
+    process.env.NEXT_PUBLIC_FEATURE_DAILY_CHALLENGE === 'false'
+  ) {
+    return false
+  }
+  if (
+    process.env.FEATURE_DAILY_CHALLENGE === 'true' ||
+    process.env.NEXT_PUBLIC_FEATURE_DAILY_CHALLENGE === 'true'
+  ) {
+    return true
+  }
+  return Boolean(process.env.NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS)
+}
+
 export const features = {
   /** Asset Marketplace — compose games from marketplace assets */
   assetMarketplace: process.env.FEATURE_ASSET_MARKETPLACE === 'true',
@@ -19,7 +41,7 @@ export const features = {
   /** Inco — confidential compute for secret panels and Wordle answers */
   inco: process.env.FEATURE_INCO !== 'false', // default ON
   /** Daily Challenge — Inco-powered confidential game sessions + BasePaint crossover */
-  dailyChallenge: process.env.FEATURE_DAILY_CHALLENGE === 'true',
+  dailyChallenge: isDailyChallengeEnabled(),
   /** SuperRare NFT minting bridge */
   superrare: process.env.FEATURE_SUPERRARE === 'true',
   /** Etherfuse fiat on-ramp */
