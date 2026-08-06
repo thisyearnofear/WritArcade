@@ -20,13 +20,17 @@ import {
   Coins,
   Sparkles,
   ArrowRight,
+  LockKeyhole,
+  CalendarDays,
 } from 'lucide-react'
 import { GridSkeleton } from '@/components/effects'
 import { WRITER_COINS } from '@/lib/writerCoins'
+import { config } from '@/lib/config'
+import { ConceptTerm } from '@/lib/concept-definitions'
 
 /* ─── How It Works ──────────────────────────────────────────────────────── */
 
-const steps = [
+const baseSteps = [
   {
     icon: Wand2,
     title: 'Paste an article',
@@ -35,26 +39,56 @@ const steps = [
   {
     icon: Gamepad2,
     title: 'Play your story',
-    description: 'Make choices that shape the narrative. Every playthrough is different.',
+    description: 'Make five choices that branch the narrative. Every playthrough is different.',
+  },
+  {
+    icon: LockKeyhole,
+    title: 'Unlock the secret epilogue',
+    description: (
+      <>
+        Finish all panels, then{' '}
+        <ConceptTerm concept="mint">
+          <span className="underline decoration-dotted underline-offset-2 cursor-help">mint</span>
+        </ConceptTerm>{' '}
+        to decrypt a bonus ending encrypted on Base.
+      </>
+    ),
   },
   {
     icon: Coins,
     title: 'Own and earn',
     description: (
       <>
-        <ConceptTooltip term="Mint" explanation="Create a unique digital collectible on the blockchain that proves you own this game.">
-          <span className="underline decoration-dotted underline-offset-2 cursor-help">Mint</span>
-        </ConceptTooltip>{' '}
-        your game and earn from plays. The original writer automatically receives a share of every transaction.
+        Mint your game and earn from plays. The original writer automatically receives a share of every transaction.
       </>
     ),
   },
 ]
 
+const dailyStep = {
+  icon: CalendarDays,
+  title: 'Daily Challenge',
+  description: (
+    <>
+      Same source for everyone today — your hand of five encrypted{' '}
+      <ConceptTerm concept="dailyChallenge">
+        <span className="underline decoration-dotted underline-offset-2 cursor-help">modifier cards</span>
+      </ConceptTerm>{' '}
+      is unique. Compare scores on the leaderboard.
+    </>
+  ),
+}
+
+function getHowItWorksSteps() {
+  if (!config.features.dailyChallenge) return baseSteps
+  return [baseSteps[0], baseSteps[1], dailyStep, baseSteps[2], baseSteps[3]]
+}
+
 function HowItWorksSection() {
+  const steps = getHowItWorksSteps()
   return (
     <section id="how-it-works" className="py-20 px-4 border-t border-border">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <motion.h2
           className="text-sm font-semibold text-foreground mb-12 text-center uppercase tracking-wider"
           initial={{ opacity: 0 }}
@@ -65,7 +99,7 @@ function HowItWorksSection() {
           How it works
         </motion.h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {steps.map((step, index) => {
             const Icon = step.icon
             return (

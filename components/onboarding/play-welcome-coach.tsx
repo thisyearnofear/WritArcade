@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Gamepad2, LockKeyhole, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConceptTerm } from '@/lib/concept-definitions'
+import { isOnboardingDismissed } from '@/hooks/useOnboarding'
 
 const STORAGE_KEY = 'writersarcade:play-welcome-dismissed'
 
@@ -15,6 +16,11 @@ interface PlayWelcomeCoachProps {
 export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
+  const [onboardingDone, setOnboardingDone] = useState(false)
+
+  useEffect(() => {
+    setOnboardingDone(isOnboardingDismissed())
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -30,12 +36,7 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
     window.history.replaceState({}, '', url)
   }, [gameSlug])
 
-  const dismiss = () => {
-    sessionStorage.setItem(`${STORAGE_KEY}:${gameSlug}`, '1')
-    setOpen(false)
-  }
-
-  const steps = [
+  const fullSteps = [
     {
       icon: Gamepad2,
       title: 'Make 5 choices',
@@ -43,30 +44,43 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
     },
     {
       icon: LockKeyhole,
-      title: 'Unlock the secret epilogue',
+      title: 'Secret epilogue (after mint)',
       body: (
         <>
-          Finish all panels to reveal a bonus ending. It stays{' '}
-          <ConceptTerm concept="secretEpilogue">
-            <span className="underline decoration-dotted underline-offset-2 cursor-help">encrypted on Base</span>
+          Finish all 5 panels, then{' '}
+          <ConceptTerm concept="mint">
+            <span className="underline decoration-dotted underline-offset-2 cursor-help">mint the NFT</span>
           </ConceptTerm>{' '}
-          until you mint the NFT.
+          to decrypt the bonus ending on Base. You will see a checklist during play.
         </>
       ),
     },
     {
       icon: Coins,
       title: 'Mint when you are ready',
-      body: (
-        <>
-          <ConceptTerm concept="mint">
-            <span className="underline decoration-dotted underline-offset-2 cursor-help">Minting</span>
-          </ConceptTerm>{' '}
-          is optional — play first, own later. Writers earn automatically when you do.
-        </>
-      ),
+      body: 'Minting is optional until you want to own the game or unlock the epilogue. Writers earn automatically when you do.',
     },
   ]
+
+  const shortSteps = [
+    {
+      icon: Gamepad2,
+      title: 'Your story starts now',
+      body: 'Make 5 choices — one per panel. Watch the progress bar and epilogue checklist as you go.',
+    },
+    {
+      icon: LockKeyhole,
+      title: 'Epilogue needs mint',
+      body: 'Finish all panels, then mint the game NFT to decrypt the secret epilogue. Optional until you are ready.',
+    },
+  ]
+
+  const steps = onboardingDone ? shortSteps : fullSteps
+
+  const dismiss = () => {
+    sessionStorage.setItem(`${STORAGE_KEY}:${gameSlug}`, '1')
+    setOpen(false)
+  }
 
   if (!open) return null
 

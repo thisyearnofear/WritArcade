@@ -12,7 +12,7 @@ import { Game } from '@/domains/games/types'
 import { GameSettingsModal } from '@/domains/games/components/game-settings-modal'
 import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
 import { IPRegistration } from '@/components/story/IPRegistration'
-import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink, AlertTriangle, Sparkles } from 'lucide-react'
+import { Plus, Gamepad2, Shield, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink, AlertTriangle, Sparkles, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -64,6 +64,7 @@ export function MyGamesClient() {
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTab, setActiveTab] = useState<'games' | 'unlocked-vaults' | 'ip-registrations' | 'nft-gallery'>('games')
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'played' | 'unplayed' | 'minted' | 'daily'>('all')
+  const [showAdvancedTabs, setShowAdvancedTabs] = useState(false)
   const [unlockedVaults, setUnlockedVaults] = useState<UnlockedVault[]>([])
   const [copiedVault, setCopiedVault] = useState<string | null>(null)
   const stats = useMemo(() => {
@@ -411,60 +412,88 @@ export function MyGamesClient() {
 
         <section className="px-4 py-8 sm:py-12">
           <div className="max-w-6xl mx-auto">
-            <div className="mb-8 flex items-center gap-2 overflow-x-auto border-b border-border">
-              <button
-                onClick={() => setActiveTab('games')}
-                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
-                  activeTab === 'games'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Gamepad2 className="w-4 h-4" />
-                Library
-                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
-                  {games.length}
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('ip-registrations')}
-                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
-                  activeTab === 'ip-registrations'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Shield className="w-4 h-4" />
-                Ownership History
-              </button>
-              <button
-                onClick={() => setActiveTab('unlocked-vaults')}
-                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
-                  activeTab === 'unlocked-vaults'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Lock className="w-4 h-4" />
-                Unlocked secrets
-                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
-                  {unlockedVaults.length}
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('nft-gallery')}
-                className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
-                  activeTab === 'nft-gallery'
-                    ? 'border-pink-500 text-pink-600 dark:text-pink-400'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <GalleryHorizontalEnd className="w-4 h-4" />
-                NFT Gallery
-                <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
-                  {stats.superrareMinted}
-                </span>
-              </button>
+            <div className="mb-8 flex flex-col gap-3 border-b border-border pb-3">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab('games')}
+                  className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
+                    activeTab === 'games'
+                      ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Gamepad2 className="w-4 h-4" />
+                  Library
+                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
+                    {games.length}
+                  </span>
+                </button>
+                {(showAdvancedTabs || activeTab !== 'games') && (
+                  <>
+                    <button
+                      onClick={() => setActiveTab('ip-registrations')}
+                      className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
+                        activeTab === 'ip-registrations'
+                          ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Shield className="w-4 h-4" />
+                      IP history
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('unlocked-vaults')}
+                      className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
+                        activeTab === 'unlocked-vaults'
+                          ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Lock className="w-4 h-4" />
+                      Unlocked secrets
+                      <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
+                        {unlockedVaults.length}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('nft-gallery')}
+                      className={`flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
+                        activeTab === 'nft-gallery'
+                          ? 'border-pink-500 text-pink-600 dark:text-pink-400'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <GalleryHorizontalEnd className="w-4 h-4" />
+                      Collectibles
+                      <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-muted">
+                        {stats.superrareMinted}
+                      </span>
+                    </button>
+                  </>
+                )}
+              </div>
+              {activeTab === 'games' && !showAdvancedTabs && (
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedTabs(true)}
+                  className="inline-flex items-center gap-1.5 self-start text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  Ownership & collectibles
+                </button>
+              )}
+              {activeTab !== 'games' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('games')
+                    setShowAdvancedTabs(false)
+                  }}
+                  className="inline-flex items-center gap-1.5 self-start text-xs font-medium text-purple-400 hover:text-purple-300"
+                >
+                  ← Back to library
+                </button>
+              )}
             </div>
 
             {activeTab === 'nft-gallery' ? (
@@ -623,15 +652,24 @@ export function MyGamesClient() {
                 </div>
                 <h2 className="text-xl font-semibold text-foreground mb-3">Your library is empty</h2>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Paste an article, preview the source, and create your first playable story. Ownership options can wait until after you play.
+                  Paste an article to create your first game — or browse the arcade and play something public first.
                 </p>
-                <Link
-                  href="/generate"
-                  className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700"
-                >
-                  <Plus className="w-5 h-5" />
-                  Create First Game
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Link
+                    href="/games"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 font-semibold text-foreground transition-colors hover:bg-muted"
+                  >
+                    <Gamepad2 className="w-5 h-5" />
+                    Browse arcade
+                  </Link>
+                  <Link
+                    href="/generate"
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Create first game
+                  </Link>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">

@@ -21,6 +21,10 @@ function isDismissed(): boolean {
   return false
 }
 
+export function isOnboardingDismissed(): boolean {
+  return isDismissed()
+}
+
 export function useOnboarding(autoStartFlowId?: string) {
   const [tour, setTour] = useState<TourState>({
     showTour: false,

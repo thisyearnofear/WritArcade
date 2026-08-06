@@ -7,6 +7,7 @@ import { Game } from '../types'
 import { useGameSession } from '../hooks/use-game-session'
 import { useGameBlockchain } from '../hooks/use-game-blockchain'
 import { useDailyChallengeOnchain } from '@/hooks/use-daily-challenge-onchain'
+import { getSecretPanelStatus } from '@/lib/secret-panel-status'
 import { config } from '@/lib/config'
 import { trackEvent } from '@/services/analytics'
 import { useRecentlyPlayed } from '@/hooks/use-recently-played'
@@ -46,6 +47,8 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
 
   const dailyChallenge = useDailyChallengeOnchain()
   const isDailyGame = config.features.dailyChallenge && dailyChallenge.isActive
+  const secretStatus = getSecretPanelStatus(liveGame)
+  const hasSecretEpilogue = secretStatus.kind !== 'none'
 
   // 3. UI Local State
   const [showComicFinale, setShowComicFinale] = useState(false)
@@ -288,6 +291,9 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         availableThemes={availableThemes}
         generateAIPromptSuggestions={generateAIPromptSuggestions}
         handleAIPromptSelect={handleAIPromptSelect}
+        isDailyActive={isDailyGame}
+        hasSecretEpilogue={hasSecretEpilogue}
+        hasMintedNft={Boolean(liveGame.nftTokenId)}
       />
       {renderEnrichment()}
     </>

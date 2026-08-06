@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { BookOpen, ChevronDown, Share2, Sparkles } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
+import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-strip'
+import { EpilogueGoalStrip } from '@/components/game/epilogue-goal-strip'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 import { trackEvent } from '@/services/analytics'
@@ -37,8 +39,10 @@ interface GameplayScreenProps {
   availableThemes: Array<{ name: string; value: string; label: string; description: string }>
   generateAIPromptSuggestions: (content: string) => string[]
   handleAIPromptSelect: (prompt: string) => void
-  // Embed mode: no in-iframe navigation to frame-denied pages
   embedded?: boolean
+  isDailyActive?: boolean
+  hasSecretEpilogue?: boolean
+  hasMintedNft?: boolean
 }
 
 export function GameplayScreen({
@@ -72,6 +76,9 @@ export function GameplayScreen({
    
   handleAIPromptSelect,
   embedded = false,
+  isDailyActive = false,
+  hasSecretEpilogue = false,
+  hasMintedNft = false,
 }: GameplayScreenProps) {
 
   const handleShare = useCallback(async () => {
@@ -216,6 +223,20 @@ export function GameplayScreen({
             </aside>
 
             <main className="flex flex-col items-center w-full lg:col-span-1">
+            {isDailyActive && (
+              <DailyModifierStrip
+                panelIndex={Math.max(0, assistantMessageCount - 1)}
+                primaryColor={game.primaryColor}
+              />
+            )}
+            {hasSecretEpilogue && (
+              <EpilogueGoalStrip
+                panelsDone={assistantMessageCount}
+                hasSecretEpilogue={hasSecretEpilogue}
+                hasMintedNft={hasMintedNft}
+                primaryColor={game.primaryColor}
+              />
+            )}
             {/* Story Progress Bar */}
             <div className="w-full max-w-5xl mb-8 pb-6 border-b border-white/10 lg:hidden">
               <div className="flex items-center justify-between mb-3">
