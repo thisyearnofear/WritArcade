@@ -7,6 +7,7 @@ import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-strip'
 import { EpilogueGoalStrip } from '@/components/game/epilogue-goal-strip'
+import { getModifierCategoryForPanel } from '@/lib/daily-challenge-ui'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 import { trackEvent } from '@/services/analytics'
@@ -288,6 +289,9 @@ export function GameplayScreen({
                   const isTerminal = !canAddMorePanels
 
                   const imageReady = message.narrativeImage !== undefined
+                  const panelIndex = messages
+                    .slice(0, idx + 1)
+                    .filter(m => m.role === 'assistant' && !m.id.startsWith('epilogue-')).length - 1
 
                   return (
                     <div key={message.id} className="animate-in fade-in duration-700 ease-out">
@@ -317,6 +321,11 @@ export function GameplayScreen({
                         onAIPromptSelect={handleAIPromptSelect}
                         storyComplete={isTerminal}
                         isEpilogue={isEpilogue}
+                        dailyModifierCategory={
+                          isDailyActive && !isEpilogue && panelIndex >= 0
+                            ? getModifierCategoryForPanel(panelIndex)
+                            : undefined
+                        }
                       />
                     </div>
                   )

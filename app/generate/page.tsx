@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { CardSkeleton } from '@/components/effects'
+import { GAME_MODE_EXPLOAINER } from '@/lib/game-mode-labels'
 
 type PaymentPath = 'writercoin' | 'musd'
 
@@ -43,11 +44,20 @@ function GeneratePageContent() {
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-center mb-2 text-foreground">
           {isWordleMode ? 'Create a word puzzle' : 'Create your game'}
         </h1>
-        <p className="text-center text-muted-foreground mb-6 text-sm max-w-md mx-auto sm:mb-8">
+        <p className="text-center text-muted-foreground mb-2 text-sm max-w-md mx-auto">
           {isWordleMode
             ? 'Paste a Paragraph article URL to create a free word puzzle. No wallet needed.'
             : 'Paste a Paragraph article URL. AI turns it into a playable 5-panel comic.'}
         </p>
+        {!isWordleMode && (
+          <p className="text-center text-xs text-muted-foreground mb-6 max-w-lg mx-auto sm:mb-8 px-4">
+            {GAME_MODE_EXPLOAINER}.{' '}
+            <a href="/generate?mode=wordle" className="text-amber-600 dark:text-amber-400 hover:underline">
+              Try Wordle instead
+            </a>
+          </p>
+        )}
+        {isWordleMode && <div className="mb-6 sm:mb-8" />}
         <GameGenerator
           initialUrl={urlParam || undefined}
           initialPaymentPath={payParam}

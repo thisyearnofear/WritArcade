@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { X, Wand2, Gamepad2, Coins, Sparkles, LockKeyhole } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { config } from '@/lib/config'
+import { useDialogA11y } from '@/hooks/use-dialog-a11y'
 
 interface OnboardingModalProps {
   isOpen: boolean
@@ -64,6 +65,8 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     }
   }
 
+  const dialogRef = useDialogA11y(isOpen, onClose)
+
   if (!isOpen) return null
 
   const step = steps[currentStep]
@@ -72,9 +75,16 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-2xl max-w-sm w-full shadow-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-title"
+        tabIndex={-1}
+        className="bg-card border border-border rounded-2xl max-w-sm w-full shadow-2xl outline-none"
+      >
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          <h2 id="onboarding-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Welcome
           </h2>
           <button

@@ -6,6 +6,7 @@ import { X, Gamepad2, LockKeyhole, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConceptTerm } from '@/lib/concept-definitions'
 import { isOnboardingDismissed } from '@/hooks/useOnboarding'
+import { useDialogA11y } from '@/hooks/use-dialog-a11y'
 
 const STORAGE_KEY = 'writersarcade:play-welcome-dismissed'
 
@@ -82,6 +83,8 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
     setOpen(false)
   }
 
+  const dialogRef = useDialogA11y(open, dismiss)
+
   if (!open) return null
 
   const current = steps[step]
@@ -92,6 +95,11 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="play-welcome-title"
+          tabIndex={-1}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
@@ -110,7 +118,7 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
               <Icon className="h-6 w-6" />
             </div>
-            <h2 className="text-lg font-bold text-foreground">{current.title}</h2>
+            <h2 id="play-welcome-title" className="text-lg font-bold text-foreground">{current.title}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">{current.body}</p>
           </div>
 

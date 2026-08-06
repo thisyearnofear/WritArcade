@@ -12,9 +12,12 @@ import {
   submitDailyReveal,
   DAILY_CHALLENGE_CHAIN_ID,
 } from '@/lib/daily-challenge-client'
+import { DailySessionRecap } from '@/components/daily-challenge/daily-session-recap'
 
 interface ModifierRevealProps {
   gameId: string
+  gameSlug: string
+  gameTitle?: string
   sessionId: string | null
   vaultAddress: string
   modifierHandles: string[]
@@ -39,6 +42,8 @@ const CATEGORY_COLOR: Record<Modifier['category'], string> = {
 
 export function ModifierReveal({
   gameId,
+  gameSlug,
+  gameTitle,
   sessionId,
   vaultAddress,
   modifierHandles,
@@ -229,6 +234,17 @@ export function ModifierReveal({
               <p className="text-xs text-muted-foreground text-center">
                 These 5 cards were dealt from today&apos;s shuffled on-chain deck. Your score is now on the leaderboard.
               </p>
+
+              {score !== null && modifiers.length > 0 && (
+                <DailySessionRecap
+                  gameSlug={gameSlug}
+                  gameTitle={gameTitle}
+                  modifiers={modifiers}
+                  score={score}
+                  rank={rank}
+                  primaryColor={primaryColor}
+                />
+              )}
             </motion.div>
           ) : (
             <motion.div key="locked" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

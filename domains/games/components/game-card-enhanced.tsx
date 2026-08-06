@@ -23,6 +23,7 @@ import { isAdmin } from '@/lib/constants'
 import { HypercertBadge } from './hypercert-badge'
 import { GameOwnershipProgress } from './game-ownership-progress'
 import { getGameProgress } from '@/lib/game-progress'
+import { getGameModeBadge } from '@/lib/game-mode-labels'
 import { trackEvent } from '@/services/analytics'
 
 interface GameCardEnhancedProps {
@@ -51,6 +52,7 @@ export function GameCardEnhanced({
   const writerMintReceipt = game.nftTokenId ? game.writerMintReceipt : undefined
   const showSettings = isUserGame || userIsAdmin
   const progress = getGameProgress(game)
+  const modeBadge = getGameModeBadge(game.mode)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [ownershipOpen, setOwnershipOpen] = useState(false)
 
@@ -83,16 +85,24 @@ export function GameCardEnhanced({
 
         <div className="space-y-3 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-2">
-            <span
-              className="inline-block rounded-full border px-2 py-1 text-xs font-medium"
-              style={{
-                borderColor: game.primaryColor || '#8b5cf6',
-                color: game.primaryColor || '#8b5cf6',
-                backgroundColor: `${game.primaryColor || '#8b5cf6'}20`,
-              }}
-            >
-              {game.genre}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className="inline-block rounded-full border px-2 py-1 text-xs font-medium"
+                style={{
+                  borderColor: game.primaryColor || '#8b5cf6',
+                  color: game.primaryColor || '#8b5cf6',
+                  backgroundColor: `${game.primaryColor || '#8b5cf6'}20`,
+                }}
+              >
+                {game.genre}
+              </span>
+              <span
+                className={`inline-block rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${modeBadge.className}`}
+                title={modeBadge.hint}
+              >
+                {modeBadge.label}
+              </span>
+            </div>
             {isUserGame && (
               <span
                 className={`shrink-0 rounded px-2 py-1 text-xs ${

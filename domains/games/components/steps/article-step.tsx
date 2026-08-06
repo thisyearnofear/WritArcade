@@ -9,6 +9,7 @@ import {
   type ArticlePreview,
   articlePreviewMeta,
 } from '@/domains/games/components/game-generator-helpers'
+import { GAME_MODE_EXPLOAINER } from '@/lib/game-mode-labels'
 
 interface ArticleStepProps {
   url: string
@@ -54,6 +55,9 @@ export function ArticleStep({
         <h2 className="text-lg font-semibold text-foreground">Paste the article</h2>
         <p className="text-sm text-muted-foreground">
           Start with a public Paragraph article.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-2 leading-relaxed">
+          {GAME_MODE_EXPLOAINER}
         </p>
       </div>
 

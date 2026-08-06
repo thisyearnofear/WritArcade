@@ -28,17 +28,18 @@ Prioritized checklist and tester script after the play-first library pass (Phase
 - [x] **Post-complete epilogue CTA** — mint/unlock banner on comic finale + post-game screen
 - [x] **Daily try-before-wallet** — source preview card; wallet only for dealing encrypted hand
 - [x] **Milestone prompts** — ownership tabs + nudge only after first mint/unlock/IP
+- [x] **Modifier felt in copy** — in-panel flavor line per daily modifier category
+- [x] **Wordle vs story explainer** — generate page, article step, game card mode badges
 
-## P1 — Remaining
+## P2 — Shipped
 
-- [ ] **Modifier felt in copy** — optional subtle UI flavor per category in panel narrative
-- [ ] **Wordle vs story explainer** — one line on generate + game cards for mode
+- [x] **Single “Arcade” identity** — My Games tabs: Library / Vault / Collectibles
+- [x] **Session recap card** — shareable daily run recap after hidden hand reveal
+- [x] **Accessibility pass** — dialog focus + Escape on coach & onboarding; filter `aria-pressed`
 
-## P2 — Polish
+## P2 — Remaining
 
-- [ ] **Single “Arcade” identity** — rename/consolidate tabs to Library / Vault / Collectibles
-- [ ] **Session recap card** — shareable “my path + hidden hand” after daily complete
-- [ ] **Accessibility pass** — focus order on coach, filters, collapsible sections
+- [ ] **Keyboard focus trap** — full trap for modals (optional upgrade beyond focus-on-open)
 
 ---
 

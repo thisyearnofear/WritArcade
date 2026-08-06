@@ -14,6 +14,7 @@ import { config } from '@/lib/config'
 interface GameEnrichmentProps {
   gameId: string
   gameSlug: string
+  gameTitle?: string
   primaryColor: string
   nftTokenId?: string | null
   secretPanelGenerated?: boolean
@@ -31,6 +32,7 @@ interface GameEnrichmentProps {
 export function GameEnrichment({
   gameId,
   gameSlug,
+  gameTitle,
   primaryColor,
   nftTokenId,
   secretPanelGenerated,
@@ -60,6 +62,8 @@ export function GameEnrichment({
       {showDailyReveal && dailyState && (
         <ModifierReveal
           gameId={gameId}
+          gameSlug={gameSlug}
+          gameTitle={gameTitle}
           sessionId={dailyState.incoSessionId}
           vaultAddress={dailyState.vaultAddress}
           modifierHandles={dailyState.modifierHandles}

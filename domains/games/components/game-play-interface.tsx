@@ -170,6 +170,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     <GameEnrichment
       gameId={liveGame.id}
       gameSlug={liveGame.slug}
+      gameTitle={liveGame.title}
       primaryColor={liveGame.primaryColor || '#6366f1'}
       nftTokenId={liveGame.nftTokenId}
       secretPanelGenerated={liveGame.secretPanelGenerated}

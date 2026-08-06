@@ -10,6 +10,11 @@ import { ImageLightbox } from './image-lightbox'
 import { AnimatedOptionButton } from './animated-option-button'
 import { StreamingTypewriter } from '@/components/effects'
 import { Button } from '@/components/ui/button'
+import {
+  MODIFIER_CATEGORY_FLAVOR,
+  MODIFIER_CATEGORY_LABEL,
+  MODIFIER_CATEGORY_COLOR,
+} from '@/lib/daily-challenge-ui'
 
 interface ImageVersion {
   url: string | null
@@ -52,6 +57,7 @@ interface ComicPanelCardProps {
   onAIPromptSelect?: (prompt: string) => void
   showAIPromptSuggestions?: boolean
   storyComplete?: boolean
+  dailyModifierCategory?: 'tone' | 'complication' | 'stakes' | 'resolution'
 }
 
 export function ComicPanelCard({
@@ -79,6 +85,7 @@ export function ComicPanelCard({
   onAIPromptSelect,
   showAIPromptSuggestions,
   storyComplete,
+  dailyModifierCategory,
 }: ComicPanelCardProps) {
   const { narrative, options: parsedOptions } = parsePanel(narrativeText)
   const [imageRating, setImageRating] = useState<number | null>(null)
@@ -534,6 +541,22 @@ export function ComicPanelCard({
                   {isEpilogue ? 'What This Means' : 'Scene'}
                 </span>
               </div>
+
+            {dailyModifierCategory && !isEpilogue && (
+              <p
+                className="mb-3 text-xs italic leading-relaxed rounded-md border px-3 py-2"
+                style={{
+                  borderColor: `${MODIFIER_CATEGORY_COLOR[dailyModifierCategory]}40`,
+                  backgroundColor: `${MODIFIER_CATEGORY_COLOR[dailyModifierCategory]}10`,
+                  color: MODIFIER_CATEGORY_COLOR[dailyModifierCategory],
+                }}
+              >
+                <span className="font-semibold not-italic uppercase tracking-wider text-[10px] mr-1">
+                  {MODIFIER_CATEGORY_LABEL[dailyModifierCategory]} card ·
+                </span>
+                {MODIFIER_CATEGORY_FLAVOR[dailyModifierCategory]}
+              </p>
+            )}
 
             {/* Main narrative - with typewriter reveal */}
             <div className="group/narrative relative min-h-[4rem]">
