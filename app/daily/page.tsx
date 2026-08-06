@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   Trophy,
@@ -13,9 +13,11 @@ import {
   Gamepad2,
   Eye,
   RefreshCw,
+  Spade,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useAccount } from 'wagmi'
+import { useAccount, usePublicClient } from 'wagmi'
+import { formatEther } from 'viem'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { useDailyChallengeOnchain } from '@/hooks/use-daily-challenge-onchain'
 import { Header } from '@/components/layout/header'
@@ -25,6 +27,7 @@ import { ArcadeFunnelCTAs } from '@/components/daily-challenge/arcade-funnel-cta
 import { DailyStatusBanner, type DailyStatusVariant } from '@/components/daily-challenge/daily-status-banner'
 import { getBasePaintDay } from '@/lib/daily-challenge-ui'
 import { getBasePaintCanvasProxyUrl } from '@/lib/daily-challenge'
+import { DAILY_CHALLENGE_CHAIN_ID, readStartSessionFee } from '@/lib/daily-challenge-client'
 
 interface DailyChallengeData {
   day: number
@@ -71,7 +74,11 @@ export default function DailyChallengePage() {
 
   const { isConnected } = useAccount()
   const { openConnectModal } = useConnectModal()
-  const { beginSession, isStarting, isSwitchingChain, state: onChainState } = useDailyChallengeOnchain()
+  const { beginSession, detectExistingSession, isStarting, isDetecting, isSwitchingChain, state: onChainState, error: onChainError, reset } = useDailyChallengeOnchain()
+
+  const feePublicClient = usePublicClient({ chainId: DAILY_CHALLENGE_CHAIN_ID })
+  const [dealFeeWei, setDealFeeWei] = useState<bigint | null>(null)
+  const detectionTriedRef = useRef<number | null>(null)
 
   const loadChallenge = useCallback(async () => {
     setLoading(true)
@@ -115,6 +122,29 @@ export default function DailyChallengePage() {
     loadChallenge()
   }, [loadChallenge])
 
+  const hasLiveSession =
+    Boolean(onChainState?.incoSessionId) && onChainState?.day === challenge?.day
+
+  // When a wallet connects, proactively look for a hand it already paid for
+  // today (surfaces orphaned sessions as "Resume my hand" instead of a fresh buy).
+  useEffect(() => {
+    if (dailyMode !== 'live' || !isConnected || !challenge?.day) return
+    if (hasLiveSession || isStarting || isDetecting) return
+    if (detectionTriedRef.current === challenge.day) return
+    detectionTriedRef.current = challenge.day
+    void detectExistingSession(challenge.day)
+  }, [dailyMode, isConnected, challenge?.day, hasLiveSession, isStarting, isDetecting, detectExistingSession])
+
+  // Show the real deal fee next to the CTA so the cost is never a surprise.
+  useEffect(() => {
+    if (dailyMode !== 'live' || !feePublicClient) return
+    let cancelled = false
+    readStartSessionFee(feePublicClient)
+      .then((fee) => { if (!cancelled) setDealFeeWei(fee) })
+      .catch(() => { if (!cancelled) setDealFeeWei(null) })
+    return () => { cancelled = true }
+  }, [dailyMode, feePublicClient])
+
   const handlePlay = useCallback(async () => {
     setPlayError(null)
 
@@ -126,7 +156,11 @@ export default function DailyChallengePage() {
     }
 
     try {
-      if (!onChainState?.incoSessionId) {
+      if (onChainState?.incoSessionId && onChainState.day !== challenge?.day) {
+        reset() // leftover session from a previous day
+      }
+
+      if (!hasLiveSession) {
         await beginSession()
       }
 
@@ -135,12 +169,13 @@ export default function DailyChallengePage() {
       } else {
         window.location.href = '/generate?source=daily&daily=1'
       }
-    } catch {
+    } catch (err) {
+      console.error('[DailyChallenge] Failed to start session:', err)
       setPlayError('play-error')
     }
-  }, [beginSession, challenge, dailyMode, isConnected, onChainState?.incoSessionId, openConnectModal])
+  }, [beginSession, challenge, dailyMode, hasLiveSession, isConnected, onChainState, openConnectModal, reset])
 
-  const isPlayBusy = isStarting || isSwitchingChain
+  const isPlayBusy = isStarting || isSwitchingChain || isDetecting
   const showStatusBanner = dailyMode === 'preview' || playError === 'play-error'
   const statusVariant: DailyStatusVariant =
     playError === 'play-error' ? 'play-error' : 'deck-warming'
@@ -192,13 +227,16 @@ export default function DailyChallengePage() {
                 <h1 className="text-4xl font-bold">{challenge.theme}</h1>
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto">
                   {dailyMode === 'live'
-                    ? 'Preview today\'s source free — no wallet required. Connect on Base when you\'re ready to draw your encrypted modifier hand.'
+                    ? 'Preview free below — connect on Base only when you\'re ready to play for the leaderboard.'
                     : 'Today\'s BasePaint theme is live. Play something in the arcade now — leaderboard scoring joins when setup finishes.'}
                 </p>
               </div>
 
               {showStatusBanner && (
-                <DailyStatusBanner variant={statusVariant} />
+                <DailyStatusBanner
+                  variant={statusVariant}
+                  detail={playError === 'play-error' ? onChainError : null}
+                />
               )}
 
               <motion.div
@@ -270,7 +308,12 @@ export default function DailyChallengePage() {
                         disabled={isPlayBusy}
                         className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-60"
                       >
-                        {isPlayBusy ? (
+                        {isDetecting && !isStarting && !isSwitchingChain ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Checking for your dealt hand...
+                          </>
+                        ) : isStarting || isSwitchingChain ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
                             {isSwitchingChain ? 'Switching to Base...' : 'Dealing encrypted cards...'}
@@ -280,10 +323,10 @@ export default function DailyChallengePage() {
                             <Wallet className="w-4 h-4" />
                             Connect Wallet to Play
                           </>
-                        ) : onChainState?.incoSessionId ? (
+                        ) : hasLiveSession ? (
                           <>
-                            Continue Today&apos;s Challenge
-                            <ArrowRight className="w-4 h-4" />
+                            <Spade className="w-4 h-4" />
+                            Resume my hand
                           </>
                         ) : (
                           <>
@@ -293,16 +336,20 @@ export default function DailyChallengePage() {
                         )}
                       </button>
 
-                      {onChainState?.incoSessionId && (
-                        <p className="text-xs text-emerald-400/80 text-center">
-                          On-chain session active — 5 encrypted cards dealt
-                        </p>
-                      )}
-
-                      <p className="text-xs text-muted-foreground text-center">
-                        {isConnected
-                          ? 'Requires Base ETH for Inco fees. Modifier cards stay encrypted until the finale reveal.'
-                          : 'Preview is free. Wallet connects only to deal your encrypted hand and submit a score.'}
+                      <p className="text-xs text-center">
+                        {hasLiveSession ? (
+                          <span className="text-emerald-400/80">
+                            Already paid — your 5 cards are dealt. Resuming is always free.
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {isConnected
+                              ? dealFeeWei != null
+                                ? `One deal fee ≈ ${formatEther(dealFeeWei)} ETH on Base — resuming later is always free.`
+                                : 'One small fee deals your hand on Base — resuming later is always free.'
+                              : 'Preview is free. Wallet connects only to deal your hand and submit a score.'}
+                          </span>
+                        )}
                       </p>
                     </>
                   ) : (
@@ -393,14 +440,36 @@ export default function DailyChallengePage() {
                 </div>
               ) : null}
 
-              <div className="rounded-lg border border-white/5 bg-white/[0.02] p-6 space-y-3">
-                <h3 className="text-sm font-bold">How the Daily Challenge works</h3>
-                <ol className="text-xs text-muted-foreground space-y-2 list-decimal list-inside">
-                  <li>Connect wallet and start an on-chain session — 5 encrypted cards are dealt</li>
-                  <li>Generate and play a 5-panel comic shaped by today&apos;s BasePaint theme</li>
-                  <li>Each choice updates your encrypted score on-chain via Inco</li>
-                  <li>At the finale, reveal your hidden hand and join the leaderboard</li>
-                </ol>
+              <div className="rounded-lg border border-white/5 bg-white/[0.02] p-6 space-y-4">
+                <h3 className="text-sm font-bold">How today works</h3>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    { icon: Spade, title: 'Deal', body: 'One small fee deals 5 hidden cards' },
+                    { icon: Gamepad2, title: 'Play', body: 'Your secret hand shapes 5 panels' },
+                    { icon: Trophy, title: 'Reveal', body: 'Finale reveals · score ranks on-chain' },
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-start gap-3 rounded-lg bg-white/[0.02] px-3 py-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-purple-500/10 text-purple-300">
+                        <step.icon className="h-4 w-4" aria-hidden />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-white">{step.title}</p>
+                        <p className="text-[11px] leading-snug text-muted-foreground">{step.body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <details className="group text-xs text-muted-foreground">
+                  <summary className="cursor-pointer select-none font-medium text-purple-300 hover:text-purple-200">
+                    How the encryption works
+                  </summary>
+                  <p className="pt-2 leading-relaxed">
+                    The deck is shuffled once per day inside Inco&apos;s confidential compute. Your cards and
+                    score stay encrypted until you reveal at the finale — not even we can peek. If anything
+                    interrupts after payment, the same button resumes your dealt hand free; retries never
+                    charge twice.
+                  </p>
+                </details>
               </div>
             </div>
           )}

@@ -19,16 +19,18 @@ const COPY: Record<
   'play-error': {
     icon: Sparkles,
     title: 'Couldn\'t start today\'s session',
-    body: 'Something blocked the on-chain deal. Jump into the arcade or create a game — you don\'t need a wallet to play public games.',
+    body: 'If you already paid, nothing is lost — pressing play resumes your dealt hand for free, and retries never charge twice. Meanwhile the arcade is open; public games need no wallet.',
   },
 }
 
 interface DailyStatusBannerProps {
   variant: DailyStatusVariant
   className?: string
+  /** Real underlying error, shown small below the friendly copy for debugging. */
+  detail?: string | null
 }
 
-export function DailyStatusBanner({ variant, className = '' }: DailyStatusBannerProps) {
+export function DailyStatusBanner({ variant, className = '', detail }: DailyStatusBannerProps) {
   const { icon: Icon, title, body } = COPY[variant]
 
   return (
@@ -41,6 +43,9 @@ export function DailyStatusBanner({ variant, className = '' }: DailyStatusBanner
         <div className="space-y-1">
           <p className="text-sm font-semibold text-amber-100">{title}</p>
           <p className="text-xs leading-relaxed text-amber-100/75">{body}</p>
+          {detail && (
+            <p className="break-all text-[11px] leading-relaxed text-amber-200/50">{detail}</p>
+          )}
         </div>
       </div>
     </div>
