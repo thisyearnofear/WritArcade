@@ -17,6 +17,14 @@ export interface GeneratedGame {
   imageUrl?: string
 }
 
+export interface DailyGenerateFlow {
+  day: number
+  theme: string
+  promptText: string
+  canvasUrl?: string
+  palette?: string[]
+}
+
 const initialStepStatuses: Record<LoadingStep, StepStatus> = {
   payment: 'pending',
   validate: 'pending',
@@ -55,6 +63,8 @@ interface GameGeneratorState {
   stepStatuses: Record<LoadingStep, StepStatus>
   error: GenerateErrorState | null
 
+  dailyFlow: DailyGenerateFlow | null
+
   // ── Actions ─────────────────────────────────────────────────────────
   setUrl: (url: string) => void
   setMode: (mode: GameMode) => void
@@ -82,6 +92,7 @@ interface GameGeneratorState {
   setStepStatus: (step: LoadingStep, status: StepStatus) => void
   setStepStatuses: (statuses: Record<LoadingStep, StepStatus>) => void
   setError: (error: GenerateErrorState | null) => void
+  setDailyFlow: (flow: DailyGenerateFlow | null) => void
 
   reset: () => void
   resetForm: () => void
@@ -112,6 +123,7 @@ export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
   loadingStep: null,
   stepStatuses: { ...initialStepStatuses },
   error: null,
+  dailyFlow: null,
 
   // ── Actions ─────────────────────────────────────────────────────────
   setUrl: (url) => set({ url }),
@@ -147,6 +159,7 @@ export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
   })),
   setStepStatuses: (stepStatuses) => set({ stepStatuses }),
   setError: (error) => set({ error }),
+  setDailyFlow: (dailyFlow) => set({ dailyFlow }),
 
   reset: () => set({
     isGenerating: false,
@@ -161,5 +174,6 @@ export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
     articlePreview: null,
     previewedUrl: '',
     error: null,
+    dailyFlow: null,
   }),
 }))

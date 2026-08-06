@@ -18,10 +18,26 @@ interface GameGeneratorFormProps {
   initialUrl?: string
   initialPaymentPath?: 'musd' | 'writercoin'
   initialMode?: 'story' | 'wordle'
+  initialBasePaintDay?: number
+  initialDailyChallenge?: boolean
 }
 
-export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentPath, initialMode }: GameGeneratorFormProps) {
-  const g = useGameGenerator({ onGameGenerated, initialUrl, initialPaymentPath, initialMode })
+export function GameGeneratorForm({
+  onGameGenerated,
+  initialUrl,
+  initialPaymentPath,
+  initialMode,
+  initialBasePaintDay,
+  initialDailyChallenge,
+}: GameGeneratorFormProps) {
+  const g = useGameGenerator({
+    onGameGenerated,
+    initialUrl,
+    initialPaymentPath,
+    initialMode,
+    initialBasePaintDay,
+    initialDailyChallenge,
+  })
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -49,6 +65,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               mode={g.mode}
               onSelectStory={g.handleSelectStory}
               onSelectWordle={g.handleSelectWordle}
+              dailyFlow={g.dailyFlow}
             />
           </div>
 
@@ -84,6 +101,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
           </div>
 
           {/* ── STEP 3: Payment ── */}
+          {!g.isDailyFlow && (
           <div className={`${g.mobileStep === 'payment' || g.isDesktop ? 'block' : 'hidden'}`}>
             <PaymentStep
               error={g.error}
@@ -111,10 +129,11 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
               url={g.url}
             />
           </div>
+          )}
 
           {/* ── STEP 4: Generate ── */}
           <div className={`${g.mobileStep === 'generate' || g.isDesktop ? 'block' : 'hidden'}`}>
-            {(!g.isStoryMode || !g.hasPreviewedCurrentUrl) && (
+            {(!g.isStoryMode || !g.hasPreviewedCurrentUrl || g.isDailyFlow) && (
               <GenerateStepButton
                 isGenerating={g.isGenerating}
                 hasPreviewedCurrentUrl={g.hasPreviewedCurrentUrl}
@@ -123,6 +142,7 @@ export function GameGeneratorForm({ onGameGenerated, initialUrl, initialPaymentP
                 paymentApproved={g.paymentApproved}
                 genre={g.genre}
                 url={g.url}
+                isDailyFlow={g.isDailyFlow}
               />
             )}
           </div>

@@ -254,17 +254,32 @@ export function getSessionManagerPrivateKey(): `0x${string}` | null {
   return key ? (key as `0x${string}`) : null
 }
 
-export async function createSessionManagerWalletClient() {
+export async function getSessionManagerAddress(): Promise<`0x${string}` | null> {
+  const privateKey = getSessionManagerPrivateKey()
+  if (!privateKey) return null
+
+  const { privateKeyToAccount } = await import('viem/accounts')
+  return privateKeyToAccount(privateKey).address
+}
+
+async function getSessionManagerAccount() {
   const privateKey = getSessionManagerPrivateKey()
   if (!privateKey) {
-    throw new Error('No SESSION_MANAGER private key configured for daily challenge')
+    throw new Error(
+      'DAILY_CHALLENGE_MANAGER_PRIVATE_KEY is not configured. Grant SESSION_MANAGER_ROLE to the server wallet and fund it on Base.'
+    )
   }
+
+  const { privateKeyToAccount } = await import('viem/accounts')
+  return privateKeyToAccount(privateKey)
+}
+
+export async function createSessionManagerWalletClient() {
+  const account = await getSessionManagerAccount()
 
   const { createWalletClient, http } = await import('viem')
   const { base } = await import('viem/chains')
-  const { privateKeyToAccount } = await import('viem/accounts')
 
-  const account = privateKeyToAccount(privateKey)
   return createWalletClient({
     account,
     chain: base,
@@ -316,6 +331,7 @@ export async function shuffleDailyDeck(day: number): Promise<ShuffleDailyDeckRes
 
   const vaultAddress = getVaultAddress()
   const publicClient = await createDailyChallengePublicClient()
+  const account = await getSessionManagerAccount()
 
   const listFee = await publicClient.readContract({
     address: INCO_LIGHTNING_ADDRESS,
@@ -324,15 +340,22 @@ export async function shuffleDailyDeck(day: number): Promise<ShuffleDailyDeckRes
     args: [52, ETYPE_UINT256],
   }) as bigint
 
+  const requiredValue = listFee * 2n
+  const balance = await publicClient.getBalance({ address: account.address })
+  if (balance < requiredValue) {
+    throw new Error(
+      `Session manager ${account.address} needs Base ETH to shuffle the daily deck (requires ~${Number(requiredValue) / 1e18} ETH incl. Inco fees; balance ${Number(balance) / 1e18} ETH).`
+    )
+  }
+
   const walletClient = await createSessionManagerWalletClient()
-  const [account] = await walletClient.getAddresses()
 
   const txHash = await walletClient.writeContract({
     address: vaultAddress,
     abi: DAILY_CHALLENGE_VAULT_ABI,
     functionName: 'createDailyChallenge',
     args: [BigInt(day)],
-    value: listFee * 2n,
+    value: requiredValue,
     account,
   })
 

@@ -41,6 +41,8 @@ interface UseGameGeneratorOptions {
   initialUrl?: string
   initialPaymentPath?: 'musd' | 'writercoin'
   initialMode?: 'story' | 'wordle'
+  initialBasePaintDay?: number
+  initialDailyChallenge?: boolean
 }
 
 /**
@@ -56,6 +58,8 @@ export function useGameGenerator({
   initialUrl,
   initialPaymentPath = 'musd',
   initialMode,
+  initialBasePaintDay,
+  initialDailyChallenge = false,
 }: UseGameGeneratorOptions) {
   const router = useRouter()
   const { isConnected, address: accountAddress } = useAccount()
@@ -77,7 +81,10 @@ export function useGameGenerator({
   // ── Derived values ──────────────────────────────────────────────────
   const detectedCoin = useMemo(() => detectWriterCoinFromUrl(store.url), [store.url])
   const isAutoDetected = Boolean(detectedCoin) && store.paymentPath === 'musd' && !store.showAdvancedPayment
-  const hasPreviewedCurrentUrl = !!store.articlePreview && store.previewedUrl === store.url.trim()
+  const hasPreviewedCurrentUrl = store.dailyFlow
+    ? true
+    : !!store.articlePreview && store.previewedUrl === store.url.trim()
+  const isDailyFlow = Boolean(store.dailyFlow)
   const isStoryMode = store.mode === 'story'
   const isMusdPath = store.paymentPath === 'musd'
   const writerCoin = !isMusdPath && detectedCoin ? detectedCoin : (store.selectedCoin ?? DEFAULT_WRITER_COIN)
@@ -107,6 +114,54 @@ export function useGameGenerator({
     if (initialPaymentPath === 'writercoin') store.toggleAdvancedPayment()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (!initialBasePaintDay) return
+
+    let cancelled = false
+
+    async function loadDailySource() {
+      try {
+        const response = await fetch(`/api/daily-challenge/basepaint/${initialBasePaintDay}`)
+        if (!response.ok) return
+        const data = await response.json()
+        if (cancelled) return
+
+        const sourceUrl = `basepaint://day/${data.day}`
+        store.setDailyFlow({
+          day: data.day,
+          theme: data.theme,
+          promptText: data.promptText || data.theme,
+          canvasUrl: data.canvasUrl,
+          palette: data.palette,
+        })
+        store.setArticlePreview({
+          title: `Daily: ${data.theme}`,
+          author: 'BasePaint',
+          wordCount: 120,
+          estimatedReadTime: 1,
+          excerpt: (data.promptText || data.theme).slice(0, 240),
+          sourceUrl,
+        })
+        store.setPreviewedUrl(sourceUrl)
+        store.setUrl(sourceUrl)
+
+        if (initialDailyChallenge) {
+          store.setPaymentApproved(true)
+          store.setMobileStep('customize')
+        }
+      } catch (err) {
+        console.error('Failed to load daily BasePaint source:', err)
+      }
+    }
+
+    loadDailySource()
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialBasePaintDay, initialDailyChallenge])
 
   // ── Auto-detect writer coin from URL ────────────────────────────────
   useEffect(() => {
@@ -321,7 +376,7 @@ export function useGameGenerator({
     store.setError(null)
     const currentPaymentTxHash = paymentTransactionHash || paymentTxHashRef.current
     let currentPaymentId = paymentIdRef.current
-    const hasPaymentProof = isStoryMode && (
+    const hasPaymentProof = isStoryMode && !isDailyFlow && (
       store.paymentApproved ||
       Boolean(currentPaymentId) ||
       Boolean(currentPaymentTxHash)
@@ -333,11 +388,11 @@ export function useGameGenerator({
       store.setStepStatus('validate', 'in-progress')
       await wait(700)
 
-      if (!store.url.trim()) {
+      if (!store.dailyFlow && !store.url.trim()) {
         throw new Error('Please provide a Paragraph.xyz article URL')
       }
 
-      if (store.mode !== 'wordle' && !isMusdPath && !validateArticleUrl(store.url.trim(), writerCoin.id)) {
+      if (!store.dailyFlow && store.mode !== 'wordle' && !isMusdPath && !validateArticleUrl(store.url.trim(), writerCoin.id)) {
         throw new Error(`This URL does not match ${writerCoin.name}. Pick a matching article or switch to MUSD for any Paragraph article.`)
       }
 
@@ -360,10 +415,20 @@ export function useGameGenerator({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              url: store.url.trim(),
+              ...(store.dailyFlow
+                ? {
+                    contentType: 'basepaint',
+                    promptText: store.dailyFlow.promptText,
+                    basePaintDay: store.dailyFlow.day,
+                    dailyChallengeDay: initialDailyChallenge ? store.dailyFlow.day : undefined,
+                    theme: store.dailyFlow.theme,
+                    palette: store.dailyFlow.palette,
+                    canvasUrl: store.dailyFlow.canvasUrl,
+                  }
+                : { url: store.url.trim() }),
               mode: store.mode,
               wallet: accountAddress || undefined,
-              ...(hasPaymentProof && {
+              ...( (hasPaymentProof || isDailyFlow) && {
                 customization: { genre: store.genre, difficulty: store.difficulty, imageQuality: store.imageQuality },
               }),
               ...(hasPaymentProof && {
@@ -437,7 +502,11 @@ export function useGameGenerator({
       })
 
       onGameGenerated?.(result.data)
-      router.push(`/games/${result.data.slug}?welcome=1`)
+      router.push(
+        isDailyFlow && initialDailyChallenge
+          ? `/games/${result.data.slug}?play=1`
+          : `/games/${result.data.slug}?welcome=1`
+      )
     } catch (err) {
       const message = isAbortError(err)
         ? 'Game generation timed out before the server returned a result.'
@@ -481,6 +550,11 @@ export function useGameGenerator({
   // ── Submit handler ──────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (store.dailyFlow) {
+      if (!hasPreviewedCurrentUrl) return
+      await generateGame(paymentTxHashRef.current)
+      return
+    }
     if (!store.url.trim()) {
       store.setError(articleError('Please provide a Paragraph.xyz article URL.'))
       return
@@ -489,7 +563,7 @@ export function useGameGenerator({
       await previewArticle()
       return
     }
-    if (!store.paymentApproved && isStoryMode) {
+    if (!store.paymentApproved && isStoryMode && !isDailyFlow) {
       store.setError(paymentError('Story games are paid. Review the generation options below, connect your wallet if needed, and complete payment to generate. You can switch to Wordle for a free article-derived preview.'))
       return
     }
@@ -651,6 +725,8 @@ export function useGameGenerator({
     detectedCoin,
     isAutoDetected,
     hasPreviewedCurrentUrl,
+    isDailyFlow,
+    dailyFlow: store.dailyFlow,
     isStoryMode,
     isMusdPath,
     writerCoin,

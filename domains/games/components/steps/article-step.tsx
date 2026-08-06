@@ -9,6 +9,7 @@ import {
   type ArticlePreview,
   articlePreviewMeta,
 } from '@/domains/games/components/game-generator-helpers'
+import type { DailyGenerateFlow } from '@/lib/stores/game-generator.store'
 import { GAME_MODE_EXPLOAINER } from '@/lib/game-mode-labels'
 
 interface ArticleStepProps {
@@ -26,6 +27,7 @@ interface ArticleStepProps {
   mode: 'story' | 'wordle'
   onSelectStory: () => void
   onSelectWordle: () => void
+  dailyFlow?: DailyGenerateFlow | null
 }
 
 /**
@@ -48,7 +50,54 @@ export function ArticleStep({
   mode,
   onSelectStory,
   onSelectWordle,
+  dailyFlow,
 }: ArticleStepProps) {
+  if (dailyFlow) {
+    return (
+      <div className="rounded-xl border border-purple-500/25 bg-purple-950/10 p-4 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Today&apos;s source</h2>
+          <p className="text-sm text-muted-foreground">
+            BasePaint Day {dailyFlow.day} — {dailyFlow.theme}
+          </p>
+        </div>
+        {dailyFlow.canvasUrl && (
+          <div className="overflow-hidden rounded-lg border border-purple-500/20">
+            <img
+              src={dailyFlow.canvasUrl}
+              alt={dailyFlow.theme}
+              className="w-full aspect-video object-cover"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </div>
+        )}
+        {articlePreview && (
+          <div className="rounded-lg border border-border bg-card/80 p-3 text-left">
+            <p className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-1">Story seed</p>
+            <p className="text-sm text-muted-foreground line-clamp-4">{articlePreview.excerpt}</p>
+          </div>
+        )}
+        {dailyFlow.palette && dailyFlow.palette.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Palette</span>
+            <div className="flex gap-1">
+              {dailyFlow.palette.slice(0, 8).map((color) => (
+                <div
+                  key={color}
+                  className="h-4 w-4 rounded-sm border border-white/10"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        <p className="text-xs text-emerald-400/90">
+          Source locked in — customize genre below, then generate your daily comic.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
       <div>

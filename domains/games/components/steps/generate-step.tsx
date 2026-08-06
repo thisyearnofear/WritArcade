@@ -13,6 +13,7 @@ interface GenerateStepProps {
   paymentApproved: boolean
   genre: GameGenre
   url: string
+  isDailyFlow?: boolean
 }
 
 /**
@@ -31,6 +32,7 @@ export function GenerateStep({
   paymentApproved,
   genre,
   url,
+  isDailyFlow = false,
 }: GenerateStepProps) {
   return (
     <motion.div whileTap={{ scale: 0.98 }}>
@@ -68,6 +70,8 @@ export function GenerateStep({
               ? isPreviewingArticle
                 ? 'Checking Article...'
                 : 'Preview Article'
+              : isDailyFlow
+              ? `Generate Today's ${genre.charAt(0).toUpperCase() + genre.slice(1)} Daily Game`
               : isStoryMode
               ? paymentApproved
                 ? `Generate Custom ${genre.charAt(0).toUpperCase() + genre.slice(1)} Game`

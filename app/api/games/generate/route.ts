@@ -16,13 +16,18 @@ import { GameFundingService } from '@/domains/payments/services/game-funding.ser
 import { buildMarketingCopyPrompt } from '@/domains/games/services/generation-prompts'
 import { deduplicateGeneration, buildGenerationCacheKey } from '@/lib/ai-cache'
 import { reportServerError } from '@/services/error-reporting'
+import { getBasePaintDay, getBasePaintDailySource } from '@/lib/daily-challenge'
 
 // Request validation schema
 const generateGameSchema = z.object({
   promptText: z.string().max(20_000).optional(),
   url: z.string().url().optional(),
-  // "marketing-copy" wraps promptText in a marketing-framing preamble (studio flow)
-  contentType: z.enum(['marketing-copy']).optional(),
+  contentType: z.enum(['marketing-copy', 'basepaint']).optional(),
+  basePaintDay: z.number().int().positive().optional(),
+  dailyChallengeDay: z.number().int().positive().optional(),
+  theme: z.string().max(200).optional(),
+  palette: z.array(z.string()).optional(),
+  canvasUrl: z.string().url().optional(),
   // Optional game mode: "story" (default) or "wordle" (article-derived word puzzle)
   mode: z.enum(['story', 'wordle']).optional(),
   customization: z.object({
@@ -43,8 +48,8 @@ const generateGameSchema = z.object({
   // users log in before generating).
   wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
 }).refine(
-  (data) => data.promptText || data.url,
-  "Either promptText or url must be provided"
+  (data) => Boolean(data.promptText || data.url || data.contentType === 'basepaint'),
+  { message: 'Either promptText, url, or basepaint contentType must be provided' }
 )
 
 export async function POST(request: NextRequest) {
@@ -75,8 +80,15 @@ export async function POST(request: NextRequest) {
 
     // Enforce payment for story mode before content extraction or AI generation.
     // Exception: one free demo game per actor (marketer tier entry point).
+    // Exception: today's daily challenge BasePaint source (wallet session pays on-chain separately).
+    const isDailyChallengeGeneration =
+      validatedData.contentType === 'basepaint' &&
+      typeof validatedData.dailyChallengeDay === 'number' &&
+      validatedData.dailyChallengeDay === getBasePaintDay() &&
+      config.features.dailyChallenge
+
     let isFreeDemo = false
-    if (mode === 'story' && !fundingLookup) {
+    if (mode === 'story' && !fundingLookup && !isDailyChallengeGeneration) {
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
       const entitled =
         actor &&
@@ -93,6 +105,9 @@ export async function POST(request: NextRequest) {
           { status: 402 }
         )
       }
+      isFreeDemo = true
+    }
+    if (isDailyChallengeGeneration) {
       isFreeDemo = true
     }
 
@@ -170,6 +185,20 @@ export async function POST(request: NextRequest) {
     if (validatedData.contentType === 'marketing-copy' && validatedData.promptText) {
       const cleaned = await ContentProcessorService.processMarkdown(validatedData.promptText)
       processedPrompt = buildMarketingCopyPrompt(cleaned)
+    }
+
+    if (validatedData.contentType === 'basepaint') {
+      const day = validatedData.basePaintDay ?? getBasePaintDay()
+      const source = validatedData.promptText
+        ? {
+            day,
+            theme: validatedData.theme || `BasePaint Day ${day}`,
+            promptText: validatedData.promptText,
+            palette: validatedData.palette,
+            canvasUrl: validatedData.canvasUrl,
+          }
+        : await getBasePaintDailySource(day)
+      processedPrompt = source.promptText || `Create a game inspired by BasePaint Day ${day}: "${source.theme}".`
     }
 
     // If URL provided, extract and process content
