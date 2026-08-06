@@ -6,6 +6,7 @@ import { Coins, Loader2, Plus, ExternalLink, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { CREDITS_CONFIG } from '@/lib/writerCoins'
 
 interface CreditsData {
   credits: number
@@ -253,6 +254,22 @@ export function BuyCreditsButton() {
                     <div className="flex justify-between mt-1">
                       <span>Rate</span>
                       <span className="font-semibold text-foreground">{CREDITS_PER_DOLLAR} credits / $1</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                    <p className="font-semibold text-foreground mb-1">What credits unlock</p>
+                    <div className="flex justify-between">
+                      <span>Generate a game</span>
+                      <span className="font-semibold text-foreground">{CREDITS_CONFIG.cost['generate-game']}</span>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span>Mint an NFT</span>
+                      <span className="font-semibold text-foreground">{CREDITS_CONFIG.cost['mint-nft']}</span>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span>Animate a finished comic</span>
+                      <span className="font-semibold text-foreground">{CREDITS_CONFIG.cost['video-upsell']}</span>
                     </div>
                   </div>
 

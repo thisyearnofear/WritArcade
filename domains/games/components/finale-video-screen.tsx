@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Clapperboard, Loader2 } from 'lucide-react'
+import { CREDITS_CONFIG } from '@/lib/writerCoins'
 import { VideoStyleSelector } from './video-style-selector'
 import { VideoShowcase } from './video-showcase'
 import { CreatorStats } from './creator-stats'
@@ -28,6 +29,7 @@ export function VideoUpsellCTA({
 }) {
   const { status, isStarting, error } = video
   const completed = status === 'completed'
+  const videoCost = CREDITS_CONFIG.cost['video-upsell']
 
   return (
     <>
@@ -39,7 +41,7 @@ export function VideoUpsellCTA({
         title={
           completed
             ? 'Watch your animated comic'
-            : 'Turn your panels into short animated clips (50 credits)'
+            : `Bring all five panels to life as a short animated cut (${videoCost} credits)`
         }
       >
         {isStarting || status === 'pending' ? (
@@ -47,7 +49,20 @@ export function VideoUpsellCTA({
         ) : (
           <Clapperboard className="w-4 h-4" />
         )}
-        {completed ? 'Animated' : isStarting ? 'Starting…' : status === 'pending' ? 'Animating…' : 'Animate'}
+        {completed ? (
+          'Animated'
+        ) : isStarting ? (
+          'Starting…'
+        ) : status === 'pending' ? (
+          'Animating…'
+        ) : (
+          <>
+            Animate your comic
+            <span className="rounded-full bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300">
+              {videoCost} credits
+            </span>
+          </>
+        )}
       </Button>
 
       {error && (

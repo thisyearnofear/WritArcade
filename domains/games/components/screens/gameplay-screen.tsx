@@ -7,6 +7,7 @@ import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-strip'
 import { EpilogueGoalStrip } from '@/components/game/epilogue-goal-strip'
+import { FinaleUnlocksStrip } from '@/components/game/finale-unlocks-strip'
 import { getModifierCategoryForPanel } from '@/lib/daily-challenge-ui'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
@@ -242,6 +243,10 @@ export function GameplayScreen({
                 primaryColor={game.primaryColor}
               />
             )}
+            <FinaleUnlocksStrip
+              panelsDone={assistantMessageCount}
+              primaryColor={game.primaryColor}
+            />
             {/* Story Progress Bar */}
             <div className="w-full max-w-5xl mb-8 pb-6 border-b border-white/10 lg:hidden">
               <div className="flex items-center justify-between mb-3">
