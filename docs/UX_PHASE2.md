@@ -35,11 +35,7 @@ Prioritized checklist and tester script after the play-first library pass (Phase
 
 - [x] **Single “Arcade” identity** — My Games tabs: Library / Vault / Collectibles
 - [x] **Session recap card** — shareable daily run recap after hidden hand reveal
-- [x] **Accessibility pass** — dialog focus + Escape on coach & onboarding; filter `aria-pressed`
-
-## P2 — Remaining
-
-- [ ] **Keyboard focus trap** — full trap for modals (optional upgrade beyond focus-on-open)
+- [x] **Accessibility pass** — dialog focus trap (Tab cycles inside), Escape, backdrop dismiss, scroll lock
 
 ---
 

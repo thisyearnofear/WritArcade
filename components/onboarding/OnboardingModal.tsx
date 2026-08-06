@@ -65,7 +65,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
     }
   }
 
-  const dialogRef = useDialogA11y(isOpen, onClose)
+  const { dialogRef, handleBackdropClick } = useDialogA11y(isOpen, onClose, { closeOnBackdrop: true })
 
   if (!isOpen) return null
 
@@ -74,13 +74,18 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
   const isLast = currentStep === steps.length - 1
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+      aria-hidden={!isOpen}
+    >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-title"
         tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
         className="bg-card border border-border rounded-2xl max-w-sm w-full shadow-2xl outline-none"
       >
         <div className="flex items-center justify-between p-5 border-b border-border">

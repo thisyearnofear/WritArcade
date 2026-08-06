@@ -83,7 +83,7 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
     setOpen(false)
   }
 
-  const dialogRef = useDialogA11y(open, dismiss)
+  const { dialogRef, handleBackdropClick } = useDialogA11y(open, dismiss, { closeOnBackdrop: true })
 
   if (!open) return null
 
@@ -93,13 +93,18 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        onClick={handleBackdropClick}
+        aria-hidden={!open}
+      >
         <motion.div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="play-welcome-title"
           tabIndex={-1}
+          onClick={(e) => e.stopPropagation()}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}

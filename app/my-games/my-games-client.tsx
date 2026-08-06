@@ -14,6 +14,7 @@ import { IPRegistrationHistory } from '@/components/story/IPRegistrationHistory'
 import { IPRegistration } from '@/components/story/IPRegistration'
 import { Plus, Gamepad2, X, Library, BadgeCheck, Network, Eye, Lock, Copy, Check, GalleryHorizontalEnd, ExternalLink, AlertTriangle, Sparkles, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { useDialogA11y } from '@/hooks/use-dialog-a11y'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -125,6 +126,16 @@ export function MyGamesClient() {
       /* ignore */
     }
   }
+
+  const activeRegistration = registrationGame && address
+    ? { game: registrationGame, wallet: address as string }
+    : null
+  const registrationOpen = Boolean(activeRegistration)
+  const { dialogRef: registrationDialogRef, handleBackdropClick: handleRegistrationBackdrop } = useDialogA11y(
+    registrationOpen,
+    () => setRegistrationGame(null),
+    { closeOnBackdrop: true },
+  )
 
   useEffect(() => {
     try {
@@ -818,9 +829,21 @@ export function MyGamesClient() {
               onUpdate={handleSettingsUpdate}
             />
 
-            {registrationGame && address && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-                <div className="w-full max-w-2xl">
+            {activeRegistration && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+                onClick={handleRegistrationBackdrop}
+                aria-hidden={!registrationOpen}
+              >
+                <div
+                  ref={registrationDialogRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Register game IP"
+                  tabIndex={-1}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-2xl outline-none"
+                >
                   <div className="mb-3 flex justify-end">
                     <button
                       onClick={() => setRegistrationGame(null)}
@@ -832,24 +855,24 @@ export function MyGamesClient() {
                   </div>
                   <IPRegistration
                     game={{
-                      gameId: registrationGame.id,
-                      title: registrationGame.title,
-                      description: registrationGame.description,
-                      articleUrl: registrationGame.articleUrl || '',
-                      gameCreatorAddress: address,
-                      authorParagraphUsername: registrationGame.authorParagraphUsername || 'Unknown Author',
-                      authorWalletAddress: registrationGame.authorWallet || '0x0000000000000000000000000000000000000000',
-                      genre: ['horror', 'comedy', 'mystery'].includes(registrationGame.genre.toLowerCase())
-                        ? registrationGame.genre.toLowerCase() as 'horror' | 'comedy' | 'mystery'
+                      gameId: activeRegistration.game.id,
+                      title: activeRegistration.game.title,
+                      description: activeRegistration.game.description,
+                      articleUrl: activeRegistration.game.articleUrl || '',
+                      gameCreatorAddress: activeRegistration.wallet,
+                      authorParagraphUsername: activeRegistration.game.authorParagraphUsername || 'Unknown Author',
+                      authorWalletAddress: activeRegistration.game.authorWallet || '0x0000000000000000000000000000000000000000',
+                      genre: ['horror', 'comedy', 'mystery'].includes(activeRegistration.game.genre.toLowerCase())
+                        ? activeRegistration.game.genre.toLowerCase() as 'horror' | 'comedy' | 'mystery'
                         : 'mystery',
-                      difficulty: registrationGame.difficulty === 'hard' ? 'hard' : 'easy',
+                      difficulty: activeRegistration.game.difficulty === 'hard' ? 'hard' : 'easy',
                     }}
                     onRegistrationComplete={async (result) => {
-                      const response = await fetch(`/api/games/${registrationGame.slug}/story-registration`, {
+                      const response = await fetch(`/api/games/${activeRegistration.game.slug}/story-registration`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                          walletAddress: address,
+                          walletAddress: activeRegistration.wallet,
                           storyIpId: result.ipId,
                           transactionHash: result.txHash,
                         }),
@@ -857,7 +880,7 @@ export function MyGamesClient() {
                       if (!response.ok) {
                         throw new Error('Story registration succeeded, but saving it to the game failed.')
                       }
-                      setGames(prev => prev.map(game => game.id === registrationGame.id
+                      setGames(prev => prev.map(game => game.id === activeRegistration.game.id
                         ? {
                             ...game,
                             storyIpId: result.ipId,
