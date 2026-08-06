@@ -24,6 +24,7 @@ import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { ArcadeFunnelCTAs } from '@/components/daily-challenge/arcade-funnel-ctas'
 import { DailyStatusBanner, type DailyStatusVariant } from '@/components/daily-challenge/daily-status-banner'
 import { getBasePaintDay } from '@/lib/daily-challenge-ui'
+import { getBasePaintCanvasProxyUrl } from '@/lib/daily-challenge'
 
 interface DailyChallengeData {
   day: number
@@ -231,7 +232,7 @@ export default function DailyChallengePage() {
                 {challenge.canvasUrl && (
                   <div className="relative aspect-video w-full overflow-hidden">
                     <img
-                      src={challenge.canvasUrl}
+                      src={getBasePaintCanvasProxyUrl(challenge.day)}
                       alt={challenge.theme}
                       className="w-full h-full object-cover"
                       style={{ imageRendering: 'pixelated' }}

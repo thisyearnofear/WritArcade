@@ -52,22 +52,36 @@ export const storyAeneid = defineChain({
 const WALLET_CONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
 const HAS_WC = Boolean(WALLET_CONNECT_PROJECT_ID && WALLET_CONNECT_PROJECT_ID !== 'YOUR_PROJECT_ID');
 
+/** Story chain is opt-in — daily/mint run on Base only. */
+const STORY_WALLET_ENABLED = process.env.NEXT_PUBLIC_STORY_ENABLED !== 'false';
+
 // Lazy load config to avoid SSR issues
 let config: ReturnType<typeof getDefaultConfig> | null = null;
 let queryClient: QueryClient | null = null;
 
 function getWagmiConfig() {
   if (!config) {
+    const chains = [
+      base,
+      baseSepolia,
+      ...(STORY_WALLET_ENABLED ? [storyAeneid] : []),
+      mezoTestnet,
+    ] as const;
+
+    const transports: Record<number, ReturnType<typeof http>> = {
+      [base.id]: http(),
+      [baseSepolia.id]: http(),
+      [mezoTestnet.id]: http((mezoTestnet.rpcUrls.default.http as string[])[0]),
+    }
+    if (STORY_WALLET_ENABLED) {
+      transports[storyAeneid.id] = http()
+    }
+
     config = getDefaultConfig({
       appName: 'writersarcade',
       projectId: WALLET_CONNECT_PROJECT_ID || 'disabled-walletconnect',
-      chains: [base, baseSepolia, storyAeneid, mezoTestnet],
-      transports: {
-        [base.id]: http(),
-        [baseSepolia.id]: http(),
-        [storyAeneid.id]: http(),
-        [mezoTestnet.id]: http((mezoTestnet.rpcUrls.default.http as string[])[0]),
-      },
+      chains,
+      transports,
       wallets: [
         {
           groupName: 'Bitcoin',
@@ -208,6 +222,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
               <RainbowKitProvider
                 theme={darkTheme()}
                 modalSize="compact"
+                initialChain={base}
               >
                 {children}
               </RainbowKitProvider>

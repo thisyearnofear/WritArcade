@@ -10,6 +10,7 @@ import {
   articlePreviewMeta,
 } from '@/domains/games/components/game-generator-helpers'
 import type { DailyGenerateFlow } from '@/lib/stores/game-generator.store'
+import { getBasePaintCanvasProxyUrl } from '@/lib/daily-challenge'
 import { GAME_MODE_EXPLOAINER } from '@/lib/game-mode-labels'
 
 interface ArticleStepProps {
@@ -64,7 +65,7 @@ export function ArticleStep({
         {dailyFlow.canvasUrl && (
           <div className="overflow-hidden rounded-lg border border-purple-500/20">
             <img
-              src={dailyFlow.canvasUrl}
+              src={getBasePaintCanvasProxyUrl(dailyFlow.day)}
               alt={dailyFlow.theme}
               className="w-full aspect-video object-cover"
               style={{ imageRendering: 'pixelated' }}

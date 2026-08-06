@@ -27,6 +27,7 @@ const ALLOWED_HOSTNAME_PATTERNS: readonly RegExp[] = [
   /^.+\.replicate\.com$/,
   /^.+\.replicate\.delivery$/,
   /^.+\.modal\.usercontent\.com$/,
+  /^basepaint\.xyz$/,
 ]
 
 function isAllowedHostname(hostname: string): boolean {

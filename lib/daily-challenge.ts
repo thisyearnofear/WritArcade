@@ -122,9 +122,15 @@ export async function fetchBasePaintTheme(day: number): Promise<BasePaintTheme |
 
 /**
  * Get the BasePaint canvas image URL for a given day.
+ * Official API: https://basepaint.xyz/api/art/image?day=N
  */
 export function getBasePaintCanvasUrl(day: number): string {
-  return `https://basepaint.net/v3/${String(day).padStart(4, '0')}.png`
+  return `https://basepaint.xyz/api/art/image?day=${day}`
+}
+
+/** Client-safe URL via our image proxy (avoids dead CDN paths + hotlink quirks). */
+export function getBasePaintCanvasProxyUrl(day: number): string {
+  return `/api/image-proxy?url=${encodeURIComponent(getBasePaintCanvasUrl(day))}`
 }
 
 /**

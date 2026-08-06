@@ -84,7 +84,9 @@ export const config = {
    * Enables/disables Story Protocol integration for IP registration
    */
   storyProtocol: {
-    enabled: process.env.STORY_PROTOCOL_ENABLED !== 'false',
+    enabled:
+      process.env.NEXT_PUBLIC_STORY_ENABLED !== 'false' &&
+      process.env.STORY_PROTOCOL_ENABLED !== 'false',
     rpcUrl: process.env.STORY_RPC_URL || 'https://aeneid.storyrpc.io',
     chainId: process.env.STORY_CHAIN_ID ? parseInt(process.env.STORY_CHAIN_ID) : 1315,
   },
