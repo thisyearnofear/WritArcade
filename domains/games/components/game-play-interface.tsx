@@ -18,6 +18,7 @@ import { GameplayScreen } from './screens/gameplay-screen'
 import { ComicFinaleScreen } from './screens/comic-finale-screen'
 import { GameStatusScreens } from './screens/game-status-screens'
 import { GameEnrichment } from './game-enrichment'
+import { HiddenHandTeaser } from './hidden-hand-teaser'
 
 interface GamePlayInterfaceProps {
   game: Game
@@ -166,7 +167,14 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     // Track in localStorage for the "Continue playing" homepage section
     trackPlay(liveGame.slug, liveGame.title)
   }, [storyComplete, liveGame.slug, liveGame.title, session.assistantMessageCount, session.epilogueReflection, session.sessionId, trackPlay])
-  const renderEnrichment = () => (
+  // During daily play the Hidden Hand lives in the desktop gameplay sidebar
+  // (and as a slim teaser below on other screens) so it never pushes the
+  // story off-screen. The full reveal card appears once the story completes.
+  const hiddenHandInSidebar = isDailyGame && !storyComplete
+
+  const renderEnrichment = (
+    dailyDisplay: 'full' | 'teaser' | 'hidden' = 'full'
+  ) => (
     <GameEnrichment
       gameId={liveGame.id}
       gameSlug={liveGame.slug}
@@ -179,6 +187,8 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
       hypercertCid={liveGame.hypercertCid}
       storySessionId={session.sessionId}
       storyComplete={storyComplete}
+      dailyDisplay={dailyDisplay}
+      dailyPanelsDone={session.assistantMessageCount}
     />
   )
 
@@ -233,7 +243,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           isRegisteringDerivative={blockchain.isRegisteringDerivative}
           epilogueReflection={session.epilogueReflection}
         />
-        {renderEnrichment()}
+        {renderEnrichment('full')}
       </>
     )
   }
@@ -260,7 +270,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           onClearStartError={session.clearStartError}
           generateStoryboardPreview={generateStoryboardPreview}
         />
-        {renderEnrichment()}
+        {renderEnrichment(isDailyGame ? 'teaser' : 'full')}
       </>
     )
   }
@@ -297,8 +307,19 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         isDailyActive={isDailyGame}
         hasSecretEpilogue={hasSecretEpilogue}
         hasMintedNft={Boolean(liveGame.nftTokenId)}
+        sidebarExtra={
+          hiddenHandInSidebar ? (
+            <HiddenHandTeaser panelsDone={session.assistantMessageCount} />
+          ) : undefined
+        }
       />
-      {renderEnrichment()}
+      {/* Mobile has no sidebar — show the slim teaser below instead */}
+      {hiddenHandInSidebar && (
+        <div className="mx-auto max-w-2xl px-4 pb-6 lg:hidden">
+          <HiddenHandTeaser panelsDone={session.assistantMessageCount} />
+        </div>
+      )}
+      {renderEnrichment(hiddenHandInSidebar ? 'hidden' : 'full')}
     </>
   )
 }

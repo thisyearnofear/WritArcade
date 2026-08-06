@@ -5,6 +5,7 @@ import { useAccount } from 'wagmi'
 import { SecretPanel } from './secret-panel'
 import { HypercertBadge } from './hypercert-badge'
 import { ModifierReveal } from './modifier-reveal'
+import { HiddenHandTeaser } from './hidden-hand-teaser'
 import {
   loadDailyChallengeState,
   type DailyChallengeClientState,
@@ -23,6 +24,15 @@ interface GameEnrichmentProps {
   hypercertCid?: string | null
   storySessionId?: string | null
   storyComplete?: boolean
+  /**
+   * How to render the daily-challenge card:
+   * - 'full' (default): the complete Hidden Hand / reveal card
+   * - 'teaser': the compact HiddenHandTeaser (slim, non-blocking)
+   * - 'hidden': rendered elsewhere (e.g. gameplay sidebar)
+   */
+  dailyDisplay?: 'full' | 'teaser' | 'hidden'
+  /** Panels completed, forwarded to the teaser for its progress note. */
+  dailyPanelsDone?: number
 }
 
 /**
@@ -41,6 +51,8 @@ export function GameEnrichment({
   hypercertCid,
   storySessionId,
   storyComplete,
+  dailyDisplay = 'full',
+  dailyPanelsDone,
 }: GameEnrichmentProps) {
   const { address, isConnected } = useAccount()
   const [dailyState, setDailyState] = useState<DailyChallengeClientState | null>(null)
@@ -53,24 +65,28 @@ export function GameEnrichment({
 
   const showSecretPanel = secretPanelGenerated
   const showHypercert = !!hypercertUri
-  const showDailyReveal = Boolean(dailyState?.incoSessionId)
+  const showDailyReveal = Boolean(dailyState?.incoSessionId) && dailyDisplay !== 'hidden'
 
   if (!showSecretPanel && !showHypercert && !showDailyReveal) return null
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       {showDailyReveal && dailyState && (
-        <ModifierReveal
-          gameId={gameId}
-          gameSlug={gameSlug}
-          gameTitle={gameTitle}
-          sessionId={dailyState.incoSessionId}
-          vaultAddress={dailyState.vaultAddress}
-          modifierHandles={dailyState.modifierHandles}
-          scoreHandle={dailyState.scoreHandle}
-          isComplete={!!storyComplete}
-          primaryColor={primaryColor}
-        />
+        dailyDisplay === 'teaser' ? (
+          <HiddenHandTeaser panelsDone={dailyPanelsDone} />
+        ) : (
+          <ModifierReveal
+            gameId={gameId}
+            gameSlug={gameSlug}
+            gameTitle={gameTitle}
+            sessionId={dailyState.incoSessionId}
+            vaultAddress={dailyState.vaultAddress}
+            modifierHandles={dailyState.modifierHandles}
+            scoreHandle={dailyState.scoreHandle}
+            isComplete={!!storyComplete}
+            primaryColor={primaryColor}
+          />
+        )
       )}
 
       {showSecretPanel && (

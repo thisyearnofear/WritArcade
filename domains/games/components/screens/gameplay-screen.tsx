@@ -44,6 +44,8 @@ interface GameplayScreenProps {
   isDailyActive?: boolean
   hasSecretEpilogue?: boolean
   hasMintedNft?: boolean
+  /** Extra card rendered at the top of the desktop sidebar (e.g. daily Hidden Hand teaser). */
+  sidebarExtra?: React.ReactNode
 }
 
 export function GameplayScreen({
@@ -80,6 +82,7 @@ export function GameplayScreen({
   isDailyActive = false,
   hasSecretEpilogue = false,
   hasMintedNft = false,
+  sidebarExtra,
 }: GameplayScreenProps) {
 
   const handleShare = useCallback(async () => {
@@ -162,6 +165,7 @@ export function GameplayScreen({
           <div className="w-full flex flex-col lg:grid lg:grid-cols-[280px_1fr] lg:gap-8 min-h-full p-4 md:p-8 py-6 md:py-8 animate-slide-in">
             {/* Desktop sidebar */}
             <aside className="hidden lg:flex lg:flex-col gap-6 sticky top-24 h-fit">
+              {sidebarExtra}
               <div className="rounded-xl border border-white/10 bg-black/40 p-4">
                 <h3 className="text-sm font-bold text-white mb-3">Story Progress</h3>
                 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
