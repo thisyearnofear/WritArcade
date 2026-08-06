@@ -503,7 +503,7 @@ export function MyGamesClient() {
                   </div>
                   <h2 className="text-xl font-semibold text-foreground mb-3">No vaults unlocked yet</h2>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Finish a 5-panel game, mint the NFT, then decrypt the CDR vault to add it here.
+                    Finish a 5-panel game, mint the NFT, then decrypt the secret panel to add it here.
                   </p>
                   <Link
                     href="/games"
@@ -517,7 +517,7 @@ export function MyGamesClient() {
                   <div>
                     <h2 className="text-lg font-semibold text-foreground">Vaults You've Unlocked</h2>
                     <p className="text-sm text-muted-foreground">
-                      CDR unlock receipts saved on this device. Each one links back to the game and gate NFT.
+                      Secret panel unlock receipts saved on this device. Each one links back to the game and gate NFT.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -525,7 +525,7 @@ export function MyGamesClient() {
                       <div key={`${vault.gameSlug}-${vault.vaultUuid}`} className="rounded-lg border border-border bg-card p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">CDR Vault</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">Secret Panel</p>
                             <h3 className="mt-1 text-base font-semibold text-foreground">{vault.gameSlug.replace(/-/g, ' ')}</h3>
                           </div>
                           <Link href={vault.shareUrl || `/games/${vault.gameSlug}`} className="text-xs font-semibold text-purple-400 hover:text-purple-300">

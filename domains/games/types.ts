@@ -96,9 +96,8 @@ export interface Game {
   approvedAt?: Date
   rejectionReason?: string
 
-  // Lit Protocol: NFT-gated secret panel
+  // Inco: secret panel pre-encryption JSON (cleared after on-chain storage)
   secretPanelCiphertext?: string
-  secretPanelDataHash?: string
   secretPanelImagePrompt?: string
   secretPanelGenerated?: boolean
 

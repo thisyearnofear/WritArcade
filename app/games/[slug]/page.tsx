@@ -87,7 +87,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
   }
 
   // Wordle-mode games render a Wordle interface instead of the comic-story interface
-  // The answer is NEVER stored in plaintext — read from CDR vault on the client
+  // The answer is NEVER stored in plaintext — read from Inco on the client
   if (game.mode === 'wordle') {
     return (
       <div className="min-h-screen bg-black">
@@ -113,10 +113,10 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-emerald-300">Vault unlocked</p>
               <h1 className="mt-1 text-lg font-semibold text-white">
-                Someone unlocked the secret CDR vault for {game.title}
+                Someone unlocked the secret panel for {game.title}
               </h1>
               <p className="mt-1 text-sm text-emerald-100/75">
-                This share link points to a token-gated epilogue protected by the game NFT and Story CDR.
+                This share link points to a token-gated epilogue protected by the game NFT and Inco.
               </p>
             </div>
             {game.promptVaultUuid && (
@@ -180,13 +180,13 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
 
   return {
     title: isUnlockShare
-      ? `CDR vault unlocked: ${game.title}`
+      ? `Secret panel unlocked: ${game.title}`
       : `${game.title} - writersarcade`,
     description: isUnlockShare
-      ? `A secret CDR vault was unlocked for "${game.title}" on writersarcade.`
+      ? `A secret panel was unlocked for "${game.title}" on writersarcade.`
       : game.description,
     openGraph: {
-      title: isUnlockShare ? `I unlocked the secret CDR vault of ${game.title}` : game.title,
+      title: isUnlockShare ? `I unlocked the secret panel of ${game.title}` : game.title,
       description: isUnlockShare
         ? 'Verified unlock proof with vault UUID and gate NFT context.'
         : game.description,
@@ -195,7 +195,7 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
     },
     twitter: {
       card: 'summary_large_image',
-      title: isUnlockShare ? `I unlocked the secret CDR vault of ${game.title}` : game.title,
+      title: isUnlockShare ? `I unlocked the secret panel of ${game.title}` : game.title,
       description: isUnlockShare ? 'Verified unlock proof on writersarcade.' : game.description,
       images: [ogImage],
     },

@@ -13,20 +13,56 @@ const GAME_NFT_ABI = [
   },
 ] as const
 
+const SECRET_PANEL_VAULT_ABI = [
+  {
+    name: 'getSecretPanelHandle',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bytes32' }],
+  },
+  {
+    name: 'getSecretPanelChunkCount',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getSecretPanelChunkHandle',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'index', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bytes32' }],
+  },
+  {
+    name: 'hasSecretPanel',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const
+
 const BASE_GAME_NFT_ADDRESS =
   (process.env.NEXT_PUBLIC_GAME_NFT_MAINNET as `0x${string}` | undefined) ||
   (process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS as `0x${string}` | undefined) ||
   '0x32D0356f533cC429F94Db73f383bBb21a459E16b'
+
+const SECRET_PANEL_VAULT_ADDRESS =
+  (process.env.NEXT_PUBLIC_SECRET_PANEL_VAULT_ADDRESS as `0x${string}` | undefined) || ''
 
 /**
  * Determines the NFT contract and chain for a game based on its payment type.
  */
 function getNftConfig(writerCoinId?: string | null): { contractAddress: `0x${string}`; chainId: number } {
   if (writerCoinId) {
-    const config = getMintConfig(writerCoinId)
-    if (config) return config
+    const mintConfig = getMintConfig(writerCoinId)
+    if (mintConfig) return mintConfig
   }
-  // Default: Base mainnet GameNFT
   return {
     contractAddress: BASE_GAME_NFT_ADDRESS,
     chainId: 8453,
@@ -44,7 +80,7 @@ async function verifyNftOwnership(
   contractAddress: `0x${string}`,
   chainId: number
 ): Promise<{ verified: boolean; error?: string }> {
-  const backendUrl = process.env.CDR_BACKEND_URL || process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
+  const backendUrl = process.env.API_BACKEND_URL || 'https://api.snel.famile.xyz/writersarcade'
 
   try {
     const response = await fetch(`${backendUrl}/api/verify-nft-ownership`, {
@@ -58,10 +94,10 @@ async function verifyNftOwnership(
       return await response.json()
     }
   } catch {
-    // Hetzner unreachable — fall through to direct check
+    // Backend unreachable — fall through to direct check
   }
 
-  // Fallback: direct on-chain verification (original path)
+  // Fallback: direct on-chain verification
   try {
     const { createPublicClient, http } = await import('viem')
     const { base } = await import('viem/chains')
@@ -94,6 +130,73 @@ async function verifyNftOwnership(
   }
 }
 
+/**
+ * Reads the Inco secret panel handle from the SecretPanelVault contract.
+ * Returns the handle as a hex string for client-side attestedDecrypt.
+ */
+async function getIncoHandles(
+  nftTokenId: string
+): Promise<{ handles: string[] } | null> {
+  if (!SECRET_PANEL_VAULT_ADDRESS) return null
+
+  try {
+    const { createPublicClient, http } = await import('viem')
+    const { base } = await import('viem/chains')
+
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http('https://mainnet.base.org'),
+    })
+
+    const hasPanel = await publicClient.readContract({
+      address: SECRET_PANEL_VAULT_ADDRESS,
+      abi: SECRET_PANEL_VAULT_ABI,
+      functionName: 'hasSecretPanel',
+      args: [BigInt(nftTokenId)],
+    })
+
+    if (!hasPanel) return null
+
+    let chunkCount: bigint
+    try {
+      chunkCount = await publicClient.readContract({
+        address: SECRET_PANEL_VAULT_ADDRESS,
+        abi: SECRET_PANEL_VAULT_ABI,
+        functionName: 'getSecretPanelChunkCount',
+        args: [BigInt(nftTokenId)],
+      }) as bigint
+    } catch {
+      chunkCount = 1n
+    }
+
+    const handles: string[] = []
+    for (let i = 0n; i < chunkCount; i++) {
+      const handle = await publicClient.readContract({
+        address: SECRET_PANEL_VAULT_ADDRESS,
+        abi: SECRET_PANEL_VAULT_ABI,
+        functionName: 'getSecretPanelChunkHandle',
+        args: [BigInt(nftTokenId), i],
+      })
+      handles.push(handle as string)
+    }
+
+    if (handles.length === 0) {
+      const handle = await publicClient.readContract({
+        address: SECRET_PANEL_VAULT_ADDRESS,
+        abi: SECRET_PANEL_VAULT_ABI,
+        functionName: 'getSecretPanelHandle',
+        args: [BigInt(nftTokenId)],
+      })
+      handles.push(handle as string)
+    }
+
+    return { handles }
+  } catch (error) {
+    console.error('[Secret Panel] Failed to read Inco handles:', error)
+    return null
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -109,15 +212,15 @@ export async function POST(
 
     if (!sessionId || typeof sessionId !== 'string') {
       return NextResponse.json(
-        { error: 'Complete this game before unlocking the CDR secret panel.' },
+        { error: 'Complete this game before unlocking the secret panel.' },
         { status: 400 }
       )
     }
 
     const game = await GameDatabaseService.getGameBySlug(slug)
 
-    if (!game || !game.promptVaultUuid) {
-      return NextResponse.json({ error: 'Game or vault not found' }, { status: 404 })
+    if (!game) {
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
     if (!game.nftTokenId) {
@@ -125,6 +228,13 @@ export async function POST(
         { error: 'This game has not been minted yet. Mint the NFT to unlock the secret panel.' },
         { status: 400 }
       )
+    }
+
+    // Read the Inco handle from SecretPanelVault on-chain
+    const incoHandles = await getIncoHandles(game.nftTokenId)
+
+    if (!incoHandles) {
+      return NextResponse.json({ error: 'No secret panel found for this game' }, { status: 404 })
     }
 
     const completedSession = await prisma.session.findFirst({
@@ -154,7 +264,7 @@ export async function POST(
     const completedPanels = completedSession?._count.chats ?? 0
     if (completedPanels < 5) {
       return NextResponse.json(
-        { error: 'Finish all 5 story panels before the CDR vault can be unlocked.' },
+        { error: 'Finish all 5 story panels before the secret panel can be unlocked.' },
         { status: 403 }
       )
     }
@@ -172,11 +282,13 @@ export async function POST(
     }
 
     return NextResponse.json({
-      vaultUuid: game.promptVaultUuid,
+      incoHandle: incoHandles.handles[0],
+      incoHandles: incoHandles.handles,
+      vaultAddress: SECRET_PANEL_VAULT_ADDRESS,
+      chainId: 8453,
       status: 'ready_for_decryption',
-      chainId: 1315,
       accessPolicy: {
-        cdrReadCondition: 'tokenGate',
+        encryption: 'inco',
         nftContract: nftConfig.contractAddress,
         nftTokenId: game.nftTokenId,
         nftChainId: nftConfig.chainId,

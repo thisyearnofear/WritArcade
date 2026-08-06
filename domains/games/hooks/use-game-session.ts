@@ -5,6 +5,8 @@ import { trackEvent } from '@/services/analytics'
 import { MoodModifierService } from '../services/mood-modifier.service'
 import { parsePanel } from '../utils/text-parser'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'
+import { loadDailyChallengeState } from '@/lib/daily-challenge-client'
+import { config } from '@/lib/config'
 import type { Game, ChatMessage, GameplayOption } from '../types'
 
 export interface ChatEntry extends ChatMessage {
@@ -61,6 +63,15 @@ export interface GameSessionActions {
 }
 
 const MAX_COMIC_PANELS = 5
+
+function getDailyChallengePayload():
+  | { dailyChallenge: { incoSessionId: string } }
+  | Record<string, never> {
+  if (!config.features.dailyChallenge) return {}
+  const daily = loadDailyChallengeState()
+  if (!daily?.incoSessionId) return {}
+  return { dailyChallenge: { incoSessionId: daily.incoSessionId } }
+}
 
 export interface GameSessionOptions {
   embedded?: boolean
@@ -168,6 +179,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
           sessionId: newSessionId,
           ...(options?.embedded ? { embedded: true } : {}),
           ...(options?.ref ? { ref: options.ref } : {}),
+          ...getDailyChallengePayload(),
         }),
       })
 
@@ -389,6 +401,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
           gameId: game.id,
           message: message.trim(),
           ...(optionId ? { optionId } : {}),
+          ...getDailyChallengePayload(),
         }),
       })
 

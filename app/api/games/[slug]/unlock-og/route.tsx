@@ -40,7 +40,7 @@ function renderFallback(title: string) {
               background: '#34d399',
             }}
           />
-          CDR Vault Unlocked
+          Secret Panel Unlocked
         </div>
         <div
           style={{
@@ -87,8 +87,12 @@ export async function GET(
   }
 
   const vaultLabel = game.promptVaultUuid
-    ? `${game.promptVaultUuid.slice(0, 10)}...${game.promptVaultUuid.slice(-6)}`
-    : 'CDR vault'
+    ? game.promptVaultUuid.startsWith('inco:')
+      ? `Inco #${game.promptVaultUuid.slice(5)}`
+      : game.promptVaultUuid.length > 14
+        ? `${game.promptVaultUuid.slice(0, 10)}...${game.promptVaultUuid.slice(-6)}`
+        : game.promptVaultUuid
+    : 'Inco'
   const gateLabel = game.nftTokenId ? `Game NFT #${game.nftTokenId}` : 'Game NFT gate'
 
   try {
@@ -147,7 +151,7 @@ export async function GET(
                   color: '#a7f3d0',
                 }}
               >
-                CDR Vault Unlocked
+                Secret Panel Unlocked
               </div>
             </div>
 

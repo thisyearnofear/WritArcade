@@ -14,7 +14,8 @@ Turn Paragraph.xyz articles into interactive, mintable games. Players pay with w
 - Mint games as NFTs on Base; browse and play recent games
 - Pay with writer coins (ERC-20 on Base) using RainbowKit/WalletConnect, or buy credits with fiat
 - **Story Protocol Integration**: Register games and assets as IP with configurable licenses
-- **Lit Protocol Integration**: NFT-gated "Secret Panels" — encrypted epilogues only NFT holders can decrypt
+- **Inco Integration**: NFT-gated secret panels + daily challenge modifier deck on Base mainnet
+- **Daily Challenge**: `/daily` — encrypted 52-card deck, BasePaint crossover, leaderboard
 - **Hypercerts Integration**: Auto-created impact certificates certifying creative collaboration
 - Configurable, on-chain revenue splits for generation and minting
 
@@ -44,7 +45,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 |-----|---------|
 | [Architecture](./docs/ARCHITECTURE.md) | System design, tech stack, data models, smart contracts |
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
-| [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Lit, Hypercerts), writer coins |
+| [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Inco, Hypercerts), writer coins |
 | [Roadmap](./docs/ROADMAP.md) | Completed phases, current status, future plans |
 | [Hackathon Submission](./HACKATHON_SUBMISSION.md) | Mezo Hackathon submission — MUSD track, architecture, contracts |
 
@@ -55,14 +56,16 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 - **Backend**: Next.js API routes + Prisma + PostgreSQL
 - **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (images)
 - **IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove fallback)
-- **Access Control**: Lit Protocol (NFT-gated encryption)
+- **Access Control**: Inco (`@inco/lightning-js` + `@inco/lightning`) — secret panels, Wordle answers, daily challenge sessions
 - **Impact**: Hypercerts (AT Protocol)
 
 ## Smart contracts
 
 **Base mainnet** (production writer-coin payments)
-- **GameNFT**: configured by `NEXT_PUBLIC_GAME_NFT_MAINNET`
-- **WriterCoinPayment**: configured by `NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET`
+- **GameNFT**: `NEXT_PUBLIC_GAME_NFT_MAINNET` — [`0x32D0356f533cC429F94Db73f383bBb21a459E16b`](https://basescan.org/address/0x32D0356f533cC429F94Db73f383bBb21a459E16b)
+- **WriterCoinPayment**: `NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET`
+- **SecretPanelVault**: [`0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8`](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8)
+- **DailyChallengeVault**: [`0x0bb738ee11839baa44aa46984997f9417733dcce`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce)
 - Deployment guide: [contracts/deploy.md](./contracts/deploy.md)
 
 **Mezo Matsnet (testnet)** — Mezo Hackathon, MUSD track

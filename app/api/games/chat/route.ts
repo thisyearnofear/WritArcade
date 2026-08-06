@@ -8,14 +8,16 @@ const chatSchema = z.object({
   sessionId: z.string().uuid(),
   gameId: z.string(),
   message: z.string().min(1),
-  // Which of the panel's 4 enumerated options was clicked (resonance analytics)
   optionId: z.number().int().min(1).max(4).optional(),
+  dailyChallenge: z.object({
+    incoSessionId: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+  }).optional(),
 })
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { sessionId, gameId, message, optionId } = chatSchema.parse(body)
+    const { sessionId, gameId, message, optionId, dailyChallenge } = chatSchema.parse(body)
     
     // Get session and game with article context
     const session = await prisma.session.findFirst({
@@ -111,16 +113,53 @@ export async function POST(request: NextRequest) {
           // Get user AI preferences
           const userPreferences = await UserAIPreferenceService.getUserPreferences()
 
-          // Get AI response with panel awareness and article thematic continuity
-           const chatStream = GameAIService.chatGame(
-             messages,
-             message,
-             game?.promptModel || 'gpt-4o-mini', // Use model from game generation for consistency
-             currentPanelNumber,
-             maxPanels,
-             articleContext,
-             userPreferences
-           )
+          const modifierPanelIndex = assistantMessageCount
+          let chatStream
+
+          if (dailyChallenge?.incoSessionId && process.env.FEATURE_DAILY_CHALLENGE === 'true') {
+            const { getModifierPromptForPanel } = await import('@/lib/daily-challenge')
+            const modifierPrompt = await getModifierPromptForPanel(
+              dailyChallenge.incoSessionId,
+              modifierPanelIndex
+            )
+
+            const previousPanels = messages
+              .filter((m) => m.role === 'assistant')
+              .map((m, i) => ({
+                narrative: m.content,
+                choice: chatHistory.filter((c) => c.role === 'user')[i]?.content,
+              }))
+
+            if (modifierPrompt) {
+              chatStream = GameAIService.generatePanelWithModifier(
+                modifierPrompt,
+                modifierPanelIndex,
+                message,
+                previousPanels,
+                userPreferences
+              )
+            } else {
+              chatStream = GameAIService.chatGame(
+                messages,
+                message,
+                game?.promptModel || 'gpt-4o-mini',
+                currentPanelNumber,
+                maxPanels,
+                articleContext,
+                userPreferences
+              )
+            }
+          } else {
+            chatStream = GameAIService.chatGame(
+              messages,
+              message,
+              game?.promptModel || 'gpt-4o-mini',
+              currentPanelNumber,
+              maxPanels,
+              articleContext,
+              userPreferences
+            )
+          }
           
           let assistantContent = ''
           

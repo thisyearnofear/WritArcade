@@ -16,8 +16,10 @@ export const features = {
   assetMarketplace: process.env.FEATURE_ASSET_MARKETPLACE === 'true',
   /** Hypercerts / AT Protocol impact certificates */
   hypercerts: process.env.FEATURE_HYPERCERTS === 'true',
-  /** Lit Protocol — legacy secret panel encryption (superseded by CDR) */
-  litProtocol: process.env.FEATURE_LIT_PROTOCOL === 'true',
+  /** Inco — confidential compute for secret panels and Wordle answers */
+  inco: process.env.FEATURE_INCO !== 'false', // default ON
+  /** Daily Challenge — Inco-powered confidential game sessions + BasePaint crossover */
+  dailyChallenge: process.env.FEATURE_DAILY_CHALLENGE === 'true',
   /** SuperRare NFT minting bridge */
   superrare: process.env.FEATURE_SUPERRARE === 'true',
   /** Etherfuse fiat on-ramp */
@@ -82,12 +84,17 @@ export const config = {
   },
 
   /**
-   * Lit Protocol — now managed via features flag
+   * Inco — confidential compute layer for secret panels and Wordle answers.
+   * Runs on Base mainnet alongside GameNFT.
    */
-  litProtocol: {
-    enabled: features.litProtocol,
-    rpcUrl: process.env.LIT_RPC_URL || 'https://lit-protocol-datil-dev.rpc.litgateway.com',
-    network: process.env.LIT_NETWORK || 'datil-dev',
+  inco: {
+    enabled: features.inco,
+    network: process.env.NEXT_PUBLIC_INCO_NETWORK || 'baseMainnet',
+    vaultAddress: process.env.NEXT_PUBLIC_SECRET_PANEL_VAULT_ADDRESS || '',
+    gameNftAddress:
+      process.env.NEXT_PUBLIC_GAME_NFT_MAINNET ||
+      process.env.NEXT_PUBLIC_GAME_NFT_ADDRESS ||
+      '0x32D0356f533cC429F94Db73f383bBb21a459E16b',
   },
 
   /**
@@ -96,6 +103,16 @@ export const config = {
   hypercerts: {
     enabled: features.hypercerts,
     pdsUrl: process.env.HYPERCERTS_PDS_URL || 'https://certified.app',
+  },
+
+  /**
+   * Daily Challenge — Inco-powered confidential game sessions.
+   * Uses DailyChallengeVault for encrypted modifier deck + scoring.
+   */
+  dailyChallenge: {
+    enabled: features.dailyChallenge,
+    vaultAddress: process.env.NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS || '',
+    managerPrivateKey: process.env.DAILY_CHALLENGE_MANAGER_PRIVATE_KEY || process.env.STORY_PLATFORM_PRIVATE_KEY || '',
   },
 
   /**
@@ -223,15 +240,6 @@ export const logger = {
    */
   ipfs: (action: string, context: LogContext) => {
     logger.info(`[IPFS] ${action}`, context)
-  },
-
-  /**
-   * Lit Protocol-specific logging
-   */
-  litProtocol: (action: string, context: LogContext) => {
-    if (config.litProtocol.enabled) {
-      logger.info(`[Lit Protocol] ${action}`, context)
-    }
   },
 
   /**

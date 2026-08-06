@@ -39,6 +39,40 @@ This flow is wallet-free for the first story and targets marketers, copywriters,
 - First story is free (one demo per actor/IP); subsequent stories cost credits
 - One-click upgrade to credit packs when the free demo is used
 
+### Daily Challenge (Inco Confidential Game Sessions)
+
+**Integration**: `DailyChallengeVault.sol` + `@inco/lightning-js` + BasePaint API
+
+Each day, a featured source (BasePaint daily canvas, article, or marketing copy) becomes a shared challenge. Every playthrough deals 5 encrypted modifier cards from a 52-card deck — same source, different story constraints, provably fair.
+
+- **Encrypted Modifier Deck**: 52 narrative constraint cards shuffled once per day on-chain via `e.shuffledRange()`. The order is encrypted — nobody can predict it.
+- **5 Encrypted Cards Per Player**: Each player draws the next 5 cards from the shared deck via `startSession()` (no duplicates within a session). Only the player can decrypt at reveal.
+- **Hidden AI Constraints**: The backend decrypts each panel's card (via `narrativeOperator`) to shape AI generation. The player never sees the modifier until the finale.
+- **Encrypted Scoring**: Player choices are compared against the hidden modifier's optimal path via `e.select()` and `e.eq()`. Score stays encrypted until reveal.
+- **Reveal at Finale**: `completeAndReveal()` publishes handles; the client decrypts via `attestedDecrypt` and submits to the leaderboard.
+- **BasePaint Crossover**: Today's BasePaint theme + canvas image becomes the story source. The pixel art aesthetic and palette shape the AI-generated comic panels.
+
+**Flow**:
+```
+Cron or POST /api/daily-challenge/setup
+  ↓
+DailyChallengeVault.createDailyChallenge(day) → e.shuffledRange(1..52)
+  ↓
+Player calls startSession(day) → 5 encrypted cards dealt (narrativeOperator + player get allow)
+  ↓
+Each panel: server decrypts card for AI only → generatePanelWithModifier()
+  ↓
+Player choice → POST /record-choice → encrypted score delta on-chain
+  ↓
+Finale: completeAndReveal() → attestedDecrypt → leaderboard
+```
+
+**Smart Contract**: [`DailyChallengeVault`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce) on Base mainnet  
+**Cron**: `vercel.json` shuffles the deck daily at 00:05 UTC (`CRON_SECRET` required)
+**SDK**: `@inco/lightning-js` — `attestedDecrypt` for modifier/score reveal
+**Modifier Deck**: `lib/modifiers.json` — 52 cards across 4 categories
+**Page**: `/daily` — challenge card, leaderboard, play button
+
 ### Embeddable Wallet-Free Player
 - `/embed/[slug]` serves an lightweight iframe player
 - No wallet connection required; readers play inside the host page
@@ -146,57 +180,35 @@ self-contained hooks + presentational components so each feature stays testable:
 7. IP registered on-chain with license
 8. Verification: Read IP Asset to confirm
 
-#### Confidential Data Rails (CDR) — *Hackathon Track*
-**Beta Integration**: Story CDR SDK for TEE-backed data vaults.
+#### Inco Confidential Compute (Secret Panels) — *Primary*
+**Integration**: Inco Lightning (`@inco/lightning-js`) for on-chain encrypted secret panels and Wordle answers.
 
-- **Secret Panel Vaults**: Hidden epilogues are stored in CDR vaults and decrypted client-side only after the player satisfies the unlock policy.
-- **Token-Gated Read Conditions**: Secret panel vaults use CDR `tokenGate` read conditions against the configured Game NFT contract.
-- **Gameplay-Aware Unlock**: The app verifies the player completed all 5 story panels before allowing the CDR decrypt path.
-- **Exact NFT Ownership**: The unlock endpoint verifies ownership of the minted `nftTokenId`, not just any NFT in the collection.
-- **Provable Fairness**: Wordle answers are stored in CDR vaults instead of plaintext database fields.
-- **Bundle Hygiene**: The CDR SDK/WASM graph is lazy-loaded only when vaulted data must be decrypted.
+- **On-Chain Encryption**: Secret panel JSON is split into ≤31-byte chunks, encrypted via `@inco/lightning-js`, and stored as multiple `euint256` handles in `SecretPanelVault.sol`.
+- **Programmable Access Control**: `e.allow(handle, nftOwner)` — only the current NFT holder can decrypt. Enforced by Inco covalidators.
+- **Attested Decrypt**: NFT holder decrypts via `zap.attestedDecrypt(walletClient, [handle])` — a signed covalidator attestation, not a trusted server.
+- **Gameplay-Aware Unlock**: App verifies the player completed all 5 story panels before allowing decryption.
+- **Provable Fairness**: Wordle answers encrypted on-chain via Inco instead of plaintext database fields.
+- **Bundle Hygiene**: `@inco/lightning-js` is pure JS (no 5.5 MB WASM like CDR SDK).
 
 **Secret Panel Flow**:
 ```
 Game Generation
   ↓
-generateSecretPanel()
+generateSecretPanel() → store JSON in DB (pre-encryption)
   ↓
-vaultSystemPrompt() → Story CDR vault UUID
+NFT minted → storeSecretPanel(tokenId, ciphertextChunks[]) on-chain
   ↓
-Store promptVaultUuid in DB
+promptVaultUuid = "inco:<tokenId>" in DB
   ↓
 Player completes 5 panels + owns minted Game NFT
   ↓
-Client decrypts CDR vault with wallet-backed CDR client
+Client calls attestedDecrypt via @inco/lightning-js → reveals epilogue
 ```
 
-**Explorer**: https://aeneid-testnet-explorer.story.foundation/
+**Smart Contract**: [`SecretPanelVault`](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8) on Base mainnet — `gameNFT` set to production [`GameNFT`](https://basescan.org/address/0x32D0356f533cC429F94Db73f383bBb21a459E16b)
 
-### Lit Protocol (NFT-Gated Content)
-
-**Network**: Datil-dev testnet  
-**Packages**: `@lit-protocol/lit-node-client`, `@lit-protocol/encryption`, `@lit-protocol/access-control-conditions`
-
-**Features**:
-- **Secret Panels**: 6th "secret panel" - encrypted epilogue only NFT holders can decrypt
-- **Access Control**: ERC721 ownership check on Base mainnet
-- **Server-side encryption**: After game generation (no auth required)
-- **Client-side decryption**: NFT holder decrypts in browser (wallet auth)
-- **Graceful degradation**: Base64 encoding when Lit nodes unavailable
-
-**Flow**:
-```
-Game Generation → Save to DB
-                      ↓ (async, non-blocking)
-          generateSecretPanel()
-                      ↓
-          encryptSecretPanel() (Lit Protocol)
-                      ↓
-          Store ciphertext in DB
-                      ↓
-          NFT holder decrypts client-side → reveals epilogue
-```
+**SDK**: `@inco/lightning-js` + `@inco/lightning` (Solidity, install via Bun)
+**Docs**: https://docs.inco.org
 
 ### Hypercerts (Impact Certificates)
 

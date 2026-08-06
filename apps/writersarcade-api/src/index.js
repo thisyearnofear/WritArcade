@@ -4,7 +4,6 @@ const cors = require('@fastify/cors')
 const rateLimit = require('@fastify/rate-limit')
 const { createPublicClient, http } = require('viem')
 const { base } = require('viem/chains')
-const { vaultData } = require('./cdr-vault')
 
 const PORT = Number(process.env.PORT || 3800)
 const ALLOWED_ORIGINS = [
@@ -455,39 +454,6 @@ async function start() {
       return reply.code(400).send({
         audioUrl: null,
         error: error instanceof Error ? error.message : 'Unknown error',
-      })
-    }
-  })
-
-  /**
-   * CDR Vault — proxy endpoint for Story Confidential Data Rails vault operations.
-   *
-   * Moves the 5.5 MB WASM init + heavy CDR SDK out of Vercel serverless
-   * into the persistent PM2 backend. WASM loads lazily on first request.
-   *
-   * Request:  { data, readCondition, nftContract? }
-   * Response: { uuid }
-   */
-  app.post('/api/cdr/vault', async (request, reply) => {
-    try {
-      const { data, readCondition, nftContract } = request.body || {}
-
-      if (!data || typeof data !== 'string') {
-        return reply.code(400).send({ error: 'Missing or invalid data (string required)' })
-      }
-      if (!readCondition || !['open', 'tokenGate'].includes(readCondition)) {
-        return reply.code(400).send({ error: 'readCondition must be "open" or "tokenGate"' })
-      }
-      if (readCondition === 'tokenGate' && !nftContract) {
-        return reply.code(400).send({ error: 'nftContract required for tokenGate read condition' })
-      }
-
-      const result = await vaultData(data, readCondition, nftContract)
-      return reply.send(result)
-    } catch (error) {
-      const status = error.message.includes('not configured') ? 503 : 500
-      return reply.code(status).send({
-        error: error.message || 'CDR vault operation failed',
       })
     }
   })

@@ -814,7 +814,7 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
 
   /**
    * Generate a secret panel (6th panel epilogue) for NFT-gated content.
-   * This panel is encrypted with Lit Protocol and only accessible to NFT holders.
+   * This panel is encrypted on-chain via Inco and only accessible to NFT holders.
    *
    * ENHANCEMENT FIRST: Reuses existing model provider and error handling patterns
    */
@@ -872,5 +872,124 @@ Respond in JSON:
     }
   }
 
+  /**
+   * Generate a game panel with a hidden Inco modifier constraint.
+   *
+   * The modifier is an encrypted "card" drawn from the DailyChallengeVault deck.
+   * The AI receives the modifier's prompt as a system constraint, shaping the
+   * narrative — but the player doesn't know which modifier they drew until the
+   * finale reveal.
+   *
+   * @param modifierPrompt - The constraint prompt from the modifier card
+   * @param panelIndex - Which panel (0-4)
+   * @param basePrompt - The user's input (article text, marketing copy, BasePaint theme)
+   * @param previousPanels - Narrative context from prior panels
+   * @param userPreferences - AI model preferences
+   * @returns Streamed gameplay response with narrative + choices
+   */
+  static async *generatePanelWithModifier(
+    modifierPrompt: string,
+    panelIndex: number,
+    basePrompt: string,
+    previousPanels: Array<{ narrative: string; choice?: string }>,
+    userPreferences?: UserAIPreferences
+  ): AsyncGenerator<GameplayResponse> {
+    const model = getModel('', userPreferences)
+    const maxPanels = 5
 
+    const paceGuidance = this.getPacingGuidance(panelIndex + 1, maxPanels)
+
+    const contextPanel = previousPanels.length > 0
+      ? `\nPREVIOUS PANELS:\n${previousPanels.map((p, i) => `Panel ${i + 1}: ${p.narrative}${p.choice ? ` → Player chose: ${p.choice}` : ''}`).join('\n')}\n`
+      : ''
+
+    const system = `You are a comic-style game engine for a ${maxPanels}-panel interactive story.
+You are currently generating panel ${panelIndex + 1} of ${maxPanels}.
+
+HIDDEN MODIFIER (the player does NOT know this — shape the narrative around it without revealing it explicitly):
+${modifierPrompt}
+
+SCENE FOCUS: Describe ONE scene only. Do NOT recap previous scenes or include flashbacks.
+LENGTH REQUIREMENT: Keep narrative to exactly 2-3 sentences maximum.
+FORMAT REQUIREMENT: Write ONLY the scene description. Do NOT include labels like "Opening Scene", "Scene 1", or any introductory text.
+${contextPanel}
+${paceGuidance}
+${panelIndex + 1 === maxPanels
+      ? 'FINAL PANEL RULES: This story MUST conclude. The options should lead to different endings/resolutions, not continue the story. Make choices about HOW the story ends, not what happens next.'
+      : 'CRITICAL: Always end with exactly 4 numbered options (1. 2. 3. 4.) on separate lines.'
+    }`
+
+    try {
+      const { textStream } = await streamText({
+        model,
+        system,
+        prompt: basePrompt,
+      })
+
+      let currentMessage = ''
+      for await (const chunk of textStream) {
+        currentMessage += chunk
+
+        // Try to split narrative from options
+        const optionStartRegex = /[\n\r]+\s*1[.)]\s+/
+        const match = currentMessage.match(optionStartRegex)
+
+        if (match && match.index !== undefined) {
+          const narrative = currentMessage.substring(0, match.index).trim()
+          const optionsText = currentMessage.substring(match.index)
+
+          const options = this.parseGameOptions(optionsText)
+
+          if (options.length > 0) {
+            yield {
+              type: 'content',
+              content: narrative,
+            }
+            yield {
+              type: 'options',
+              options,
+            }
+            return
+          }
+        }
+
+        // Stream content
+        yield {
+          type: 'content',
+          content: chunk,
+        }
+      }
+
+      // Final yield for last panel (may not have options)
+      const trimmedContent = this.enforceSentenceCount(currentMessage, 2, 3)
+      const options = this.parseGameOptions(trimmedContent)
+
+      yield {
+        type: 'content',
+        content: options.length > 0
+          ? trimmedContent.split(/[\n\r]+\s*1[.)]\s+/)[0].trim()
+          : trimmedContent,
+      }
+      if (options.length > 0) {
+        yield { type: 'options', options }
+      }
+      yield { type: 'end' }
+    } catch (error) {
+      console.error(`[Modifier Panel ${panelIndex + 1}] Generation failed:`, error)
+      yield {
+        type: 'content',
+        content: 'The story takes an unexpected turn...',
+      }
+      yield {
+        type: 'options',
+        options: [
+          { id: 1, text: 'Investigate further' },
+          { id: 2, text: 'Take a different path' },
+          { id: 3, text: 'Ask for help' },
+          { id: 4, text: 'Wait and see' },
+        ],
+      }
+      yield { type: 'end' }
+    }
+  }
 }

@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAccount } from 'wagmi'
 
 import { Game } from '../types'
 import { useGameSession } from '../hooks/use-game-session'
 import { useGameBlockchain } from '../hooks/use-game-blockchain'
+import { useDailyChallengeOnchain } from '@/hooks/use-daily-challenge-onchain'
+import { config } from '@/lib/config'
 import { trackEvent } from '@/services/analytics'
 import { useRecentlyPlayed } from '@/hooks/use-recently-played'
 
@@ -41,6 +43,9 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   const blockchain = useGameBlockchain(liveGame, {
     onGameUpdated: (updates) => setLiveGame((current) => ({ ...current, ...updates })),
   })
+
+  const dailyChallenge = useDailyChallengeOnchain()
+  const isDailyGame = config.features.dailyChallenge && dailyChallenge.isActive
 
   // 3. UI Local State
   const [showComicFinale, setShowComicFinale] = useState(false)
@@ -111,8 +116,24 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
     })
   }
 
-  const previouslyIncompleteRef = useRef(true)
+  const handleOptionClickWithDaily = useCallback(
+    (optionId: number, optionText: string) => {
+      session.handleOptionClick(optionId, optionText)
 
+      if (isDailyGame) {
+        const panelIndex = session.assistantMessageCount - 1
+        const choiceIndex = optionId - 1
+        if (panelIndex >= 0 && panelIndex < 5 && choiceIndex >= 0 && choiceIndex < 4) {
+          dailyChallenge.recordChoice(panelIndex, choiceIndex).catch((err) => {
+            console.error('[DailyChallenge] recordChoice failed:', err)
+          })
+        }
+      }
+    },
+    [dailyChallenge, isDailyGame, session]
+  )
+
+  const previouslyIncompleteRef = useRef(true)
   const storyComplete = !!session.epilogueReflection || session.assistantMessageCount >= MAX_COMIC_PANELS
 
   useEffect(() => {
@@ -254,7 +275,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         userInput="" // No longer used
         onUserInputChange={() => { }}
         onOptionClick={(option) => {
-          session.handleOptionClick(option.id, option.text)
+          handleOptionClickWithDaily(option.id, option.text)
         }}
         onImagesReady={session.handleImagesReady}
         onImageRegenerate={session.handleImageRegenerate}

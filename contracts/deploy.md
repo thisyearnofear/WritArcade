@@ -6,6 +6,19 @@ These contracts are deployed on Base mainnet:
 
 - `GameNFT`: `0x32D0356f533cC429F94Db73f383bBb21a459E16b`
 - `WriterCoinPayment`: `0x56Ee5A3f122da00B635DdbB319708e24450aEB89`
+- `SecretPanelVault`: `0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8` ([Basescan](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8))
+- `DailyChallengeVault`: `0x0bb738ee11839baa44aa46984997f9417733dcce` ([Basescan](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce))
+
+Inco vault deploy txs (Aug 2026):
+
+- `SecretPanelVault`: `0x41db3325f2e6e34d773449735b78fb7f2a66714179b37a4db57adf94cfe51119`
+- `DailyChallengeVault`: `0x4361a7d3b38e6046e9387b1f668e93ee86dd0f29ee126b6fab052a82852d952d`
+- `SecretPanelVault.setGameNFT` (production GameNFT): `0x6c51a3dd0e9a1d04ae44991e2c00f6497d533b7e1b9591e4270e4731db10a208`
+- `DailyChallengeVault.createDailyChallenge` (day 1093 initial shuffle): `0xf64513118e2c651dd76aaa9d7005849ac0eb900a5f777d36e8ed534716edf8bd`
+
+**Security**: Never commit `INCO_VAULT_MANAGER_PRIVATE_KEY`, `MEZO_DEPLOYER_PRIVATE_KEY`, or
+`STORY_PLATFORM_PRIVATE_KEY`. Store only in Vercel encrypted env vars. The deployer wallet
+should not receive production traffic — grant roles to a dedicated server wallet.
 
 Deployment transaction hashes:
 
@@ -18,15 +31,22 @@ Deploy `GameNFT` first, then `WriterCoinPayment`, then connect them with
 
 ### Local Verification
 
+Install Solidity dependencies first (Bun resolves `@inco/lightning` git deps that pnpm cannot):
+
+```bash
+bun add @inco/lightning@1.0.2 @openzeppelin/contracts@5.3.0
+```
+
 The shell has another CLI named `forge`, so call Foundry directly:
 
 ```bash
 cd contracts
-/Users/udingethe/.foundry/bin/forge build --contracts . --offline
-/Users/udingethe/.foundry/bin/forge test --contracts . --match-path test/WriterCoinPayment.t.sol --offline
+/Users/udingethe/.foundry/bin/forge build --offline
+/Users/udingethe/.foundry/bin/forge test --match-path test/WriterCoinPayment.t.sol --offline
 ```
 
-Foundry uses `solc = 0.8.25`, optimizer enabled, and `via_ir = true`.
+Foundry uses `solc = 0.8.29`, `evm_version = cancun`, optimizer enabled, and `via_ir = true`.
+Remappings live in `contracts/remappings.txt` and point at root `node_modules/`.
 
 ### 1. Deploy GameNFT
 
@@ -141,7 +161,61 @@ Current default costs:
 - Generation: `100000000000000000000` for 100 tokens.
 - Minting: `50000000000000000000` for 50 tokens.
 
-### 5. Update App Environment
+Deploy `SecretPanelVault` and `DailyChallengeVault` (Inco confidential compute):
+
+```bash
+cd contracts
+/Users/udingethe/.foundry/bin/forge build --offline
+cd ..
+node scripts/deploy-inco-vaults.mjs
+```
+
+`DailyChallengeVault` constructor: `(initialOwner, narrativeOperator)` — set
+`narrativeOperator` to the server wallet that decrypts modifier cards for AI
+generation (same wallet as `INCO_VAULT_MANAGER_PRIVATE_KEY`).
+
+After deployment, grant roles if deployer ≠ server wallet:
+
+```solidity
+grantRole(VAULT_MANAGER_ROLE, SERVER_WALLET)
+grantRole(SESSION_MANAGER_ROLE, SERVER_WALLET)
+```
+
+### 5. Deploy SecretPanelVault (legacy section — see deploy script above)
+
+Contract: `contracts/src/SecretPanelVault.sol`
+
+This contract stores encrypted secret panel epilogues and Wordle answers using
+Inco's confidential compute layer. Replaces Lit Protocol and Story CDR.
+
+Constructor:
+
+```solidity
+constructor(address initialOwner, address _gameNFT)
+```
+
+Recommended arguments:
+
+- `initialOwner`: owner/admin wallet (same as GameNFT owner)
+- `_gameNFT`: the deployed `GameNFT` address
+
+After deployment:
+
+1. Grant `VAULT_MANAGER_ROLE` to the server wallet that will call `storeSecretPanel`:
+
+```solidity
+grantRole(VAULT_MANAGER_ROLE, SERVER_WALLET_ADDRESS)
+```
+
+2. The `VAULT_MANAGER_ROLE` keccak hash:
+
+```text
+0x...
+```
+
+3. Fund the server wallet with Base ETH for gas + Inco fees.
+
+### 6. Update App Environment
 
 Set these in Vercel and local `.env.local`:
 
@@ -150,6 +224,12 @@ NEXT_PUBLIC_GAME_NFT_MAINNET="0x32D0356f533cC429F94Db73f383bBb21a459E16b"
 NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET="0x56Ee5A3f122da00B635DdbB319708e24450aEB89"
 NEXT_PUBLIC_GAME_NFT_ADDRESS="0x32D0356f533cC429F94Db73f383bBb21a459E16b"
 NEXT_PUBLIC_WRITER_COIN_PAYMENT_ADDRESS="0x56Ee5A3f122da00B635DdbB319708e24450aEB89"
+
+# Inco — Secret Panel Vault
+FEATURE_INCO="true"
+NEXT_PUBLIC_INCO_NETWORK="baseMainnet"
+NEXT_PUBLIC_SECRET_PANEL_VAULT_ADDRESS="<deployed SecretPanelVault address>"
+INCO_VAULT_MANAGER_PRIVATE_KEY="<server wallet private key>"
 ```
 
 Whitelisted writer treasuries:
@@ -184,6 +264,7 @@ The app uses these for:
 
 The Mezo contracts under `contracts/src` are separate from the Base redeploy:
 
+- `SecretPanelVault.sol`: Inco confidential compute vault for encrypted secret panels (Base mainnet).
 - `GameNFTMezo.sol`: open-mint Mezo testnet NFT contract.
 - `MezoBoostedSplitter.sol`: MUSD splitter with MEZO-holder boost.
 - `MezoPaymentSplitter.sol`: earlier MUSD splitter.

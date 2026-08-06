@@ -83,11 +83,14 @@ model Game {
   writerCoinId       String?  // Which writer coin was used (e.g., "avc")
   difficulty         String?  // Game difficulty: "easy" or "hard"
 
-  // Story CDR vault UUID for the Wordle answer (provably fair — answer never stored in plaintext)
+  // Encrypted answer/handle storage — Inco (primary) or Story CDR (legacy)
+  // Inco: "inco-pending" before mint, then cleared after on-chain storage
+  // CDR (legacy): vault UUID for the Wordle answer (provably fair)
   wordleAnswerVaultUuid String?
 
-  // Story CDR: Vaulted prompt for Confidential IP
-  promptVaultUuid      String? // Story CDR vault UUID for the system prompt
+  // Inco: "inco:<tokenId>" after on-chain storage
+  // CDR (legacy): vault UUID for the secret panel system prompt
+  promptVaultUuid      String?
 
   // Source material attribution (preserves original author for Story Protocol & NFT metadata)
   authorParagraphUsername String?  // Original author's Paragraph username (e.g., "fred" from Fred Wilson)
@@ -150,9 +153,8 @@ model Game {
   approvedAt DateTime?
   rejectionReason String? @db.Text
 
-  // Lit Protocol: NFT-gated secret panel (encrypted epilogue)
-  secretPanelCiphertext    String? @db.Text // Encrypted panel content
-  secretPanelDataHash      String? // Hash for Lit Protocol decryption verification
+  // Inco: secret panel pre-encryption JSON (cleared after on-chain storage)
+  secretPanelCiphertext    String? @db.Text
   secretPanelImagePrompt   String? @db.Text // Image generation prompt for the secret panel
   secretPanelGenerated     Boolean @default(false) // Whether secret panel was generated
 
@@ -179,6 +181,8 @@ model Game {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  dailyChallengeSessions DailyChallengeSession[]
 
   @@map("games")
 }
@@ -626,4 +630,44 @@ model FarcasterNotificationToken {
   @@unique([fid, token])
   @@index([fid])
   @@map("farcaster_notification_tokens")
+}
+
+// ── Daily Challenge (Inco confidential game sessions + BasePaint crossover) ──
+
+model DailyChallenge {
+  id          String   @id @default(cuid())
+  day         Int      @unique // 1-based day number (matches BasePaint day)
+  sourceType  String   // "article" | "marketing-copy" | "basepaint"
+  sourceUrl   String?  // article URL or BasePaint day URL
+  basePaintDay Int?    // BasePaint day number if sourceType = "basepaint"
+  theme       String?  // BasePaint theme name or article title
+  palette     String[] // color palette (BasePaint) or empty
+  canvasUrl   String?  // BasePaint canvas image URL
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  sessions    DailyChallengeSession[]
+
+  @@map("daily_challenges")
+}
+
+model DailyChallengeSession {
+  id                  String   @id @default(cuid())
+  challengeId         String
+  gameId              String
+  playerAddress       String?
+  incoSessionId       String?  @unique // on-chain session ID from DailyChallengeVault
+  score               Int?     // revealed score (null until reveal)
+  rank                Int?
+  revealed            Boolean  @default(false)
+  revealedModifierIds Int[]   // 5 modifier IDs revealed at the finale
+  revealedAt          DateTime?
+
+  createdAt   DateTime @default(now())
+
+  challenge   DailyChallenge @relation(fields: [challengeId], references: [id])
+  game        Game            @relation(fields: [gameId], references: [id])
+
+  @@index([challengeId, score(sort: Desc)])
+  @@map("daily_challenge_sessions")
 }

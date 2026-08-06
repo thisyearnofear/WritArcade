@@ -34,20 +34,20 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
           const data = await response.json()
 
           if (!response.ok) {
-            throw new Error(data.error || 'Failed to authorize vault access')
+            throw new Error(data.error || 'Failed to authorize answer access')
           }
 
           if (data.status === 'ready_for_decryption') {
-            // Lazy-load the CDR SDK (5.5 MB WASM + Emscripten loader) only when
-            // we actually need to decrypt, so it doesn't bloat the initial bundle.
-            const { createUserCdrClient, readVaultData } = await import('@/domains/story/services/cdr.service')
-            const client = await createUserCdrClient(walletClient as unknown as WalletClient<Transport, Chain, Account>)
-            if (!client) {
-              throw new Error('CDR client unavailable')
+            if (!data.incoHandle) {
+              throw new Error('No decryption handle returned')
             }
-            const answer = await readVaultData(client, game.wordleAnswerVaultUuid!)
+            const { decryptWordleAnswer, formatHandle } = await import('@/lib/inco')
+            const answer = await decryptWordleAnswer(
+              formatHandle(data.incoHandle),
+              walletClient as unknown as WalletClient<Transport, Chain, Account>
+            )
             if (!answer) {
-              throw new Error('Failed to decrypt answer from vault')
+              throw new Error('Failed to decrypt answer via Inco')
             }
             setDecryptedAnswer(answer)
           }
@@ -78,7 +78,7 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
         <div className="text-center space-y-3">
           <p className="text-amber-400 font-medium">Answer Not Yet Available</p>
           <p className="text-sm text-muted-foreground max-w-sm">
-            This puzzle's answer will be vaulted via Story CDR after generation is complete.
+            This puzzle's answer is encrypted on-chain via Inco after generation.
           </p>
         </div>
       </div>
@@ -193,7 +193,7 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
             </div>
             {game.wordleAnswerVaultUuid && (
               <span className="text-[10px] font-mono tracking-tight px-1.5 py-0.5 rounded-full border border-emerald-600/40 text-emerald-400 bg-emerald-950/40">
-                Vaulted via CDR
+                Encrypted via Inco
               </span>
             )}
           </div>

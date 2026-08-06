@@ -59,7 +59,6 @@ const nextConfig = {
         { source: '/api/generate-image/:path*', destination: `${API_BACKEND_URL}/api/generate-image/:path*` },
         { source: '/api/generate-audio', destination: `${API_BACKEND_URL}/api/generate-audio` },
         { source: '/api/user/balance', destination: `${API_BACKEND_URL}/api/user/balance` },
-        { source: '/api/cdr/vault', destination: `${API_BACKEND_URL}/api/cdr/vault` },
       ],
       afterFiles: [],
       fallback: [],
@@ -103,26 +102,6 @@ const nextConfig = {
       test: /node_modules\/(thread-stream|pino)\/.*\.(test|spec|indexes)/,
       loader: 'ignore-loader',
     });
-
-    // The @piplabs/cdr-crypto Emscripten loader does `await import('node:module')`
-    // and `require('node:fs' | 'node:url' | 'node:path')`. Webpack 5 throws
-    // `UnhandledSchemeError` on `node:` URIs before any resolver runs, so we
-    // rewrite `node:foo` → `foo` and then stub the bare names. The calls are
-    // guarded by `if (ENVIRONMENT_IS_NODE)` in the loader and are never reached
-    // in the browser.
-    config.plugins.push(
-      new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
-        resource.request = resource.request.replace(/^node:/, '');
-      })
-    );
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      module: false,
-      fs: false,
-      path: false,
-      crypto: false,
-      url: false,
-    };
 
     // Stub out the problematic baseAccount connector (wagmi/connectors).
     // We don't use Coinbase Smart Wallet's baseAccount; this avoids the `ox`

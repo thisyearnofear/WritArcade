@@ -1,8 +1,9 @@
 [profile.default]
 src = "contracts/src"
 out = "contracts/out"
-lib_paths = ["contracts/lib"]
-solc_version = "0.8.20"
+libs = ["node_modules"]
+allow_paths = ["."]
+solc = "0.8.29"
+evm_version = "cancun"
 
-[etherscan]
-mezo-testnet = { key = "${MEZO_EXPLORER_API_KEY}", url = "https://explorer.test.mezo.org/api" }
+# Prefer building from contracts/ — see contracts/foundry.toml and contracts/deploy.md

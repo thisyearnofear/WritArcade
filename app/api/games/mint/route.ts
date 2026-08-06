@@ -331,6 +331,23 @@ export async function PATCH(request: NextRequest) {
     // Returns asset IDs so the client can register derivative IPs on Story Protocol
     const extractedAssetIds = await GameDatabaseService.extractAndSaveGameAssets(gameId)
 
+    // After successful mint, attempt to store the secret panel on-chain via Inco.
+    // Non-blocking: if it fails, the game still works. CDR fallback remains for legacy games.
+    if (nftTokenId) {
+      try {
+        const { config } = await import('@/lib/config')
+        if (config.features.inco && game?.slug) {
+          await fetch(`${request.nextUrl.origin}/api/games/${game.slug}/inco-store`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nftTokenId: nftTokenId.toString(), walletAddress: wallet }),
+          })
+        }
+      } catch (incoError) {
+        console.error('[Inco] Secret panel on-chain storage failed (non-blocking):', incoError)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {

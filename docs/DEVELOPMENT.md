@@ -142,7 +142,8 @@ lib/                    # Cross-cutting infrastructure
 ├── ai-cache.ts         # AI generation caching
 ├── latency-monitor.ts  # P95 latency monitoring
 ├── story-protocol.*    # Story Protocol SDK
-├── lit-protocol.*      # Lit Protocol encryption
+├── inco.ts             # Inco confidential compute (secret panels)
+├── daily-challenge.ts  # Daily challenge server helpers
 ├── hypercerts.*        # Impact certificates
 └── contracts.ts        # On-chain helpers
 
@@ -173,7 +174,12 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 - `POST /api/games/mint` - Mint game as NFT with WriterCoinPayment
 - `GET /api/games/my-games` - List user's games
 - `POST /api/games/[slug]/fund` - Link a verified payment to an unfunded game (enables minting)
-- `POST /api/games/[slug]/secret-panel` - Decrypt NFT-gated content
+- `POST /api/games/[slug]/secret-panel` - NFT-gated secret panel handle(s) for Inco decrypt
+- `POST /api/games/[slug]/inco-store` - Store secret panel on-chain after mint
+- `POST /api/daily-challenge/start` - Start / fetch today's challenge
+- `POST /api/daily-challenge/setup` - Shuffle on-chain modifier deck (also `GET` via Vercel Cron)
+- `POST /api/daily-challenge/[id]/record-choice` - Record encrypted score delta
+- `POST /api/daily-challenge/[id]/reveal` - Submit leaderboard after on-chain reveal
 - `POST /api/games/[slug]/start` - Start a game session; logs `started` resonance event
 - `POST /api/games/[slug]/play` - Increment play counter; logs `completed` resonance event
 - `POST /api/games/chat` - Process a player choice; logs `choice` resonance event

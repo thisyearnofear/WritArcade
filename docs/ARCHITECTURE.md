@@ -25,8 +25,8 @@ Article URL
 **Backend**: Next.js API routes + Prisma + PostgreSQL  
 **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (image generation)  
 **Mezo**: MUSD (Bitcoin-backed stablecoin) for payments; Mezo Matsnet (testnet)
-**IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove fallback) + **Story CDR (TEE-backed confidentiality)**
-**Access Control**: Story CDR token-gated vaults for secret panels; Lit Protocol remains legacy support
+**IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove fallback)
+**Access Control**: Inco confidential compute (on-chain encrypted secret panels via euint256 handles + attested decrypt)
 **Impact**: Hypercerts (AT Protocol impact certificates)
 
 ### Project Structure
@@ -58,7 +58,7 @@ writarcade/
 │   ├── latency-monitor.ts  # P50/P95/P99 latency monitoring
 │   ├── wallet/             # Runtime wallet abstraction
 │   ├── story-protocol.*    # Story Protocol integration
-│   ├── lit-protocol.*      # Legacy Lit Protocol encryption
+│   ├── inco.ts             # Inco confidential compute (secret panels)
 │   ├── hypercerts.*        # Impact certificates
 │   └── contracts.ts        # On-chain contract helpers
 ├── contracts/              # Solidity contracts
@@ -144,15 +144,20 @@ const data = await deduplicate('games:featured', () =>
 - Client-side wallet signing (no platform keys)
 - PIL licenses, derivative tracking, royalty claiming
 
-**`lib/lit-protocol.service.ts`** - Decentralized encryption  
-- ERC721 ownership check on Base
-- Server-side encryption, client-side decryption
+**`lib/inco.ts`** - Inco confidential compute
+- On-chain encryption of secret panels (chunked) and Wordle answers via `@inco/lightning-js`
+- Attested decrypt via wallet client (no WASM, no backend proxy)
+- Inco fee reads from Lightning singleton (`0x4b9911b0191B0b6a6eA8F2Ed562e20Cff5AC8624`)
+- Access control enforced by Inco covalidators (`e.allow(handle, nftOwner)`)
 
-**`domains/story/services/cdr.service.ts`** - Confidential Data Rails
-- Platform client vaults secret epilogues and Wordle answers on Story Aeneid
-- User client decrypts vaulted data from the browser with wallet-backed CDR access
-- Secret panel read conditions use CDR `tokenGate` against the configured Game NFT contract
-- Runtime unlock additionally verifies exact minted NFT ownership and completed 5-panel gameplay
+**`lib/daily-challenge.ts`** - Daily challenge server helpers
+- Modifier deck (`lib/modifiers.json`), BasePaint source fetching
+- Server-side modifier decrypt for AI prompts (`narrativeOperator` wallet)
+- Session manager wallet client for `recordChoice` / deck shuffle
+
+**`lib/daily-challenge-client.ts`** - Daily challenge browser helpers
+- On-chain `startSession` / `completeAndReveal` via wagmi
+- Session state in `sessionStorage` (no private keys)
 
 **`lib/hypercerts.service.ts`** - Impact certificates  
 - AT Protocol (AtpAgent) for PDS record creation
@@ -176,9 +181,19 @@ User
 Game
 ├─ id, userId, articleUrl, title, genre, difficulty
 ├─ gameState (JSON), nftId (optional)
-├─ secretPanelCiphertext, secretPanelDataHash
+├─ secretPanelCiphertext (pre-encryption JSON; cleared after on-chain store)
+├─ promptVaultUuid ("inco:<tokenId>" after mint)
 ├─ hypercertUri, hypercertCid
 └─ createdAt
+
+DailyChallenge
+├─ id, day (unique), sourceType, theme, palette, canvasUrl
+└─ sessions → DailyChallengeSession
+
+DailyChallengeSession
+├─ id, challengeId, gameId, playerAddress
+├─ incoSessionId (on-chain), score, rank, revealedModifierIds
+└─ revealed, revealedAt
 
 GamePlayEvent  (Resonance telemetry)
 ├─ id, gameId, sessionId
@@ -212,6 +227,16 @@ WriterCoin
 - Payments with configurable revenue splits
 - Multi-coin support, reentrancy guards, pause control
 - Pulls full mint cost, distributes shares, and refunds undistributed mint remainder
+
+**SecretPanelVault** (`NEXT_PUBLIC_SECRET_PANEL_VAULT_ADDRESS`)  
+- Base mainnet: [`0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8`](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8)
+- Multi-chunk encrypted secret panels + Wordle answers
+- `VAULT_MANAGER_ROLE` held by server wallet (never commit private keys)
+
+**DailyChallengeVault** (`NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS`)  
+- Base mainnet: [`0x0bb738ee11839baa44aa46984997f9417733dcce`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce)
+- Shared shuffled modifier deck, per-player sessions, encrypted scoring
+- `narrativeOperator` = server wallet (decrypts cards for AI only)
 
 ### Mezo Matsnet (Chain ID: 31611)
 
@@ -253,8 +278,8 @@ WriterCoin
 2. **Domain separation** - Quick Games vs Asset Marketplace share infrastructure
 3. **Centralized payments** - All payment logic through `domains/payments`
 4. **Client-side IP ownership** - Users sign Story Protocol transactions with their wallet
-5. **Non-blocking enrichment** - CDR vaulting, image generation, and Hypercerts run async post-creation
-6. **Confidentiality by Design** - Transitioning to TEE-backed vaults (CDR) to protect **Prompt IP** and **Trade Secrets**. Ensures creator "prompts" are treated as valuable, private intellectual property rather than public metadata.
+5. **Non-blocking enrichment** - Inco secret panel storage, image generation, and Hypercerts run async post-creation
+6. **Confidentiality by Design** - Secret panels and daily modifier cards use Inco confidential compute on Base mainnet
 7. **Progressive disclosure** - Entry flow avoids wallet/chain/payment on first view. Users paste a URL or marketing copy → play a game → optionally connect wallet or buy credits for on-chain actions.
 8. **Progressive identity** - Users can start anonymously (guest cookie), attach an email for continuity, and later link a wallet. Identities merge automatically so games and credits survive the upgrade.
 9. **Loading/Error boundaries** - Every route segment has `loading.tsx` and `error.tsx` with shimmer skeletons and contextual error cards.

@@ -9,6 +9,9 @@ const startGameSchema = z.object({
   sessionId: z.string().uuid(),
   ref: z.string().max(200).optional(),
   embedded: z.boolean().optional(),
+  dailyChallenge: z.object({
+    incoSessionId: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+  }).optional(),
 })
 
 export async function POST(
@@ -19,7 +22,7 @@ export async function POST(
     const params = await context.params
 
     const body = await request.json()
-    const { sessionId, ref, embedded } = startGameSchema.parse(body)
+    const { sessionId, ref, embedded, dailyChallenge } = startGameSchema.parse(body)
     
     // Get game by slug
     const game = await GameDatabaseService.getGameBySlug(params.slug)
@@ -85,20 +88,55 @@ export async function POST(
           // Get user AI preferences
           const userPreferences = await UserAIPreferenceService.getUserPreferences()
 
-          // Start the game using AI service (panel 1 of 5)
-          const gameStream = GameAIService.startGame(
-            {
-              title: game.title,
-              description: game.description,
-              genre: game.genre,
-              subgenre: game.subgenre,
-              tagline: game.tagline,
-            },
-            sessionId,
-            game.promptModel,
-            game.articleContext, // Pass article context for narrative continuity
-            userPreferences
-          )
+          let gameStream
+
+          if (dailyChallenge?.incoSessionId && process.env.FEATURE_DAILY_CHALLENGE === 'true') {
+            const { getModifierPromptForPanel } = await import('@/lib/daily-challenge')
+            const modifierPrompt = await getModifierPromptForPanel(
+              dailyChallenge.incoSessionId,
+              0
+            )
+
+            const basePrompt = game.articleContext || game.promptText || game.description
+
+            if (modifierPrompt) {
+              gameStream = GameAIService.generatePanelWithModifier(
+                modifierPrompt,
+                0,
+                basePrompt,
+                [],
+                userPreferences
+              )
+            } else {
+              gameStream = GameAIService.startGame(
+                {
+                  title: game.title,
+                  description: game.description,
+                  genre: game.genre,
+                  subgenre: game.subgenre,
+                  tagline: game.tagline,
+                },
+                sessionId,
+                game.promptModel,
+                game.articleContext,
+                userPreferences
+              )
+            }
+          } else {
+            gameStream = GameAIService.startGame(
+              {
+                title: game.title,
+                description: game.description,
+                genre: game.genre,
+                subgenre: game.subgenre,
+                tagline: game.tagline,
+              },
+              sessionId,
+              game.promptModel,
+              game.articleContext,
+              userPreferences
+            )
+          }
 
           let assistantContent = ''
           

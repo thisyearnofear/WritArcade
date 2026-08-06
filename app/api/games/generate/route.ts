@@ -4,7 +4,6 @@ import { GameDatabaseService } from '@/domains/games/services/game-database.serv
 import { ImageGenerationService } from '@/domains/games/services/image-generation.service'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
 import { WordleService } from '@/domains/games/services/wordle.service'
-import { vaultWordleAnswer } from '@/domains/story/services/cdr.service'
 import type { GameGenerationResponse } from '@/domains/games/types'
 import { getActor } from '@/services/auth'
 import { DemoEntitlementService, FREE_DEMO_OWNERSHIP_SOURCE } from '@/domains/games/services/demo-entitlement.service'
@@ -12,7 +11,7 @@ import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 import { config, logger } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
-import { getMintConfig, getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
+import { getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 import { buildMarketingCopyPrompt } from '@/domains/games/services/generation-prompts'
 import { deduplicateGeneration, buildGenerationCacheKey } from '@/lib/ai-cache'
@@ -232,8 +231,8 @@ Your game MUST authentically interpret this article's core themes. Players shoul
       const randomSeed = validatedData.url ? `${validatedData.url}-${new Date().toISOString().split('T')[0]}` : new Date().toISOString()
       const answer = WordleService.deriveAnswerFromText(processedContent.text, undefined, randomSeed)
 
-      // CDR: Vault the wordle answer (never stored in plaintext)
-      const wordleAnswerVaultUuid = await vaultWordleAnswer(answer)
+      // Inco: answer is encrypted on-chain at mint time via SecretPanelVault
+      const wordleAnswerVaultUuid = 'inco-pending'
 
       gameData = {
         title: processedContent.title
@@ -482,11 +481,10 @@ async function enrichGameInBackground(
   gameSlug: string,
   gameData: GameGenerationResponse,
   articleText?: string,
-  writerCoinId?: string
+  _writerCoinId?: string
 ): Promise<void> {
-  // Generate secret panel + vault with Story CDR
+  // Generate secret panel and store it for Inco on-chain encryption at mint time.
   try {
-    const { vaultSystemPrompt } = await import('@/domains/story/services/cdr.service')
     const { GameAIService } = await import('@/domains/games/services/game-ai.service')
 
     const secretPanel = await GameAIService.generateSecretPanel(
@@ -499,34 +497,26 @@ async function enrichGameInBackground(
       articleText?.substring(0, 800)
     )
 
-    // Vault the secret panel data using CDR (NFT-gated via condition contract)
-    const nftConfig = writerCoinId ? getMintConfig(writerCoinId) : undefined
-    const promptVaultUuid = await vaultSystemPrompt(
-      JSON.stringify(secretPanel),
-      nftConfig?.contractAddress
-    )
+    const secretPanelJson = JSON.stringify(secretPanel)
 
-    // Update DB with vault UUID
+    // Store the plaintext temporarily in the DB.
+    // It will be encrypted on-chain via SecretPanelVault.storeSecretPanel()
+    // when the game is minted (tokenId becomes available).
     await prisma.game.update({
       where: { id: gameId },
       data: {
-        promptVaultUuid,
-        cdrReadConditionType: 'tokenGate',
-        cdrVaultedAt: new Date(),
+        secretPanelCiphertext: secretPanelJson,
         secretPanelImagePrompt: secretPanel.imagePrompt,
         secretPanelGenerated: true,
       },
     })
 
-    logger.info('Secret panel vaulted with Story CDR', {
+    logger.info('Secret panel generated for Inco encryption at mint time', {
       gameId,
-      promptVaultUuid,
-      readCondition: nftConfig
-        ? `tokenGate(${nftConfig.contractAddress})`
-        : 'tokenGate(default-game-nft)',
+      encryption: 'inco',
     })
   } catch (err) {
-    logger.error('Secret panel vaulting failed', err, { gameId })
+    logger.error('Secret panel generation failed', err, { gameId })
   }
 
   // Create hypercert impact certificate
