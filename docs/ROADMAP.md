@@ -78,7 +78,7 @@
 - ✅ **One-click payment flow** — removed intermediate "review payment" gate; PaymentOption always visible; pay and generate in one action
 - ✅ **Simplified form UX** — Wordle mode hidden for clean narrative focus; submit button always visible; success state resets deferred to modal close
 - ✅ **Critial env bug fix** — `NEXT_PUBLIC_MEZO_PAYMENT_SPLITTER_TESTNET` was pointing to MUSD token address instead of the splitter contract
-- ✅ **Hackathon submission doc** — `HACKATHON_SUBMISSION.md` with architecture, contract addresses, flow diagrams
+- ✅ **Hackathon submission** — architecture, contract addresses, flow diagrams (doc removed after the hackathon)
 - ✅ **TypeScript fixed** — removed deprecated `ignoreDeprecations`, installed deps, fixed null-check — `tsc --noEmit` passes cleanly
 - ✅ **Wordle revived** — free tier toggle restored alongside Story, Farcaster sharing on win screen, Daily Wordle section on homepage
 - ✅ **Mezo Analytics dashboard** — `/mezo/analytics` page with live on-chain reads from MezoBoostedSplitter (viem → API route → stat cards, boosted ratio, recent activity feed); Goldsky pipeline config updated for v2 contract address

@@ -47,7 +47,6 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
 | [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Inco, Hypercerts), writer coins |
 | [Roadmap](./docs/ROADMAP.md) | Completed phases, current status, future plans |
-| [Hackathon Submission](./HACKATHON_SUBMISSION.md) | Mezo Hackathon submission — MUSD track, architecture, contracts |
 
 ## Tech stack
 
