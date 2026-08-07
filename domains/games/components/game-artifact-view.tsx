@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   BookOpen,
+  ChevronDown,
   ExternalLink,
   Gamepad2,
   GalleryHorizontalEnd,
@@ -44,6 +45,15 @@ function formatDate(value?: Date) {
   }).format(new Date(value))
 }
 
+function hostnameLabel(url?: string | null) {
+  if (!url) return '—'
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
 function getTokenLabel(game: Game) {
   if (!game.writerCoinId) return 'Writer coin'
   if (game.writerCoinId === 'musd-testnet') return MUSD_CONFIG.testnet.symbol
@@ -60,15 +70,16 @@ function getRemixHref(game: Game) {
   return `/generate${params.toString() ? `?${params.toString()}` : ''}`
 }
 
-function DetailRow({ label, value, href }: { label: string; value: string; href?: string | null }) {
+function DetailRow({ label, value, href, title }: { label: string; value: string; href?: string | null; title?: string }) {
   const content = href ? (
     <a href={href} target="_blank" rel="noopener noreferrer"
-      className="inline-flex max-w-full items-center gap-1 text-sm text-white hover:text-emerald-200">
+      className="inline-flex max-w-full items-center gap-1 text-sm text-white hover:text-emerald-200"
+      title={title || value}>
       <span className="truncate">{value}</span>
       <ExternalLink className="h-3 w-3 shrink-0" />
     </a>
   ) : (
-    <span className="text-sm text-white truncate">{value}</span>
+    <span className="text-sm text-white truncate" title={title || value}>{value}</span>
   )
   return (
     <div className="flex items-center justify-between gap-2 py-1.5 border-b border-white/8 last:border-0">
@@ -189,9 +200,17 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
             <aside className="rounded-lg border border-white/10 bg-black/50 p-4 backdrop-blur text-sm">
               <DetailRow label="Creator" value={shortAddress(ownerAddress)} />
               <DetailRow label="Writer" value={game.authorParagraphUsername || game.publicationName || tokenLabel} />
-              <DetailRow label="Source" value={game.articleUrl || '—'} href={game.articleUrl} />
-              <DetailRow label="Created" value={formatDate(game.createdAt)} />
-              <DetailRow label="Mode" value={game.mode === 'wordle' ? 'Word puzzle' : '5-panel comic'} />
+              <DetailRow label="Source" value={hostnameLabel(game.articleUrl)} href={game.articleUrl} title={game.articleUrl || undefined} />
+              <details className="group">
+                <summary className="flex cursor-pointer select-none list-none items-center justify-between py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/45 transition-colors hover:text-white/70 [&::-webkit-details-marker]:hidden">
+                  Details
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="pb-1">
+                  <DetailRow label="Created" value={formatDate(game.createdAt)} />
+                  <DetailRow label="Mode" value={game.mode === 'wordle' ? 'Word puzzle' : '5-panel comic'} />
+                </div>
+              </details>
             </aside>
           </div>
         </div>
