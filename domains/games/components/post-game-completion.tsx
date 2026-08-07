@@ -150,11 +150,8 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
         </div>
       </div>
 
-      {showEpilogueCta && (
-        <SecretEpilogueFinaleCta game={game} nftMinted={Boolean(game.nftTokenId)} className="mb-8" />
-      )}
-
-      {/* Viral share card */}
+      {/* Viral share card: the emotional payoff and social action come before
+          ownership, export, or other optional paths. */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -203,6 +200,10 @@ Open Daily Challenge
           </div>
         </div>
       </motion.div>
+
+      {showEpilogueCta && (
+        <SecretEpilogueFinaleCta game={game} nftMinted={Boolean(game.nftTokenId)} className="mb-8" />
+      )}
 
       {/* Export card */}
       <motion.div
@@ -273,18 +274,18 @@ Open Daily Challenge
       >
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
-            href="/generate"
+            href="/games"
             className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-3.5 text-sm font-bold text-white hover:from-purple-500 hover:to-pink-500 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Gamepad2 className="w-4 h-4" />
+            Play another story
+          </Link>
+          <Link
+            href="/generate"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/5 px-5 py-3.5 text-sm font-bold text-purple-200 hover:bg-purple-500/10 hover:border-purple-500/50 transition-all"
           >
             <Sparkles className="w-4 h-4" />
             Create your own game
-          </Link>
-          <Link
-            href="/my-games"
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/5 px-5 py-3.5 text-sm font-bold text-purple-200 hover:bg-purple-500/10 hover:border-purple-500/50 transition-all"
-          >
-            <Gamepad2 className="w-4 h-4" />
-            My games
           </Link>
         </div>
 
@@ -298,13 +299,7 @@ Open Daily Challenge
               More from @{game.authorParagraphUsername}
             </Link>
           )}
-          <Link
-            href="/games"
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
-          >
-            <Gamepad2 className="w-4 h-4" />
-            Play another
-          </Link>
+
         </div>
       </motion.div>
 

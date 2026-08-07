@@ -39,6 +39,7 @@ interface ComicPanelCardProps {
   pendingOptionId?: number | null
   responseReady?: { text: boolean; images: boolean }
   narrativeImage?: string | null
+  imageStatus?: 'pending' | 'ready' | 'failed'
   imageModel?: string
   shouldRevealContent?: boolean
   showLoadingState?: boolean
@@ -73,6 +74,7 @@ export function ComicPanelCard({
   onImageRegenerate,
   pendingOptionId,
   narrativeImage,
+  imageStatus,
   imageModel,
   shouldRevealContent = true,
   showLoadingState = false,
@@ -171,8 +173,7 @@ export function ComicPanelCard({
    */
   const imageFailed = Boolean(
     !narrativeImage &&
-    imageHistory.length > 0 &&
-    imageHistory[imageHistory.length - 1]?.model === 'failed' &&
+    imageStatus === 'failed' &&
     !isRegenerating
   )
 
@@ -392,9 +393,10 @@ export function ComicPanelCard({
                 </>
               ) : showLoadingState ? (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-black relative">
-                  <div className="text-center">
+                  <div className="text-center px-4">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: primaryColor }} />
-                    <p className="text-muted-foreground text-sm">Preparing next panel...</p>
+                    <p className="text-muted-foreground text-sm">The story is ready — painting this panel now...</p>
+                    <p className="text-muted-foreground/70 text-xs mt-1">You can keep reading while the visual arrives.</p>
                   </div>
                 </div>
               ) : imageFailed && onImageRegenerate ? (

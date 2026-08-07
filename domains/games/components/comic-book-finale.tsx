@@ -165,10 +165,13 @@ export function ComicBookFinale({
   const [fontsLoaded, setFontsLoaded] = useState(false)
 
   useEffect(() => {
-    if (typeof document !== 'undefined' && 'fonts' in document) {
-      document.fonts.ready.then(() => setFontsLoaded(true))
-    } else {
-      setFontsLoaded(true)
+    if (typeof document === 'undefined' || !('fonts' in document)) return
+    let cancelled = false
+    document.fonts.ready.then(() => {
+      if (!cancelled) setFontsLoaded(true)
+    })
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -217,18 +220,7 @@ export function ComicBookFinale({
     }
   }
 
-  const firstVideoUrl = video.firstVideoUrl
 
-  const shareData = {
-    gameTitle,
-    genre,
-    panelCount: totalPanels,
-    title: gameTitle,
-    text: `Check out my ${genre} comic "${gameTitle}" created with writersarcade! ${totalPanels} panels of interactive storytelling.`,
-    url: typeof window !== 'undefined' ? window.location.href : '',
-    author: authorParagraphUsername,
-    videoUrl: firstVideoUrl ?? undefined,
-  }
 
   const handleMintWithMetadata = async () => {
     if (!mintAvailable) return
@@ -431,7 +423,7 @@ export function ComicBookFinale({
           </div>
         </div>
 
-        {/* Footer - Action buttons */}
+        {/* Utility actions stay secondary to the completion card below. */}
         <FinaleFooter
           genre={genre}
           totalPanels={totalPanels}
@@ -443,7 +435,6 @@ export function ComicBookFinale({
           panels={panels}
           currentPanel={currentPanel}
           currentPanelIndex={currentPanelIndex}
-          shareData={shareData}
           gameSlug={gameSlug}
           isOwner={isOwner}
           hasSecretEpilogue={hasSecretEpilogue}

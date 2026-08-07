@@ -8,7 +8,6 @@ import { Loader2, ArrowRightLeft, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ComicBookFinale, type ComicBookFinalePanelData } from '../comic-book-finale'
 import { PostGameCompletion } from '../post-game-completion'
-import { SecretEpilogueFinaleCta } from '@/components/game/secret-epilogue-finale-cta'
 import { Game } from '../../types'
 import type { ChatEntry } from '../../hooks/use-game-session'
 import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/domains/story/services/story-sdk-client'
@@ -272,9 +271,6 @@ export function ComicFinaleScreen({
 
   return (
     <div>
-      <div className="mx-auto max-w-6xl px-4 pt-6">
-        <SecretEpilogueFinaleCta game={game} nftMinted={Boolean(game.nftTransactionHash || game.nftTokenId)} />
-      </div>
       <ComicBookFinale
         gameId={game.id}
         gameSlug={game.slug}

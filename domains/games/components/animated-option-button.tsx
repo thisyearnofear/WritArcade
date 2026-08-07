@@ -30,7 +30,7 @@ export function AnimatedOptionButton({
     <motion.button
       onClick={onClick}
       disabled={disabled}
-      className="group relative p-4 sm:p-4 rounded-lg border-2 text-left transition-all duration-200 hover:shadow-lg hover:shadow-current disabled:opacity-50 disabled:cursor-not-allowed"
+      className="group relative p-4 sm:p-4 rounded-lg border-2 text-left transition-all duration-200 hover:shadow-lg hover:shadow-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
       style={{
         borderColor: isSelected ? primaryColor : `${primaryColor}50`,
         backgroundColor: isSelected ? `${primaryColor}20` : `${primaryColor}08`,

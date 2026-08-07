@@ -61,14 +61,16 @@ Optimize for confidence and clarity:
 Optimize for agency and consequence:
 
 - Choices should be the main interaction.
-- Story signals may be shown as feedback, but should not become a technical score wall.
+- Narrative and choices become available as soon as the response text is ready; image generation continues progressively in the panel background.
+- Story signals may be shown as feedback, but should not become a technical score wall or imply a hidden penalty.
 - Play remains untimed; reading speed is never a core-game penalty.
 
 ### After completion
 
 Optimize for expansion:
 
-- Share the playable story.
+- Share the playable story and ending first.
+- Replay another story or start a new creation path.
 - Own and unlock the secret epilogue where applicable.
 - View reader insights for creators.
 - Optionally turn the completed comic into a short cinematic animation.

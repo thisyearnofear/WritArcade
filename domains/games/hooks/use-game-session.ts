@@ -4,6 +4,7 @@ import { useVisualConfig } from '@/contexts/visual-config.context'
 import { trackEvent } from '@/services/analytics'
 import { MoodModifierService } from '../services/mood-modifier.service'
 import { parsePanel } from '../utils/text-parser'
+import { isNarrativeReady, canContinueAfterNarrative } from '../utils/playback-readiness'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'
 import { loadDailyChallengeState } from '@/lib/daily-challenge-client'
 import { config } from '@/lib/config'
@@ -15,6 +16,7 @@ export interface ChatEntry extends ChatMessage {
   imagePromptText?: string
   imageRating?: number
   narrativeImage?: string | null
+  imageStatus?: 'pending' | 'ready' | 'failed'
   imageHistory?: Array<{ imageUrl: string | null; model: string; timestamp: number }>
 }
 
@@ -140,6 +142,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
         return {
           ...msg,
           narrativeImage: result.imageUrl,
+          imageStatus: result.imageUrl ? 'ready' : 'failed',
           imageModel: result.model,
           imageHistory: [...(msg.imageHistory || []), result]
         }
@@ -271,6 +274,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
                   options: currentOptions,
                   model: game.promptModel,
                   createdAt: new Date(),
+                  imageStatus: 'pending',
                 }
 
                 setMessages([finalMessage])
@@ -303,7 +307,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
       setStartError('Could not start this story. Try again or pick another game in the arcade.')
       setIsStarting(false)
     }
-  }, [game, toast, handleImageGenerated, options?.embedded, options?.ref, options?.isDailyActive])
+  }, [game, toast, handleImageGenerated, options?.embedded, options?.ref, options?.isDailyActive, preferences?.preferredModel])
 
   /**
    * Generate epilogue + reflection after game completes
@@ -359,6 +363,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
           role: 'assistant',
           content: epilogue,
           narrativeImage: imageResult.imageUrl,
+          imageStatus: imageResult.imageUrl ? 'ready' : 'failed',
           imageModel: imageResult.model,
           model: game.promptModel,
           createdAt: new Date(),
@@ -379,6 +384,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
           gameId: game.id,
           role: 'assistant',
           content: epilogue,
+          imageStatus: 'failed',
           model: game.promptModel,
           createdAt: new Date(),
         }
@@ -400,7 +406,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
         panelCount: assistantMessageCount,
       })
     }
-  }, [sessionId, game, userChoices, preferences])
+  }, [sessionId, game, userChoices, preferences, assistantMessageCount])
 
   /**
    * Send message - continues the game conversation
@@ -455,6 +461,9 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
 
       let currentMessage = ''
       let currentOptions: GameplayOption[] = []
+      // Keep the panel identity stable across streamed chunks and async image
+      // generation. React state updaters are not a safe place to capture IDs.
+      const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
       while (true) {
         const { done, value } = await reader.read()
@@ -478,13 +487,14 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
                     lastMessage.content = currentMessage
                   } else {
                     newMessages.push({
-                      id: `assistant-${Date.now()}`,
+                      id: assistantMessageId,
                       sessionId,
                       gameId: game.id,
                       role: 'assistant',
                       content: currentMessage,
                       model: game.promptModel,
                       createdAt: new Date(),
+                      imageStatus: 'pending',
                     })
                   }
 
@@ -493,13 +503,13 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
               } else if (data.type === 'options') {
                 currentOptions = data.options || []
               } else if (data.type === 'end') {
-                let messageId = ''
+                const messageId = assistantMessageId
                 setMessages(prev => {
                   const newMessages = [...prev]
                   const lastMessage = newMessages[newMessages.length - 1]
                   if (lastMessage) {
-                    messageId = lastMessage.id
                     lastMessage.options = currentOptions
+                    lastMessage.imageStatus = 'pending'
 
                     const content = lastMessage.content
                     const optionStartRegex = /[\n\r]+\s*1[.)]\s+/
@@ -576,7 +586,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
       setIsWaitingForResponse(false)
       setPendingOptionId(null)
     }
-  }, [sessionId, game, handleImageGenerated, generateEpilogue, options?.isDailyActive])
+  }, [sessionId, game, handleImageGenerated, generateEpilogue, options?.isDailyActive, assistantMessageCount, preferences?.preferredModel, toast, worldMood])
 
   /**
    * Handle option click - triggers sendMessage with the option text.
@@ -590,17 +600,17 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
       : Math.max(0, Date.now() - decisionStartedAtRef.current)
     decisionStartedAtRef.current = null
 
+    if (!canAddMorePanels) {
+      setPendingOptionId(null)
+      return
+    }
+
     setPendingOptionId(optionId)
     setUserChoices(prev => [...prev, {
       panelIndex: assistantMessageCount,
       choice: optionText,
       timestamp: new Date().toISOString()
     }])
-
-    if (!canAddMorePanels) {
-      setPendingOptionId(null)
-      return
-    }
 
     const delta = getChoiceMoodDelta(optionText)
     setLastChoiceFeedback({ panelIndex: assistantMessageCount, delta })
@@ -656,7 +666,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
     } finally {
       setRegeneratingMessageId(null)
     }
-  }, [game, handleImageGenerated, toast])
+  }, [game, handleImageGenerated, toast, preferences?.preferredModel])
 
   // Start measuring when a panel is ready. This is instrumentation only:
   // decision time is never used as a score or penalty.
@@ -666,21 +676,23 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
     }
   }, [assistantMessageCount, canAddMorePanels, isWaitingForResponse, pendingOptionId])
 
-  // Transition to game screen when initial content is ready
+  // Narrative is the playable unit. Let the player start reading and choosing
+  // while the first visual continues generating in the panel background.
   useEffect(() => {
-    if (loadingProgress.text && loadingProgress.images) {
+    if (isNarrativeReady(loadingProgress)) {
       setIsPlaying(true)
       setIsStarting(false)
     }
-  }, [loadingProgress.text, loadingProgress.images])
+  }, [loadingProgress])
 
-  // Stop waiting when both text AND images are ready
+  // Text unlocks the next choice. Image readiness is intentionally tracked
+  // separately so a slow visual can never block the story or a later choice.
   useEffect(() => {
-    if (isWaitingForResponse && responseReady.text && responseReady.images) {
+    if (isWaitingForResponse && canContinueAfterNarrative(responseReady)) {
       setIsWaitingForResponse(false)
       setPendingOptionId(null)
     }
-  }, [responseReady.text, responseReady.images, isWaitingForResponse])
+  }, [responseReady, isWaitingForResponse])
 
   return {
     // State

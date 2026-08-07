@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button'
 import { Download, Zap, Loader2, Wallet, BarChart3 } from 'lucide-react'
-import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { AttributionPair } from '@/components/ui/user-attribution'
 import { NarrationControls } from './finale-narration'
 import { VideoUpsellCTA } from './finale-video-screen'
@@ -21,16 +20,6 @@ interface FinaleFooterProps {
   panels: ComicBookFinalePanelData[]
   currentPanel?: ComicBookFinalePanelData
   currentPanelIndex: number
-  shareData: {
-    gameTitle: string
-    genre: string
-    panelCount: number
-    title: string
-    text: string
-    url: string
-    author: string
-    videoUrl?: string
-  }
   narration: ReturnType<typeof useNarration>
   video: ReturnType<typeof useVideoMotion>
   isMinting: boolean
@@ -55,7 +44,7 @@ interface FinaleFooterProps {
 }
 
 /**
- * Footer bar with attribution, narration controls, share, download, and mint.
+ * Footer bar with attribution, narration controls, utility actions, and optional ownership.
  * Extracted from ComicBookFinale to reduce its size.
  */
 export function FinaleFooter({
@@ -69,7 +58,6 @@ export function FinaleFooter({
   panels,
   currentPanel,
   currentPanelIndex,
-  shareData,
   narration,
   video,
   isMinting,
@@ -120,8 +108,6 @@ export function FinaleFooter({
             primaryColor={primaryColor}
           />
 
-          <ShareDropdown data={shareData} variant="outline" />
-
           <Button
             variant="outline"
             className="gap-2"
@@ -151,14 +137,16 @@ export function FinaleFooter({
             </a>
           )}
 
-          {mintAvailable ? (              <Button
+          {mintAvailable ? (
+            <Button
               onClick={onMint}
               disabled={isMinting}
+              variant="outline"
               className="gap-2"
-              style={{ backgroundColor: primaryColor, color: 'white' }}
+              style={{ borderColor: primaryColor, color: primaryColor }}
             >
               <Zap className="w-4 h-4" />
-              {isMinting ? 'Preparing NFT...' : hasSecretEpilogue ? 'Own & unlock' : 'Own game'}
+              {isMinting ? 'Preparing NFT...' : hasSecretEpilogue ? 'Optional: own & unlock' : 'Optional: own game'}
             </Button>
           ) : onFundGame ? (
             <Button

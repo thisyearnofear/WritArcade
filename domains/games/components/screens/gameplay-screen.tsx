@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, ChevronDown, Share2, Sparkles, Clock3, ArrowUp, ArrowDown } from 'lucide-react'
+import { BookOpen, ChevronDown, Sparkles, Clock3, ArrowUp, ArrowDown } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-strip'
@@ -72,7 +72,7 @@ export function ChoiceFeedbackBanner({
       role="status"
       aria-live="polite"
     >
-      <p className="text-xs font-bold uppercase tracking-wider text-white/80">Estimated mood direction</p>
+      <p className="text-xs font-bold uppercase tracking-wider text-white/80">Story signal from your choice</p>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
         {labels.map(({ key, label, color }) => {
           const value = feedback.delta[key]
@@ -80,13 +80,13 @@ export function ChoiceFeedbackBanner({
           return (
             <span key={key} className="inline-flex items-center gap-1.5 text-xs" style={{ color }}>
               {positive ? <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />}
-              <span>{label} {positive ? 'rose' : 'fell'} ({positive ? '+' : ''}{value})</span>
+              <span>Likely direction: {positive ? 'more' : 'less'} {label.toLowerCase()} ({positive ? '+' : ''}{value})</span>
             </span>
           )
         })}
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">
-        No time penalty{isDailyActive ? '; your choices contribute to the encrypted challenge score revealed at the finale.' : '.'}
+        The direction is a story signal, not a score or penalty{isDailyActive ? '; your choices also contribute to the encrypted challenge result revealed at the finale.' : '.'}
       </p>
     </div>
   )
@@ -130,29 +130,6 @@ export function GameplayScreen({
   sidebarExtra,
 }: GameplayScreenProps) {
 
-  const handleShare = useCallback(async () => {
-    trackEvent('share_clicked', {
-      gameSlug: game.slug,
-      panelCount: assistantMessageCount,
-    })
-
-    const shareText = `I just finished a ${game.genre} comic on WritersArcade with ${assistantMessageCount} panels.`
-    const shareUrl = typeof window !== 'undefined' ? window.location.href : undefined
-
-    try {
-      if (navigator?.share) {
-        await navigator.share({ title: game.title, text: shareText, url: shareUrl })
-        return
-      }
-      if (navigator?.clipboard) {
-        await navigator.clipboard.writeText(`${game.title}\n${shareText}\n${shareUrl || ''}`.trim())
-        return
-      }
-    } catch {
-      // Non-fatal
-    }
-  }, [game.slug, game.title, game.genre, assistantMessageCount])
-
   const handleViewComic = useCallback(() => {
     trackEvent('view_comic_clicked', {
       gameSlug: game.slug,
@@ -163,24 +140,35 @@ export function GameplayScreen({
 
   const router = useRouter()
 
-  // Keyboard shortcuts: 1-4 for choices, V for comic, S for share
+  // Keyboard shortcuts: 1-4 for choices and V for the complete comic
   useEffect(() => {
     const activeAssistant = [...messages].reverse().find(m => m.role === 'assistant' && m.options?.length)
     const options = activeAssistant?.options ?? []
 
     const handleKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLButtonElement ||
+        e.target instanceof HTMLSelectElement ||
+        e.target instanceof HTMLAnchorElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable) ||
+        document.querySelector('[role="dialog"]')
+      ) return
       const key = parseInt(e.key)
-      if (key >= 1 && key <= 4 && options[key - 1]) {
+      if (!isWaitingForResponse && canAddMorePanels && key >= 1 && key <= 4 && options[key - 1]) {
         onOptionClick(options[key - 1])
         return
       }
-      if (e.key === 'v' || e.key === 'V') handleViewComic()
-      if (e.key === 's' || e.key === 'S') handleShare()
+      if (e.key === 'v' || e.key === 'V') {
+        if (!isWaitingForResponse && !isGeneratingEpilogue && !canAddMorePanels) {
+          handleViewComic()
+        }
+      }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [messages, onOptionClick, handleShare, handleViewComic])
+  }, [messages, onOptionClick, handleViewComic, isWaitingForResponse, isGeneratingEpilogue, canAddMorePanels])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -237,7 +225,7 @@ export function GameplayScreen({
                 <h3 className="text-sm font-bold text-white mb-2">World Mood</h3>
                 <MoodIndicator mood={worldMood} />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Your choices shift the story's emotional tone.
+                  Your choices signal the story's emotional direction.
                 </p>
               </div>
 
@@ -251,10 +239,6 @@ export function GameplayScreen({
                   <li>
                     <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-white/70 mr-1">V</kbd>
                     View comic
-                  </li>
-                  <li>
-                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-white/70 mr-1">S</kbd>
-                    Share
                   </li>
                 </ul>
               </div>
@@ -360,7 +344,7 @@ export function GameplayScreen({
 
                   const isTerminal = !canAddMorePanels
 
-                  const imageReady = message.narrativeImage !== undefined
+                  const imageReady = message.imageStatus === 'ready' || message.narrativeImage !== undefined
                   const panelIndex = messages
                     .slice(0, idx + 1)
                     .filter(m => m.role === 'assistant' && !m.id.startsWith('epilogue-')).length - 1
@@ -384,9 +368,10 @@ export function GameplayScreen({
                         pendingOptionId={pendingOptionId}
                         responseReady={responseReady}
                         narrativeImage={message.narrativeImage || undefined}
+                        imageStatus={message.imageStatus}
                         imageModel={message.imageModel}
                         shouldRevealContent={true}
-                        showLoadingState={!imageReady && isWaitingForResponse}
+                        showLoadingState={!imageReady && message.imageStatus === 'pending'}
                         availableThemes={availableThemes}
                         currentTheme={game.primaryColor || 'default'}
                         aiPromptSuggestions={generateAIPromptSuggestions(message.content)}
@@ -476,10 +461,6 @@ export function GameplayScreen({
               )}
               {!canAddMorePanels && !isGeneratingEpilogue ? (
                 <>
-                  <button onClick={handleShare} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-colors">
-                    <Share2 className="w-4 h-4" />
-                    Share
-                  </button>
                     <button onClick={handleViewComic} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" style={{ backgroundColor: game.primaryColor || '#8b5cf6' }}>
                     <BookOpen className="w-4 h-4" />
                     View Comic
