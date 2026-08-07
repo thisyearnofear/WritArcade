@@ -238,6 +238,21 @@ model GameArtifactPanel {
   @@map("game_artifact_panels")
 }
 
+// Product funnel events are intentionally separate from gameplay resonance events.
+// Properties are sanitized at the analytics API boundary and contain no raw URLs,
+// wallet addresses, or article text.
+model ProductAnalyticsEvent {
+  id         String   @id @default(cuid())
+  event      String
+  properties Json?
+  path       String?
+  occurredAt DateTime @default(now())
+
+  @@index([event, occurredAt])
+  @@index([occurredAt])
+  @@map("product_analytics_events")
+}
+
 // NEW: User feedback on games (NPS, fidelity, quality)
 model GameFeedback {
   id String @id @default(cuid())

@@ -163,6 +163,8 @@ Measure the compact flow before adding more options:
 
 A new option earns a place in the primary path only if it improves a user outcome without reducing source-to-playable-story completion.
 
+The client funnel events are persisted as sanitized `ProductAnalyticsEvent` records. The persistence boundary validates known event names, stores selected outcome-safe properties, the pathname, and a server timestamp; it deliberately drops raw URLs, wallet addresses, article text, and unapproved properties. The admin report exposes event-volume ratios, not unique-user or session conversion, because the baseline intentionally does not identify users. Add a retention/cleanup policy before event volume grows materially.
+
 ## Sequencing
 
 ### Now
@@ -176,6 +178,7 @@ A new option earns a place in the primary path only if it improves a user outcom
 
 ### Next
 
+- ✅ Build the first admin-only internal funnel report from persisted events (`GET /api/admin/analytics/funnel?days=30`, bounded to 1–90 days)
 - Test Fast versus Refined visual presets
 - Improve the completion tray for share, ownership, insights, and animation
 - Measure demand for alternate endings and refinement

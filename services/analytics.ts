@@ -1,37 +1,40 @@
-export type AnalyticsEventName =
-  | 'article_preview_started'
-  | 'article_preview_succeeded'
-  | 'article_preview_failed'
-  | 'game_mode_selected'
-  | 'payment_path_selected'
-  | 'payment_path_advanced_opened'
-  | 'payment_path_auto_detected'
-  | 'payment_path_user_override'
-  | 'payment_wallet_connect_prompt_shown'
-  | 'payment_wallet_connected'
-  | 'payment_abandoned_before_wallet_connect'
-  | 'payment_abandoned_after_wallet_connect'
-  | 'payment_network_switch_prompt_shown'
-  | 'payment_network_switch_started'
-  | 'payment_network_switch_succeeded'
-  | 'payment_network_switch_failed'
-  | 'payment_network_switch_abandoned'
-  | 'payment_started'
-  | 'payment_succeeded'
-  | 'payment_failed'
-  | 'game_generated'
-  | 'game_generation_failed'
-  | 'play_clicked'
-  | 'panel_completed'
-  | 'choice_made'
-  | 'story_completed'
-  | 'epilogue_opened'
-  | 'epilogue_completed'
-  | 'epilogue_failed'
-  | 'view_comic_clicked'
-  | 'share_clicked'
-  | 'make_another_clicked'
-  | 'ownership_clicked'
+export const ANALYTICS_EVENT_NAMES = [
+  'article_preview_started',
+  'article_preview_succeeded',
+  'article_preview_failed',
+  'game_mode_selected',
+  'payment_path_selected',
+  'payment_path_advanced_opened',
+  'payment_path_auto_detected',
+  'payment_path_user_override',
+  'payment_wallet_connect_prompt_shown',
+  'payment_wallet_connected',
+  'payment_abandoned_before_wallet_connect',
+  'payment_abandoned_after_wallet_connect',
+  'payment_network_switch_prompt_shown',
+  'payment_network_switch_started',
+  'payment_network_switch_succeeded',
+  'payment_network_switch_failed',
+  'payment_network_switch_abandoned',
+  'payment_started',
+  'payment_succeeded',
+  'payment_failed',
+  'game_generated',
+  'game_generation_failed',
+  'play_clicked',
+  'panel_completed',
+  'choice_made',
+  'story_completed',
+  'epilogue_opened',
+  'epilogue_completed',
+  'epilogue_failed',
+  'view_comic_clicked',
+  'share_clicked',
+  'make_another_clicked',
+  'ownership_clicked',
+] as const
+
+export type AnalyticsEventName = typeof ANALYTICS_EVENT_NAMES[number]
 
 export type AnalyticsProperties = Record<string, string | number | boolean | null | undefined>
 

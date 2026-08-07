@@ -194,11 +194,16 @@ The first-run creation flow follows the [Creation UX Contract](./CREATION_UX.md)
 - [x] Use outcome-based visual presets instead of technical model names
 - [x] Show a non-spoiler five-beat story shape before generation
 - [x] Keep animation, alternate endings, and deep model controls in post-generation/refinement paths
-- [x] Instrument mobile funnel, generation completion, play start, and post-completion expansion
+- [x] Instrument and persist the mobile funnel, generation completion, play start, and post-completion expansion
 - [x] Validate the flow at 390×844: no horizontal overflow; source input and preview action meet the 48px touch-target rule
 
 
+### Delivered: Measurement
+- [x] Add the bounded admin-only funnel report over persisted `ProductAnalyticsEvent` records (`GET /api/admin/analytics/funnel?days=30`, 1–90 day window)
+- [x] Document the report as event-volume ratios rather than unique-user/session conversion
+
 ### Next: Post-Generation Expansion
+- [ ] Add a retention/cleanup policy for `ProductAnalyticsEvent` before production volume grows materially
 - [ ] Make the completion tray the home for share, ownership, reader insights, and animation
 - [ ] Test demand for alternate endings before building a full ending editor
 - [ ] Promote Workshop/Creator Studio as refinement, not a prerequisite for first play
