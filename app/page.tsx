@@ -18,10 +18,10 @@ import {
   Wand2,
   Gamepad2,
   Coins,
-  Sparkles,
-  ArrowRight,
   LockKeyhole,
   CalendarDays,
+  BarChart3,
+  ArrowUpRight,
 } from 'lucide-react'
 import { GridSkeleton } from '@/components/effects'
 import { WRITER_COINS } from '@/lib/writerCoins'
@@ -242,25 +242,32 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25, duration: 0.5 }}
               >
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full max-w-md">
+                <div className="grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
                   <a
                     href="/games"
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-bold text-background hover:opacity-90 transition-opacity"
+                    className="group inline-flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl bg-foreground px-4 py-3 text-sm font-bold text-background transition-all hover:-translate-y-0.5 hover:opacity-90"
                   >
-                    <Gamepad2 className="w-4 h-4" />
-                    Play something now
+                    <span className="inline-flex items-center gap-2"><Gamepad2 className="w-4 h-4" /> Play</span>
+                    <span className="text-[11px] font-normal opacity-70">Jump into a story</span>
+                  </a>
+                  <a
+                    href="/generate"
+                    className="group inline-flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground transition-all hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-muted"
+                  >
+                    <span className="inline-flex items-center gap-2"><Wand2 className="w-4 h-4 text-primary" /> Create</span>
+                    <span className="text-[11px] font-normal text-muted-foreground">Turn writing into play</span>
                   </a>
                   {config.features.dailyChallenge && (
                     <a
                       href="/daily"
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/40 bg-purple-500/10 px-5 py-3 text-sm font-semibold text-purple-700 dark:text-purple-200 hover:bg-purple-500/15 transition-colors"
+                      className="group inline-flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-purple-500/40 bg-purple-500/10 px-4 py-3 text-sm font-semibold text-purple-700 transition-all hover:-translate-y-0.5 hover:border-purple-400/60 hover:bg-purple-500/15 dark:text-purple-200"
                     >
-                      <CalendarDays className="w-4 h-4" />
-                      Today&apos;s daily
+                      <span className="inline-flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Daily</span>
+                      <span className="text-[11px] font-normal text-purple-700/70 dark:text-purple-200/70">Build the habit</span>
                     </a>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">No wallet needed to play public games · or create your own below</p>
+                <p className="text-xs text-muted-foreground">Play public games free · create your first story free · return daily for a new challenge</p>
               </motion.div>
 
               {/* Primary CTA card — just URL input, no wallet, no payment toggle */}
@@ -272,6 +279,10 @@ export default function HomePage() {
               >
                 <ErrorBoundary>
                   <div className="p-6 rounded-2xl bg-card border border-border shadow-xl space-y-4 text-left">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-primary">Create</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Turn an article into a five-panel playable story. Your first story is free; public games are always free to play.</p>
+                    </div>
                     <SimpleGameForm
                       onGenerate={(url: string) => {
                         window.location.href = `/generate?${new URLSearchParams({ url }).toString()}`
@@ -329,6 +340,28 @@ export default function HomePage() {
           </section>
 
           <DailyChallengeBanner />
+
+          {/* Creator value proposition — insight is a product outcome, not a hidden dashboard feature. */}
+          <section className="border-t border-border px-4 py-12" aria-labelledby="creator-signal-heading">
+            <div className="mx-auto flex max-w-5xl flex-col gap-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-500">For creators</p>
+                  <h2 id="creator-signal-heading" className="mt-1 text-xl font-bold text-foreground">See what your readers actually choose</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Turn passive content into a measurable experience. Creator insights show starts, completions, panel drop-off, choice splits, and which placements drive plays.</p>
+                </div>
+              </div>
+              <a
+                href="/studio"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-500"
+              >
+                Create for insights <ArrowUpRight className="h-4 w-4" />
+              </a>
+            </div>
+          </section>
 
           {/* Continue playing — only renders for returning users with play history */}
           <RecentlyPlayedSection />

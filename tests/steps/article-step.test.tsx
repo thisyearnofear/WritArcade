@@ -60,6 +60,15 @@ describe('ArticleStep', () => {
     expect(screen.getByText('Preview article')).toBeInTheDocument()
   })
 
+  it('uses 48px touch targets for the source input and preview action', () => {
+    render(<ArticleStep {...baseProps} />)
+    const input = screen.getByRole('textbox', { name: 'Paragraph.xyz Article URL' })
+    const button = screen.getByRole('button', { name: 'Preview article' })
+
+    expect(input).toHaveClass('min-h-[48px]')
+    expect(button).toHaveClass('min-h-[48px]')
+  })
+
   it('disables preview button when URL is empty', () => {
     render(<ArticleStep {...baseProps} url="" />)
     const button = screen.getByText('Preview article').closest('button')

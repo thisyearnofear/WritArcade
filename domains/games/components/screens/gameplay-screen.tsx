@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, ChevronDown, Share2, Sparkles } from 'lucide-react'
+import { BookOpen, ChevronDown, Share2, Sparkles, Clock3, ArrowUp, ArrowDown } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-strip'
@@ -10,7 +10,7 @@ import { EpilogueGoalStrip } from '@/components/game/epilogue-goal-strip'
 import { FinaleUnlocksStrip } from '@/components/game/finale-unlocks-strip'
 import { getModifierCategoryForPanel } from '@/lib/daily-challenge-ui'
 import type { Game, GameplayOption } from '../../types'
-import type { ChatEntry } from '../../hooks/use-game-session'
+import type { ChatEntry, ChoiceFeedback } from '../../hooks/use-game-session'
 import { trackEvent } from '@/services/analytics'
 
  
@@ -20,6 +20,7 @@ interface GameplayScreenProps {
   game: Game
   messages: ChatEntry[]
   worldMood: { tension: number; chaos: number; hope: number }
+  lastChoiceFeedback: ChoiceFeedback | null
   isWaitingForResponse: boolean
   pendingOptionId: number | null
   assistantMessageCount: number
@@ -49,10 +50,53 @@ interface GameplayScreenProps {
   sidebarExtra?: React.ReactNode
 }
 
+export function ChoiceFeedbackBanner({
+  feedback,
+  primaryColor = '#8b5cf6',
+  isDailyActive = false,
+}: {
+  feedback: ChoiceFeedback
+  primaryColor?: string
+  isDailyActive?: boolean
+}) {
+  const labels = [
+    { key: 'tension' as const, label: 'Tension', color: '#f87171' },
+    { key: 'chaos' as const, label: 'Chaos', color: '#c084fc' },
+    { key: 'hope' as const, label: 'Hope', color: '#34d399' },
+  ]
+
+  return (
+    <div
+      className="w-full max-w-5xl mb-4 rounded-lg border px-4 py-3"
+      style={{ borderColor: `${primaryColor}35`, backgroundColor: `${primaryColor}08` }}
+      role="status"
+      aria-live="polite"
+    >
+      <p className="text-xs font-bold uppercase tracking-wider text-white/80">Estimated mood direction</p>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+        {labels.map(({ key, label, color }) => {
+          const value = feedback.delta[key]
+          const positive = value > 0
+          return (
+            <span key={key} className="inline-flex items-center gap-1.5 text-xs" style={{ color }}>
+              {positive ? <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />}
+              <span>{label} {positive ? 'rose' : 'fell'} ({positive ? '+' : ''}{value})</span>
+            </span>
+          )
+        })}
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        No time penalty{isDailyActive ? '; your choices contribute to the encrypted challenge score revealed at the finale.' : '.'}
+      </p>
+    </div>
+  )
+}
+
 export function GameplayScreen({
   game,
   messages,
   worldMood,
+  lastChoiceFeedback,
   isWaitingForResponse,
   pendingOptionId,
   assistantMessageCount,
@@ -119,7 +163,7 @@ export function GameplayScreen({
 
   const router = useRouter()
 
-  // Keyboard shortcuts: 1/2/3 for choices, V for comic, S for share
+  // Keyboard shortcuts: 1-4 for choices, V for comic, S for share
   useEffect(() => {
     const activeAssistant = [...messages].reverse().find(m => m.role === 'assistant' && m.options?.length)
     const options = activeAssistant?.options ?? []
@@ -127,7 +171,7 @@ export function GameplayScreen({
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       const key = parseInt(e.key)
-      if (key >= 1 && key <= 3 && options[key - 1]) {
+      if (key >= 1 && key <= 4 && options[key - 1]) {
         onOptionClick(options[key - 1])
         return
       }
@@ -145,6 +189,12 @@ export function GameplayScreen({
     }, 100)
     return () => clearTimeout(timeoutId)
   }, [messages, messagesEndRef])
+
+  const showChoiceFeedback = Boolean(
+    lastChoiceFeedback &&
+    !isWaitingForResponse &&
+    lastChoiceFeedback.panelIndex === assistantMessageCount - 1
+  )
 
   return (
     <div
@@ -195,7 +245,7 @@ export function GameplayScreen({
                 <h3 className="text-sm font-bold text-white mb-2">Keyboard Shortcuts</h3>
                 <ul className="space-y-2 text-xs text-muted-foreground">
                   <li>
-                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-white/70 mr-1">1-3</kbd>
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-white/70 mr-1">1-4</kbd>
                     Choose option
                   </li>
                   <li>
@@ -233,6 +283,19 @@ export function GameplayScreen({
               <DailyModifierStrip
                 panelIndex={Math.max(0, assistantMessageCount - 1)}
                 primaryColor={game.primaryColor}
+              />
+            )}
+            <div className="w-full max-w-5xl mb-4 rounded-lg border border-white/10 bg-black/30 px-4 py-3 flex items-center gap-3">
+              <Clock3 className="w-4 h-4 shrink-0 text-emerald-300" aria-hidden="true" />
+              <p className="text-xs text-muted-foreground">
+                No countdown. Take the time you need to read — your choices shape the story, not your speed.
+              </p>
+            </div>
+            {showChoiceFeedback && lastChoiceFeedback && (
+              <ChoiceFeedbackBanner
+                feedback={lastChoiceFeedback}
+                primaryColor={game.primaryColor}
+                isDailyActive={isDailyActive}
               />
             )}
             {hasSecretEpilogue && (

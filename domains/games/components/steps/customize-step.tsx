@@ -2,8 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, ChevronDown, Lightbulb, Sparkles } from 'lucide-react'
-import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
-import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
+import { GenreSelector, GENRE_LABEL, type GameGenre } from '@/components/game/GenreSelector'
+import { DifficultySelector, DIFFICULTY_LABEL, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import type { WriterCoin } from '@/lib/writerCoins'
 import {
@@ -230,7 +230,7 @@ export function CustomizeStep({
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80">
-                Your game
+                Story direction
               </p>
               <h3 className="mt-1 text-base font-semibold text-foreground">
                 {mode === 'wordle' ? 'Free article Wordle' : '5-panel playable comic'}
@@ -264,7 +264,7 @@ export function CustomizeStep({
                     onClick={onToggleCustomization}
                     className="rounded-full border border-cyan-500/30 bg-black/20 px-2.5 py-1 text-cyan-100 transition hover:bg-cyan-500/10"
                   >
-                    Customize
+                    Adjust direction
                   </button>
                 )}
                 {mode === 'story' && (
@@ -305,7 +305,7 @@ export function CustomizeStep({
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-purple-100">Customize style</span>
+                    <span className="text-sm font-semibold text-purple-100">Story direction</span>
                   </div>
                   <button
                     type="button"
@@ -321,10 +321,10 @@ export function CustomizeStep({
 
                 <div className="flex justify-center gap-2 text-xs">
                   <span className="inline-flex items-center rounded-full bg-purple-800/80 border border-purple-500/80 px-3 py-1 text-purple-100 font-medium">
-                    {genre}
+                    Tone: {GENRE_LABEL[genre]}
                   </span>
                   <span className="inline-flex items-center rounded-full bg-purple-800/80 border border-purple-500/80 px-3 py-1 text-purple-100 font-medium">
-                    {difficulty}
+                    Intensity: {DIFFICULTY_LABEL[difficulty]}
                   </span>
                 </div>
 
@@ -338,7 +338,7 @@ export function CustomizeStep({
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-purple-100">
-                    Image Quality
+                    Visual finish
                   </label>
                   <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
                     <button
@@ -349,9 +349,8 @@ export function CustomizeStep({
                         imageQuality === 'fast'
                           ? 'bg-purple-600 text-white border-2 border-purple-400'
                           : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
-                      }`}
-                    >
-                      Fast (Turbo)
+                      }`}                      >
+                      Explore quickly
                     </button>
                     <button
                       type="button"
@@ -361,15 +360,14 @@ export function CustomizeStep({
                         imageQuality === 'quality'
                           ? 'bg-purple-600 text-white border-2 border-purple-400'
                           : 'bg-purple-900/30 text-purple-300 border-2 border-purple-700/50 hover:border-purple-500'
-                      }`}
-                    >
-                      High Quality
+                      }`}                      >
+                      Refined visuals
                     </button>
                   </div>
                   <p className="text-xs text-purple-300/70">
                     {imageQuality === 'fast'
-                      ? 'Optimized for narrative flow - faster generation'
-                      : 'Higher-end models - better visual fidelity'
+                      ? 'Faster generation for exploring the story direction'
+                      : 'More visual detail, with a longer generation time'
                     }
                   </p>
                 </div>
@@ -382,8 +380,8 @@ export function CustomizeStep({
                 >
                   <Lightbulb className="w-4 h-4 mt-0.5 flex-shrink-0 text-yellow-300" />
                   <div className="space-y-1 text-xs">
-                    <div>• <strong>Genre</strong> shapes narrative tone and visual style</div>
-                    <div>• <strong>Difficulty</strong> controls branching complexity</div>
+                    <div>• <strong>Tone</strong> shapes narrative mood and visual style</div>
+                    <div>• <strong>Story intensity</strong> controls branching complexity</div>
                   </div>
                 </motion.div>
               </motion.div>

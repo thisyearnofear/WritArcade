@@ -34,4 +34,4 @@ node scripts/modal/test-modal-integration.js
 
 ## Documentation
 
-See [../../docs/MODAL_SETUP.md](../../docs/MODAL_SETUP.md) for complete setup instructions.
+See the [Modal image-generation documentation](../../docs/IMAGE_GENERATION.md) for complete setup instructions.

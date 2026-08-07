@@ -41,12 +41,14 @@ export function SecretEpilogueFinaleCta({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <LockKeyhole className="h-4 w-4" style={{ color: game.primaryColor || '#8b5cf6' }} />
-            <span className="text-xs font-bold uppercase tracking-wider text-white">Secret epilogue</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-white">
+              {minted ? 'Story owned' : 'Optional ownership upgrade'}
+            </span>
           </div>
           <p className="text-sm text-muted-foreground">
             {minted
-              ? 'Your NFT is ready. Scroll down to decrypt the bonus ending on Base.'
-              : 'Mint this game to decrypt the encrypted bonus ending — your story is not fully complete until you do.'}
+              ? 'You own this story on Base. Reveal the hidden ending below.'
+              : 'Own this story on Base to reveal its hidden ending. The playable comic stays yours to share either way.'}
           </p>
         </div>
         <Button
@@ -63,7 +65,7 @@ export function SecretEpilogueFinaleCta({
           ) : (
             <>
               <ArrowDown className="h-4 w-4" />
-              Mint to unlock
+              Own &amp; unlock
             </>
           )}
         </Button>

@@ -93,6 +93,20 @@ export function useGameGenerator({
     ? paymentExplorerUrl(store.paymentPath, activePaymentTxHash)
     : null
   const canGoBack = getStepIndex(store.mobileStep) > 0
+  const canGoForward = Boolean(
+    store.mobileStep === 'article'
+      ? hasPreviewedCurrentUrl
+      : store.mobileStep === 'customize'
+        ? true
+        : store.mobileStep === 'payment'
+          ? store.paymentApproved
+          : false
+  )
+  const forwardLabel = store.mobileStep === 'customize'
+    ? (isStoryMode && !isDailyFlow ? 'Review payment' : 'Generate')
+    : store.mobileStep === 'payment'
+      ? 'Generate'
+      : 'Continue'
 
   const requiredAmount = useMemo(() => {
     if (isMusdPath) return 0
@@ -578,6 +592,26 @@ export function useGameGenerator({
     }
   }, [store])
 
+  const handleStepForward = useCallback(async () => {
+    if (store.mobileStep === 'article') {
+      if (!hasPreviewedCurrentUrl) {
+        await previewArticle()
+        return
+      }
+      store.setMobileStep('customize')
+      return
+    }
+
+    if (store.mobileStep === 'customize') {
+      store.setMobileStep(isStoryMode && !isDailyFlow ? 'payment' : 'generate')
+      return
+    }
+
+    if (store.mobileStep === 'payment' && store.paymentApproved) {
+      await generateGame(paymentTxHashRef.current)
+    }
+  }, [generateGame, hasPreviewedCurrentUrl, isDailyFlow, isStoryMode, previewArticle, store])
+
   // ── URL change handler ─────────────────────────────────────────────
   const handleUrlChange = useCallback((value: string) => {
     store.setUrl(value)
@@ -733,6 +767,8 @@ export function useGameGenerator({
     activePaymentTxHash,
     activePaymentExplorerUrl,
     canGoBack,
+    canGoForward,
+    forwardLabel,
     requiredAmount,
     balance,
     isLoadingBalance,
@@ -757,6 +793,7 @@ export function useGameGenerator({
     handlePaymentSuccess,
     handlePaymentError,
     handleStepBack,
+    handleStepForward,
     generateGame,
     previewArticle,
 

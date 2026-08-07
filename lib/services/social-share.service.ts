@@ -40,9 +40,10 @@ export class SocialShareService {
       // Viral flow format
       tweetText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it on @StoryProtocol using @writersarcade! 🎮📚${videoSuffix}\n\nCheck out "${data.gameTitle}" 👇`
     } else {
-      // Standard format — keep it tight; the URL below is auto-appended as a link card.
+      // Completion copy is supplied by the product surface so the share has
+      // a specific ending and a clear invitation, not just a feature claim.
       const animatedNote = data.videoUrl ? ' Animated panels included 🎬' : ''
-      tweetText = `Just created "${data.gameTitle}" — an interactive ${data.genre} comic where your choices shape the story.${animatedNote} 🎮📚${videoSuffix}\n\n#writersarcade #AIComics`
+      tweetText = `${data.text || `Just created "${data.gameTitle}" — an interactive ${data.genre} comic where your choices shape the story.`}${animatedNote} 🎮📚${videoSuffix}\n\n#writersarcade #AIComics`
     }
 
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(data.url || window.location.href)}`
@@ -60,7 +61,7 @@ export class SocialShareService {
       // Viral flow format
       castText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it!${videoLine}\n\nCheck out "${data.gameTitle}" on writersarcade 👇`
     } else {
-      castText = `Just dropped my new comic "${data.gameTitle}" on writersarcade! 🎮📚\n\n${data.genre} story • ${data.panelCount} interactive panels${data.videoUrl ? ' • Animated panels 🎬' : ''} • every choice shapes the narrative${videoLine}`
+      castText = `${data.text || `Just dropped my new comic "${data.gameTitle}" on writersarcade!`} 🎮📚\n\n${data.genre} story • ${data.panelCount} interactive panels${data.videoUrl ? ' • Animated panels 🎬' : ''} • every choice shapes the narrative${videoLine}`
     }
 
     const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(data.url || window.location.href)}`

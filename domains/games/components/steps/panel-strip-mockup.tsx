@@ -1,8 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
-import Link from 'next/link'
 import type { GameGenre } from '@/components/game/GenreSelector'
 
 interface PanelStripMockupProps {
@@ -79,14 +77,9 @@ export function PanelStripMockup({ genre, articleTitle, primaryColor }: PanelStr
         <span className="text-foreground font-medium"> &ldquo;{articleTitle.slice(0, 40)}{articleTitle.length > 40 ? '…' : ''}&rdquo;</span>
       </p>
 
-      {/* Browse similar games link */}
-      <Link
-        href={`/games?genre=${encodeURIComponent(genre)}`}
-        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-cyan-200 hover:text-cyan-100 transition-colors"
-      >
-        Browse {genre} games
-        <ExternalLink className="h-3 w-3" />
-      </Link>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Your choices shape the resolution. This previews the story shape, not the ending.
+      </p>
     </div>
   )
 }

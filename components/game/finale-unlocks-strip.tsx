@@ -11,9 +11,8 @@ interface FinaleUnlocksStripProps {
 
 /**
  * Slim persistent promise shown during play: finishing all panels unlocks
- * the full comic, a mintable NFT, and the animated cut. Sets the expectation
- * (and the video's price) long before the finale so the upsell never lands
- * as a surprise.
+ * the full comic and makes ownership available. Optional animation is kept
+ * visibly secondary while its price is disclosed before the finale.
  */
 export function FinaleUnlocksStrip({
   panelsDone,
@@ -24,8 +23,8 @@ export function FinaleUnlocksStrip({
 
   const items = [
     { icon: BookOpen, label: 'Full comic' },
-    { icon: Zap, label: 'Mintable NFT' },
-    { icon: Clapperboard, label: `Animated cut · ${CREDITS_CONFIG.cost['video-upsell']} credits` },
+    { icon: Zap, label: 'Own & unlock' },
+    { icon: Clapperboard, label: `Optional animation · ${CREDITS_CONFIG.cost['video-upsell']} credits` },
   ]
 
   return (
@@ -34,7 +33,7 @@ export function FinaleUnlocksStrip({
         className="text-[10px] font-bold uppercase tracking-wider"
         style={{ color: primaryColor }}
       >
-        Finish to unlock
+        When you finish
       </span>
       {items.map((item) => (
         <span

@@ -37,7 +37,7 @@ export function HypercertBadge({
         title="Impact certificate on Hypercerts"
       >
         <Award className="w-3.5 h-3.5" />
-        <span>Certified Impact</span>
+        <span>Optional impact certificate</span>
         <ExternalLink className="w-2.5 h-2.5 opacity-50" />
       </a>
     )
@@ -61,7 +61,7 @@ export function HypercertBadge({
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-semibold text-amber-300">
-            Impact Certificate
+            Optional impact certificate
           </span>
           <ExternalLink className="w-3 h-3 text-amber-400/50 group-hover:text-amber-400 transition-colors" />
         </div>

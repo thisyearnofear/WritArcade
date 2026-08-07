@@ -72,6 +72,7 @@ interface ComicBookFinaleProps {
   mintUnavailableReason?: string
   mintTokenLabel?: string
   mintCostLabel?: string
+  hasSecretEpilogue?: boolean
   onFundGame?: () => void
   onConnectWallet?: (() => void) | undefined
   isFunding?: boolean
@@ -113,6 +114,7 @@ export function ComicBookFinale({
   mintUnavailableReason,
   mintTokenLabel,
   mintCostLabel,
+  hasSecretEpilogue = false,
   onFundGame,
   onConnectWallet,
   isFunding = false,
@@ -431,7 +433,6 @@ export function ComicBookFinale({
 
         {/* Footer - Action buttons */}
         <FinaleFooter
-          gameTitle={gameTitle}
           genre={genre}
           totalPanels={totalPanels}
           primaryColor={primaryColor}
@@ -443,11 +444,13 @@ export function ComicBookFinale({
           currentPanel={currentPanel}
           currentPanelIndex={currentPanelIndex}
           shareData={shareData}
+          gameSlug={gameSlug}
+          isOwner={isOwner}
+          hasSecretEpilogue={hasSecretEpilogue}
           narration={narration}
           video={video}
           isMinting={isMinting}
           mintAvailable={mintAvailable}
-          onBack={onBack}
           onDownload={handleDownload}
           onMint={handleMintWithMetadata}
           onFundGame={onFundGame}

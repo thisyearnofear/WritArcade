@@ -1,15 +1,15 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowLeft, Coins, Link as LinkIcon, Settings, Play, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Coins, Link as LinkIcon, Settings, Play, Sparkles } from 'lucide-react'
 
 export type GenerateStep = 'article' | 'customize' | 'payment' | 'generate'
 
 export const GENERATE_STEPS: { id: GenerateStep; icon: typeof Sparkles; label: string; desktopLabel: string }[] = [
-  { id: 'article',    icon: LinkIcon,  label: 'Article',   desktopLabel: '1. Paste article' },
-  { id: 'customize',  icon: Settings,  label: 'Style',     desktopLabel: '2. Customize' },
-  { id: 'payment',    icon: Coins,     label: 'Payment',   desktopLabel: '3. Pay & generate' },
-  { id: 'generate',   icon: Play,      label: 'Launch',    desktopLabel: '4. Launch' },
+  { id: 'article',    icon: LinkIcon,  label: 'Source',    desktopLabel: '1. Add source' },
+  { id: 'customize',  icon: Settings,  label: 'Direction', desktopLabel: '2. Choose direction' },
+  { id: 'payment',    icon: Coins,     label: 'Generate', desktopLabel: '3. Pay & generate' },
+  { id: 'generate',   icon: Play,      label: 'Launch',   desktopLabel: '4. Launch' },
 ]
 
 export function getStepIndex(step: GenerateStep): number {
@@ -102,10 +102,16 @@ export function MobileStepNav({
   currentStep,
   canGoBack,
   onBack,
+  canGoForward = false,
+  onForward,
+  forwardLabel = 'Continue',
 }: {
   currentStep: GenerateStep
   canGoBack: boolean
   onBack: () => void
+  canGoForward?: boolean
+  onForward?: () => void
+  forwardLabel?: string
 }) {
   const currentIdx = getStepIndex(currentStep)
 
@@ -121,6 +127,7 @@ export function MobileStepNav({
               animate={{ opacity: 1, scale: 1 }}
               whileTap={{ scale: 0.9 }}
               onClick={onBack}
+              aria-label="Back to previous step"
               className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted border border-border text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-5 w-5" strokeWidth={3} />
@@ -128,10 +135,21 @@ export function MobileStepNav({
           )}
         </div>
 
-        {/* Step Dots */}
-        <div className="flex flex-[2] items-center justify-center space-x-3">
+        {/* Step Dots */}        <div
+          className="flex flex-[2] items-center justify-center space-x-3"
+          role="list"
+          aria-label="Creation steps"
+        >
           {GENERATE_STEPS.map((step, idx) => (
-            <div key={step.id} className="relative flex flex-col items-center">
+            <div
+              key={step.id}
+              className="relative flex flex-col items-center"
+              role="listitem"
+              aria-current={idx === currentIdx ? 'step' : undefined}
+            >
+              <span className="sr-only">
+                {step.label} step{idx === currentIdx ? ', current' : idx < currentIdx ? ', complete' : ''}
+              </span>
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-300 ${
                   idx === currentIdx
@@ -155,8 +173,22 @@ export function MobileStepNav({
           ))}
         </div>
 
-        {/* Spacer */}
-        <div className="flex-1" />
+        {/* Continue / primary action */}
+        <div className="flex flex-1 justify-end">
+          {canGoForward && onForward && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onForward}
+              className="inline-flex min-h-12 items-center gap-1.5 rounded-2xl bg-purple-600 px-4 text-xs font-bold text-white shadow-lg shadow-purple-900/30"
+            >
+              {forwardLabel}
+              <ArrowRight className="h-4 w-4" />
+            </motion.button>
+          )}
+        </div>
       </div>
       <div className="h-[env(safe-area-inset-bottom)]" />
     </div>

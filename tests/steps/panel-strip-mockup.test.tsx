@@ -38,10 +38,9 @@ describe('PanelStripMockup', () => {
     expect(descriptionText).not.toContain('A'.repeat(41))
   })
 
-  it('renders a browse link with the genre', () => {
+  it('explains that the preview protects the ending', () => {
     render(<PanelStripMockup genre="comedy" articleTitle="Test" />)
-    const link = screen.getByRole('link', { name: /browse comedy games/i })
-    expect(link).toHaveAttribute('href', '/games?genre=comedy')
+    expect(screen.getByText(/story shape, not the ending/i)).toBeInTheDocument()
   })
 
   it('applies genre-specific gradient for horror', () => {

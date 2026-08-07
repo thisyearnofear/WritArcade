@@ -23,6 +23,7 @@ export type AnalyticsEventName =
   | 'game_generation_failed'
   | 'play_clicked'
   | 'panel_completed'
+  | 'choice_made'
   | 'story_completed'
   | 'epilogue_opened'
   | 'epilogue_completed'

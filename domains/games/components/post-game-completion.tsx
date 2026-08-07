@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Gamepad2, Sparkles, Trophy, BarChart3, ExternalLink, FileText, Image as ImageIcon, Link2, Check, QrCode, Download, Loader2 } from 'lucide-react'
+import { Gamepad2, Sparkles, Trophy, BarChart3, ExternalLink, FileText, Image as ImageIcon, Link2, Check, QrCode, Download, Loader2, CalendarDays, ArrowUpRight } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import type { Game } from '../types'
 import type { ChatEntry } from '../hooks/use-game-session'
@@ -82,7 +82,7 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
     (typeof window !== 'undefined'
       ? window.location.origin
       : process.env.NEXT_PUBLIC_SITE_URL) || `https://writersarcade.vercel.app`
-  const gameUrl = `${baseUrl}/games/${game.slug}`
+  const gameUrl = `${baseUrl}/games/${game.slug}?play=1`
 
   const markdownStory = useMemo(() => {
     let md = `# ${game.title}\n\n_${game.description}_\n\n`
@@ -105,20 +105,21 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
   const lastChoice = userChoices[userChoices.length - 1]?.choice
   const truncatedChoice = lastChoice && lastChoice.length > 80 ? `${lastChoice.slice(0, 80)}…` : lastChoice
   const endingText = truncatedChoice
-    ? `My story ended with: ${truncatedChoice}`
+    ? `I made a choice that changed "${game.title}": ${truncatedChoice}`
     : `I just finished "${game.title}" on WritersArcade`
+  const referralText = `Play "${game.title}" and make your own choices — every run can end differently.`
 
   const shareData = useMemo(
     () => ({
       title: game.title,
-      text: endingText,
+      text: `${endingText} ${referralText}`,
       url: gameUrl,
       genre: game.genre,
       panelCount,
       gameTitle: game.title,
       author: game.authorParagraphUsername || undefined,
     }),
-    [game.title, game.genre, game.authorParagraphUsername, endingText, gameUrl, panelCount]
+    [game.title, game.genre, game.authorParagraphUsername, endingText, referralText, gameUrl, panelCount]
   )
 
   return (
@@ -166,6 +167,7 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
             <p className="text-xs text-muted-foreground leading-relaxed">
               {endingText}
             </p>
+            <p className="mt-2 text-xs font-medium text-purple-200/80">{referralText}</p>
           </div>
           <ShareDropdown
             data={shareData}
@@ -174,6 +176,31 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
             size="default"
             buttonClassName="shrink-0 bg-white text-black hover:bg-white/90"
           />
+        </div>
+      </motion.div>
+
+      {/* Post-completion referral loop: keep the next action focused on bringing another player in. */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.37, duration: 0.4 }}
+        className="mb-8 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-5"
+      >
+        <div className="flex items-start gap-3">
+          <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-bold text-white">Keep the loop going</h3>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Come back tomorrow for a fresh Daily Challenge, or invite someone to play this story and compare endings.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link href="/daily" className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-amber-400">
+                <CalendarDays className="h-3.5 w-3.5" />
+Open Daily Challenge
+              </Link>
+              <Link href="/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/10">
+                Make your own story <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
         </div>
       </motion.div>
 
@@ -250,7 +277,7 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
             className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-3.5 text-sm font-bold text-white hover:from-purple-500 hover:to-pink-500 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Sparkles className="w-4 h-4" />
-            Make your own game
+            Create your own game
           </Link>
           <Link
             href="/my-games"

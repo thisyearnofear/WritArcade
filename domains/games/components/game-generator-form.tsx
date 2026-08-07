@@ -173,6 +173,9 @@ export function GameGeneratorForm({
           currentStep={g.mobileStep}
           canGoBack={g.canGoBack}
           onBack={g.handleStepBack}
+          canGoForward={g.canGoForward}
+          onForward={g.handleStepForward}
+          forwardLabel={g.forwardLabel}
         />
       )}
     </div>

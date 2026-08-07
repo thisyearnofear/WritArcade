@@ -130,6 +130,7 @@ export function EmbedGamePlayer({ game }: EmbedGamePlayerProps) {
       messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
       responseReady={session.responseReady}
       worldMood={session.worldMood}
+      lastChoiceFeedback={session.lastChoiceFeedback}
       isRegenerating={session.regeneratingMessageId}
       setShowComicFinale={openFullExperience}
       availableThemes={[]}

@@ -184,6 +184,25 @@ We are transitioning our "Secret Panel" logic from Lit Protocol (ERC-721 gating)
 - **May 30:** Add completed-playthrough + exact NFT ownership unlock policy and visible access-policy UI.
 - **June 1-4:** Runtime demo QA, fresh-game demo recording, final submission polish.
 
+## Current Initiative: Creation UX (August 2026)
+
+The first-run creation flow follows the [Creation UX Contract](./CREATION_UX.md): **Source → Story direction → Generate**. Creation is compact and mobile-first; advanced payment/model controls stay progressively disclosed; animation and ending expansion happen after a playable story exists.
+
+### Delivered: Compact Creation & Progressive Optionality
+- [x] Collapse the first-run creation surface to source, tone, story intensity, and one primary generate action
+- [x] Make mobile continuation persistent and keep primary CTAs within reach
+- [x] Use outcome-based visual presets instead of technical model names
+- [x] Show a non-spoiler five-beat story shape before generation
+- [x] Keep animation, alternate endings, and deep model controls in post-generation/refinement paths
+- [x] Instrument mobile funnel, generation completion, play start, and post-completion expansion
+- [x] Validate the flow at 390×844: no horizontal overflow; source input and preview action meet the 48px touch-target rule
+
+
+### Next: Post-Generation Expansion
+- [ ] Make the completion tray the home for share, ownership, reader insights, and animation
+- [ ] Test demand for alternate endings before building a full ending editor
+- [ ] Promote Workshop/Creator Studio as refinement, not a prerequisite for first play
+
 ## Platform Maturity
 
 | Component | Status | Notes |

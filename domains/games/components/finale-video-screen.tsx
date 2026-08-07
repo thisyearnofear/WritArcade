@@ -57,7 +57,7 @@ export function VideoUpsellCTA({
           'Animating…'
         ) : (
           <>
-            Animate your comic
+            Optional animation
             <span className="rounded-full bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300">
               {videoCost} credits
             </span>
@@ -126,10 +126,10 @@ export function VideoStyleModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Clapperboard className="h-5 w-5 text-purple-400" />
-            Animate your comic
+            Optional animation
           </DialogTitle>
           <DialogDescription>
-            Choose how your panels come to life. This costs 50 credits.
+            An optional 50-credit upgrade that turns your finished comic into a short animated cut.
           </DialogDescription>
         </DialogHeader>
         <VideoStyleSelector value={style} onChange={onStyleChange} />
@@ -143,7 +143,7 @@ export function VideoStyleModal({
             style={{ backgroundColor: primaryColor, color: 'white' }}
           >
             <Clapperboard className="h-4 w-4" />
-            Start animation
+Add animation
           </Button>
         </div>
       </DialogContent>

@@ -13,10 +13,12 @@ import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
+import { getActor } from '@/services/auth'
 
-// ISR: revalidate game pages every 5 minutes from CDN — eliminates per-request DB hits
-// for read-only story game pages. Wordle answer is stable so this is safe.
-export const revalidate = 300
+// Play mode includes viewer-specific ownership and insights capabilities, so
+// avoid caching one visitor's owner state for other visitors. Read-only
+// artifact pages can be split into a separately cached route later.
+export const dynamic = 'force-dynamic'
 
 interface GamePageProps {
   params: Promise<{
@@ -38,6 +40,17 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
   if (!game) {
     notFound()
   }
+
+  const actor = await getActor()
+  const viewerIsOwner = Boolean(
+    actor && (
+      (game.userId && game.userId === actor.user.id) ||
+      (actor.user.walletAddress && (
+        actor.user.walletAddress.toLowerCase() === game.ownerWallet?.toLowerCase() ||
+        actor.user.walletAddress.toLowerCase() === game.creatorWallet?.toLowerCase()
+      ))
+    )
+  )
 
   const siteUrl = getSiteUrl()
   const jsonLd = {
@@ -139,7 +152,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
       </div>
       <PlayWelcomeCoach gameSlug={game.slug} />
       <ErrorBoundary>
-        <GamePlayInterface game={game} />
+        <GamePlayInterface game={game} isOwner={viewerIsOwner} />
       </ErrorBoundary>
       <script
         type="application/ld+json"

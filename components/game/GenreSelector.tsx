@@ -5,6 +5,13 @@ import { radioCardClass } from './radioCard'
 export type GameGenre = 'horror' | 'comedy' | 'mystery'
 
 const GENRES = ['horror', 'comedy', 'mystery'] as const
+
+export const GENRE_LABEL: Record<GameGenre, string> = {
+  horror: 'Horror',
+  comedy: 'Comedy',
+  mystery: 'Mystery',
+}
+
 const GENRE_COPY: Record<GameGenre, string> = {
   horror: 'Dark, high stakes',
   comedy: 'Light, witty beats',
@@ -60,8 +67,8 @@ export function GenreSelector({ value = 'horror', onChange, disabled = false }: 
   }
 
   return (
-    <div className="game-type-selector" role="radiogroup" aria-label="Genre">
-      <label className="mb-3 block text-sm font-medium text-purple-200">Genre</label>
+    <div className="game-type-selector" role="radiogroup" aria-label="Tone">
+      <label className="mb-3 block text-sm font-medium text-purple-200">Tone</label>
       <div className="grid grid-cols-3 gap-3">
         {GENRES.map((genre) => (
           <button
@@ -80,7 +87,7 @@ export function GenreSelector({ value = 'horror', onChange, disabled = false }: 
             className={radioCardClass(selected === genre, disabled)}
 >
             <GenreIcon genre={genre} />
-            <span className="text-sm capitalize">{genre}</span>
+            <span className="text-sm">{GENRE_LABEL[genre]}</span>
             <span className="text-[11px] text-purple-300/80">{GENRE_COPY[genre]}</span>
           </button>
         ))}

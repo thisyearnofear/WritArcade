@@ -9,6 +9,7 @@ import { PenLine, Sun, Moon } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useIsActive } from '@/hooks/useIsActive'
 import { useDarkMode } from '@/components/providers/DarkModeProvider'
+import { config } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 
 function ThemeToggle() {
@@ -27,8 +28,8 @@ function ThemeToggle() {
 
 // Nav link definitions — single source of truth for desktop + mobile
 const NAV_LINKS = [
-  { href: '/games',    label: 'Arcade',      title: 'Browse all generated games' },
-  { href: '/daily',    label: 'Daily',       title: 'Today\'s shared daily challenge' },
+  { href: '/games',    label: 'Play',        title: 'Browse all generated games' },
+  ...(config.features.dailyChallenge ? [{ href: '/daily', label: 'Daily', title: 'Today\'s shared daily challenge' }] : []),
   { href: '/my-games', label: 'My Games',    title: 'Your game library' },
   { href: '/writers',  label: 'Writers',     title: 'Explore supported writers and their coins' },
 ]
@@ -100,11 +101,15 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          {NAV_LINKS.map(({ href, label, title }) => (
+          {NAV_LINKS.slice(0, 2).map(({ href, label, title }) => (
             <AnimatedNavLink key={href} href={href} label={label} title={title} isActive={isActive(href)} />
           ))}
 
           <AnimatedCreateButton isActive={isActive('/generate')} />
+
+          {NAV_LINKS.slice(2).map(({ href, label, title }) => (
+            <AnimatedNavLink key={href} href={href} label={label} title={title} isActive={isActive(href)} />
+          ))}
 
           <BuyCreditsWrapper />
           <BalanceDisplay />
@@ -119,6 +124,28 @@ export function Header() {
           <UserMenu mobileLayout />
         </div>
       </div>
+
+      {/* Keep the three product pillars visible on small screens too. */}
+      <nav className="flex md:hidden items-center gap-1 border-t border-border px-4 py-2" aria-label="Primary navigation">
+        {[
+          { href: '/games', label: 'Play' },
+          { href: '/generate', label: 'Create' },
+          ...(config.features.dailyChallenge ? [{ href: '/daily', label: 'Daily' }] : []),
+        ].map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`flex-1 rounded-md px-3 py-1.5 text-center text-xs font-semibold transition-colors ${
+              isActive(link.href)
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+            aria-current={isActive(link.href) ? 'page' : undefined}
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
     </header>
   )
 }

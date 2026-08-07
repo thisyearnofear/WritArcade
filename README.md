@@ -9,7 +9,7 @@ Turn Paragraph.xyz articles into interactive, mintable games. Players pay with w
 - **Interactive comic player**: 5-panel narratives where reader choices shape the outcome
 - **Embeddable player**: wallet-free iframe (`/embed/[slug]`) with `?ref=` attribution and a "Made with WritersArcade" backlink
 - **Resonance analytics**: creator dashboard showing starts, completions, panel funnel, and which choices framings readers prefer
-- **Advanced Customization**: Edit extracted assets (characters, story beats) in the Workshop
+- **Advanced Customization**: Edit extracted assets (characters, story beats), endings, and IP in the Workshop after the core story exists
 - **Creative Control**: Regenerate panel images and edit narrative text before minting
 - Mint games as NFTs on Base; browse and play recent games
 - Pay with writer coins (ERC-20 on Base) using RainbowKit/WalletConnect, or buy credits with fiat
@@ -21,12 +21,16 @@ Turn Paragraph.xyz articles into interactive, mintable games. Players pay with w
 
 ## Core flow
 
-1. **Input**: Paste article URL → AI extracts assets
-2. **Customize** (Optional): Edit characters & mechanics in Workshop
-3. **Generate**: Complete payment → compile assets into 5-panel comic story
-4. **Refine**: Regenerate images with custom prompts + edit text
-5. **Register**: Mint NFT & register IP on Story Protocol (user-owned)
-6. **Revenue**: Splits executed on-chain (Writer/Platform/Creator)
+The first-run creation path is intentionally compact: **Source → Story direction → Generate**.
+
+1. **Source**: Paste an article URL or supported copy and preview it
+2. **Story direction**: Choose tone and story intensity; visual finish and payment details are optional advanced controls
+3. **Generate**: Complete the required payment/free path and create a 5-panel playable story
+4. **Play**: Make choices that shape the narrative and resolution
+5. **Expand**: Share, own/unlock, inspect reader insights, or optionally animate the completed comic
+6. **Refine**: Use Workshop/Creator Studio for deeper asset, ending, model, and IP controls
+
+The first-run path does not require users to understand wallets, chains, tokens, model providers, NFTs, or Story Protocol.
 
 ## Quick start
 
@@ -46,6 +50,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 | [Architecture](./docs/ARCHITECTURE.md) | System design, tech stack, data models, smart contracts |
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
 | [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Inco, Hypercerts), writer coins |
+| [Creation UX](./docs/CREATION_UX.md) | Compact mobile-first creation contract, optionality, validation, and success metrics |
 | [Roadmap](./docs/ROADMAP.md) | Completed phases, current status, future plans |
 
 ## Tech stack

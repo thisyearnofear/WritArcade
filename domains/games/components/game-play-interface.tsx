@@ -22,11 +22,12 @@ import { HiddenHandTeaser } from './hidden-hand-teaser'
 
 interface GamePlayInterfaceProps {
   game: Game
+  isOwner?: boolean
 }
 
 const MAX_COMIC_PANELS = 5
 
-export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
+export function GamePlayInterface({ game, isOwner = false }: GamePlayInterfaceProps) {
   const [liveGame, setLiveGame] = useState(game)
   const { trackPlay } = useRecentlyPlayed()
 
@@ -38,16 +39,18 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const account = useAccount()
 
-  // 1. Session & Gameplay Logic
-  const session = useGameSession(liveGame)
+  // 1. Daily state is resolved before the session so analytics can use the
+  // explicit active mode rather than inferring it from localStorage.
+  const dailyChallenge = useDailyChallengeOnchain()
+  const isDailyGame = config.features.dailyChallenge && dailyChallenge.isActive
 
-  // 2. Blockchain & Payment Logic
+  // 2. Session & Gameplay Logic
+  const session = useGameSession(liveGame, { isDailyActive: isDailyGame })
+
+  // 3. Blockchain & Payment Logic
   const blockchain = useGameBlockchain(liveGame, {
     onGameUpdated: (updates) => setLiveGame((current) => ({ ...current, ...updates })),
   })
-
-  const dailyChallenge = useDailyChallengeOnchain()
-  const isDailyGame = config.features.dailyChallenge && dailyChallenge.isActive
   const secretStatus = getSecretPanelStatus(liveGame)
   const hasSecretEpilogue = secretStatus.kind !== 'none'
 
@@ -242,6 +245,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
           handleRegisterDerivativeIp={blockchain.handleRegisterDerivativeIp}
           isRegisteringDerivative={blockchain.isRegisteringDerivative}
           epilogueReflection={session.epilogueReflection}
+          isOwner={isOwner}
         />
         {renderEnrichment('full')}
       </>
@@ -299,6 +303,7 @@ export function GamePlayInterface({ game }: GamePlayInterfaceProps) {
         messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
         responseReady={session.responseReady}
         worldMood={session.worldMood}
+        lastChoiceFeedback={session.lastChoiceFeedback}
         isRegenerating={session.regeneratingMessageId}
         setShowComicFinale={setShowComicFinale}
         availableThemes={availableThemes}

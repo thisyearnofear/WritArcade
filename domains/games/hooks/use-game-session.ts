@@ -24,6 +24,17 @@ export interface UserChoice {
   timestamp: string
 }
 
+export interface ChoiceMoodDelta {
+  tension: number
+  chaos: number
+  hope: number
+}
+
+export interface ChoiceFeedback {
+  panelIndex: number
+  delta: ChoiceMoodDelta
+}
+
 export interface GameSessionState {
   sessionId: string | null
   messages: ChatEntry[]
@@ -48,6 +59,7 @@ export interface GameSessionState {
     chaos: number
     hope: number
   }
+  lastChoiceFeedback: ChoiceFeedback | null
 }
 
 export interface GameSessionActions {
@@ -66,10 +78,20 @@ export interface GameSessionActions {
 
 const MAX_COMIC_PANELS = 5
 
-function getDailyChallengePayload():
+function getChoiceMoodDelta(optionText: string): ChoiceMoodDelta {
+  const lowerText = optionText.toLowerCase()
+
+  return {
+    tension: lowerText.includes('fight') || lowerText.includes('run') ? 2 : -1,
+    chaos: lowerText.includes('unexpected') || lowerText.includes('surprise') ? 2 : -1,
+    hope: lowerText.includes('help') || lowerText.includes('trust') ? 2 : -1,
+  }
+}
+
+function getDailyChallengePayload(isDailyActive = false):
   | { dailyChallenge: { incoSessionId: string } }
   | Record<string, never> {
-  if (!config.features.dailyChallenge) return {}
+  if (!config.features.dailyChallenge || !isDailyActive) return {}
   const daily = loadDailyChallengeState()
   if (!daily?.incoSessionId) return {}
   return { dailyChallenge: { incoSessionId: daily.incoSessionId } }
@@ -78,6 +100,7 @@ function getDailyChallengePayload():
 export interface GameSessionOptions {
   embedded?: boolean
   ref?: string
+  isDailyActive?: boolean
 }
 
 export function useGameSession(game: Game, options?: GameSessionOptions): GameSessionState & GameSessionActions {
@@ -100,6 +123,8 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
   const [epilogueGenerationFailed, setEpilogueGenerationFailed] = useState(false)
   const [startError, setStartError] = useState<string | null>(null)
   const [worldMood, setWorldMood] = useState({ tension: 0, chaos: 0, hope: 0 })
+  const [lastChoiceFeedback, setLastChoiceFeedback] = useState<ChoiceFeedback | null>(null)
+  const decisionStartedAtRef = useRef<number | null>(null)
 
   // Derived state
   const assistantMessageCount = messages.filter(m => m.role === 'assistant').length
@@ -183,7 +208,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
           sessionId: newSessionId,
           ...(options?.embedded ? { embedded: true } : {}),
           ...(options?.ref ? { ref: options.ref } : {}),
-          ...getDailyChallengePayload(),
+          ...getDailyChallengePayload(options?.isDailyActive),
         }),
       })
 
@@ -278,7 +303,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
       setStartError('Could not start this story. Try again or pick another game in the arcade.')
       setIsStarting(false)
     }
-  }, [game, toast, handleImageGenerated, options?.embedded, options?.ref])
+  }, [game, toast, handleImageGenerated, options?.embedded, options?.ref, options?.isDailyActive])
 
   /**
    * Generate epilogue + reflection after game completes
@@ -408,7 +433,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
           gameId: game.id,
           message: message.trim(),
           ...(optionId ? { optionId } : {}),
-          ...getDailyChallengePayload(),
+          ...getDailyChallengePayload(options?.isDailyActive),
         }),
       })
 
@@ -551,13 +576,20 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
       setIsWaitingForResponse(false)
       setPendingOptionId(null)
     }
-  }, [sessionId, game, handleImageGenerated, generateEpilogue])
+  }, [sessionId, game, handleImageGenerated, generateEpilogue, options?.isDailyActive])
 
   /**
-   * Handle option click - triggers sendMessage with the option text
+   * Handle option click - triggers sendMessage with the option text.
+   *
+   * Choices change the visual/story signal, but never consume time, credits,
+   * retries, or any other player resource.
    */
-   
   const handleOptionClick = useCallback((optionId: number, optionText: string) => {
+    const decisionLatencyMs = decisionStartedAtRef.current === null
+      ? null
+      : Math.max(0, Date.now() - decisionStartedAtRef.current)
+    decisionStartedAtRef.current = null
+
     setPendingOptionId(optionId)
     setUserChoices(prev => [...prev, {
       panelIndex: assistantMessageCount,
@@ -570,16 +602,24 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
       return
     }
 
-    // Mood shift logic
-    const lowerText = optionText.toLowerCase()
+    const delta = getChoiceMoodDelta(optionText)
+    setLastChoiceFeedback({ panelIndex: assistantMessageCount, delta })
     setWorldMood(prev => ({
-      tension: prev.tension + (lowerText.includes('fight') || lowerText.includes('run') ? 2 : -1),
-      chaos: prev.chaos + (lowerText.includes('unexpected') || lowerText.includes('surprise') ? 2 : -1),
-      hope: prev.hope + (lowerText.includes('help') || lowerText.includes('trust') ? 2 : -1)
+      tension: prev.tension + delta.tension,
+      chaos: prev.chaos + delta.chaos,
+      hope: prev.hope + delta.hope,
     }))
 
+    trackEvent('choice_made', {
+      gameSlug: game.slug,
+      panelIndex: assistantMessageCount,
+      choiceIndex: optionId - 1,
+      decisionLatencyMs,
+      dailyChallenge: options?.isDailyActive === true,
+    })
+
     sendMessage(optionText, optionId)
-  }, [assistantMessageCount, sendMessage])
+  }, [assistantMessageCount, canAddMorePanels, game.slug, options?.isDailyActive, sendMessage])
 
   /**
    * Regenerate image for a specific panel
@@ -618,6 +658,14 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
     }
   }, [game, handleImageGenerated, toast])
 
+  // Start measuring when a panel is ready. This is instrumentation only:
+  // decision time is never used as a score or penalty.
+  useEffect(() => {
+    if (assistantMessageCount > 0 && canAddMorePanels && !isWaitingForResponse && pendingOptionId === null) {
+      decisionStartedAtRef.current = Date.now()
+    }
+  }, [assistantMessageCount, canAddMorePanels, isWaitingForResponse, pendingOptionId])
+
   // Transition to game screen when initial content is ready
   useEffect(() => {
     if (loadingProgress.text && loadingProgress.images) {
@@ -644,6 +692,7 @@ export function useGameSession(game: Game, options?: GameSessionOptions): GameSe
     loadingProgress,
     responseReady,
     worldMood,
+    lastChoiceFeedback,
     pendingOptionId,
     userChoices,
     assistantMessageCount,

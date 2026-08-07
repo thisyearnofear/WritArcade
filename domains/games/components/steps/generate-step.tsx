@@ -20,8 +20,8 @@ interface GenerateStepProps {
  * Step 4 — the primary submit / "generate" CTA.
  *
  * The button is `type="submit"` so it triggers the parent <form>'s onSubmit.
- * Label changes across states: idle → "Preview Article", previewed+unpaid →
- * "Complete Payment to Generate", previewed+paid → "Generate Custom … Game",
+ * Label changes across states: source missing → "Preview Article", previewed+unpaid →
+ * "Complete Payment to Generate", previewed+paid → "Generate my playable story",
  * wordle → "Create Wordle Game (Free)".
  */
 export function GenerateStep({
@@ -71,10 +71,10 @@ export function GenerateStep({
                 ? 'Checking Article...'
                 : 'Preview Article'
               : isDailyFlow
-              ? `Generate Today's ${genre.charAt(0).toUpperCase() + genre.slice(1)} Daily Game`
+                ? `Generate Today’s ${genre.charAt(0).toUpperCase() + genre.slice(1)} Story`
               : isStoryMode
               ? paymentApproved
-                ? `Generate Custom ${genre.charAt(0).toUpperCase() + genre.slice(1)} Game`
+                ? 'Generate my playable story'
                 : url.trim()
                   ? 'Complete Payment to Generate'
                   : 'Paste Article to Start'

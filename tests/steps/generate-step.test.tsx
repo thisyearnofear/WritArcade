@@ -52,9 +52,9 @@ describe('GenerateStep', () => {
     expect(screen.getByText('Complete Payment to Generate')).toBeInTheDocument()
   })
 
-  it('shows "Generate Custom Horror Game" when paid', () => {
+  it('shows the playable-story CTA when paid', () => {
     render(<GenerateStep {...baseProps} hasPreviewedCurrentUrl={true} paymentApproved={true} url="https://example.com" />)
-    expect(screen.getByText('Generate Custom Horror Game')).toBeInTheDocument()
+    expect(screen.getByText('Generate my playable story')).toBeInTheDocument()
   })
 
   it('shows "Create Wordle Game (Free)" in wordle mode', () => {
@@ -76,8 +76,8 @@ describe('GenerateStep', () => {
     expect(button).toBeDisabled()
   })
 
-  it('capitalizes genre name in the generate label', () => {
+  it('keeps the playable-story CTA consistent across tones', () => {
     render(<GenerateStep {...baseProps} hasPreviewedCurrentUrl={true} paymentApproved={true} genre="comedy" url="https://example.com" />)
-    expect(screen.getByText('Generate Custom Comedy Game')).toBeInTheDocument()
+    expect(screen.getByText('Generate my playable story')).toBeInTheDocument()
   })
 })

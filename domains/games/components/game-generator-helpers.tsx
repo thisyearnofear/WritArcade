@@ -11,8 +11,8 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import { AlertTriangle, RefreshCw, X, Gamepad2, Sparkles } from 'lucide-react'
-import type { GameGenre } from '@/components/game/GenreSelector'
-import type { GameDifficulty } from '@/components/game/DifficultySelector'
+import { GENRE_LABEL, type GameGenre } from '@/components/game/GenreSelector'
+import { DIFFICULTY_LABEL, type GameDifficulty } from '@/components/game/DifficultySelector'
 import type { WriterCoin, PaymentToken } from '@/lib/writerCoins'
 
 export type PaymentPath = 'writercoin' | 'musd'
@@ -166,7 +166,7 @@ export function generationError(message: string): GenerateErrorState {
     message,
     retryLabel: 'Generate again',
     suggestions: [
-      isTimeout ? 'Retry with Fast image quality if the article is long.' : isQuota ? 'Our AI quota is temporarily full — retry in a few minutes.' : 'Retry once; model failures are often temporary.',
+      isTimeout ? 'Retry with Explore quickly if the article is long.' : isQuota ? 'Our AI quota is temporarily full — retry in a few minutes.' : 'Retry once; model failures are often temporary.',
       'Try a shorter article or switch to Wordle for a free article-derived result.',
       'Keep this tab open while generation is running.',
     ],
@@ -233,7 +233,7 @@ export function StylePreview({ genre, difficulty }: { genre: GameGenre; difficul
           )}
         </div>
         <div className="text-xs">
-          <div className="font-semibold mb-1">Live Preview — {genre} • {difficulty}</div>
+          <div className="font-semibold mb-1">Live Preview — {GENRE_LABEL[genre]} · {DIFFICULTY_LABEL[difficulty]}</div>
           <div className="opacity-95">{s.blurb}</div>
           <div className="opacity-90">{s.diff}</div>
         </div>

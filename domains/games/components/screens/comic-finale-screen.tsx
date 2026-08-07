@@ -44,6 +44,7 @@ interface ComicFinaleScreenProps {
   handleRegisterDerivativeIp: () => Promise<void>
   isRegisteringDerivative: boolean
   epilogueReflection?: string | null
+  isOwner?: boolean
 }
 
 export function ComicFinaleScreen({
@@ -67,6 +68,7 @@ export function ComicFinaleScreen({
   handleRegisterDerivativeIp,
   isRegisteringDerivative,
   epilogueReflection,
+  isOwner: isOwnerFromSession = false,
 }: ComicFinaleScreenProps) {
   const router = useRouter()
   const { address: userAddress } = useAccount()
@@ -80,7 +82,7 @@ export function ComicFinaleScreen({
   const [fundError, setFundError] = useState<string | null>(null)
   const [savedArtifactKey, setSavedArtifactKey] = useState<string | null>(null)
   const ownerAddress = game.ownerWallet || game.creatorWallet
-  const isOwner = Boolean(
+  const isOwner = isOwnerFromSession || Boolean(
     userAddress &&
     ownerAddress &&
     userAddress.toLowerCase() === ownerAddress.toLowerCase()
@@ -310,6 +312,7 @@ export function ComicFinaleScreen({
         isOwner={isOwner}
         mintTokenLabel={mintToken?.symbol}
         mintCostLabel={mintCostLabel}
+        hasSecretEpilogue={Boolean(game.promptVaultUuid || game.secretPanelGenerated)}
       />
       {STORY_IP_UI_ENABLED && extractedAssetIds.length > 0 && !derivativeRegistered && !derivativePromptDismissed && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl px-6 py-4 flex flex-col items-center gap-3 shadow-2xl max-w-sm w-full mx-4">

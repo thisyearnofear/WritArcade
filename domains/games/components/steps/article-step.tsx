@@ -123,7 +123,7 @@ export function ArticleStep({
           placeholder={isMusdPath ? 'https://paragraph.xyz/... (any article)' : 'https://paragraph.xyz/...'}
           value={url}
           onChange={(e) => onUrlChange(e.target.value)}
-          className="mt-1 font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+          className="mt-1 min-h-[48px] font-mono focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         />
       </div>
 
@@ -186,7 +186,7 @@ export function ArticleStep({
           type="button"
           onClick={onPreview}
           disabled={isPreviewingArticle || !url.trim()}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPreviewingArticle ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
           {isPreviewingArticle ? 'Checking article...' : 'Preview article'}

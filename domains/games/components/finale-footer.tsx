@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Download, Zap, Loader2, Wallet } from 'lucide-react'
+import { Download, Zap, Loader2, Wallet, BarChart3 } from 'lucide-react'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { AttributionPair } from '@/components/ui/user-attribution'
 import { NarrationControls } from './finale-narration'
@@ -11,7 +11,6 @@ import type { useNarration } from './finale-narration'
 import type { ComicBookFinalePanelData } from './comic-book-finale'
 
 interface FinaleFooterProps {
-  gameTitle: string
   genre: string
   totalPanels: number
   primaryColor: string
@@ -36,7 +35,6 @@ interface FinaleFooterProps {
   video: ReturnType<typeof useVideoMotion>
   isMinting: boolean
   mintAvailable: boolean
-  onBack: () => void
   onDownload: () => void
   onMint: () => void
   // Video upsell
@@ -51,6 +49,9 @@ interface FinaleFooterProps {
   ipRegistrationReady: boolean
   showIPRegistration: boolean
   onShowIPRegistration: () => void
+  isOwner?: boolean
+  gameSlug: string
+  hasSecretEpilogue?: boolean
 }
 
 /**
@@ -58,7 +59,6 @@ interface FinaleFooterProps {
  * Extracted from ComicBookFinale to reduce its size.
  */
 export function FinaleFooter({
-  gameTitle,
   genre,
   totalPanels,
   primaryColor,
@@ -74,7 +74,6 @@ export function FinaleFooter({
   video,
   isMinting,
   mintAvailable,
-  onBack,
   onDownload,
   onMint,
   onFundGame,
@@ -84,6 +83,9 @@ export function FinaleFooter({
   ipRegistrationReady,
   showIPRegistration,
   onShowIPRegistration,
+  isOwner = false,
+  gameSlug,
+  hasSecretEpilogue = false,
   onOpenVideoStyleModal,
   onWatchCinematic,
 }: FinaleFooterProps) {
@@ -130,21 +132,33 @@ export function FinaleFooter({
             Download
           </Button>
 
-          <VideoUpsellCTA
-            video={video}
-            onOpenStyleModal={onOpenVideoStyleModal}
-            onWatch={onWatchCinematic}
-          />
+          <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-2 py-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Optional</span>
+            <VideoUpsellCTA
+              video={video}
+              onOpenStyleModal={onOpenVideoStyleModal}
+              onWatch={onWatchCinematic}
+            />
+          </div>
 
-          {mintAvailable ? (
-            <Button
+          {isOwner && (
+            <a
+              href={`/games/${gameSlug}/insights`}
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/50 hover:bg-emerald-500/10"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Reader insights
+            </a>
+          )}
+
+          {mintAvailable ? (              <Button
               onClick={onMint}
               disabled={isMinting}
               className="gap-2"
               style={{ backgroundColor: primaryColor, color: 'white' }}
             >
               <Zap className="w-4 h-4" />
-              {isMinting ? 'Preparing NFT...' : 'Mint as NFT'}
+              {isMinting ? 'Preparing NFT...' : hasSecretEpilogue ? 'Own & unlock' : 'Own game'}
             </Button>
           ) : onFundGame ? (
             <Button
@@ -153,7 +167,7 @@ export function FinaleFooter({
               className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
             >
               {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-              {isFunding ? 'Paying…' : `Pay ${fundCostLabel || ''} to Mint`}
+              {isFunding ? 'Paying…' : `Pay ${fundCostLabel || ''} to Own`}
             </Button>
           ) : onConnectWallet ? (
             <Button
@@ -161,12 +175,12 @@ export function FinaleFooter({
               className="gap-2 bg-purple-600 hover:bg-purple-500 text-white"
             >
               <Wallet className="w-4 h-4" />
-              Connect to Mint
+              Connect to Own
             </Button>
           ) : (
             <Button disabled className="gap-2">
               <Zap className="w-4 h-4" />
-              Mint as NFT
+              Own game
             </Button>
           )}
 

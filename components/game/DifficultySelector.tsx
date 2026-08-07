@@ -5,9 +5,14 @@ import { radioCardClass } from './radioCard'
 export type GameDifficulty = 'easy' | 'hard'
 
 const DIFFICULTIES = ['easy', 'hard'] as const
-const DIFFICULTY_COPY: Record<GameDifficulty, string> = {
+export const DIFFICULTY_LABEL: Record<GameDifficulty, string> = {
   easy: 'Faster progression',
   hard: 'Deeper branches',
+}
+
+const DIFFICULTY_COPY: Record<GameDifficulty, string> = {
+  easy: 'A lighter path with fewer branching demands',
+  hard: 'More complex choices with deeper branching',
 }
 
 interface DifficultySelectorProps {
@@ -29,8 +34,8 @@ export function DifficultySelector({
   }
 
   return (
-    <div role="radiogroup" aria-label="Difficulty">
-      <label className="mb-3 block text-sm font-medium text-purple-200">Difficulty</label>
+    <div role="radiogroup" aria-label="Story intensity">
+      <label className="mb-3 block text-sm font-medium text-purple-200">Story intensity</label>
       <div className="grid grid-cols-2 gap-3">
         {DIFFICULTIES.map((difficulty) => (
           <button
@@ -48,7 +53,7 @@ export function DifficultySelector({
             disabled={disabled}
             className={radioCardClass(selected === difficulty, disabled)}
 >
-            <span className="text-sm capitalize">{difficulty}</span>
+            <span className="text-sm">{DIFFICULTY_LABEL[difficulty]}</span>
             <span className="text-[11px] text-purple-300/80">{DIFFICULTY_COPY[difficulty]}</span>
           </button>
         ))}

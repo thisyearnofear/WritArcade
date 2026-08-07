@@ -28,13 +28,13 @@ export const ModelSelector: React.FC = () => {
           <SelectItem value="fast">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4" />
-              <span>Fast (Turbo)</span>
+              <span>Explore quickly</span>
             </div>
           </SelectItem>
           <SelectItem value="quality">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
-              <span>High Quality</span>
+              <span>Refined visuals</span>
             </div>
           </SelectItem>
         </SelectContent>

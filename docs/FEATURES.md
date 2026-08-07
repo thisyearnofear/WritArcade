@@ -2,6 +2,18 @@
 
 ## Core Flows
 
+### Creation UX Contract
+
+The first-run creation path is **Source → Story direction → Generate**. It is compact and mobile-first by design:
+
+- Primary controls: source preview, tone, story intensity, and one clear generation action.
+- Advanced controls: payment rails, writer selection, technical model/provider details, IP, and marketplace enrichment remain progressively disclosed.
+- The pre-generation preview shows a five-beat story shape, not the exact ending.
+- Animation and alternate-ending expansion are post-generation actions after a playable story exists.
+- The Workshop/Creator Studio is refinement for deeper control, not a prerequisite for first play.
+
+See the [Creation UX Contract](./CREATION_UX.md) for the decision record, feedback triage rules, mobile interaction rules, validation checkpoint, and success metrics.
+
 ### Article → Game (Classic)
 1. **Input**: Paste article URL → AI extracts assets
 2. **Customize** (Optional): Edit characters & mechanics in Workshop
@@ -105,7 +117,7 @@ Auto-fallback chain ensures reliability:
 2. **Modal** (Fallback 1) - Self-hosted SD 1.5, 512x512, pay-per-use GPU
 3. **Netmind AI** (Fallback 2) - OpenAI-compatible API
 
-See [docs/MODAL_SETUP.md](./MODAL_SETUP.md) for Modal deployment.
+See [scripts/modal/README.md](../scripts/modal/README.md) for Modal deployment.
 
 ### Mezo MUSD Payments (Hackathon Track)
 WritersArcade supports the Mezo ecosystem via a dedicated MUSD payment track:
@@ -121,6 +133,8 @@ WritersArcade supports the Mezo ecosystem via a dedicated MUSD payment track:
 - **Image Regeneration**: "New Image" button per panel with loading state
 - **Prompt Editing**: View/edit prompts, regenerate with custom text
 - **Narrative Editing**: Hover-to-edit text in finale before minting
+- **Outcome-based visual finish**: Fast exploration or Refined visuals; provider/model details stay out of the first-run path
+- **Non-spoiler story shape**: Five-beat pre-generation structure preview without revealing the exact ending
 - **Real-time Downloads**: Edited text exported in PNG comic download
 
 ### Comic Finale — Narration & Animation

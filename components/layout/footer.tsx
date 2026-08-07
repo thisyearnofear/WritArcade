@@ -7,12 +7,14 @@ import { useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 
 const NAV_LINKS = [
-  { href: '/games', label: 'The Arcade' },
+  { href: '/games', label: 'Play · The Arcade' },
+  { href: '/daily', label: 'Daily Challenge' },
+  { href: '/generate', label: 'Create a game' },
+  { href: '/studio', label: 'Creator insights' },
   { href: '/writers', label: 'Writers' },
-  { href: '/assets', label: 'Marketplace' },
-  { href: '/generate', label: 'Generate' },
-  { href: '/#how-it-works', label: 'How it works' },
   { href: '/my-games', label: 'My Games' },
+  { href: '/assets', label: 'Advanced · Marketplace' },
+  { href: '/#how-it-works', label: 'How it works' },
 ]
 
 const BASE_GAME_NFT_ADDRESS =
@@ -111,7 +113,7 @@ export function Footer() {
               writersarcade
             </motion.p>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Turn articles into playable, mintable games with on-chain IP and revenue splits.
+              Turn writing into playable experiences, then measure what readers choose and bring the story to life on-chain.
             </p>
           </div>
 
