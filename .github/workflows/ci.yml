@@ -30,6 +30,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The Fastify API (apps/writersarcade-api) is an npm package outside the
+      # pnpm workspace; its tests run under the root vitest, so install its
+      # deps so fastify etc. resolve from apps/writersarcade-api/node_modules.
+      - name: Install API dependencies
+        run: npm ci --prefix apps/writersarcade-api --no-audit --no-fund
+
       - name: Generate Prisma client
         run: pnpm db:generate
         env:

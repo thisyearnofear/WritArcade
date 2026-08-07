@@ -16,6 +16,7 @@
     "db:deploy": "prisma migrate deploy",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:api": "vitest run apps/writersarcade-api/src/index.test.js",
     "db:studio": "prisma studio",
     "db:setup": "prisma generate && prisma db push",
     "migrate:data": "tsx scripts/migrate-data.ts",

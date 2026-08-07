@@ -3,11 +3,16 @@
 ## Quick Start
 
 ```bash
-# Use the supported runtime (Node 20.x)
+# Use the supported runtime (Node 20.x) — pinned in .nvmrc, enforced in CI
 nvm use
 
 # Install dependencies
 pnpm install
+```
+
+> **Runtime:** the project pins Node 20 (`engines` in `package.json`, `.nvmrc`, and CI).
+> On other major versions pnpm prints an `Unsupported engine` warning; install
+> Node 20 (e.g. `nvm install 20 && nvm use`) to avoid subtle toolchain drift.
 
 # Copy environment template
 cp .env.example .env.local
@@ -51,7 +56,7 @@ pnpm db:setup         # Generate client + push schema
 A CI workflow (`.github/workflows/ci.yml`) runs on every push:
 1. `pnpm type-check` - catches type errors
 2. `pnpm lint` - catches code quality issues
-3. `pnpm test` - runs Vitest test suite (37+ payment tests)
+3. `pnpm test` - runs the Vitest suite (root + `apps/writersarcade-api` HTTP tests; the API's npm deps are installed in CI first)
 4. `pnpm build` - verifies production build succeeds
 
 #### Mezo Passport build configuration
@@ -305,17 +310,20 @@ modal deploy modal_image_gen.py   # Redeploy
 ### Automated Tests (Vitest)
 
 ```bash
-pnpm test             # Run all tests
+pnpm test             # Run all tests (root suite + API HTTP tests)
 pnpm test:watch       # Run tests in watch mode
+pnpm test:api         # Run only the Fastify API HTTP tests
 npx vitest run tests/payments/  # Run payment tests only
 ```
 
-Tests live in `tests/` and mirror the `domains/` structure:
+Tests live in `tests/` (mirroring the `domains/` structure) plus the API:
 - `tests/payments/payment-cost-service.test.ts` — 18 tests: revenue splits, caching, edge cases
 - `tests/payments/strategies.test.ts` — 16 tests: WriterCoin + MUSD strategy with fake timers
 - `tests/payments/initiate-route.test.ts` — 3 tests: payment initiation endpoint
+- `apps/writersarcade-api/src/index.test.js` — 11 HTTP tests: health, production `start()` boot, balance/generate/audio/NFT-ownership validation (no network)
 
-Total: **37 tests** across 3 files.
+**188 tests** total. To run the API suite from its own directory: `cd apps/writersarcade-api && npm test`
+(the API is an npm package outside the pnpm workspace; its deps must be installed first via `npm ci` there).
 
 Tests use Vitest with mocked Prisma and fake timers for retry/backoff logic. Tests run automatically in CI.
 

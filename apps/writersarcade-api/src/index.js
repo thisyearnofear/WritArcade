@@ -524,9 +524,11 @@ async function buildApp(opts = {}) {
   return app
 }
 
-async function start() {
-  const app = buildApp()
-  await app.listen({ port: PORT, host: '0.0.0.0' })
+async function start(port = PORT) {
+  // buildApp is async — it must be awaited to get the Fastify instance.
+  const app = await buildApp()
+  await app.listen({ port, host: '0.0.0.0' })
+  return app
 }
 
 module.exports = { buildApp, start }

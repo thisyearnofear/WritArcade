@@ -7,7 +7,7 @@
  * health payload.
  */
 import { describe, it, expect } from 'vitest'
-import { buildApp } from './index.js'
+import { buildApp, start } from './index.js'
 
 const VALID_WALLET = '0x0000000000000000000000000000000000000000'
 const VALID_CONTRACT = '0x1111111111111111111111111111111111111111'
@@ -25,6 +25,22 @@ describe('GET /api/health', () => {
     expect(body.status).toBe('ok')
     expect(typeof body.uptime).toBe('number')
     expect(Number.isNaN(Date.parse(body.timestamp))).toBe(false)
+  })
+})
+
+describe('start() production entrypoint', () => {
+  it('boots a real server on an ephemeral port and serves /api/health', async () => {
+    // Regression: start() previously forgot to await the async buildApp(), so
+    // app.listen was called on a Promise and production crashed on boot.
+    const app = await start(0)
+    try {
+      const port = app.server.address().port
+      const res = await fetch(`http://127.0.0.1:${port}/api/health`)
+      expect(res.status).toBe(200)
+      expect((await res.json()).status).toBe('ok')
+    } finally {
+      await app.close()
+    }
   })
 })
 
