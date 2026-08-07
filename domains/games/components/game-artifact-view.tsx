@@ -102,6 +102,7 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
 
   const [superrareMinting, setSuperrareMinting] = useState(false)
   const [superrareError, setSuperrareError] = useState<string | null>(null)
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
 
   const handleSuperrareMint = async () => {
     if (!address) return
@@ -169,7 +170,20 @@ export function GameArtifactView({ game }: GameArtifactViewProps) {
               <h1 className="font-serif text-3xl font-semibold leading-tight text-white sm:text-4xl">
                 {game.title}
               </h1>
-              <p className="mt-2 text-sm leading-6 text-white/70 line-clamp-2">{game.description}</p>
+              <p className={`mt-2 text-sm leading-6 text-white/70 ${descriptionExpanded ? '' : 'line-clamp-2'}`}>
+                {game.description}
+              </p>
+              {game.description.length > 220 && (
+                <button
+                  type="button"
+                  onClick={() => setDescriptionExpanded((prev) => !prev)}
+                  className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-white/50 transition-colors hover:text-white"
+                  aria-expanded={descriptionExpanded}
+                >
+                  {descriptionExpanded ? 'Show less' : 'Read more'}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${descriptionExpanded ? 'rotate-180' : ''}`} />
+                </button>
+              )}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {isOwner && !hasMintRecord ? (

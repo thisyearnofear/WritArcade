@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Gamepad2, Sparkles, Trophy, BarChart3, ExternalLink, FileText, Image as ImageIcon, Link2, Check, QrCode, Download, Loader2, CalendarDays, ArrowUpRight } from 'lucide-react'
+import { Gamepad2, Sparkles, Trophy, BarChart3, ExternalLink, FileText, Image as ImageIcon, Link2, Check, QrCode, Download, Loader2, CalendarDays, ArrowUpRight, ChevronDown } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import type { Game } from '../types'
 import type { ChatEntry } from '../hooks/use-game-session'
@@ -182,83 +182,88 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
         </div>
       </motion.div>
 
-      {/* Post-completion referral loop: keep the next action focused on bringing another player in. */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.37, duration: 0.4 }}
-        className="mb-8 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-5"
-      >
-        <div className="flex items-start gap-3">
-          <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-          <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-bold text-white">Keep the loop going</h3>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Come back tomorrow for a fresh Daily Challenge, or invite someone to play this story and compare endings.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link href="/daily" className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-amber-400">
-                <CalendarDays className="h-3.5 w-3.5" />
-Open Daily Challenge
-              </Link>
-              <Link href="/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/10">
-                Make your own story <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
       {showEpilogueCta && (
         <SecretEpilogueFinaleCta game={game} nftMinted={Boolean(game.nftTokenId)} className="mb-8" />
       )}
 
-      {/* Export card */}
+      {/* Post-completion referral loop: secondary actions stay reachable but
+          collapsed, so the completion view leads with one primary action. */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.38, duration: 0.4 }}
-        className="rounded-2xl border border-white/10 bg-card p-5 mb-8"
+        transition={{ delay: 0.37, duration: 0.4 }}
+        className="mb-8 space-y-3"
       >
-        <h3 className="text-sm font-bold text-white mb-3">Export your story</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <button
-            onClick={() => copyWithFeedback(markdownStory, 'markdown')}
-            className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
-          >
-            {copiedFormat === 'markdown' ? <Check className="w-4 h-4 text-emerald-400" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
-            {copiedFormat === 'markdown' ? 'Copied' : 'Markdown'}
-          </button>
-          <button
-            onClick={() => copyWithFeedback(gameUrl, 'link')}
-            className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
-          >
-            {copiedFormat === 'link' ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4 text-muted-foreground" />}
-            {copiedFormat === 'link' ? 'Copied' : 'Link'}
-          </button>
-          <button
-            onClick={() => setShowQr((prev) => !prev)}
-            className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
-          >
-            <QrCode className="w-4 h-4 text-muted-foreground" />
-            {showQr ? 'Hide QR' : 'QR Code'}
-          </button>
-          <button
-            onClick={handleDownloadPdf}
-            disabled={pdfLoading}
-            className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors disabled:opacity-50"
-          >
-            {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin text-purple-400" /> : <Download className="w-4 h-4 text-muted-foreground" />}
-            {pdfLoading ? 'Saving...' : 'PDF'}
-          </button>
-          <a
-            href={game.imageUrl || gameUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors ${!game.imageUrl ? 'pointer-events-none opacity-50' : ''}`}
-          >
-            <ImageIcon className="w-4 h-4 text-muted-foreground" />
-            {game.imageUrl ? 'Image' : 'No Image'}
-          </a>
-        </div>
+        <details className="group rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-5">
+          <summary className="flex cursor-pointer list-none select-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+            <CalendarDays className="h-5 w-5 shrink-0 text-amber-400" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-white">Keep the loop going</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">Come back tomorrow for a fresh Daily Challenge, or invite someone to play this story and compare endings.</span>
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/daily" className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-amber-400">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Open Daily Challenge
+            </Link>
+            <Link href="/generate" className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/10">
+              Make your own story <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </details>
+
+        {/* Export card — collapsed by default */}
+        <details className="group rounded-2xl border border-white/10 bg-card p-5">
+          <summary className="flex cursor-pointer list-none select-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+            <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-white">Export your story</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">Markdown, link, QR code, PDF, or the cover image.</span>
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <button
+              onClick={() => copyWithFeedback(markdownStory, 'markdown')}
+              className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+            >
+              {copiedFormat === 'markdown' ? <Check className="w-4 h-4 text-emerald-400" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
+              {copiedFormat === 'markdown' ? 'Copied' : 'Markdown'}
+            </button>
+            <button
+              onClick={() => copyWithFeedback(gameUrl, 'link')}
+              className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+            >
+              {copiedFormat === 'link' ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4 text-muted-foreground" />}
+              {copiedFormat === 'link' ? 'Copied' : 'Link'}
+            </button>
+            <button
+              onClick={() => setShowQr((prev) => !prev)}
+              className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+            >
+              <QrCode className="w-4 h-4 text-muted-foreground" />
+              {showQr ? 'Hide QR' : 'QR Code'}
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={pdfLoading}
+              className="inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors disabled:opacity-50"
+            >
+              {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin text-purple-400" /> : <Download className="w-4 h-4 text-muted-foreground" />}
+              {pdfLoading ? 'Saving...' : 'PDF'}
+            </button>
+            <a
+              href={game.imageUrl || gameUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 py-3 text-xs font-medium text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors ${!game.imageUrl ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <ImageIcon className="w-4 h-4 text-muted-foreground" />
+              {game.imageUrl ? 'Image' : 'No Image'}
+            </a>
+          </div>
         {showQr && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -269,6 +274,7 @@ Open Daily Challenge
             <p className="text-xs text-muted-foreground text-center break-all max-w-[200px]">{gameUrl}</p>
           </motion.div>
         )}
+        </details>
       </motion.div>
 
       {/* CTA buttons */}
