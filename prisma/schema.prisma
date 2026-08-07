@@ -139,6 +139,9 @@ model Game {
   // Video upsell tracking
   videoUpsoldAt DateTime?
   videoUpsellStatus String @default("idle") // 'idle' | 'pending' | 'completed' | 'failed'
+  videoPaymentRef String? // Internal credit-payment reference for safe refunds
+  videoPaymentUserId String? // User charged for the animation
+  videoChargeRefundedAt DateTime?
 
   // Play tracking — incremented each time a game session completes
   playCount    Int      @default(0)
@@ -226,6 +229,8 @@ model GameArtifactPanel {
   videoProvider String? // Provider slug, e.g. "luma" | "fal" | "replicate" | "mock"
   videoModel String?    // Specific model/version used, e.g. "ray-2"
   videoJobId String?    // Provider job id used for polling/status updates
+  videoStyle String?    // Selected motion style for provider fallback retries
+  videoPolledAt DateTime? // Lease timestamp preventing duplicate upstream polls
   videoStatus String @default("idle") // 'idle' | 'pending' | 'completed' | 'failed'
   videoError String?    // Failure reason for support/debugging
 

@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { getActor } from '@/services/auth'
-import { VideoGenerationService, type VideoStyle, VIDEO_STYLE_LABELS } from '@/domains/games/services/video-generation.service'
+import { checkRateLimit } from '@/services/rate-limit'
+import {
+  VideoGenerationService,
+  type VideoStyle,
+  VIDEO_STYLE_LABELS,
+  getVideoDurationSeconds,
+} from '@/domains/games/services/video-generation.service'
 import { CREDITS_CONFIG } from '@/lib/writerCoins'
-import { randomBytes } from 'crypto'
+import { config } from '@/lib/config'
+import { persistMediaUrl } from '@/domains/story/services/media-upload'
+import { refundVideoCharge } from '@/domains/games/services/video-charge.service'
 
 export async function POST(
   request: NextRequest,
@@ -11,6 +20,9 @@ export async function POST(
 ) {
   try {
     const { slug } = await params
+    if (!config.features.videoPipeline) {
+      return NextResponse.json({ error: 'Animation is not available.' }, { status: 404 })
+    }
     const actor = await getActor()
     if (!actor) {
       return NextResponse.json({ error: 'Sign in to animate this comic.' }, { status: 401 })
@@ -25,7 +37,6 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    // Private games can only be animated by the owner.
     if (game.private && game.userId && game.userId !== actor.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -38,30 +49,82 @@ export async function POST(
       )
     }
 
-    const panelsWithoutImages = panels.filter((panel) => !panel.imageUrl)
-    if (panelsWithoutImages.length > 0) {
+    // The social artifact is the ending reveal: animate only the final panel
+    // first. The existing per-panel schema remains available for a later full
+    // montage without making launch requests fan out across five providers.
+    const heroPanel = panels[panels.length - 1]
+    if (!heroPanel.imageUrl) {
       return NextResponse.json(
-        { error: `Cannot animate ${panelsWithoutImages.length} panel(s) without images.` },
+        { error: 'The ending panel has no image to animate. Regenerate it first.' },
         { status: 400 }
       )
     }
 
-    // Idempotency: if already completed or in progress, return current state.
-    if (game.videoUpsoldAt && game.videoUpsellStatus !== 'failed') {
-      const panelData = panels.map((panel) => ({
-        id: panel.id,
-        panelIndex: panel.panelIndex,
-        videoStatus: panel.videoStatus,
-        videoUrl: panel.videoUrl,
-      }))
+    const burst = checkRateLimit(`video:${actor.user.id}`)
+    if (!burst.allowed) {
+      return NextResponse.json(
+        { error: 'Animation requests are temporarily limited. Please try again shortly.', resetIn: burst.resetIn },
+        { status: 429 }
+      )
+    }
+
+    const sentinelHash = `credits:${randomBytes(16).toString('hex')}`
+
+    // Reserve the game atomically before charging. This prevents two rapid
+    // clicks or duplicate requests from creating two paid jobs. The payment
+    // reference is stored with the reservation so a later recovery/refund can
+    // identify the charge even if the provider call fails.
+    const reservation = await prisma.game.updateMany({
+      where: {
+        id: game.id,
+        OR: [
+          { videoUpsoldAt: null },
+          {
+            videoUpsellStatus: 'failed',
+            OR: [
+              { videoChargeRefundedAt: { not: null } },
+              { videoPaymentRef: null },
+            ],
+          },
+        ],
+      },
+      data: {
+        videoUpsoldAt: new Date(),
+        videoUpsellStatus: 'pending',
+        videoPaymentRef: sentinelHash,
+        videoPaymentUserId: actor.user.id,
+        videoChargeRefundedAt: null,
+      },
+    })
+
+    if (reservation.count === 0) {
+      const current = await prisma.game.findUnique({
+        where: { id: game.id },
+        select: { videoUpsellStatus: true },
+      })
       return NextResponse.json({
         success: true,
-        data: { gameId: game.id, status: game.videoUpsellStatus, panels: panelData },
+        data: {
+          gameId: game.id,
+          status: current?.videoUpsellStatus ?? 'pending',
+          mode: 'hero',
+          heroPanelId: heroPanel.id,
+          panels: [{
+            id: heroPanel.id,
+            panelIndex: heroPanel.panelIndex,
+            videoStatus: heroPanel.videoStatus,
+            videoUrl: heroPanel.videoUrl,
+          }],
+        },
       })
     }
 
     const cost = CREDITS_CONFIG.cost['video-upsell']
     if (actor.user.credits < cost) {
+      await prisma.game.update({
+        where: { id: game.id },
+        data: { videoUpsoldAt: null, videoUpsellStatus: 'idle', videoPaymentRef: null, videoPaymentUserId: null, videoChargeRefundedAt: null },
+      })
       return NextResponse.json(
         {
           error: `Insufficient credits. You need ${cost} credits but have ${actor.user.credits}.`,
@@ -72,85 +135,133 @@ export async function POST(
       )
     }
 
-    // Charge credits and mark upsell as started.
-    const sentinelHash = `credits:${randomBytes(16).toString('hex')}`
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: actor.user.id },
-        data: { credits: { decrement: cost } },
-      }),
-      prisma.creditTransaction.create({
-        data: {
-          userId: actor.user.id,
-          fiatAmount: 0,
-          creditAmount: -cost,
-          status: 'completed',
-          completedAt: new Date(),
-        },
-      }),
-      prisma.payment.create({
-        data: {
-          transactionHash: sentinelHash,
-          action: 'video-upsell',
-          amount: cost,
-          status: 'verified',
-          verifiedAt: new Date(),
-          writerCoinId: 'credits',
-          userId: actor.user.id,
-          walletAddress: actor.user.walletAddress ?? null,
-        },
-      }),
-      prisma.game.update({
-        where: { id: game.id },
-        data: { videoUpsoldAt: new Date(), videoUpsellStatus: 'pending' },
-      }),
-    ])
-
-    // Read optional animation style from the request body.
     const body = await request.json().catch(() => ({})) as { style?: VideoStyle }
     const style = body?.style && VIDEO_STYLE_LABELS[body.style] ? body.style : 'cinematic'
 
-    // Kick off video generation jobs in parallel.
-    const generationResults = await Promise.all(
-      panels.map((panel) =>
-        VideoGenerationService.generate({
-          imageUrl: panel.imageUrl ?? '',
-          narrative: panel.narrativeText,
-          genre: game.genre,
-          panelIndex: panel.panelIndex,
-          primaryColor: game.primaryColor ?? undefined,
-          style,
+    // Reserve the credit before starting work. If every provider rejects the
+    // request immediately, refund it below so users never pay for no job.
+    try {
+      await prisma.$transaction(async (tx) => {
+        const debit = await tx.user.updateMany({
+          where: { id: actor.user.id, credits: { gte: cost } },
+          data: { credits: { decrement: cost } },
         })
-      )
-    )
+        if (debit.count !== 1) {
+          throw new Error('INSUFFICIENT_CREDITS')
+        }
 
-    // Persist job ids and statuses.
-    await Promise.all(
-      panels.map((panel, index) =>
-        prisma.gameArtifactPanel.update({
-          where: { id: panel.id },
+        await tx.creditTransaction.create({
           data: {
-            videoStatus: generationResults[index].status,
-            videoProvider: generationResults[index].provider,
-            videoModel: generationResults[index].model,
-            videoJobId: generationResults[index].providerJobId,
-            videoUrl: generationResults[index].videoUrl,
-            videoError: generationResults[index].error ?? null,
+            userId: actor.user.id,
+            fiatAmount: 0,
+            creditAmount: -cost,
+            status: 'completed',
+            completedAt: new Date(),
           },
         })
-      )
-    )
+        await tx.payment.create({
+          data: {
+            transactionHash: sentinelHash,
+            action: 'video-upsell',
+            amount: cost,
+            status: 'verified',
+            verifiedAt: new Date(),
+            writerCoinId: 'credits',
+            userId: actor.user.id,
+            walletAddress: actor.user.walletAddress ?? null,
+          },
+        })
+      })
+    } catch (error) {
+      await prisma.game.update({
+        where: { id: game.id },
+        data: { videoUpsoldAt: null, videoUpsellStatus: 'idle', videoPaymentRef: null, videoPaymentUserId: null, videoChargeRefundedAt: null },
+      })
+      if (error instanceof Error && error.message === 'INSUFFICIENT_CREDITS') {
+        return NextResponse.json(
+          { error: `Insufficient credits. You need ${cost} credits.`, required: cost },
+          { status: 402 },
+        )
+      }
+      throw error
+    }
 
-    const panelData = panels.map((panel, index) => ({
-      id: panel.id,
-      panelIndex: panel.panelIndex,
-      videoStatus: generationResults[index].status,
-      videoUrl: generationResults[index].videoUrl,
-    }))
+    let result
+    try {
+      result = await VideoGenerationService.generate({
+        imageUrl: heroPanel.imageUrl,
+        narrative: heroPanel.narrativeText,
+        genre: game.genre,
+        panelIndex: heroPanel.panelIndex,
+        primaryColor: game.primaryColor ?? undefined,
+        style,
+      })
+    } catch (error) {
+      await refundVideoCharge({
+        gameId: game.id,
+        userId: actor.user.id,
+        paymentRef: sentinelHash,
+        cost,
+        slug,
+        reason: 'video-generation-request-error',
+      })
+      throw error
+    }
+
+    const durableVideoUrl = result.status === 'completed' && result.videoUrl
+      ? await persistMediaUrl(result.videoUrl, `writersarcade-${slug}-hero.mp4`)
+      : null
+    const persistenceFailed = result.status === 'completed' && !durableVideoUrl
+    const effectiveResult = persistenceFailed
+      ? { ...result, status: 'failed' as const, videoUrl: null, error: 'Durable media storage is not configured.' }
+      : result
+    const videoUrl = durableVideoUrl ?? effectiveResult.videoUrl
+
+    await prisma.gameArtifactPanel.update({
+      where: { id: heroPanel.id },
+      data: {
+        videoStatus: effectiveResult.status,
+        videoProvider: effectiveResult.provider,
+        videoModel: effectiveResult.model,
+        videoJobId: effectiveResult.providerJobId,
+        videoStyle: style,
+        videoPolledAt: null,
+        videoUrl,
+        videoError: effectiveResult.error ?? null,
+      },
+    })
+
+    await prisma.game.update({
+      where: { id: game.id },
+      data: { videoUpsellStatus: effectiveResult.status },
+    })
+
+    if (effectiveResult.status === 'failed') {
+      await refundVideoCharge({
+        gameId: game.id,
+        userId: actor.user.id,
+        paymentRef: sentinelHash,
+        cost,
+        slug,
+        reason: 'video-generation-immediate-failure',
+      })
+    }
 
     return NextResponse.json({
       success: true,
-      data: { gameId: game.id, status: 'pending', panels: panelData },
+      data: {
+        gameId: game.id,
+        status: effectiveResult.status,
+        mode: 'hero',
+        heroPanelId: heroPanel.id,
+        durationSeconds: getVideoDurationSeconds(),
+        panels: [{
+          id: heroPanel.id,
+          panelIndex: heroPanel.panelIndex,
+          videoStatus: effectiveResult.status,
+          videoUrl,
+        }],
+      },
     })
   } catch (error) {
     console.error('[Video Start] Error:', error)

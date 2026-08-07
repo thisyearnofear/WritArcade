@@ -256,6 +256,8 @@ Game Creation → createGameHypercert() (async, non-blocking)
 **Fallback**: Grove immutable upload via `https://api.grove.storage`, using `GROVE_CHAIN_ID` (defaults to Base mainnet `8453`)
 **Usage**: Metadata uploads for Story Protocol IP registration
 
+For the optional hero-video artifact pipeline, Pinata is also required for binary media persistence. Grove currently covers metadata only; a provider-hosted video URL is not treated as durable. See [Video Artifact Pipeline](./VIDEO_ARTIFACT_PIPELINE.md).
+
 - Production: Server-side upload route tries Pinata first, then Grove fallback if Pinata is missing or fails
 - Development: Mock IPFS hash generation (for testing)
 - Browser clients call `/api/ipfs/upload`; server secrets are never read from the client bundle

@@ -37,8 +37,8 @@ export class SocialShareService {
     const videoSuffix = data.videoUrl ? `\n\n🎬 Watch it move: ${data.videoUrl}` : ''
 
     if (data.twist && data.author) {
-      // Viral flow format
-      tweetText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it on @StoryProtocol using @writersarcade! 🎮📚${videoSuffix}\n\nCheck out "${data.gameTitle}" 👇`
+      // Use minting language only when the caller explicitly supplies it.
+      tweetText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and made my own ending on @writersarcade! 🎮📚${videoSuffix}\n\nCheck out "${data.gameTitle}" 👇`
     } else {
       // Completion copy is supplied by the product surface so the share has
       // a specific ending and a clear invitation, not just a feature claim.
@@ -58,8 +58,8 @@ export class SocialShareService {
     const videoLine = data.videoUrl ? `\n\n🎬 Animated version: ${data.videoUrl}` : ''
 
     if (data.twist && data.author) {
-      // Viral flow format
-      castText = `I read ${data.author}'s article, turned it into a ${data.genre} comic about ${data.twist}, and minted it!${videoLine}\n\nCheck out "${data.gameTitle}" on writersarcade 👇`
+      // Keep the invite focused on the creative result, not an unverified mint.
+      castText = `I read ${data.author}'s article, turned it into a ${data.genre} comic, and made my own ending!${videoLine}\n\nCheck out "${data.gameTitle}" on writersarcade 👇`
     } else {
       castText = `${data.text || `Just dropped my new comic "${data.gameTitle}" on writersarcade!`} 🎮📚\n\n${data.genre} story • ${data.panelCount} interactive panels${data.videoUrl ? ' • Animated panels 🎬' : ''} • every choice shapes the narrative${videoLine}`
     }

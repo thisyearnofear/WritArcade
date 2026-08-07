@@ -203,6 +203,7 @@ export function ComicBookFinale({
   }, [videoStatusForOffer, videoOfferDismissed, offerWalletAddress])
 
   const showVideoOffer =
+    video.enabled &&
     !videoOfferDismissed &&
     !showVideoStyleModal &&
     (video.status === 'idle' || video.status === 'failed') &&
@@ -535,7 +536,7 @@ export function ComicBookFinale({
               <p className="text-sm font-semibold text-white">Make your comic move</p>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Turn all {totalPanels} panels into a short animated cut — you have enough credits
+              Turn your ending into a short shareable animated reveal — you have enough credits
               ({creditsBalance}).
             </p>
             <Button
@@ -547,7 +548,7 @@ export function ComicBookFinale({
               size="sm"
             >
               <Clapperboard className="h-4 w-4" />
-              Animate · {CREDITS_CONFIG.cost['video-upsell']} credits
+              Animate ending · {CREDITS_CONFIG.cost['video-upsell']} credits
             </Button>
           </div>
         )}

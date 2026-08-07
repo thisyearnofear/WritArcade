@@ -14,7 +14,7 @@ import { VideoStyleSelector } from './video-style-selector'
 import { VideoShowcase } from './video-showcase'
 import { CreatorStats } from './creator-stats'
 import type { VideoMotion, VideoMotionProps } from './finale-video-motion'
-import type { VideoStyle } from '../services/video-generation.service'
+import type { VideoStyle } from '../services/video-generation.types'
 
 /* ─── Video upsell CTA (Animate / Animated button + error) ─────────────── */
 
@@ -41,7 +41,7 @@ export function VideoUpsellCTA({
         title={
           completed
             ? 'Watch your animated comic'
-            : `Bring all five panels to life as a short animated cut (${videoCost} credits)`
+            : `Bring your ending to life as a short shareable reveal (${videoCost} credits)`
         }
       >
         {isStarting || status === 'pending' ? (
@@ -129,7 +129,7 @@ export function VideoStyleModal({
             Optional animation
           </DialogTitle>
           <DialogDescription>
-            An optional 50-credit upgrade that turns your finished comic into a short animated cut.
+            An optional 50-credit upgrade that turns your ending into a short vertical animated reveal you can share.
           </DialogDescription>
         </DialogHeader>
         <VideoStyleSelector value={style} onChange={onStyleChange} />
@@ -143,7 +143,7 @@ export function VideoStyleModal({
             style={{ backgroundColor: primaryColor, color: 'white' }}
           >
             <Clapperboard className="h-4 w-4" />
-Add animation
+            Animate ending
           </Button>
         </div>
       </DialogContent>
@@ -192,6 +192,7 @@ export function FinaleCinematicView({
         primaryColor={primaryColor}
         gameTitle={gameTitle}
         autoPlay={false}
+        aspectRatio="vertical"
       />
       <CreatorStats
         gameTitle={gameTitle}

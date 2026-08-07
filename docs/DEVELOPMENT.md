@@ -93,8 +93,20 @@ NETMIND_API_KEY="..."             # Secondary image fallback
 BASE_RPC_URL="https://mainnet.base.org"
 STORY_RPC_URL="https://aeneid.storyrpc.io"
 STORY_WALLET_KEY="0x..."          # For server-side Story txs
-PINATA_JWT="pina_..."             # IPFS uploads via Pinata primary
-GROVE_CHAIN_ID="8453"             # Optional IPFS fallback via Grove immutable uploads
+PINATA_JWT="pina_..."             # IPFS metadata + durable hero-video bytes; required for shareable video
+IPFS_GATEWAY="https://gateway.pinata.cloud"
+GROVE_CHAIN_ID="8453"             # Metadata fallback only; not currently used for video bytes
+
+# Hero video artifact pipeline (server-side only)
+RUNWARE_API_KEY="..."             # Preferred image-to-video provider
+RUNWARE_VIDEO_MODEL="klingai:kling-video@3-standard"
+RUNWARE_VIDEO_DURATION="5"        # Clamped to 3–8 seconds
+VIDEO_PROVIDER="runware"          # Optional explicit first provider
+LUMA_API_KEY="..."                 # Fallback
+FAL_KEY="..."                      # Fallback; FAL_API_KEY is also accepted
+REPLICATE_API_TOKEN="..."          # Fallback
+FEATURE_VIDEO_PIPELINE="true"     # Enable the server-side optional finale animation path
+NEXT_PUBLIC_FEATURE_VIDEO_PIPELINE="true" # Also show the animation CTA in the browser
 
 # Mezo Hackathon
 NEXT_PUBLIC_MEZO_TESTNET_RPC="https://rpc.test.mezo.org"
@@ -187,6 +199,8 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 - `POST /api/games/[slug]/play` - Increment play counter; logs `completed` resonance event
 - `POST /api/games/chat` - Process a player choice; logs `choice` resonance event
 - `GET /api/games/[slug]/insights` - Owner-gated resonance analytics
+- `POST /api/games/[slug]/video/start` - Charge credits and start one hero-ending animation
+- `GET /api/games/[slug]/video/status` - Read/poll the hero job with provider fallback and recovery
 
 ### Credits
 - `GET /api/ramp/credits` - Query current actor's credit balance
@@ -227,6 +241,19 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 
 ### Image Generation Providers
 The system auto-fallbacks: Venice AI → Modal → Netmind
+
+### Hero Video Pipeline
+The finale animation is intentionally a post-completion optional upgrade. It generates one short hero reveal from the final panel rather than a five-panel montage. Runware is preferred, followed by Luma, fal, and Replicate when configured. Provider names are hidden from users; they choose a motion style.
+
+Production requirements:
+
+- Set `PINATA_JWT` before enabling paid animation. Provider-hosted URLs are temporary; if durable upload fails, the animation is marked failed and the credit charge is refunded.
+- Apply the four pending video migrations with `pnpm db:migrate` in development or `pnpm prisma migrate deploy` in staging/production before using the new routes.
+- Keep `FEATURE_VIDEO_PIPELINE` and provider secrets server-side. `NEXT_PUBLIC_FEATURE_VIDEO_PIPELINE` is only a client-visible UI flag; never expose provider API keys in `NEXT_PUBLIC_*` variables.
+- The public path is limited to one active hero job per game, two starts per user per minute, and 3–8 second clips (5 seconds by default).
+- A status read coordinates upstream polling and can reclaim stale reservations after 15 minutes. For production scale, add webhook/background reconciliation so recovery does not depend only on a user revisiting the page.
+
+See [Video Artifact Pipeline](./VIDEO_ARTIFACT_PIPELINE.md) for the product contract, provider behavior, credit safety, analytics, and future montage plan.
 
 **Modal setup**: See [docs/MODAL_SETUP.md](./MODAL_SETUP.md)
 

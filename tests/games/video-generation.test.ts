@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import {
   VideoGenerationService,
   videoProviderRegistry,
+  RunwareProvider,
   LumaProvider,
   FalProvider,
   ReplicateProvider,
@@ -18,6 +19,7 @@ function makeRequest(url: string, init?: RequestInit): NextRequest {
 
 describe('VideoProvider Registry', () => {
   it('registers all built-in providers', () => {
+    expect(videoProviderRegistry.get('runware')).toBeInstanceOf(RunwareProvider)
     expect(videoProviderRegistry.get('luma')).toBeInstanceOf(LumaProvider)
     expect(videoProviderRegistry.get('fal')).toBeInstanceOf(FalProvider)
     expect(videoProviderRegistry.get('replicate')).toBeInstanceOf(ReplicateProvider)
@@ -46,6 +48,53 @@ describe('VideoProvider Registry', () => {
     })
     expect(res.provider).toBe('failed')
     expect(res.status).toBe('failed')
+  })
+})
+
+describe('RunwareProvider', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    process.env = { ...OLD_ENV }
+  })
+
+  afterEach(() => {
+    process.env = OLD_ENV
+  })
+
+  it('creates an async image-to-video job from the hero panel', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: [{ taskUUID: 'runware-job-123', status: 'processing' }] }), { status: 200 })
+    )
+
+    const provider = new RunwareProvider('test-runware-key')
+    const result = await provider.createJob({
+      imageUrl: 'https://example.com/image.png',
+      narrative: 'A quiet street at night.',
+      genre: 'mystery',
+      panelIndex: 4,
+    })
+
+    expect(result.provider).toBe('runware')
+    expect(result.providerJobId).toBe('runware-job-123')
+    expect(result.status).toBe('pending')
+    expect(globalThis.fetch).toHaveBeenCalledWith('https://api.runware.ai/v1', expect.objectContaining({
+      method: 'POST',
+      body: expect.stringContaining('"frameImages":["https://example.com/image.png"]'),
+    }))
+  })
+
+  it('polls a completed async job', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        data: [{ taskUUID: 'runware-job-123', status: 'success', videoURL: 'https://cdn.runware.ai/hero.mp4' }],
+      }), { status: 200 })
+    )
+
+    const provider = new RunwareProvider('test-runware-key')
+    const result = await provider.poll('runware-job-123')
+
+    expect(result.status).toBe('completed')
+    expect(result.videoUrl).toBe('https://cdn.runware.ai/hero.mp4')
   })
 })
 
@@ -173,14 +222,22 @@ describe('MockProvider', () => {
 describe('POST /api/games/[slug]/video/start', () => {
   beforeEach(() => {
     vi.resetModules()
-    process.env = { ...OLD_ENV }
+    process.env = { ...OLD_ENV, FEATURE_VIDEO_PIPELINE: 'true' }
   })
 
   afterEach(() => {
     process.env = OLD_ENV
   })
 
-  it('returns 401 when not authenticated', async () => {
+  it('returns 404 when the feature is disabled', async () => {
+    process.env.FEATURE_VIDEO_PIPELINE = 'false'
+    const { POST } = await import('@/app/api/games/[slug]/video/start/route')
+    const request = makeRequest('http://localhost:3000/api/games/test/video/start', { method: 'POST' })
+    const response = await POST(request, { params: Promise.resolve({ slug: 'test' }) })
+    expect(response.status).toBe(404)
+  })
+
+  it('returns 401 when not authenticated and the feature is enabled', async () => {
     vi.doMock('@/services/auth', () => ({ getActor: vi.fn().mockResolvedValue(null) }))
     const { POST } = await import('@/app/api/games/[slug]/video/start/route')
     const request = makeRequest('http://localhost:3000/api/games/test/video/start', { method: 'POST' })
@@ -192,11 +249,19 @@ describe('POST /api/games/[slug]/video/start', () => {
 describe('GET /api/games/[slug]/video/status', () => {
   beforeEach(() => {
     vi.resetModules()
-    process.env = { ...OLD_ENV }
+    process.env = { ...OLD_ENV, FEATURE_VIDEO_PIPELINE: 'true' }
   })
 
   afterEach(() => {
     process.env = OLD_ENV
+  })
+
+  it('returns 404 when the feature is disabled', async () => {
+    process.env.FEATURE_VIDEO_PIPELINE = 'false'
+    const { GET } = await import('@/app/api/games/[slug]/video/status/route')
+    const request = makeRequest('http://localhost:3000/api/games/test/video/status')
+    const response = await GET(request, { params: Promise.resolve({ slug: 'test' }) })
+    expect(response.status).toBe(404)
   })
 
   it('returns 404 when game not found', async () => {

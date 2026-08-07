@@ -51,26 +51,34 @@ export function ShareDropdown({
   const shareData = { ...data, videoUrl: videoUrl ?? data.videoUrl }
 
   const handleTwitterShare = () => {
-    trackEvent('share_clicked', { surface, channel: 'twitter', url: data.url })
+    const mode = shareData.videoUrl ? 'hero-video' : 'comic'
+    trackEvent('share_clicked', { surface, channel: 'twitter', mode })
+    if (shareData.videoUrl) trackEvent('hero_artifact_shared', { surface, channel: 'twitter', mode })
     socialShareService.shareToTwitter(shareData)
     setShowMenu(false)
   }
 
   const handleFarcasterShare = () => {
-    trackEvent('share_clicked', { surface, channel: 'farcaster', url: data.url })
+    const mode = shareData.videoUrl ? 'hero-video' : 'comic'
+    trackEvent('share_clicked', { surface, channel: 'farcaster', mode })
+    if (shareData.videoUrl) trackEvent('hero_artifact_shared', { surface, channel: 'farcaster', mode })
     socialShareService.shareToFarcaster(shareData)
     setShowMenu(false)
   }
 
   const handleLinkedInShare = () => {
-    trackEvent('share_clicked', { surface, channel: 'linkedin', url: data.url })
-    socialShareService.shareToLinkedIn(data)
+    const mode = shareData.videoUrl ? 'hero-video' : 'comic'
+    trackEvent('share_clicked', { surface, channel: 'linkedin', mode })
+    if (shareData.videoUrl) trackEvent('hero_artifact_shared', { surface, channel: 'linkedin', mode })
+    socialShareService.shareToLinkedIn(shareData)
     setShowMenu(false)
   }
 
   const handleGenericShare = async () => {
-    trackEvent('share_clicked', { surface, channel: 'native_or_copy', url: data.url })
-    const success = await socialShareService.shareGeneric(data)
+    const mode = shareData.videoUrl ? 'hero-video' : 'comic'
+    trackEvent('share_clicked', { surface, channel: 'native_or_copy', mode })
+    if (shareData.videoUrl) trackEvent('hero_artifact_shared', { surface, channel: 'native_or_copy', mode })
+    const success = await socialShareService.shareGeneric(shareData)
     if (success) {
       // Could add toast notification here if needed
     }

@@ -30,6 +30,7 @@ const SAFE_PROPERTY_KEYS = new Set([
   'panelIndex',
   'choiceIndex',
   'gameSlug',
+  'style',
 ])
 
 function sanitizeProperties(

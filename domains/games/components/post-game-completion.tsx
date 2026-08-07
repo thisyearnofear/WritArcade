@@ -10,6 +10,7 @@ import type { ChatEntry } from '../hooks/use-game-session'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { useToast } from '@/components/ui/use-toast'
 import { SecretEpilogueFinaleCta } from '@/components/game/secret-epilogue-finale-cta'
+import { useVideoStatus } from '../hooks/use-video-status'
 
 interface PostGameCompletionProps {
   game: Game
@@ -24,6 +25,7 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null)
   const [showQr, setShowQr] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const { panels: videoPanels } = useVideoStatus(game.slug)
 
   const copyWithFeedback = async (text: string, format: string) => {
     try {
@@ -108,6 +110,7 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
     ? `I made a choice that changed "${game.title}": ${truncatedChoice}`
     : `I just finished "${game.title}" on WritersArcade`
   const referralText = `Play "${game.title}" and make your own choices — every run can end differently.`
+  const heroVideoUrl = videoPanels.find((panel) => panel.videoUrl)?.videoUrl ?? null
 
   const shareData = useMemo(
     () => ({
@@ -118,8 +121,9 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
       panelCount,
       gameTitle: game.title,
       author: game.authorParagraphUsername || undefined,
+      videoUrl: heroVideoUrl,
     }),
-    [game.title, game.genre, game.authorParagraphUsername, endingText, referralText, gameUrl, panelCount]
+    [game.title, game.genre, game.authorParagraphUsername, endingText, referralText, gameUrl, panelCount, heroVideoUrl]
   )
 
   return (
@@ -160,7 +164,9 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
       >
         <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-white mb-1">Share your ending</h3>
+            <h3 className="text-sm font-bold text-white mb-1">
+              {heroVideoUrl ? 'Share your animated ending' : 'Share your ending'}
+            </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {endingText}
             </p>

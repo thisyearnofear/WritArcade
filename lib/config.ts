@@ -48,7 +48,7 @@ export const features = {
   etherfuse: process.env.FEATURE_ETHERFUSE === 'true',
   /** Farcaster mini-app */
   farcasterMiniApp: process.env.FEATURE_FARCASTER_MINI_APP === 'true',
-  /** Video pipeline (future) */
+  /** Hero video artifact pipeline */
   videoPipeline: process.env.FEATURE_VIDEO_PIPELINE === 'true',
 } as const
 
@@ -145,6 +145,12 @@ export const config = {
   api: {
     enableRateLimiting: process.env.ENABLE_RATE_LIMITING !== 'false',
     maxRequestsPerMinute: parseInt(process.env.API_RATE_LIMIT || '60'),
+    video: {
+      maxActiveJobsPerUser: 1,
+      maxStartsPerMinute: 2,
+      heroDurationSeconds: 5,
+      maxDurationSeconds: 8,
+    },
   },
 } as const
 

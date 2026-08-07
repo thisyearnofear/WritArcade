@@ -17,9 +17,16 @@ export interface VideoShowcaseProps {
   primaryColor?: string
   gameTitle: string
   autoPlay?: boolean
+  aspectRatio?: 'landscape' | 'vertical'
 }
 
-export function VideoShowcase({ panels, primaryColor = '#8b5cf6', gameTitle, autoPlay = false }: VideoShowcaseProps) {
+export function VideoShowcase({
+  panels,
+  primaryColor = '#8b5cf6',
+  gameTitle,
+  autoPlay = false,
+  aspectRatio = 'landscape',
+}: VideoShowcaseProps) {
   const validPanels = panels.filter((p) => p.videoUrl)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(autoPlay)
@@ -122,7 +129,7 @@ export function VideoShowcase({ panels, primaryColor = '#8b5cf6', gameTitle, aut
       }}
     >
       {/* Main video stage */}
-      <div className="relative aspect-video w-full bg-black">
+      <div className={`relative w-full bg-black ${aspectRatio === 'vertical' ? 'aspect-[9/16] max-h-[70vh] sm:max-w-[405px] mx-auto' : 'aspect-video'}`}>
         {currentPanel?.videoUrl ? (
           <video
             key={currentPanel.id}

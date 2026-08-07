@@ -13,44 +13,181 @@
  *   const status = await VideoGenerationService.poll(jobId, providerName)
  */
 
-import { prisma } from '@/lib/prisma'
+import { randomUUID } from 'node:crypto'
+import {
+  type VideoGenerationRequest,
+  type VideoGenerationResult,
+  type VideoGenerationStatus,
+  type VideoProviderName,
+  type VideoStyle,
+} from './video-generation.types'
 
-export type VideoProviderName = 'luma' | 'fal' | 'replicate' | 'mock' | 'failed'
+export type {
+  VideoGenerationRequest,
+  VideoGenerationResult,
+  VideoGenerationStatus,
+  VideoProviderName,
+  VideoStyle,
+} from './video-generation.types'
 
-export type VideoGenerationStatus = 'idle' | 'pending' | 'completed' | 'failed'
+export { VIDEO_STYLE_LABELS } from './video-generation.types'
 
-export interface VideoGenerationResult {
-  provider: VideoProviderName
-  providerJobId: string | null
-  status: VideoGenerationStatus
-  videoUrl: string | null
-  model: string
-  error?: string
+const VIDEO_REQUEST_TIMEOUT_MS = 20_000
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), VIDEO_REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
-export interface VideoGenerationRequest {
-  imageUrl: string
-  narrative: string
-  genre: string
-  panelIndex: number
-  primaryColor?: string
-  providerOverride?: VideoProviderName
-  style?: VideoStyle
+function isRetryablePollError(message: string): boolean {
+  if (/aborted|timeout|timed out|fetch failed|network/i.test(message)) return true
+  const status = message.match(/failed:\s*(\d{3})/i)?.[1]
+  if (!status) return false
+  const statusCode = Number(status)
+  return statusCode === 408 || statusCode === 425 || statusCode === 429 || statusCode >= 500
 }
 
-export type VideoStyle = 'cinematic' | 'loop' | 'subtle' | 'dynamic'
-
-export const VIDEO_STYLE_LABELS: Record<VideoStyle, string> = {
-  cinematic: 'Cinematic',
-  loop: 'Seamless Loop',
-  subtle: 'Subtle Motion',
-  dynamic: 'Dynamic Action',
+export function getVideoDurationSeconds(): number {
+  const configuredDuration = Number(process.env.RUNWARE_VIDEO_DURATION || 5)
+  return Number.isFinite(configuredDuration)
+    ? Math.min(8, Math.max(3, configuredDuration))
+    : 5
 }
 
 export interface VideoProvider {
   name: VideoProviderName
   createJob(req: VideoGenerationRequest): Promise<VideoGenerationResult>
   poll(jobId: string): Promise<VideoGenerationResult>
+}
+
+/**
+ * Runware unified video inference provider.
+ * Docs: https://runware.ai/docs/models/klingai-video-3-0-standard
+ *
+ * Runware tasks are asynchronous. The provider job id is the Runware task UUID;
+ * status polling uses the platform's getResponse task.
+ */
+export class RunwareProvider implements VideoProvider {
+  readonly name = 'runware' as const
+  private readonly apiKey: string | undefined
+  private readonly model: string
+  private readonly duration: number
+
+  constructor(apiKey?: string, model?: string) {
+    this.apiKey = apiKey ?? process.env.RUNWARE_API_KEY
+    this.model = model ?? process.env.RUNWARE_VIDEO_MODEL ?? 'klingai:kling-video@3-standard'
+    this.duration = getVideoDurationSeconds()
+  }
+
+  async createJob(req: VideoGenerationRequest): Promise<VideoGenerationResult> {
+    if (!this.apiKey) throw new Error('Missing Runware API key')
+
+    const taskUUID = randomUUID()
+    const response = await fetchWithTimeout('https://api.runware.ai/v1', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify([{
+        taskType: 'videoInference',
+        taskUUID,
+        model: this.model,
+        positivePrompt: buildMotionPrompt(req),
+        frameImages: [req.imageUrl],
+        deliveryMethod: 'async',
+        outputType: 'URL',
+        outputFormat: 'MP4',
+        duration: this.duration,
+        ttl: 604800,
+        includeCost: true,
+      }]),
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Runware create generation failed: ${response.status} ${text}`)
+    }
+
+    const data = await response.json() as {
+      data?: Array<{ taskUUID?: string; status?: string; videoURL?: string }>
+      errors?: Array<{ message?: string }>
+    }
+    const errorMessage = data.errors?.[0]?.message
+    if (errorMessage) throw new Error(`Runware rejected generation: ${errorMessage}`)
+
+    const accepted = data.data?.[0]
+    return {
+      provider: 'runware',
+      providerJobId: accepted?.taskUUID ?? taskUUID,
+      status: accepted?.status === 'success'
+        ? 'completed'
+        : accepted?.status === 'error'
+          ? 'failed'
+          : 'pending',
+      videoUrl: accepted?.videoURL ?? null,
+      model: this.model,
+    }
+  }
+
+  async poll(jobId: string): Promise<VideoGenerationResult> {
+    if (!this.apiKey) throw new Error('Missing Runware API key')
+
+    const response = await fetchWithTimeout('https://api.runware.ai/v1', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify([{ taskType: 'getResponse', taskUUID: jobId }]),
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Runware poll generation failed: ${response.status} ${text}`)
+    }
+
+    const data = await response.json() as {
+      data?: Array<{ taskUUID?: string; status?: string; progress?: number; videoURL?: string }>
+      errors?: Array<{ message?: string }>
+    }
+    const errorMessage = data.errors?.[0]?.message
+    if (errorMessage) {
+      return {
+        provider: 'runware',
+        providerJobId: jobId,
+        status: 'failed',
+        videoUrl: null,
+        model: this.model,
+        error: errorMessage,
+      }
+    }
+
+    const result = data.data?.find((item) => item.taskUUID === jobId) ?? data.data?.[0]
+    const status = result?.status === 'success'
+      ? 'completed'
+      : result?.status === 'error'
+        ? 'failed'
+        : 'pending'
+
+    return {
+      provider: 'runware',
+      providerJobId: jobId,
+      status,
+      videoUrl: result?.videoURL ?? null,
+      model: this.model,
+    }
+  }
 }
 
 function buildMotionPrompt(req: VideoGenerationRequest): string {
@@ -82,7 +219,7 @@ function buildMotionPrompt(req: VideoGenerationRequest): string {
  * Docs: https://api.lumalabs.ai/dream-machine/v1
  */
 export class LumaProvider implements VideoProvider {
-  name: 'luma' = 'luma'
+  readonly name = 'luma' as const
   private readonly apiKey: string | undefined
   private readonly model: string
 
@@ -94,7 +231,7 @@ export class LumaProvider implements VideoProvider {
   async createJob(req: VideoGenerationRequest): Promise<VideoGenerationResult> {
     if (!this.apiKey) throw new Error('Missing Luma API key')
 
-    const response = await fetch('https://api.lumalabs.ai/dream-machine/v1/generations', {
+    const response = await fetchWithTimeout('https://api.lumalabs.ai/dream-machine/v1/generations', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -103,7 +240,7 @@ export class LumaProvider implements VideoProvider {
       },
       body: JSON.stringify({
         prompt: buildMotionPrompt(req),
-        model: 'ray-2',
+        model: this.model,
         aspect_ratio: '16:9',
         keyframes: {
           frame0: {
@@ -132,7 +269,7 @@ export class LumaProvider implements VideoProvider {
   async poll(jobId: string): Promise<VideoGenerationResult> {
     if (!this.apiKey) throw new Error('Missing Luma API key')
 
-    const response = await fetch(`https://api.lumalabs.ai/dream-machine/v1/generations/${jobId}`, {
+    const response = await fetchWithTimeout(`https://api.lumalabs.ai/dream-machine/v1/generations/${jobId}`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -182,19 +319,19 @@ function mapLumaState(state: string): VideoGenerationStatus {
  * Docs: https://docs.fal.ai/
  */
 export class FalProvider implements VideoProvider {
-  name: 'fal' = 'fal'
+  readonly name = 'fal' as const
   private readonly apiKey: string | undefined
   private readonly model: string
 
   constructor(apiKey?: string, model?: string) {
-    this.apiKey = apiKey ?? process.env.FAL_KEY
+    this.apiKey = apiKey ?? process.env.FAL_KEY ?? process.env.FAL_API_KEY
     this.model = model ?? process.env.FAL_VIDEO_MODEL ?? 'fal-ai/stable-video-diffusion'
   }
 
   async createJob(req: VideoGenerationRequest): Promise<VideoGenerationResult> {
     if (!this.apiKey) throw new Error('Missing Fal API key')
 
-    const response = await fetch(`https://queue.fal.run/${this.model}`, {
+    const response = await fetchWithTimeout(`https://queue.fal.run/${this.model}`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -226,7 +363,7 @@ export class FalProvider implements VideoProvider {
   async poll(jobId: string): Promise<VideoGenerationResult> {
     if (!this.apiKey) throw new Error('Missing Fal API key')
 
-    const response = await fetch(`https://queue.fal.run/${this.model}/requests/${jobId}/status`, {
+    const response = await fetchWithTimeout(`https://queue.fal.run/${this.model}/requests/${jobId}/status`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -277,7 +414,7 @@ function mapFalState(state?: string): VideoGenerationStatus {
  * Docs: https://replicate.com/docs
  */
 export class ReplicateProvider implements VideoProvider {
-  name: 'replicate' = 'replicate'
+  readonly name = 'replicate' as const
   private readonly apiKey: string | undefined
   private readonly model: string
 
@@ -289,7 +426,7 @@ export class ReplicateProvider implements VideoProvider {
   async createJob(req: VideoGenerationRequest): Promise<VideoGenerationResult> {
     if (!this.apiKey) throw new Error('Missing Replicate API token')
 
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
+    const response = await fetchWithTimeout('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -325,7 +462,7 @@ export class ReplicateProvider implements VideoProvider {
   async poll(jobId: string): Promise<VideoGenerationResult> {
     if (!this.apiKey) throw new Error('Missing Replicate API token')
 
-    const response = await fetch(`https://api.replicate.com/v1/predictions/${jobId}`, {
+    const response = await fetchWithTimeout(`https://api.replicate.com/v1/predictions/${jobId}`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -378,7 +515,7 @@ function mapReplicateState(state: string): VideoGenerationStatus {
  * Mock provider that returns a synthetic video after a short delay.
  */
 export class MockProvider implements VideoProvider {
-  name: 'mock' = 'mock'
+  readonly name = 'mock' as const
 
   async createJob(req: VideoGenerationRequest): Promise<VideoGenerationResult> {
     const providerJobId = `mock-${req.panelIndex}-${Date.now()}`
@@ -421,6 +558,7 @@ class ProviderRegistry {
   private providers = new Map<VideoProviderName, VideoProvider>()
 
   constructor() {
+    this.register(new RunwareProvider())
     this.register(new LumaProvider())
     this.register(new FalProvider())
     this.register(new ReplicateProvider())
@@ -435,24 +573,31 @@ class ProviderRegistry {
     return this.providers.get(name)
   }
 
-  getDefault(): VideoProvider {
+  getCandidates(): VideoProvider[] {
     const envProvider = process.env.VIDEO_PROVIDER as VideoProviderName | undefined
-    if (envProvider) {
-      const provider = this.providers.get(envProvider)
-      if (provider) {
-        console.log(`[ProviderRegistry] Using VIDEO_PROVIDER=${envProvider}`)
-        return provider
-      }
-      console.warn(`[ProviderRegistry] VIDEO_PROVIDER=${envProvider} not recognized; falling back`)
-    }
+    const orderedNames: VideoProviderName[] = envProvider
+      ? [envProvider, 'runware', 'luma', 'fal', 'replicate']
+      : ['runware', 'luma', 'fal', 'replicate']
 
-    // When no explicit provider is set, pick the first provider with a configured key.
-    if (process.env.LUMA_API_KEY) return this.providers.get('luma')!
-    if (process.env.FAL_KEY) return this.providers.get('fal')!
-    if (process.env.REPLICATE_API_TOKEN) return this.providers.get('replicate')!
+    const candidates = orderedNames
+      .filter((name, index, names) => names.indexOf(name) === index)
+      .map((name) => this.providers.get(name))
+      .filter((provider): provider is VideoProvider => Boolean(provider))
+      .filter((provider) => provider.name === 'runware'
+        ? Boolean(process.env.RUNWARE_API_KEY)
+        : provider.name === 'luma'
+          ? Boolean(process.env.LUMA_API_KEY)
+          : provider.name === 'fal'
+            ? Boolean(process.env.FAL_KEY || process.env.FAL_API_KEY)
+            : provider.name === 'replicate'
+              ? Boolean(process.env.REPLICATE_API_TOKEN)
+              : false)
 
-    console.warn('[ProviderRegistry] No video API keys present; using mock provider')
-    return this.providers.get('mock')!
+    return candidates.length > 0 ? candidates : [this.providers.get('mock')!]
+  }
+
+  getDefault(): VideoProvider {
+    return this.getCandidates()[0]
   }
 }
 
@@ -460,27 +605,34 @@ export const videoProviderRegistry = new ProviderRegistry()
 
 export class VideoGenerationService {
   static async generate(req: VideoGenerationRequest): Promise<VideoGenerationResult> {
-    try {
-      const provider = req.providerOverride
-        ? videoProviderRegistry.get(req.providerOverride)
-        : videoProviderRegistry.getDefault()
+    const excluded = new Set(req.excludeProviders ?? [])
+    const requestedProvider = req.providerOverride
+      ? videoProviderRegistry.get(req.providerOverride)
+      : undefined
+    const providers: VideoProvider[] = requestedProvider
+      ? (excluded.has(requestedProvider.name) ? [] : [requestedProvider])
+      : videoProviderRegistry.getCandidates().filter((provider) => !excluded.has(provider.name))
+    let lastError = 'Video generation failed'
 
-      if (!provider) {
-        throw new Error(`Provider ${req.providerOverride} not found in registry`)
+    for (const provider of providers) {
+      try {
+        const result = await provider.createJob(req)
+        if (result.status !== 'failed') return result
+        lastError = result.error || lastError
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : lastError
+        console.warn(`[VideoGenerationService] ${provider.name} create failed; trying fallback`, lastError)
       }
+    }
 
-      return await provider.createJob(req)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Video generation failed'
-      console.error('[VideoGenerationService] createJob error:', message)
-      return {
-        provider: 'failed',
-        providerJobId: null,
-        status: 'failed',
-        videoUrl: null,
-        model: 'unknown',
-        error: message,
-      }
+    console.error('[VideoGenerationService] All providers failed:', lastError)
+    return {
+      provider: 'failed',
+      providerJobId: null,
+      status: 'failed',
+      videoUrl: null,
+      model: 'unknown',
+      error: lastError,
     }
   }
 
@@ -502,6 +654,7 @@ export class VideoGenerationService {
         videoUrl: null,
         model: 'unknown',
         error: message,
+        retryable: isRetryablePollError(message),
       }
     }
   }

@@ -50,6 +50,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 | [Architecture](./docs/ARCHITECTURE.md) | System design, tech stack, data models, smart contracts |
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
 | [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Inco, Hypercerts), writer coins |
+| [Video Artifact Pipeline](./docs/VIDEO_ARTIFACT_PIPELINE.md) | Hero animation flow, Runware fallbacks, limits, persistence, recovery, and analytics |
 | [Creation UX](./docs/CREATION_UX.md) | Compact mobile-first creation contract, optionality, validation, and success metrics |
 | [Roadmap](./docs/ROADMAP.md) | Completed phases, current status, future plans |
 
@@ -58,8 +59,8 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 - **Frontend**: Next.js 16 + TypeScript + TailwindCSS + Framer Motion
 - **Web3**: wagmi + viem + RainbowKit / WalletConnect
 - **Backend**: Next.js API routes + Prisma + PostgreSQL
-- **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (images)
-- **IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove fallback)
+- **AI**: OpenAI/Anthropic (ai-sdk); Venice AI + Modal + Netmind (images); Runware + Luma + fal + Replicate (hero video fallbacks)
+- **IP**: Story Protocol (testnet) + IPFS (Pinata primary, Grove metadata fallback; Pinata binary storage required for durable hero video)
 - **Access Control**: Inco (`@inco/lightning-js` + `@inco/lightning`) — secret panels, Wordle answers, daily challenge sessions
 - **Impact**: Hypercerts (AT Protocol)
 

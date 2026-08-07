@@ -7,9 +7,12 @@ export type VideoPanelStatus = {
   panelIndex: number
   videoStatus: 'idle' | 'pending' | 'completed' | 'failed'
   videoUrl: string | null
+  videoProvider?: string | null
+  videoError?: string | null
 }
 
 export interface UseVideoStatusResult {
+  enabled: boolean
   status: 'idle' | 'pending' | 'completed' | 'failed'
   panels: VideoPanelStatus[]
   isLoading: boolean
@@ -17,7 +20,10 @@ export interface UseVideoStatusResult {
   mutate: () => Promise<void>
 }
 
-export function useVideoStatus(slug: string, enabled = true): UseVideoStatusResult {
+export function useVideoStatus(
+  slug: string,
+  enabled = process.env.NEXT_PUBLIC_FEATURE_VIDEO_PIPELINE === 'true',
+): UseVideoStatusResult {
   const [status, setStatus] = useState<UseVideoStatusResult['status']>('idle')
   const [panels, setPanels] = useState<VideoPanelStatus[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -28,7 +34,7 @@ export function useVideoStatus(slug: string, enabled = true): UseVideoStatusResu
     const response = await fetch(`/api/games/${slug}/video/status`)
     const json = (await response.json()) as {
       success: boolean
-      data?: { status: UseVideoStatusResult['status']; panels: VideoPanelStatus[] }
+      data?: { status: UseVideoStatusResult['status']; mode?: 'hero' | 'full'; heroPanelId?: string | null; panels: VideoPanelStatus[] }
       error?: string
     }
 
@@ -82,5 +88,5 @@ export function useVideoStatus(slug: string, enabled = true): UseVideoStatusResu
     }
   }, [enabled, status, fetchStatus])
 
-  return { status, panels, isLoading, error, mutate }
+  return { enabled, status, panels, isLoading, error, mutate }
 }

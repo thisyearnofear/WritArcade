@@ -32,6 +32,10 @@ export const ANALYTICS_EVENT_NAMES = [
   'share_clicked',
   'make_another_clicked',
   'ownership_clicked',
+  'animation_started',
+  'animation_completed',
+  'animation_failed',
+  'hero_artifact_shared',
 ] as const
 
 export type AnalyticsEventName = typeof ANALYTICS_EVENT_NAMES[number]

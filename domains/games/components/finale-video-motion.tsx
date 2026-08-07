@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useVideoStatus, type VideoPanelStatus } from '../hooks/use-video-status'
-import type { VideoStyle } from '../services/video-generation.service'
+import { trackEvent } from '@/services/analytics'
+import type { VideoStyle } from '../services/video-generation.types'
 
 export interface VideoPanelLike {
   id: string
@@ -20,6 +21,7 @@ export interface VideoMotionProps {
 }
 
 export interface VideoMotion {
+  enabled: boolean
   status: 'idle' | 'pending' | 'completed' | 'failed'
   isStarting: boolean
   error: string | null
@@ -37,7 +39,8 @@ export interface VideoMotion {
  * VideoShowcase/CreatorStats) lives in the presentational components below.
  */
 export function useVideoMotion(gameSlug: string): VideoMotion {
-  const { status, panels: videoPanels, mutate: mutateVideoStatus } = useVideoStatus(gameSlug)
+  const videoEnabled = process.env.NEXT_PUBLIC_FEATURE_VIDEO_PIPELINE === 'true'
+  const { enabled, status, panels: videoPanels, mutate: mutateVideoStatus } = useVideoStatus(gameSlug, videoEnabled)
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [style, setStyle] = useState<VideoStyle>('cinematic')
@@ -67,6 +70,9 @@ export function useVideoMotion(gameSlug: string): VideoMotion {
       if (!response.ok || !json.success) {
         throw new Error(json.error || 'Failed to start video generation')
       }
+      if (json.data?.status === 'pending' || json.data?.status === 'completed') {
+        trackEvent('animation_started', { surface: 'finale', mode: 'hero', style })
+      }
       await mutateVideoStatus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start video generation')
@@ -85,5 +91,10 @@ export function useVideoMotion(gameSlug: string): VideoMotion {
     [videoPanels]
   )
 
-  return { status, isStarting, error, style, setStyle, firstVideoUrl, getPanelVideo, start }
+  useEffect(() => {
+    if (status === 'completed') trackEvent('animation_completed', { surface: 'finale', mode: 'hero' })
+    if (status === 'failed') trackEvent('animation_failed', { surface: 'finale', mode: 'hero' })
+  }, [status])
+
+  return { enabled, status, isStarting, error, style, setStyle, firstVideoUrl, getPanelVideo, start }
 }

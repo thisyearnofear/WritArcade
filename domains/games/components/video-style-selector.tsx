@@ -1,6 +1,6 @@
 'use client'
 
-import { VideoStyle, VIDEO_STYLE_LABELS } from '../services/video-generation.service'
+import { type VideoStyle, VIDEO_STYLE_LABELS } from '../services/video-generation.types'
 
 export interface VideoStyleSelectorProps {
   value: VideoStyle
