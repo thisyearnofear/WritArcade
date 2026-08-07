@@ -32,6 +32,13 @@ import {
 // Types
 // ============================================================================
 
+/** Minimal shape we read off an IP registration response (fields are cast at use). */
+interface RegisterIpAssetResponse {
+  ipId?: unknown
+  txHash?: unknown
+  licenseTermsIds?: unknown
+}
+
 export interface IPRegistrationInput {
   title: string;
   description: string;
@@ -291,7 +298,7 @@ export async function registerGameAsIP(
 
   // 6. Register IP with license terms and royalty shares — single transaction
   let lastError: unknown;
-  let response: any;
+  let response: RegisterIpAssetResponse | undefined;
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
@@ -425,7 +432,7 @@ export async function registerAssetAsIP(
   const royaltyShares = [{ recipient: input.creatorAddress, percentage: 100 }];
 
   let lastError: unknown;
-  let response: any;
+  let response: RegisterIpAssetResponse | undefined;
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {

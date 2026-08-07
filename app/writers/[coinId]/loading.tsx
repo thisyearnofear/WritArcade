@@ -1,5 +1,3 @@
-import { SkeletonShimmer } from '@/components/effects'
-
 export default function WriterLoading() {
   return (
     <div className="flex flex-col min-h-screen">

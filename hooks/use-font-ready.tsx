@@ -21,8 +21,10 @@ export function useFontReady(options: FontReadyOptions = {}) {
   const { timeout = 3000, fontFamilies } = options
   const [fontsReady, setFontsReady] = useState(false)
   const resolvedRef = useRef(false)
+  // The fontFamilies array identity changes every render, so we depend on the
+  // joined key instead (the rule cannot see through the derived value).
+  const fontFamiliesKey = fontFamilies?.join(',')
 
-   
   useEffect(() => {
     // Already resolved
     if (resolvedRef.current) return
@@ -69,9 +71,9 @@ export function useFontReady(options: FontReadyOptions = {}) {
       }
     }, timeout)
 
-     
     checkFonts().finally(() => clearTimeout(timeoutId))
-  }, [timeout, fontFamilies?.join(',')])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fontFamilies identity changes per render; joined key is the stable dependency
+  }, [timeout, fontFamiliesKey])
 
   return fontsReady
 }

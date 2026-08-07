@@ -277,6 +277,8 @@ export function StreamingTypewriter({
       return
     }
 
+    // Animation loop drives state each frame — intentional effect pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayedText('')
     setIsTyping(true)
     indexRef.current = 0

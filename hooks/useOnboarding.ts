@@ -34,6 +34,7 @@ export function useOnboarding(autoStartFlowId?: string) {
 
   useEffect(() => {
     if (autoStartFlowId && !isDismissed()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-start gate
       setTour({ showTour: true, currentStep: 0, flowId: autoStartFlowId })
     }
   }, [autoStartFlowId])

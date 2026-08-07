@@ -25,6 +25,7 @@ export function EmbedGamePlayer({ game }: EmbedGamePlayerProps) {
   const [embedRef, setEmbedRef] = useState<string | undefined>(undefined)
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only ?ref= read (ISR page)
     if (ref) setEmbedRef(ref.slice(0, 200))
   }, [])
 

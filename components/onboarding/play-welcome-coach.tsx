@@ -20,6 +20,7 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
   const [onboardingDone, setOnboardingDone] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR-safe localStorage hydration
     setOnboardingDone(isOnboardingDismissed())
   }, [])
 
@@ -29,6 +30,7 @@ export function PlayWelcomeCoach({ gameSlug }: PlayWelcomeCoachProps) {
     if (params.get('welcome') !== '1') return
 
     const dismissed = sessionStorage.getItem(`${STORAGE_KEY}:${gameSlug}`)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read-only ?welcome=1 gate
     if (!dismissed) setOpen(true)
 
     params.delete('welcome')

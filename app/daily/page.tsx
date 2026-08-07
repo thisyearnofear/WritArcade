@@ -119,6 +119,7 @@ export default function DailyChallengePage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load
     loadChallenge()
   }, [loadChallenge])
 

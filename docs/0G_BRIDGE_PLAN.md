@@ -44,7 +44,7 @@ Existing services that feed video with no modification:
 
 **Application**: Before adding video generation, survey the existing codebase for what becomes redundant:
 
-- **Lit Protocol secret panels** — If video clips replace the need for interactive secret panel reveals (e.g., video trailers show the epilogue), the Lit Protocol service and its associated API routes can be removed entirely (CDR vaults already supersede it for the interactive flow).
+- **Lit Protocol secret panels** — Already removed: no `@lit-protocol/*` dependencies remain in source, `lib/config.ts`, or the lockfile. CDR vaults and Inco cover the secret-panel flow, with a legacy CDR fallback retained for pre-Inco games.
 - **Narrative Preview Modal** — If the video trailer serves as the preview (more engaging than a text modal), the modal component and its API dependency can be removed.
 - **Image gen providers that fail silently** — The fallback chain has accumulated providers over time. Audit which are actually serving traffic vs. wasting retry cycles.
 
@@ -231,7 +231,7 @@ The generation cost model should reflect this: video is more expensive (compute 
 **Goal**: Define project, target 0G components, architecture  
 **Credits**: $5,000
 
-- [ ] Audit existing codebase for consolidation opportunities (Lit Protocol removal candidates, dead image providers, redundant modals)
+- [x] Audit existing codebase for consolidation opportunities (Lit Protocol removal — done, dead image providers, redundant modals)
 - [ ] Finalize video generation architecture (this doc → detailed spec)
 - [ ] Evaluate 0G Storage SDK for video file hosting
 - [ ] Define scene timeline format (how narrative beats map to timed scenes)
@@ -303,7 +303,7 @@ To be completed before Wave 1 ends:
 
 | Candidate | Status | Action |
 |-----------|--------|--------|
-| Lit Protocol service (`lib/lit-protocol.service.ts`) | Superseded by CDR vaults | Remove if no active users depend on legacy secret panels |
+| Lit Protocol service (`lib/lit-protocol.service.ts`) | Superseded by CDR vaults | ✅ Already removed — no `@lit-protocol/*` deps; CDR vaults handle legacy decrypt (`wordleAnswerVaultUuid` retained for pre-Inco games) |
 | Narrative Preview Modal | Potentially superseded by video trailer | Keep for non-video flow; consider removing if video becomes default preview |
 | Image gen providers with zero traffic | Check fallback chain logs | Remove dead providers from chain |
 | `apps/writersarcade-api/cdr-vault.js` | Used for CDR | Keep — needed for CDR vaulting |

@@ -16,6 +16,7 @@ export function DarkModeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedPreference = localStorage.getItem('darkMode')
     if (savedPreference !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR-safe hydration
       setIsDarkMode(savedPreference === 'true')
       return
     }

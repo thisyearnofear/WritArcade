@@ -34,12 +34,6 @@ interface IPRegistrationProps {
   onRegistrationComplete?: (result: IPRegistrationResult) => void | Promise<void>;
 }
 
-const ROYALTY_CONFIG = {
-  authorShare: 6000,
-  creatorShare: 3000,
-  platformShare: 1000,
-};
-
 export function IPRegistration({ game, onRegistrationComplete }: IPRegistrationProps) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();

@@ -16,6 +16,7 @@ export function AISettingsWrapper() {
    
    
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR mount gate + client-only preference load
     setMounted(true);
 
     // Load preferences client-side

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Clapperboard, Grid3X3, Eye, X, Zap } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Clapperboard, Grid3X3, Eye, X, Zap } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { CREDITS_CONFIG } from '@/lib/writerCoins'
 import { useGameInsights } from '../hooks/use-game-insights'
@@ -23,6 +23,7 @@ import { NftPreviewView } from './finale-nft-preview'
 import { FinaleFooter } from './finale-footer'
 import { FinaleFeedbackModal } from './finale-feedback-modal'
 import { ShareDropdown } from '@/components/ui/share-dropdown'
+import { OwnershipExplainer } from '@/components/ownership/ownership-explainer'
 
 export interface ComicBookFinalePanelData {
   id: string
@@ -485,6 +486,16 @@ export function ComicBookFinale({
             </div>
           </div>
         )}
+
+        {/* Ownership primer — one benefit-led explainer at the money moment.
+            Collapsed by default (progressive disclosure): Mint → IP → Royalties. */}
+        <details className="group mx-4 mb-5 max-w-6xl rounded-xl border border-white/10 bg-white/[0.02] p-4 md:mx-auto">
+          <summary className="flex list-none cursor-pointer select-none items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <span>Why own it — how ownership works</span>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
+          </summary>
+          <OwnershipExplainer variant="compact" className="mt-4" />
+        </details>
 
         {/* Utility actions stay secondary to the completion card below. */}
         <FinaleFooter

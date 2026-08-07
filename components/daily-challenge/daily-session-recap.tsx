@@ -25,7 +25,7 @@ export function DailySessionRecap({
   const [copied, setCopied] = useState(false)
 
   const handSummary = modifiers
-    .map((m, i) => `${MODIFIER_CATEGORY_LABEL[m.category]}: ${m.name}`)
+    .map((m) => `${MODIFIER_CATEGORY_LABEL[m.category]}: ${m.name}`)
     .join(' · ')
 
   const shareText = [

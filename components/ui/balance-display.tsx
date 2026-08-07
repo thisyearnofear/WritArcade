@@ -41,6 +41,7 @@ function useCreditsBalance() {
 
   useEffect(() => {
     if (!isConnected || !address) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- async credits fetch
       setCredits(null)
       return
     }
@@ -252,6 +253,7 @@ export function BalanceDisplay({ mobileLayout = false }: BalanceDisplayProps) {
 
    
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR mount gate
     setMounted(true)
   }, [])
 

@@ -378,15 +378,18 @@ async function generateAudio({ text, voice = 'Rachel' }) {
   }
 }
 
-async function start() {
+async function buildApp(opts = {}) {
   const app = Fastify({
-    logger: {
-      level: 'info',
-      transport: {
-        target: 'pino-pretty',
-        options: { translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' },
-      },
-    },
+    // Tests pass { logger: false }; production keeps the pretty transport.
+    logger: opts.logger === undefined
+      ? {
+          level: 'info',
+          transport: {
+            target: 'pino-pretty',
+            options: { translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' },
+          },
+        }
+      : opts.logger,
     trustProxy: true,
     bodyLimit: 1048576,
   })
@@ -518,10 +521,21 @@ async function start() {
     }
   })
 
+  return app
+}
+
+async function start() {
+  const app = buildApp()
   await app.listen({ port: PORT, host: '0.0.0.0' })
 }
 
-start().catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+module.exports = { buildApp, start }
+
+// Only auto-start when run directly (`node src/index.js`), not when imported
+// by tests or other tooling.
+if (require.main === module) {
+  start().catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
+}

@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Wand2, Gamepad2, Coins, Sparkles, LockKeyhole } from 'lucide-react'
+import { X, Wand2, Gamepad2, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { config } from '@/lib/config'
 import { useDialogA11y } from '@/hooks/use-dialog-a11y'
 
 interface OnboardingModalProps {
@@ -15,6 +14,9 @@ interface OnboardingModalProps {
 export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(0)
 
+  // Three steps only. The secret-epilogue and daily-challenge concepts are
+  // taught in-context (in-game coach, ConceptTooltip, nav) rather than
+  // explained twice up front — see docs/UX_PRINCIPLES.md.
   const steps = [
     {
       icon: Gamepad2,
@@ -28,24 +30,6 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       title: 'Create your own game',
       description:
         'Turn any article or piece of marketing copy into a playable story in seconds. AI reads the source and builds choices, visuals, and a finale.',
-      tip: null,
-    },
-    ...(config.features.dailyChallenge
-      ? [
-          {
-            icon: Sparkles,
-            title: 'Daily Challenge',
-            description:
-              'Everyone plays the same source today with different encrypted modifier cards. Finish all 5 panels and compare scores on the leaderboard.',
-            tip: 'Find it in the nav under Daily.',
-          },
-        ]
-      : []),
-    {
-      icon: LockKeyhole,
-      title: 'Secret epilogue',
-      description:
-        'Every story game can include a bonus ending encrypted on Base (Inco). Play through all panels, then mint the NFT to decrypt and reveal it.',
       tip: null,
     },
     {

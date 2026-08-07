@@ -7,7 +7,6 @@ import { DifficultySelector, DIFFICULTY_LABEL, type GameDifficulty } from '@/com
 import { WriterCoinSelector } from '@/components/game/WriterCoinSelector'
 import type { WriterCoin } from '@/lib/writerCoins'
 import {
-  type PaymentPath,
   type ImageQuality,
   type ArticlePreview,
   articleGamePremise,
@@ -20,7 +19,6 @@ interface CustomizeStepProps {
   hasPreviewedCurrentUrl: boolean
   showAdvancedPayment: boolean
   onToggleAdvancedPayment: () => void
-  paymentPath: PaymentPath
   mode: 'story' | 'wordle'
   writerCoin: WriterCoin
   isMusdPath: boolean
@@ -53,7 +51,6 @@ export function CustomizeStep({
   hasPreviewedCurrentUrl,
   showAdvancedPayment,
   onToggleAdvancedPayment,
-  paymentPath,
   mode,
   writerCoin,
   isMusdPath,

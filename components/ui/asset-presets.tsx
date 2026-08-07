@@ -31,6 +31,7 @@ export function AssetPresets({ currentAssets, onLoadPreset }: AssetPresetsProps)
      
      
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- LocalStorage-backed presets hydrate
         loadPresets()
     }, [])
 

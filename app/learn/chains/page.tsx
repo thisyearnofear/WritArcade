@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Coins, Network, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react'
+import { OwnershipExplainer } from '@/components/ownership/ownership-explainer'
 
 export const metadata: Metadata = {
   title: 'How the chains work — WritersArcade',
@@ -42,6 +43,15 @@ export default function ChainsLearnPage() {
             </section>
 
             <SectionTable />
+
+            <section className="mb-12">
+              <OwnershipExplainer variant="full" />
+              <p className="text-xs text-muted-foreground mt-4 max-w-2xl">
+                Ownership flows in one direction: mint first on the chain you paid on, register as IP
+                on Story Protocol when you want provenance, then collect royalties from your pool.
+              </p>
+            </section>
+
             <SectionRouting />
             <SectionTradeoffs />
             <SectionFaq />

@@ -59,6 +59,7 @@ export function GameEnrichment({
 
   useEffect(() => {
     if (config.features.dailyChallenge) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- LocalStorage daily-session hydration
       setDailyState(loadDailyChallengeState())
     }
   }, [storyComplete])

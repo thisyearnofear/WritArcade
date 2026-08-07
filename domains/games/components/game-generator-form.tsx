@@ -1,7 +1,6 @@
 'use client'
 
 import { GameGenerationOverlay } from '@/components/game/GameGenerationOverlay'
-import { type WriterCoin } from '@/lib/writerCoins'
 import {
   DesktopStepIndicator,
   MobileStepHeader,
@@ -76,7 +75,6 @@ export function GameGeneratorForm({
               hasPreviewedCurrentUrl={g.hasPreviewedCurrentUrl}
               showAdvancedPayment={g.showAdvancedPayment}
               onToggleAdvancedPayment={g.handleToggleAdvancedPayment}
-              paymentPath={g.paymentPath}
               mode={g.mode}
               writerCoin={g.writerCoin}
               isMusdPath={g.isMusdPath}

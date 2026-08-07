@@ -3,7 +3,7 @@
 import { BadgeCheck, Coins, FileText, LockKeyhole, Network, Play } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { Game } from '../types'
-import { getSecretPanelStatus, formatSecretPanelDetail } from '@/lib/secret-panel-status'
+import { formatSecretPanelDetail } from '@/lib/secret-panel-status'
 import { getGameProgress } from '@/lib/game-progress'
 
 interface GameOwnershipProgressProps {
@@ -211,6 +211,3 @@ export function GameOwnershipProgress({ game, variant = 'full' }: GameOwnershipP
     </section>
   )
 }
-
-/** @deprecated Use GameOwnershipProgress */
-export { GameOwnershipProgress as ProtocolLifecycle }

@@ -20,6 +20,7 @@ export function SuccessMoment({ trigger, onComplete }: SuccessMomentProps) {
    
   useEffect(() => {
     if (trigger) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- timed reveal driven by trigger prop
       setIsShowing(true)
       const timer = setTimeout(() => {
         setIsShowing(false)

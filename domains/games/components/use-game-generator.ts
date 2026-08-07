@@ -11,14 +11,10 @@ import type { PaymentResult } from '@/domains/payments/strategies/payment-strate
 import { trackEvent } from '@/services/analytics'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
-  DesktopStepIndicator,
-  MobileStepHeader,
-  MobileStepNav,
   GENERATE_STEPS,
   getStepIndex,
 } from '@/components/ui/step-indicator'
 import {
-  type GenerateErrorState,
   type ArticlePreview,
   ARTICLE_PREVIEW_TIMEOUT_MS,
   GAME_GENERATION_TIMEOUT_MS,
@@ -177,6 +173,15 @@ export function useGameGenerator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialBasePaintDay, initialDailyChallenge])
 
+  // ── Helpers ────────────────────────────────────────────────────────
+  // Declared before the effects below so they can reference it safely.
+  const resetPaymentProgress = useCallback(() => {
+    store.setPaymentApproved(false)
+    paymentCompletedRef.current = false
+    paymentTxHashRef.current = undefined
+    paymentIdRef.current = undefined
+  }, [store])
+
   // ── Auto-detect writer coin from URL ────────────────────────────────
   useEffect(() => {
     if (!detectedCoin) return
@@ -187,7 +192,7 @@ export function useGameGenerator({
       store.setSelectedCoin(detectedCoin)
       resetPaymentProgress()
     }
-  }, [detectedCoin, store.paymentPath, store.selectedCoin, store.showAdvancedPayment, store])
+  }, [detectedCoin, store.paymentPath, store.selectedCoin, store.showAdvancedPayment, store, resetPaymentProgress])
 
   // ── Auto-advance mobile steps ───────────────────────────────────────
   useEffect(() => {
@@ -288,13 +293,6 @@ export function useGameGenerator({
   // ── Helpers ────────────────────────────────────────────────────────
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-  const resetPaymentProgress = useCallback(() => {
-    store.setPaymentApproved(false)
-    paymentCompletedRef.current = false
-    paymentTxHashRef.current = undefined
-    paymentIdRef.current = undefined
-  }, [store])
-
   const pollVerifiedPayment = async (params: { paymentId?: string; transactionHash?: string }) => {
     const startedAt = Date.now()
     while (Date.now() - startedAt < PAYMENT_RECOVERY_TIMEOUT_MS) {
@@ -385,6 +383,10 @@ export function useGameGenerator({
   }, [store, isMusdPath, writerCoin.id])
 
   // ── Generate game ─────────────────────────────────────────────────
+  // generateGame intentionally reads live store state and is NOT memoized;
+  // memoizing it would require a large unstable dependency array and risk
+  // stale closures. Caller dep-array warnings are suppressed at their sites.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- generateGame is intentionally unmemoized
   const generateGame = async (paymentTransactionHash?: string) => {
     store.startGeneration()
     store.setError(null)
@@ -718,6 +720,7 @@ export function useGameGenerator({
       return
     }
     store.setError(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generateGame is intentionally unmemoized (reads live store state)
   }, [store, previewArticle])
 
   // ── Payment start ──────────────────────────────────────────────────

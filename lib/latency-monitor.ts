@@ -35,7 +35,7 @@ let nextIndex = 0
  * Wrap an API route handler with latency monitoring.
  * Automatically logs p50/p95/p99 for the route every `reportEvery` calls.
  */
-export function monitorLatency<T>(
+export function monitorLatency(
   routeName: string,
   handler: (...args: unknown[]) => Promise<Response>,
   reportEvery = 100,

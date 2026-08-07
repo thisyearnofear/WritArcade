@@ -8,7 +8,6 @@ import {
   FalProvider,
   ReplicateProvider,
   MockProvider,
-  type VideoGenerationRequest,
 } from '@/domains/games/services/video-generation.service'
 
 const OLD_ENV = { ...process.env }

@@ -28,6 +28,7 @@ export function useRecentlyPlayed() {
       if (!raw) return
       const parsed: unknown = JSON.parse(raw)
       if (Array.isArray(parsed)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR-safe hydration
         setEntries(parsed.slice(0, MAX_ENTRIES) as RecentlyPlayedEntry[])
       }
     } catch {

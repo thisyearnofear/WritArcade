@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { ChevronDown, ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useReducedMotion } from 'framer-motion'
-import { useEffect, useState } from 'react'
 
 const NAV_LINKS = [
   { href: '/games', label: 'Play · The Arcade' },
@@ -65,12 +64,7 @@ function AnimatedExternalLink({ href, children }: { href: string; children: Reac
 }
 
 export function Footer() {
-  const [year, setYear] = useState<number | null>(null)
-
-   
-  useEffect(() => {
-    setYear(new Date().getFullYear())
-  }, [])
+  const year = new Date().getFullYear()
 
   return (
     <footer className="border-t border-border bg-background/80 py-10">
@@ -132,7 +126,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-border pt-6 flex flex-col lg:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span>©{year ? ` ${year}` : ''} writersarcade. Built on Base · Story Protocol.</span>
+          <span>© {year} writersarcade. Built on Base · Story Protocol.</span>
           <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
             <span>Contracts · Base Mainnet:</span>
             <a href={`https://basescan.org/address/${BASE_GAME_NFT_ADDRESS}`} target="_blank" rel="noopener noreferrer"

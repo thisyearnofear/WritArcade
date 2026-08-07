@@ -141,19 +141,19 @@ function ParticleField({ className }: { className?: string }) {
   // Use seeded random to avoid impure function calls during render
   const particles = useMemo(() => {
      
-    let seed = 12345
-    const seededRandom = () => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff
-      return seed / 0x7fffffff
+    // Deterministic pseudo-random from a pure hash (no mutation during render).
+    const seeded = (i: number) => {
+      const n = Math.sin(i * 127.1 + 311.7) * 43758.5453
+      return n - Math.floor(n)
     }
     return Array.from({ length: 30 }, (_, i) => ({
       id: i,
-      size: seededRandom() * 4 + 2,
-      x: seededRandom() * 100,
-      y: seededRandom() * 100,
-      xOffset: seededRandom() * 50 - 25,
-      duration: seededRandom() * 20 + 10,
-      delay: seededRandom() * 5,
+      size: seeded(i) * 4 + 2,
+      x: seeded(i + 1) * 100,
+      y: seeded(i + 2) * 100,
+      xOffset: seeded(i + 3) * 50 - 25,
+      duration: seeded(i + 4) * 20 + 10,
+      delay: seeded(i + 5) * 5,
     }))
   }, [])
 
