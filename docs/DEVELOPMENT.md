@@ -3,6 +3,9 @@
 ## Quick Start
 
 ```bash
+# Use the supported runtime (Node 20.x)
+nvm use
+
 # Install dependencies
 pnpm install
 
@@ -21,7 +24,7 @@ pnpm dev
 ### Development
 ```bash
 pnpm dev              # Start dev server (Turbopack)
-pnpm build            # Production build (Prisma db push + Next.js webpack)
+pnpm build            # Production build (Prisma client + Next.js webpack)
 pnpm start            # Start production server
 pnpm lint             # ESLint with auto-fix
 pnpm type-check       # TypeScript type checking (no emit)
@@ -41,7 +44,8 @@ pnpm db:setup         # Generate client + push schema
 ### Build Notes
 - Dev uses Turbopack (`next dev --turbopack`)
 - Production builds use webpack (`next build --webpack`)
-- `pnpm build` runs `prisma db push` before building - ensure `DATABASE_URL` is correct
+- `pnpm build` uses the current Prisma client and builds with webpack. Apply committed database migrations separately with `pnpm db:deploy` before deploying; do not use `prisma db push` against production.
+- If the local build hits Node heap pressure, use `NODE_OPTIONS=--max-old-space-size=8192 pnpm build`.
 
 ### CI Pipeline
 A CI workflow (`.github/workflows/ci.yml`) runs on every push:
@@ -248,7 +252,7 @@ The finale animation is intentionally a post-completion optional upgrade. It gen
 Production requirements:
 
 - Set `PINATA_JWT` before enabling paid animation. Provider-hosted URLs are temporary; if durable upload fails, the animation is marked failed and the credit charge is refunded.
-- Apply the four pending video migrations with `pnpm db:migrate` in development or `pnpm prisma migrate deploy` in staging/production before using the new routes.
+- Apply the five committed video/analytics migrations with `pnpm db:deploy` in staging/production before using the new routes. Never use `prisma migrate reset` against a shared or production database.
 - Keep `FEATURE_VIDEO_PIPELINE` and provider secrets server-side. `NEXT_PUBLIC_FEATURE_VIDEO_PIPELINE` is only a client-visible UI flag; never expose provider API keys in `NEXT_PUBLIC_*` variables.
 - The public path is limited to one active hero job per game, two starts per user per minute, and 3–8 second clips (5 seconds by default).
 - A status read coordinates upstream polling and can reclaim stale reservations after 15 minutes. For production scale, add webhook/background reconciliation so recovery does not depend only on a user revisiting the page.

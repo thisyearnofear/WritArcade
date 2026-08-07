@@ -40,8 +40,8 @@ export function VideoUpsellCTA({
         disabled={isStarting || status === 'pending'}
         title={
           completed
-            ? 'Watch your animated comic'
-            : `Bring your ending to life as a short shareable reveal (${videoCost} credits)`
+            ? 'Watch your animated final-panel reveal'
+            : `Animate your final panel as a short shareable reveal (${videoCost} credits)`
         }
       >
         {isStarting || status === 'pending' ? (
@@ -50,7 +50,7 @@ export function VideoUpsellCTA({
           <Clapperboard className="w-4 h-4" />
         )}
         {completed ? (
-          'Animated'
+          'Watch animated ending'
         ) : isStarting ? (
           'Starting…'
         ) : status === 'pending' ? (
@@ -98,7 +98,7 @@ export function CinematicToggleButton({
       }}
     >
       <Clapperboard className="w-4 h-4" />
-      Cinematic
+      Watch ending
     </Button>
   )
 }
@@ -129,7 +129,7 @@ export function VideoStyleModal({
             Optional animation
           </DialogTitle>
           <DialogDescription>
-            An optional 50-credit upgrade that turns your ending into a short vertical animated reveal you can share.
+            An optional 50-credit upgrade that turns your final panel into a short vertical reveal you can watch and share.
           </DialogDescription>
         </DialogHeader>
         <VideoStyleSelector value={style} onChange={onStyleChange} />
@@ -143,7 +143,7 @@ export function VideoStyleModal({
             style={{ backgroundColor: primaryColor, color: 'white' }}
           >
             <Clapperboard className="h-4 w-4" />
-            Animate ending
+            Animate final panel
           </Button>
         </div>
       </DialogContent>

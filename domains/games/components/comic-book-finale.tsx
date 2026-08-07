@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, Clapperboard, Grid3X3, Eye, X, Zap } from 'lucide-react'
 import { useAccount } from 'wagmi'
@@ -22,6 +22,7 @@ import { GridView } from './finale-grid-view'
 import { NftPreviewView } from './finale-nft-preview'
 import { FinaleFooter } from './finale-footer'
 import { FinaleFeedbackModal } from './finale-feedback-modal'
+import { ShareDropdown } from '@/components/ui/share-dropdown'
 
 export interface ComicBookFinalePanelData {
   id: string
@@ -148,6 +149,8 @@ export function ComicBookFinale({
   const video = useVideoMotion(gameSlug)
   const videoStatus = video.status
   const getPanelVideo = video.getPanelVideo
+  const previousVideoStatus = useRef(video.status)
+  const previousVideoUrl = useRef(video.firstVideoUrl)
   const { insights: gameInsights, isLoading: insightsLoading } = useGameInsights(gameSlug, isOwner)
 
   // Audio narration — extracted to useNarration
@@ -163,6 +166,21 @@ export function ComicBookFinale({
   const { audioRef, setIsPlaying, handleAudioEnded, handleAudioError } = narration
 
   const [fontsLoaded, setFontsLoaded] = useState(false)
+
+  useEffect(() => {
+    const becameReady =
+      video.status === 'completed' &&
+      Boolean(video.firstVideoUrl) &&
+      (previousVideoStatus.current === 'pending' || previousVideoUrl.current === null)
+
+    if (becameReady && (viewMode === 'grid' || viewMode === 'single')) {
+      const transitionId = window.setTimeout(() => setViewMode('cinematic'), 0)
+      return () => window.clearTimeout(transitionId)
+    }
+
+    previousVideoStatus.current = video.status
+    previousVideoUrl.current = video.firstVideoUrl
+  }, [video.status, video.firstVideoUrl, viewMode])
 
   useEffect(() => {
     if (typeof document === 'undefined' || !('fonts' in document)) return
@@ -372,7 +390,9 @@ export function ComicBookFinale({
 
             {/* CINEMATIC VIEW */}
             {viewMode === 'cinematic' && videoStatus === 'completed' && (
-              <FinaleCinematicView
+              <section aria-labelledby="cinematic-ending-title">
+                <h2 id="cinematic-ending-title" tabIndex={-1} className="sr-only">Your animated final-panel reveal</h2>
+                <FinaleCinematicView
                 video={video}
                 panels={panels}
                 primaryColor={primaryColor}
@@ -380,7 +400,8 @@ export function ComicBookFinale({
                 genre={genre}
                 gameInsights={gameInsights}
                 insightsLoading={insightsLoading}
-              />
+                />
+              </section>
             )}
 
             {/* NFT PREVIEW */}
@@ -423,6 +444,47 @@ export function ComicBookFinale({
             )}
           </div>
         </div>
+
+        {video.enabled && video.status === 'completed' && video.firstVideoUrl && (
+          <div aria-live="polite" className="mx-4 mb-5 rounded-2xl border border-emerald-400/25 bg-gradient-to-r from-emerald-400/10 via-purple-500/10 to-pink-500/10 p-4 shadow-lg shadow-purple-950/20 md:mx-auto md:mb-6 md:max-w-4xl md:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-full bg-emerald-400/15 p-2 text-emerald-300">
+                  <Clapperboard className="h-5 w-5" aria-hidden />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Your animated ending is ready</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Final-panel reveal · short clip · ready to watch and share.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:shrink-0">
+                <Button
+                  onClick={() => setViewMode('cinematic')}
+                  className="gap-2 bg-white text-black hover:bg-white/90"
+                >
+                  <Clapperboard className="h-4 w-4" aria-hidden />
+                  Watch now
+                </Button>
+                <ShareDropdown
+                  data={{
+                    title: gameTitle,
+                    text: `I animated the final panel of "${gameTitle}" — what ending would you get?`,
+                    url: typeof window !== 'undefined' ? `${window.location.origin}/games/${gameSlug}?play=1` : `/games/${gameSlug}?play=1`,
+                    genre,
+                    panelCount: totalPanels,
+                    gameTitle,
+                    videoUrl: video.firstVideoUrl,
+                  }}
+                  surface="hero_animation_ready"
+                  variant="outline"
+                  buttonClassName="border-white/20 text-white hover:bg-white/10"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Utility actions stay secondary to the completion card below. */}
         <FinaleFooter
@@ -536,7 +598,7 @@ export function ComicBookFinale({
               <p className="text-sm font-semibold text-white">Make your comic move</p>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Turn your ending into a short shareable animated reveal — you have enough credits
+              Turn your final panel into a short, shareable animated reveal — you have enough credits
               ({creditsBalance}).
             </p>
             <Button
@@ -548,7 +610,7 @@ export function ComicBookFinale({
               size="sm"
             >
               <Clapperboard className="h-4 w-4" />
-              Animate ending · {CREDITS_CONFIG.cost['video-upsell']} credits
+              Animate final panel · {CREDITS_CONFIG.cost['video-upsell']} credits
             </Button>
           </div>
         )}

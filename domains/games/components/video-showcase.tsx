@@ -74,6 +74,11 @@ export function VideoShowcase({
     handleNext()
   }
 
+  const revealControls = () => {
+    setShowControls(true)
+    scheduleControlsHide()
+  }
+
   const scheduleControlsHide = () => {
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
     controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2500)
@@ -111,10 +116,13 @@ export function VideoShowcase({
     <div
       className="overflow-hidden rounded-2xl border-2 bg-black shadow-2xl"
       style={{ borderColor: `${primaryColor}60` }}
-      onMouseMove={() => {
-        setShowControls(true)
-        scheduleControlsHide()
+      onMouseMove={revealControls}
+      onClick={(event) => {
+        if (event.target === event.currentTarget || (typeof HTMLVideoElement !== 'undefined' && event.target instanceof HTMLVideoElement)) {
+          revealControls()
+        }
       }}
+      onTouchStart={revealControls}
       onMouseLeave={() => scheduleControlsHide()}
       onFocus={() => {
         // Keyboard users tab into the container — reveal controls and keep
@@ -157,7 +165,7 @@ export function VideoShowcase({
               <div>
                 <h3 className="text-sm font-semibold text-white drop-shadow-md">{gameTitle}</h3>
                 <p className="text-xs text-white/80 drop-shadow-md">
-                  Panel {currentIndex + 1} of {validPanels.length}
+                  Final-panel reveal · {currentIndex + 1} of {validPanels.length}
                 </p>
               </div>
               <div className="flex items-center gap-2">
