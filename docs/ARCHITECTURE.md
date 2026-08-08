@@ -248,9 +248,9 @@ WriterCoin
 - `VAULT_MANAGER_ROLE` held by server wallet (never commit private keys)
 
 **DailyChallengeVault** (`NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS`)  
-- Base mainnet: [`0x0bb738ee11839baa44aa46984997f9417733dcce`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce)
-- Shared shuffled modifier deck, per-player sessions, encrypted scoring
-- `narrativeOperator` = server wallet (decrypts cards for AI only)
+- Base mainnet (hardened, deck-cycle fix): [`0xb420a5cd42be2bae6003ac828c7ed0975aa44693`](https://basescan.org/address/0xb420a5cd42be2bae6003ac828c7ed0975aa44693)
+- Shared shuffled modifier deck, per-player sessions, encrypted scoring, self-reshuffling before deck exhaustion
+- `narrativeOperator` = server wallet (decrypts cards for AI only); `SESSION_MANAGER_ROLE` on server wallet
 
 ### Mezo Matsnet (Chain ID: 31611)
 

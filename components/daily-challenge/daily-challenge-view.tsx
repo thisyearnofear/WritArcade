@@ -28,7 +28,11 @@ import { ArcadeFunnelCTAs } from '@/components/daily-challenge/arcade-funnel-cta
 import { DailyStatusBanner, type DailyStatusVariant } from '@/components/daily-challenge/daily-status-banner'
 import { getBasePaintDay } from '@/lib/daily-challenge/daily-challenge-ui'
 import { getBasePaintCanvasProxyUrl } from '@/lib/basepaint'
-import { DAILY_CHALLENGE_CHAIN_ID, readStartSessionFee } from '@/lib/daily-challenge/daily-challenge-client'
+import {
+  DAILY_CHALLENGE_CHAIN_ID,
+  getDailyVaultAddress,
+  readStartSessionFee,
+} from '@/lib/daily-challenge/daily-challenge-client'
 
 export type DailyChallengeVariant = 'arcade' | 'basepaint'
 
@@ -179,13 +183,14 @@ export function DailyChallengeView({ variant = 'arcade' }: DailyChallengeViewPro
   }, [dailyMode, isConnected, challenge?.day, hasLiveSession, isStarting, isDetecting, detectExistingSession])
 
   useEffect(() => {
-    if (dailyMode !== 'live' || !feePublicClient) return
+    const vaultAddress = onChainState?.vaultAddress || getDailyVaultAddress()
+    if (!vaultAddress || dailyMode !== 'live' || !feePublicClient || !challenge?.day) return
     let cancelled = false
-    readStartSessionFee(feePublicClient)
+    readStartSessionFee({ publicClient: feePublicClient, vaultAddress, day: challenge.day })
       .then((fee) => { if (!cancelled) setDealFeeWei(fee) })
       .catch(() => { if (!cancelled) setDealFeeWei(null) })
     return () => { cancelled = true }
-  }, [dailyMode, feePublicClient])
+  }, [dailyMode, feePublicClient, challenge?.day, onChainState?.vaultAddress])
 
   const handlePlay = useCallback(async () => {
     setPlayError(null)

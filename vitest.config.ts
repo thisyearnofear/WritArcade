@@ -6,7 +6,12 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['**/*.test.ts', '**/*.test.tsx', '**/*.test.js'],
-    exclude: ['**/node_modules/**', '**/.next/**', 'lib/openzeppelin-contracts/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/.next/**',
+      'lib/openzeppelin-contracts/**',
+      'contracts/openzeppelin-contracts/**',
+    ],
   },
   resolve: {
     alias: {

@@ -88,7 +88,7 @@ Player choice → POST /record-choice → encrypted score delta on-chain
 Finale: completeAndReveal() → attestedDecrypt → leaderboard + dual attribution
 ```
 
-**Smart Contract**: [`DailyChallengeVault`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce) on Base mainnet  
+**Smart Contract**: [`DailyChallengeVault`](https://basescan.org/address/0xb420a5cd42be2bae6003ac828c7ed0975aa44693) (hardened, deck-cycle fix) on Base mainnet  
 **Cron** (Inco shuffle + Paragraph featured pick — idempotent):
 1. **VPS systemd timer (primary)** — `scripts/cron/install-daily-challenge-cron.sh` → `00:05 UTC` curls `POST /api/daily-challenge/setup`
 2. **GitHub Actions (backup)** — `.github/workflows/daily-challenge-shuffle.yml` at 00:15 UTC (repo secret `CRON_SECRET`)

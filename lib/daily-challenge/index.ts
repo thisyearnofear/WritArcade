@@ -148,6 +148,13 @@ export const DAILY_CHALLENGE_VAULT_ABI = [
     outputs: [],
   },
   {
+    name: 'getStartSessionFee',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'day', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
     name: 'getSessionModifiers',
     type: 'function',
     stateMutability: 'view',
@@ -174,6 +181,13 @@ export const DAILY_CHALLENGE_VAULT_ABI = [
     stateMutability: 'view',
     inputs: [{ name: 'sessionId', type: 'bytes32' }],
     outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'getSessionChallengeDay',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'sessionId', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'uint256' }],
   },
   {
     name: 'getChallengeStats',
@@ -342,8 +356,13 @@ export async function ensureDailyDeckShuffled(day: number): Promise<ShuffleDaily
 
 // ── Server-side modifier decrypt (AI narrative only — never sent to client) ─
 
-function handleToModifierId(value: bigint): number {
-  return Number(value % 52n) + 1
+/**
+ * Cards are dealt as canonical IDs 1–52. Do not wrap the value: wrapping
+ * rotated card 52 to card 1 and made revealed modifiers disagree with scoring.
+ */
+export function modifierIdFromCardValue(value: bigint): number | null {
+  if (value < 1n || value > BigInt(DECK_SIZE)) return null
+  return Number(value)
 }
 
 /**
@@ -375,7 +394,7 @@ export async function decryptModifierHandleForAi(handle: string): Promise<number
 
     const value = results[0]?.plaintext?.value
     if (typeof value !== 'bigint') return null
-    return handleToModifierId(value)
+    return modifierIdFromCardValue(value)
   } catch (err) {
     console.error('[DailyChallenge] Server modifier decrypt failed:', err)
     return null
@@ -393,13 +412,18 @@ export async function getModifierPromptForPanel(
 
   try {
     const vaultAddress = getVaultAddress()
-    const publicClient = await createDailyChallengePublicClient()
+    const [publicClient, managerAddress] = await Promise.all([
+      createDailyChallengePublicClient(),
+      getSessionManagerAddress(),
+    ])
+    if (!managerAddress) return null
 
     const handles = await publicClient.readContract({
       address: vaultAddress,
       abi: DAILY_CHALLENGE_VAULT_ABI,
       functionName: 'getSessionModifiers',
       args: [incoSessionId as `0x${string}`],
+      account: managerAddress,
     }) as readonly string[]
 
     const handle = handles[panelIndex]
@@ -436,12 +460,12 @@ export async function decryptModifiers(
     handles.map((h) => formatHandle(h))
   )
 
-  const modifierIds = results.map((r) => {
-    const value = r.plaintext.value
-    if (typeof value !== 'bigint') return 1
-    // Modifier IDs are 1-52; randBounded(52) returns 0-51, so add 1
-    return Number(value % 52n) + 1
-  })
+  const modifierIds = results
+    .map((r) => {
+      const value = r.plaintext.value
+      return typeof value === 'bigint' ? modifierIdFromCardValue(value) : null
+    })
+    .filter((id): id is number => id !== null)
 
   return modifierIds
     .map((id) => getModifierById(id))
@@ -462,6 +486,62 @@ export async function decryptScore(
   const value = results[0]?.plaintext?.value
   if (typeof value !== 'bigint') return 0
   return Number(value)
+}
+
+export interface VerifiedDailyChallengeResult {
+  score: number
+  modifierIds: number[]
+}
+
+/**
+ * Derive a revealed leaderboard entry from Inco handles the server is allowed
+ * to decrypt. Never accept these values from a browser request.
+ */
+export async function deriveDailyChallengeResult(
+  sessionId: `0x${string}`
+): Promise<VerifiedDailyChallengeResult> {
+  const [vaultAddress, publicClient, walletClient, managerAddress] = await Promise.all([
+    Promise.resolve(getVaultAddress()),
+    createDailyChallengePublicClient(),
+    createSessionManagerWalletClient(),
+    getSessionManagerAddress(),
+  ])
+
+  if (!managerAddress) {
+    throw new Error('Daily challenge session manager is not configured')
+  }
+
+  const [modifierHandles, scoreHandle] = await Promise.all([
+    publicClient.readContract({
+      address: vaultAddress,
+      abi: DAILY_CHALLENGE_VAULT_ABI,
+      functionName: 'getSessionModifiers',
+      args: [sessionId],
+      account: managerAddress,
+    }) as Promise<readonly string[]>,
+    publicClient.readContract({
+      address: vaultAddress,
+      abi: DAILY_CHALLENGE_VAULT_ABI,
+      functionName: 'getSessionScore',
+      args: [sessionId],
+      account: managerAddress,
+    }) as Promise<string>,
+  ])
+
+  const authorizedWallet = walletClient as unknown as WalletClient<Transport, Chain, Account>
+  const [modifiers, score] = await Promise.all([
+    decryptModifiers([...modifierHandles], authorizedWallet),
+    decryptScore(scoreHandle, authorizedWallet),
+  ])
+
+  if (modifiers.length !== PANELS_PER_GAME) {
+    throw new Error('Unable to verify every revealed modifier')
+  }
+  if (!Number.isInteger(score) || score < 0 || score > PANELS_PER_GAME * 10 || score % 10 !== 0) {
+    throw new Error('On-chain score is outside the valid range')
+  }
+
+  return { score, modifierIds: modifiers.map((modifier) => modifier.id) }
 }
 
 // ── Modifier Prompt Builder ───────────────────────────────────────────────

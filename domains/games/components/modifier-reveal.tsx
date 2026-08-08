@@ -4,8 +4,8 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Lock, Eye, Loader2, Sparkles, Trophy } from 'lucide-react'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
-import type { WalletClient, Transport, Chain, Account } from 'viem'
-import type { Modifier } from '@/lib/daily-challenge'
+import type { WalletClient } from 'viem'
+import { getModifierById, type Modifier } from '@/lib/daily-challenge'
 import {
   completeOnChainReveal,
   loadDailyChallengeState,
@@ -94,33 +94,18 @@ export function ModifierReveal({
         account: address,
       })
 
-      const { decryptModifiers, decryptScore } = await import('@/lib/daily-challenge')
-
-      const decryptedModifiers = await decryptModifiers(
-        modifierHandles.length ? modifierHandles : dailyState?.modifierHandles || [],
-        walletClient as unknown as WalletClient<Transport, Chain, Account>
-      )
-      setModifiers(decryptedModifiers)
-
-      const handle = scoreHandle || dailyState?.scoreHandle
-      let decryptedScore = 0
-      if (handle) {
-        decryptedScore = await decryptScore(
-          handle,
-          walletClient as unknown as WalletClient<Transport, Chain, Account>
-        )
-        setScore(decryptedScore)
-      }
-
       if (dailyState?.challengeId) {
         const revealResult = await submitDailyReveal({
           challengeId: dailyState.challengeId,
           sessionId: onChainSessionId,
           gameId,
-          score: decryptedScore,
-          revealedModifierIds: decryptedModifiers.map((m) => m.id),
-          playerAddress: address,
         })
+        setModifiers(
+          revealResult.revealedModifierIds
+            .map((modifierId) => getModifierById(modifierId))
+            .filter((modifier): modifier is Modifier => modifier !== undefined)
+        )
+        setScore(revealResult.score)
         setRank(revealResult.rank)
       }
 

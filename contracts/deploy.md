@@ -9,6 +9,19 @@ These contracts are deployed on Base mainnet:
 - `SecretPanelVault`: `0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8` ([Basescan](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8))
 - `DailyChallengeVault`: `0x0bb738ee11839baa44aa46984997f9417733dcce` ([Basescan](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce))
 
+> **Hardened DailyChallengeVault redeploy (2026-08-08)**
+> New address: `0xb420a5cd42be2bae6003ac828c7ed0975aa44693`
+> Deploy tx: `0x5bb62ec5e939ab74185cabe33215f279fe727d27f7cbcf333ee9ee07eb39eb9a`
+>
+> - Deck exhaustion fix (fresh encrypted cycle before the 11th hand), canonical 1–52
+>   modifier IDs, owner-relay + day-match verified `record-choice`, server-driven
+>   `reveal`. See `scripts/deploy/deploy-daily-challenge-vault.mjs`.
+> - `narrativeOperator` = deployer `0xb8CE765cD679ECB958c0D2869d516C386b9d5a85`
+>   (matches the previous vault, so backend Inco decrypt is unchanged).
+> - Update `NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS` to the new address in
+>   `.env.local` and Vercel. SecretPanelVault was NOT redeployed.
+> - Requires source verification on BaseScan and an end-to-end Base smoke run.
+
 Inco vault deploy txs (Aug 2026):
 
 - `SecretPanelVault`: `0x41db3325f2e6e34d773449735b78fb7f2a66714179b37a4db57adf94cfe51119`

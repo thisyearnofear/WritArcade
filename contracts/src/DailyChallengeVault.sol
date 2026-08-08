@@ -11,9 +11,11 @@ import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
  * @title DailyChallengeVault
  * @dev Confidential game session manager for WritersArcade daily challenges.
  *
- * Uses Inco confidential compute to shuffle a shared 52-card modifier deck once
- * per day, deal five encrypted cards per player without replacement, score panel
- * choices against encrypted optimal answers, and reveal at the finale.
+ * Uses Inco confidential compute to shuffle a 52-card modifier deck per daily
+ * deck cycle, deal five encrypted cards per player without replacement within a
+ * cycle, score panel choices against encrypted optimal answers, and reveal at
+ * the finale. A fresh encrypted shuffle is created before a session would
+ * exhaust the current cycle, so the challenge is not capped at ten players.
  *
  * Flow:
  *   1. Backend creates the daily challenge and shuffles the deck via e.shuffledRange()
@@ -40,6 +42,7 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         uint256 day;
         elist shuffledDeck;
         uint16 nextDrawIndex;
+        uint256 deckCycles;
         bool deckShuffled;
         uint256 totalSessions;
         uint256 revealedSessions;
@@ -60,6 +63,7 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
     mapping(address => bytes32[]) public playerSessions;
 
     event ChallengeCreated(uint256 indexed day, bytes32 deckHandle);
+    event ChallengeDeckReshuffled(uint256 indexed day, uint256 indexed deckCycle, bytes32 deckHandle);
     event SessionStarted(bytes32 indexed sessionId, address indexed player, uint256 indexed day);
     event PanelCompleted(bytes32 indexed sessionId, uint8 panelIndex, uint8 choiceIndex);
     event SessionCompleted(bytes32 indexed sessionId);
@@ -83,19 +87,12 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         uint256 listFee = inco.getEListFee(uint16(DECK_SIZE), ETypes.Uint256);
         require(msg.value >= listFee * 2, "DailyChallengeVault: insufficient fee for shuffle");
 
-        elist deck = e.shuffledRange(1, uint16(DECK_SIZE + 1), ETypes.Uint256);
-        deck.allowThis();
+        Challenge storage challenge = challenges[day];
+        challenge.day = day;
+        challenge.deckShuffled = true;
+        _shuffleChallengeDeck(day, challenge);
 
-        challenges[day] = Challenge({
-            day: day,
-            shuffledDeck: deck,
-            nextDrawIndex: 0,
-            deckShuffled: true,
-            totalSessions: 0,
-            revealedSessions: 0
-        });
-
-        emit ChallengeCreated(day, elist.unwrap(deck));
+        emit ChallengeCreated(day, elist.unwrap(challenge.shuffledDeck));
     }
 
     /**
@@ -104,11 +101,14 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
     function startSession(uint256 day) external payable returns (bytes32 sessionId) {
         Challenge storage challenge = challenges[day];
         require(challenge.deckShuffled, "DailyChallengeVault: challenge not created");
-        require(
-            uint256(challenge.nextDrawIndex) + PANELS_PER_GAME <= DECK_SIZE,
-            "DailyChallengeVault: deck exhausted"
-        );
-        require(msg.value >= inco.getFee() * PANELS_PER_GAME, "DailyChallengeVault: insufficient fee");
+        uint256 requiredFee = getStartSessionFee(day);
+        require(msg.value >= requiredFee, "DailyChallengeVault: insufficient fee");
+
+        // Do not strand the eleventh player: once fewer than five cards remain,
+        // create a new encrypted 52-card cycle before dealing the next hand.
+        if (_needsDeckReshuffle(challenge)) {
+            _shuffleChallengeDeck(day, challenge);
+        }
 
         sessionId = keccak256(abi.encodePacked(msg.sender, day, block.timestamp, challenge.totalSessions));
         require(sessions[sessionId].player == address(0), "DailyChallengeVault: session exists");
@@ -120,6 +120,7 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         session.completed = false;
         session.revealed = false;
         session.score = uint256(0).asEuint256();
+        _allowNarrativeOperator(session.score);
 
         for (uint8 i = 0; i < PANELS_PER_GAME; i++) {
             uint16 deckIndex = challenge.nextDrawIndex + i;
@@ -143,11 +144,10 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
      * @dev Record a player's choice for a panel and update the encrypted score.
      * optimalChoice = modifier % CHOICES_PER_PANEL (0-3, matching choiceIndex).
      */
-    function recordChoice(
-        bytes32 sessionId,
-        uint8 panelIndex,
-        uint8 choiceIndex
-    ) external onlyRole(SESSION_MANAGER_ROLE) {
+    function recordChoice(bytes32 sessionId, uint8 panelIndex, uint8 choiceIndex)
+        external
+        onlyRole(SESSION_MANAGER_ROLE)
+    {
         Session storage session = sessions[sessionId];
         require(session.player != address(0), "DailyChallengeVault: unknown session");
         require(!session.completed, "DailyChallengeVault: session completed");
@@ -163,6 +163,7 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         euint256 scoreDelta = e.select(isHit, uint256(SCORE_PER_HIT).asEuint256(), uint256(0).asEuint256());
         session.score = session.score.add(scoreDelta);
         session.score.allowThis();
+        _allowNarrativeOperator(session.score);
 
         session.panelsCompleted++;
 
@@ -193,11 +194,34 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         emit SessionRevealed(sessionId);
     }
 
-    function getSessionModifiers(bytes32 sessionId)
-        external
-        view
-        returns (bytes32[PANELS_PER_GAME] memory handles)
-    {
+    /**
+     * @notice Return the exact payable amount required to start a session.
+     * Includes a replacement encrypted deck when the current cycle has fewer
+     * than five cards left.
+     */
+    function getStartSessionFee(uint256 day) public view returns (uint256) {
+        Challenge storage challenge = challenges[day];
+        require(challenge.deckShuffled, "DailyChallengeVault: challenge not created");
+
+        uint256 fee = inco.getFee() * PANELS_PER_GAME;
+        if (_needsDeckReshuffle(challenge)) {
+            fee += inco.getEListFee(uint16(DECK_SIZE), ETypes.Uint256) * 2;
+        }
+        return fee;
+    }
+
+    /// @notice Card values are canonical modifier IDs in the inclusive 1-52 range.
+    function modifierIdFromCardValue(uint256 cardValue) public pure returns (uint8) {
+        require(cardValue >= 1 && cardValue <= DECK_SIZE, "DailyChallengeVault: invalid modifier");
+        return uint8(cardValue);
+    }
+
+    /// @notice Scoring uses the same canonical modifier value that is revealed.
+    function getOptimalChoiceForModifier(uint256 modifierId) public pure returns (uint8) {
+        return modifierIdFromCardValue(modifierId) % uint8(CHOICES_PER_PANEL);
+    }
+
+    function getSessionModifiers(bytes32 sessionId) external view returns (bytes32[PANELS_PER_GAME] memory handles) {
         Session storage session = sessions[sessionId];
         require(
             msg.sender == session.player || hasRole(SESSION_MANAGER_ROLE, msg.sender),
@@ -225,6 +249,10 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         return sessions[sessionId].player;
     }
 
+    function getSessionChallengeDay(bytes32 sessionId) external view returns (uint256) {
+        return sessions[sessionId].challengeDay;
+    }
+
     function getChallengeStats(uint256 day)
         external
         view
@@ -238,12 +266,28 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         return playerSessions[player];
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(AccessControl)
-        returns (bool)
-    {
+    function _needsDeckReshuffle(Challenge storage challenge) internal view returns (bool) {
+        return uint256(challenge.nextDrawIndex) + PANELS_PER_GAME > DECK_SIZE;
+    }
+
+    function _shuffleChallengeDeck(uint256 day, Challenge storage challenge) internal {
+        elist deck = e.shuffledRange(1, uint16(DECK_SIZE + 1), ETypes.Uint256);
+        deck.allowThis();
+
+        challenge.shuffledDeck = deck;
+        challenge.nextDrawIndex = 0;
+        challenge.deckCycles++;
+
+        emit ChallengeDeckReshuffled(day, challenge.deckCycles, elist.unwrap(deck));
+    }
+
+    function _allowNarrativeOperator(euint256 value) internal {
+        if (narrativeOperator != address(0)) {
+            value.allow(narrativeOperator);
+        }
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

@@ -85,14 +85,17 @@ export async function fetchDailyChallengeStart(
   return response.json()
 }
 
-export async function readStartSessionFee(publicClient: PublicClient): Promise<bigint> {
-  const unitFee = await publicClient.readContract({
-    address: INCO_LIGHTNING_ADDRESS,
-    abi: INCO_LIGHTNING_ABI,
-    functionName: 'getFee',
-  }) as bigint
-
-  return unitFee * 5n
+export async function readStartSessionFee(params: {
+  publicClient: PublicClient
+  vaultAddress: `0x${string}`
+  day: number
+}): Promise<bigint> {
+  return params.publicClient.readContract({
+    address: params.vaultAddress,
+    abi: DAILY_CHALLENGE_VAULT_ABI,
+    functionName: 'getStartSessionFee',
+    args: [BigInt(params.day)],
+  }) as Promise<bigint>
 }
 
 function parseSessionStarted(logs: Log[]): `0x${string}` | null {
@@ -243,7 +246,7 @@ export async function startOnChainSession(params: {
   const resumed = await resumeExistingSession(params)
   if (resumed) return resumed
 
-  const fee = await readStartSessionFee(params.publicClient)
+  const fee = await readStartSessionFee(params)
 
   const hash = await params.walletClient.writeContract({
     chain: params.walletClient.chain,
@@ -325,10 +328,7 @@ export async function submitDailyReveal(params: {
   challengeId: string
   sessionId: string
   gameId: string
-  score: number
-  revealedModifierIds: number[]
-  playerAddress: string
-}): Promise<{ rank: number }> {
+}): Promise<{ rank: number; score: number; revealedModifierIds: number[] }> {
   const response = await fetch(`/api/daily-challenge/${params.challengeId}/reveal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -341,7 +341,11 @@ export async function submitDailyReveal(params: {
   }
 
   const data = await response.json()
-  return { rank: data.rank as number }
+  return {
+    rank: data.rank as number,
+    score: data.score as number,
+    revealedModifierIds: data.revealedModifierIds as number[],
+  }
 }
 
 export const DAILY_CHALLENGE_CHAIN_ID = BASE_MAINNET_CHAIN_ID

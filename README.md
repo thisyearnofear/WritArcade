@@ -73,7 +73,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 - **GameNFT**: `NEXT_PUBLIC_GAME_NFT_MAINNET` — [`0x32D0356f533cC429F94Db73f383bBb21a459E16b`](https://basescan.org/address/0x32D0356f533cC429F94Db73f383bBb21a459E16b)
 - **WriterCoinPayment**: `NEXT_PUBLIC_WRITER_COIN_PAYMENT_MAINNET`
 - **SecretPanelVault**: [`0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8`](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8)
-- **DailyChallengeVault**: [`0x0bb738ee11839baa44aa46984997f9417733dcce`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce)
+- **DailyChallengeVault** (hardened, deck-cycle fix): [`0xb420a5cd42be2bae6003ac828c7ed0975aa44693`](https://basescan.org/address/0xb420a5cd42be2bae6003ac828c7ed0975aa44693)
 - Deployment guide: [contracts/deploy.md](./contracts/deploy.md)
 
 **Mezo Matsnet (testnet)** — Mezo Hackathon, MUSD track
