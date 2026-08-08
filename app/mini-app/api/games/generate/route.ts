@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
 import { GameAIService } from '@/domains/games/services/game-ai.service'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
-import { getWriterCoinById, validateArticleUrl } from '@/lib/writerCoins'
+import { getWriterCoinById, validateArticleUrl } from '@/lib/writer-coins'
 import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 

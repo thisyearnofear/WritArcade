@@ -11,7 +11,7 @@ import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
 import { config, logger } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
-import { getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
+import { getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writer-coins'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 import { buildMarketingCopyPrompt } from '@/domains/games/services/generation-prompts'
 import { deduplicateGeneration, buildGenerationCacheKey } from '@/lib/ai-cache'
@@ -662,7 +662,7 @@ async function enrichGameInBackground(
       const {
         createGameHypercert,
         buildGameHypercertInput,
-      } = await import('@/lib/hypercerts.service')
+      } = await import('@/lib/integrations/hypercerts')
 
       const hypercertInput = buildGameHypercertInput({
         gameTitle: gameData.title,

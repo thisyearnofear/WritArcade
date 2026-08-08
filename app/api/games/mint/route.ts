@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getWriterCoinById, getMintConfig } from '@/lib/writerCoins'
+import { getWriterCoinById, getMintConfig } from '@/lib/writer-coins'
 import { fetchCoinConfigOnChain, fetchConfiguredGameNFT } from '@/lib/contracts'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
-import { BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
+import { BASE_MAINNET_CHAIN_ID } from '@/lib/wallet/chains'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 

@@ -5,8 +5,8 @@
  * Used by both web app + mini app payment flows
  */
 
-import { getWriterCoinById, MUSD_CONFIG, CREDITS_CONFIG } from '@/lib/writerCoins'
-import type { PaymentToken } from '@/lib/writerCoins'
+import { getWriterCoinById, MUSD_CONFIG, CREDITS_CONFIG } from '@/lib/writer-coins'
+import type { PaymentToken } from '@/lib/writer-coins'
 import type { PaymentAction, PaymentCost, RevenueDistribution } from '../types'
 
 import { cacheGet, cacheSet } from '@/lib/cache'

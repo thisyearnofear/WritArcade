@@ -26,7 +26,7 @@ const PlayTrendChart = dynamic(
 )
 
 import type { Game } from '../types'
-import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writer-coins'
 
 interface GameArtifactViewProps {
   game: Game

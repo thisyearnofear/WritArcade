@@ -1,7 +1,7 @@
 'use client'
 
 import { BookOpen, Clapperboard, Zap } from 'lucide-react'
-import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 
 interface FinaleUnlocksStripProps {
   panelsDone: number

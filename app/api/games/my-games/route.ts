@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { optionalAuth } from '@/services/auth'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { getWriterCoinById } from '@/lib/writer-coins'
 import { ok, fail } from '@/lib/api-response'
 
 /**

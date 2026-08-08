@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import {
   type RampWebhookPayload,
   verifyWebhookSignature,
-} from '@/lib/etherfuse'
+} from '@/lib/integrations/etherfuse'
 import { reportServerError } from '@/services/error-reporting'
 
 export async function POST(request: NextRequest) {

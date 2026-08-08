@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createPublicClient, http, parseAbiItem, type Log } from 'viem'
-import { MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
-import { MUSD_CONFIG } from '@/lib/writerCoins'
+import { MEZO_TESTNET_CHAIN_ID } from '@/lib/wallet/chains'
+import { MUSD_CONFIG } from '@/lib/writer-coins'
 
 const MEZO_TESTNET_RPC = process.env.NEXT_PUBLIC_MEZO_TESTNET_RPC || 'https://rpc.test.mezo.org'
 

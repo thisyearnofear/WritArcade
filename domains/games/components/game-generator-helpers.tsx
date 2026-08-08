@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { AlertTriangle, RefreshCw, X, Gamepad2, Sparkles } from 'lucide-react'
 import { GENRE_LABEL, type GameGenre } from '@/components/game/GenreSelector'
 import { DIFFICULTY_LABEL, type GameDifficulty } from '@/components/game/DifficultySelector'
-import type { WriterCoin, PaymentToken } from '@/lib/writerCoins'
+import type { WriterCoin, PaymentToken } from '@/lib/writer-coins'
 
 export type PaymentPath = 'writercoin' | 'musd'
 

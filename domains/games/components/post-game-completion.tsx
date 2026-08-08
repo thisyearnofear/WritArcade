@@ -13,7 +13,7 @@ import { SecretEpilogueFinaleCta } from '@/components/game/secret-epilogue-final
 import { useVideoStatus } from '../hooks/use-video-status'
 import { resolveBasePaintDay } from '@/components/basepaint/basepaint-finale-attribution'
 import { DualSourceCredits } from '@/components/basepaint/dual-source-credits'
-import { loadDailyChallengeState } from '@/lib/daily-challenge-client'
+import { loadDailyChallengeState } from '@/lib/daily-challenge/daily-challenge-client'
 import { config } from '@/lib/config'
 
 interface PostGameCompletionProps {

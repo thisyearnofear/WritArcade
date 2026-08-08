@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAccount } from 'wagmi'
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { getWriterCoinById } from '@/lib/writer-coins'
 
 interface BalanceData {
   balance: string

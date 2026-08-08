@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { getWriterCoinById } from '@/lib/writer-coins'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import type { PaymentInitiateRequest, PaymentInfo } from '@/domains/payments/types'
 import { prisma } from '@/lib/database'

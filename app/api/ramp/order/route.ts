@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createOrder } from '@/lib/etherfuse'
+import { createOrder } from '@/lib/integrations/etherfuse'
 import { getActor } from '@/services/auth'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'

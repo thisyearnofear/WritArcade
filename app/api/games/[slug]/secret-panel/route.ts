@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
-import { getMintConfig } from '@/lib/writerCoins'
+import { getMintConfig } from '@/lib/writer-coins'
 import { prisma } from '@/lib/database'
 
 const GAME_NFT_ABI = [

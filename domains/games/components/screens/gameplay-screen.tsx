@@ -8,7 +8,7 @@ import { MoodIndicator } from '@/components/game/MoodIndicator'
 import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-strip'
 import { EpilogueGoalStrip } from '@/components/game/epilogue-goal-strip'
 import { FinaleUnlocksStrip } from '@/components/game/finale-unlocks-strip'
-import { getModifierCategoryForPanel } from '@/lib/daily-challenge-ui'
+import { getModifierCategoryForPanel } from '@/lib/daily-challenge/daily-challenge-ui'
 import {
   parseArticleUrlFromDualSource,
   parseBasePaintDayFromSource,

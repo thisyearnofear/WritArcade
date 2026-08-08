@@ -140,7 +140,7 @@ export function SecretPanel({
       }
 
       setUnlockStep('loading_sdk')
-      const { decryptSecretPanel, formatHandle } = await import('@/lib/inco')
+      const { decryptSecretPanel, formatHandle } = await import('@/lib/daily-challenge/inco')
 
       setUnlockStep('requesting_decrypt')
       const decrypted = await decryptSecretPanel(

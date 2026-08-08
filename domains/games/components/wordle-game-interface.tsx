@@ -45,7 +45,7 @@ export function WordleGameInterface({ game, maxAttempts }: WordleGameInterfacePr
             if (!data.incoHandle) {
               throw new Error('No decryption handle returned')
             }
-            const { decryptWordleAnswer, formatHandle } = await import('@/lib/inco')
+            const { decryptWordleAnswer, formatHandle } = await import('@/lib/daily-challenge/inco')
             const answer = await decryptWordleAnswer(
               formatHandle(data.incoHandle),
               walletClient as unknown as WalletClient<Transport, Chain, Account>

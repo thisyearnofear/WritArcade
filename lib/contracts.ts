@@ -6,7 +6,7 @@
  */
 
 import { encodeFunctionData, createPublicClient, http } from 'viem'
-import { getWriterCoinById } from './writerCoins'
+import { getWriterCoinById } from '@/lib/writer-coins'
 import { cacheGet, cacheSet } from './cache'
 
 const BASE_MAINNET_PAYMENT_ADDRESS =

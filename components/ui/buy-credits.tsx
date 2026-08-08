@@ -6,7 +6,7 @@ import { Coins, Loader2, Plus, ExternalLink, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 
 interface CreditsData {
   credits: number

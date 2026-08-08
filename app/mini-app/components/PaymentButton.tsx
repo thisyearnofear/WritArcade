@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { type WriterCoin } from '@/lib/writerCoins'
+import { type WriterCoin } from '@/lib/writer-coins'
 import {
   encodePayForGameGeneration,
   encodePayAndMintGame,

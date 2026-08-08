@@ -6,7 +6,7 @@ import { MoodModifierService } from '../services/mood-modifier.service'
 import { parsePanel } from '../utils/text-parser'
 import { isNarrativeReady, canContinueAfterNarrative } from '../utils/playback-readiness'
 import { ImageGenerationService, type ImageGenerationResult } from '../services/image-generation.service'
-import { loadDailyChallengeState } from '@/lib/daily-challenge-client'
+import { loadDailyChallengeState } from '@/lib/daily-challenge/daily-challenge-client'
 import { config } from '@/lib/config'
 import type { Game, ChatMessage, GameplayOption } from '../types'
 

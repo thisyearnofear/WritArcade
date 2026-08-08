@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ExternalLink } from 'lucide-react'
-import { WRITER_COINS, type WriterCoin } from '@/lib/writerCoins'
+import { WRITER_COINS, type WriterCoin } from '@/lib/writer-coins'
 
 interface WriterCoinSelectorProps {
     onSelect: (coin: WriterCoin) => void

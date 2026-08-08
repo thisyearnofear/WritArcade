@@ -1,6 +1,6 @@
 'use client'
 
-import { type PaymentToken } from '@/lib/writerCoins'
+import { type PaymentToken } from '@/lib/writer-coins'
 
 interface PaymentTokenSelectorProps {
   selectedToken: PaymentToken

@@ -5,7 +5,7 @@
  */
 
 import { processArticleFromUrl } from './paragraph-sdk'
-import { getWriterCoinByAuthor, validateArticleUrl } from './writerCoins'
+import { getWriterCoinByAuthor, validateArticleUrl } from '@/lib/writer-coins'
 
 export interface ParagraphArticle {
   title: string

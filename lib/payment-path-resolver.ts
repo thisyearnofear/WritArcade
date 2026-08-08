@@ -17,7 +17,7 @@
  * matching logic lives in one place.
  */
 
-import { getWriterCoinByAuthor, type WriterCoin } from './writerCoins'
+import { getWriterCoinByAuthor, type WriterCoin } from '@/lib/writer-coins'
 
 type PaymentPath = 'writercoin' | 'musd'
 

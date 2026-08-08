@@ -11,7 +11,7 @@ import {
   loadDailyChallengeState,
   submitDailyReveal,
   DAILY_CHALLENGE_CHAIN_ID,
-} from '@/lib/daily-challenge-client'
+} from '@/lib/daily-challenge/daily-challenge-client'
 import { DailySessionRecap } from '@/components/daily-challenge/daily-session-recap'
 import { DualSourceCredits } from '@/components/basepaint/dual-source-credits'
 import { BasePaintFinaleAttribution } from '@/components/basepaint/basepaint-finale-attribution'

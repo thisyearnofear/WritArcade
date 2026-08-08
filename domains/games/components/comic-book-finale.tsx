@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronLeft, Clapperboard, Grid3X3, Eye, X, Zap } from 'lucide-react'
 import { useAccount } from 'wagmi'
-import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 import { useGameInsights } from '../hooks/use-game-insights'
 import { useVideoMotion } from './finale-video-motion'
 import {

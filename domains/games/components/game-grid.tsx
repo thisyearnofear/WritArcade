@@ -9,7 +9,7 @@ import { CardSkeleton } from '@/components/effects'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RecoveryPanel } from '@/components/ui/recovery-panel'
 import { Gamepad2, SearchX, WifiOff } from 'lucide-react'
-import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writer-coins'
 
 interface GameGridProps {
   limit?: number

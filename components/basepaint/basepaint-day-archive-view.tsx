@@ -10,7 +10,7 @@ import { DailyChallengeSubnav } from '@/components/daily-challenge/daily-challen
 import { BasePaintTrack } from '@/components/basepaint/basepaint-track'
 import { BasePaintCanvasMeta, type BasePaintCanvasMetaProps } from '@/components/basepaint/basepaint-canvas-meta'
 import { BasePaintStrokeReplay } from '@/components/basepaint/basepaint-stroke-replay'
-import { getBasePaintDay } from '@/lib/daily-challenge-ui'
+import { getBasePaintDay } from '@/lib/daily-challenge/daily-challenge-ui'
 
 interface DayArchiveData {
   day: number

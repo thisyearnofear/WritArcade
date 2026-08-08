@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { Clock, ChevronRight } from 'lucide-react'
 import { useRecentlyPlayed } from '@/hooks/use-recently-played'
 import { GameCard } from '@/components/ui/game-card'
-import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writer-coins'
 import type { Game } from '@/domains/games/types'
 
 function getGameSymbol(game: Game): string {

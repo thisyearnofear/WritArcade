@@ -3,7 +3,7 @@
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { motion } from 'framer-motion'
 import { Globe, AlertCircle, ArrowRightLeft } from 'lucide-react'
-import { getChainInfo, MEZO_TESTNET_CHAIN_ID, BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
+import { getChainInfo, MEZO_TESTNET_CHAIN_ID, BASE_MAINNET_CHAIN_ID } from '@/lib/wallet/chains'
 
 /**
  * Network Indicator Component

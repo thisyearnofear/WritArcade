@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock writerCoins
 const mockGetWriterCoinById = vi.fn()
-vi.mock('@/lib/writerCoins', () => ({
+vi.mock('@/lib/writer-coins', () => ({
   getWriterCoinById: (...args: unknown[]) => mockGetWriterCoinById(...args),
   getPaymentEnabledWriterCoins: vi.fn(),
   isWriterCoinPaymentEnabled: vi.fn(),

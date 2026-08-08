@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, ArrowRight, Gamepad2 } from 'lucide-react'
-import { getBasePaintDay } from '@/lib/daily-challenge-ui'
+import { getBasePaintDay } from '@/lib/daily-challenge/daily-challenge-ui'
 
 interface DailyChallengeBannerProps {
   className?: string

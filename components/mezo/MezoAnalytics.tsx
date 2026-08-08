@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ExternalLink, TrendingUp, DollarSign, Gamepad2, Activity, Shield } from 'lucide-react'
-import { MUSD_CONFIG } from '@/lib/writerCoins'
+import { MUSD_CONFIG } from '@/lib/writer-coins'
 
 interface MezoAnalyticsData {
   totalGames: number

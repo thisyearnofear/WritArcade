@@ -1,6 +1,6 @@
 'use client'
 
-import { WRITER_COINS, type WriterCoin, MUSD_CONFIG } from '@/lib/writerCoins'
+import { WRITER_COINS, type WriterCoin, MUSD_CONFIG } from '@/lib/writer-coins'
 import { motion } from 'framer-motion'
 import { Sparkles, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
-import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 import { getActor } from '@/services/auth'
 import { z } from 'zod'
 

@@ -1,7 +1,7 @@
 import type { PaymentStrategy, ExecutePaymentParams, PaymentResult } from './payment-strategy'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getPaymentTokenConfig } from '@/lib/writerCoins'
-import { BASE_MAINNET_CHAIN_ID } from '@/lib/chains'
+import { getPaymentTokenConfig } from '@/lib/writer-coins'
+import { BASE_MAINNET_CHAIN_ID } from '@/lib/wallet/chains'
 
 export class WriterCoinStrategy implements PaymentStrategy {
   id = 'writercoin'

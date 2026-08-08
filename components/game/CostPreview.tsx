@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { type PaymentToken, getPaymentTokenConfig } from '@/lib/writerCoins'
+import { type PaymentToken, getPaymentTokenConfig } from '@/lib/writer-coins'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import type { PaymentAction } from '@/domains/payments/types'
 

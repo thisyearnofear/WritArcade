@@ -51,11 +51,12 @@ Thumbs.db
 # foundry/forge build artifacts
 contracts/out/
 contracts/cache/
+contracts/openzeppelin-contracts/
+contracts/openzeppelin-contracts/openzeppelin-contracts/
 cache/
 cache-forge/
 broadcast/
 .gas-snapshot
-lib/openzeppelin-contracts/
 
 # debug
 npm-debug.log*

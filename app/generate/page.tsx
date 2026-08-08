@@ -12,7 +12,7 @@ import { CardSkeleton } from '@/components/effects'
 import { DailyChallengeSubnav } from '@/components/daily-challenge/daily-challenge-subnav'
 import { BasePaintTrack } from '@/components/basepaint/basepaint-track'
 import { GAME_MODE_EXPLOAINER } from '@/lib/game-mode-labels'
-import { getBasePaintDay } from '@/lib/daily-challenge-ui'
+import { getBasePaintDay } from '@/lib/daily-challenge/daily-challenge-ui'
 import { Sparkles, ArrowLeft } from 'lucide-react'
 
 type PaymentPath = 'writercoin' | 'musd'

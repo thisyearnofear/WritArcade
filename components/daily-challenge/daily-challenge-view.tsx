@@ -26,9 +26,9 @@ import { BasePaintCanvasMeta } from '@/components/basepaint/basepaint-canvas-met
 import { BasePaintTrack } from '@/components/basepaint/basepaint-track'
 import { ArcadeFunnelCTAs } from '@/components/daily-challenge/arcade-funnel-ctas'
 import { DailyStatusBanner, type DailyStatusVariant } from '@/components/daily-challenge/daily-status-banner'
-import { getBasePaintDay } from '@/lib/daily-challenge-ui'
+import { getBasePaintDay } from '@/lib/daily-challenge/daily-challenge-ui'
 import { getBasePaintCanvasProxyUrl } from '@/lib/basepaint'
-import { DAILY_CHALLENGE_CHAIN_ID, readStartSessionFee } from '@/lib/daily-challenge-client'
+import { DAILY_CHALLENGE_CHAIN_ID, readStartSessionFee } from '@/lib/daily-challenge/daily-challenge-client'
 
 export type DailyChallengeVariant = 'arcade' | 'basepaint'
 

@@ -12,7 +12,7 @@ import {
   saveDailyChallengeState,
   startOnChainSession,
   type DailyChallengeClientState,
-} from '@/lib/daily-challenge-client'
+} from '@/lib/daily-challenge/daily-challenge-client'
 
 export function useDailyChallengeOnchain() {
   const { address, isConnected } = useAccount()

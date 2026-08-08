@@ -5,8 +5,8 @@ import { prisma } from '@/lib/database'
 import { getCurrentUser } from '@/services/auth'
 import { logger } from '@/lib/config'
 import { reportServerError } from '@/services/error-reporting'
-import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/chains'
-import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writerCoins'
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID } from '@/lib/wallet/chains'
+import { getWriterCoinById, MUSD_CONFIG } from '@/lib/writer-coins'
 
 /**
  * Unified Payment Verification Endpoint

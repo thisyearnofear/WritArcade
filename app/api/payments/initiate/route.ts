@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { getWriterCoinById } from '@/lib/writer-coins'
 import { fetchCoinConfigOnChain } from '@/lib/contracts'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
 import { fail } from '@/lib/api-response'

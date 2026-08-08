@@ -9,7 +9,7 @@ import { HiddenHandTeaser } from './hidden-hand-teaser'
 import {
   loadDailyChallengeState,
   type DailyChallengeClientState,
-} from '@/lib/daily-challenge-client'
+} from '@/lib/daily-challenge/daily-challenge-client'
 import { config } from '@/lib/config'
 import { resolveBasePaintDay } from '@/components/basepaint/basepaint-finale-attribution'
 

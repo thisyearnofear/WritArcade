@@ -1,0 +1,13 @@
+[Unit]
+Description=Run writersarcade Daily Challenge setup daily at 00:05 UTC
+Documentation=https://github.com/thisyearnofear/writersarcade/blob/main/docs/BASEPAINT.md
+
+[Timer]
+# Primary schedule — exact minute (unlike Vercel Hobby hour-granular cron)
+OnCalendar=*-*-* 00:05:00 UTC
+Persistent=true
+RandomizedDelaySec=30
+Unit=writersarcade-daily-challenge.service
+
+[Install]
+WantedBy=timers.target

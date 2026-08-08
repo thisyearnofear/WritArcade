@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { Coins, Loader2, ChevronDown, Sparkles, ArrowRightLeft, Banknote } from 'lucide-react'
-import { WRITER_COINS } from '@/lib/writerCoins'
+import { WRITER_COINS } from '@/lib/writer-coins'
 import { CopyAddressButton } from '@/components/ui/copy-address-button'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 import { useMezoBalance } from '@/hooks/useMezoBalance'
-import { getChainInfo, MEZO_TESTNET_CHAIN_ID, type ChainInfo } from '@/lib/chains'
+import { getChainInfo, MEZO_TESTNET_CHAIN_ID, type ChainInfo } from '@/lib/wallet/chains'
 
 interface BalanceDisplayProps {
   mobileLayout?: boolean

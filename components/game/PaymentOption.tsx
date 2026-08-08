@@ -1,7 +1,7 @@
 'use client'
 
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
-import { type WriterCoin, type PaymentToken } from '@/lib/writerCoins'
+import { type WriterCoin, type PaymentToken } from '@/lib/writer-coins'
 import { PaymentFlow } from './PaymentFlow'
 import { CostPreview } from './CostPreview'
 import { WalletConnect } from '@/components/ui/wallet-connect'
@@ -11,7 +11,7 @@ import type { PaymentAction } from '@/domains/payments/types'
 import { AlertCircle, ArrowRightLeft } from 'lucide-react'
 import { PaymentTokenSelector } from './PaymentTokenSelector'
 import { trackEvent } from '@/services/analytics'
-import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/chains'
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/wallet/chains'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 
 interface PaymentOptionProps {

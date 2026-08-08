@@ -15,7 +15,7 @@ import { STORY_CHAIN_ID, isOnStoryNetwork } from '@/domains/story/services/story
 /** Story Protocol UI is opt-in — same flag semantics as Web3Provider. */
 const STORY_IP_UI_ENABLED = process.env.NEXT_PUBLIC_STORY_ENABLED !== 'false'
 import { type GameCreator, type GameAuthor } from '@/lib/services/ipfs-metadata.service'
-import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG } from '@/lib/writerCoins'
+import { getWriterCoinById, getWriterCoinByAuthor, MUSD_CONFIG } from '@/lib/writer-coins'
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'
 

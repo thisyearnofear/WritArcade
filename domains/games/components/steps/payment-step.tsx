@@ -2,7 +2,7 @@
 
 import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, ExternalLink, Sparkles } from 'lucide-react'
 import { PaymentOption } from '@/components/game/PaymentOption'
-import type { WriterCoin } from '@/lib/writerCoins'
+import type { WriterCoin } from '@/lib/writer-coins'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 import {
   type GenerateErrorState,

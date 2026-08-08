@@ -9,7 +9,7 @@ import {
   VIDEO_STYLE_LABELS,
   getVideoDurationSeconds,
 } from '@/domains/games/services/video-generation.service'
-import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 import { config } from '@/lib/config'
 import { persistMediaUrl } from '@/domains/story/services/media-upload'
 import { refundVideoCharge } from '@/domains/games/services/video-charge.service'

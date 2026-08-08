@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
-import { type PaymentToken, getPaymentTokenConfig, CREDITS_CONFIG } from '@/lib/writerCoins'
+import { type PaymentToken, getPaymentTokenConfig, CREDITS_CONFIG } from '@/lib/writer-coins'
 import type { PaymentAction } from '@/domains/payments/types'
 import { ErrorCard } from '@/components/error/ErrorCard'
 import { getUserMessage } from '@/services/error-handler'
@@ -14,7 +14,7 @@ import { PaymentStrategyFactory } from '@/domains/payments/services/payment-stra
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/chains'
+import { BASE_MAINNET_CHAIN_ID, MEZO_TESTNET_CHAIN_ID, getChainInfo } from '@/lib/wallet/chains'
 import { trackEvent } from '@/services/analytics'
 import type { PaymentResult } from '@/domains/payments/strategies/payment-strategy'
 

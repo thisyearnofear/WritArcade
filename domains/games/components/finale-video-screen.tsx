@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Clapperboard, Loader2 } from 'lucide-react'
-import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 import { VideoStyleSelector } from './video-style-selector'
 import { VideoShowcase } from './video-showcase'
 import { CreatorStats } from './creator-stats'

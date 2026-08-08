@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getWriterCoinById, WRITER_COINS } from '@/lib/writerCoins'
+import { getWriterCoinById, WRITER_COINS } from '@/lib/writer-coins'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { WriterPageClient } from './writer-page-client'
 

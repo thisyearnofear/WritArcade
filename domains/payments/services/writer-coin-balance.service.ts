@@ -1,6 +1,6 @@
 import { createPublicClient, http } from 'viem'
 import { base } from 'viem/chains'
-import { getWriterCoinById } from '@/lib/writerCoins'
+import { getWriterCoinById } from '@/lib/writer-coins'
 
 export interface WriterCoinBalanceResponse {
   success: true

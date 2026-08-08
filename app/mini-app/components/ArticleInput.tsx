@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { type WriterCoin } from '@/lib/writerCoins'
+import { type WriterCoin } from '@/lib/writer-coins'
 import { validateArticleForWriterCoin, fetchParagraphArticle, extractParagraphAuthor } from '@/lib/paragraph'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'

@@ -56,7 +56,7 @@ export async function POST(
     }
 
     // Encrypt the secret panel via Inco SDK
-    const { encryptSecretPanel, getVaultAddress, SECRET_PANEL_VAULT_ABI } = await import('@/lib/inco')
+    const { encryptSecretPanel, getVaultAddress, SECRET_PANEL_VAULT_ABI } = await import('@/lib/daily-challenge/inco')
     const { createWalletClient, http } = await import('viem')
     const { base } = await import('viem/chains')
     const { privateKeyToAccount } = await import('viem/accounts')
@@ -73,7 +73,7 @@ export async function POST(
     // Encrypt the secret panel JSON into ≤31-byte chunks
     const ciphertextChunks = await encryptSecretPanel(game.secretPanelCiphertext, account.address)
 
-    const { getIncoFee } = await import('@/lib/inco')
+    const { getIncoFee } = await import('@/lib/daily-challenge/inco')
     const unitFee = await getIncoFee()
     const fee = unitFee * BigInt(ciphertextChunks.length)
 

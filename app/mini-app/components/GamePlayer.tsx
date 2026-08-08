@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useId } from "react";
 import { PaymentButton } from "./PaymentButton";
-import { type WriterCoin } from "@/lib/writerCoins";
+import { type WriterCoin } from "@/lib/writer-coins";
 import type { Game } from "@/domains/games/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { triggerHaptic, cn } from "@/lib/utils";

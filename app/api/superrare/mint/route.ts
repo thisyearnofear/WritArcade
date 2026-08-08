@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { mintNFT } from '@/lib/superrare'
+import { mintNFT } from '@/lib/integrations/superrare'
 import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
 import { z } from 'zod'
 

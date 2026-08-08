@@ -13,7 +13,7 @@
  */
 
 import type { PaymentStrategy } from '../strategies/payment-strategy'
-import type { PaymentToken } from '@/lib/writerCoins'
+import type { PaymentToken } from '@/lib/writer-coins'
 import { WriterCoinStrategy } from '../strategies/writer-coin.strategy'
 import { MUSDStrategy } from '../strategies/musd.strategy'
 

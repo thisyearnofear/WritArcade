@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { type WriterCoin, WRITER_COINS, validateArticleUrl } from '@/lib/writerCoins'
+import { type WriterCoin, WRITER_COINS, validateArticleUrl } from '@/lib/writer-coins'
 import { detectWriterCoinFromUrl } from '@/lib/payment-path-resolver'
 import { retryWithBackoff } from '@/services/error-handler'
 import { useWriterCoinBalance } from '@/hooks/useWriterCoinBalance'

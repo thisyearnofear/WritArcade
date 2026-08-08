@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
-import { getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writerCoins'
+import { getWriterCoinByArticleUrl, validateArticleUrl } from '@/lib/writer-coins'
 import { ok, fail } from '@/lib/api-response'
 import { z } from 'zod'
 

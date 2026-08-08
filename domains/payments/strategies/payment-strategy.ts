@@ -1,5 +1,5 @@
 import type { PaymentAction } from '../types'
-import type { PaymentToken } from '@/lib/writerCoins'
+import type { PaymentToken } from '@/lib/writer-coins'
 import type { WalletClient } from 'viem'
 
 export interface ExecutePaymentParams {

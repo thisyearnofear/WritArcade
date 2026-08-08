@@ -8,7 +8,7 @@ import { ArticleInput } from '../components/ArticleInput'
 import { GameCustomizer } from '../components/GameCustomizer'
 import { GamePlayer } from '../components/GamePlayer'
 import { MiniAppMobileNav } from '../components/MiniAppMobileNav'
-import { type WriterCoin } from '@/lib/writerCoins'
+import { type WriterCoin } from '@/lib/writer-coins'
 import type { Game } from '@/domains/games/types'
 import Image from 'next/image'
 

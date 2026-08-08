@@ -4,7 +4,7 @@ import { getActor } from '@/services/auth'
 import { VideoGenerationService, type VideoProviderName } from '@/domains/games/services/video-generation.service'
 import { persistMediaUrl } from '@/domains/story/services/media-upload'
 import { refundVideoCharge } from '@/domains/games/services/video-charge.service'
-import { CREDITS_CONFIG } from '@/lib/writerCoins'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 import { config } from '@/lib/config'
 
 const STATUS_POLL_MIN_INTERVAL_MS = 25_000

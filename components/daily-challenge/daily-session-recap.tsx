@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { Share2, Copy, Check, Trophy } from 'lucide-react'
 import type { Modifier } from '@/lib/daily-challenge'
-import { MODIFIER_CATEGORY_LABEL } from '@/lib/daily-challenge-ui'
+import { MODIFIER_CATEGORY_LABEL } from '@/lib/daily-challenge/daily-challenge-ui'
 
 interface DailySessionRecapProps {
   gameSlug: string

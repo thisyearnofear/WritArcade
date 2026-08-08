@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getQuote } from '@/lib/etherfuse'
+import { getQuote } from '@/lib/integrations/etherfuse'
 import { z } from 'zod'
 
 const quoteSchema = z.object({

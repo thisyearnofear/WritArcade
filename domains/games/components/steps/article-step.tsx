@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { CheckCircle2, FileText, Info, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { WriterCoin } from '@/lib/writerCoins'
+import type { WriterCoin } from '@/lib/writer-coins'
 import {
   type ArticlePreview,
   articlePreviewMeta,

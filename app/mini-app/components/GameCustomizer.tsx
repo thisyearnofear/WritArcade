@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { type WriterCoin, type PaymentToken, WRITER_COINS } from '@/lib/writerCoins'
+import { type WriterCoin, type PaymentToken, WRITER_COINS } from '@/lib/writer-coins'
 import { GenreSelector, type GameGenre } from '@/components/game/GenreSelector'
 import { DifficultySelector, type GameDifficulty } from '@/components/game/DifficultySelector'
 import { CostPreview } from '@/components/game/CostPreview'

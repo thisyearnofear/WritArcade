@@ -38,32 +38,43 @@ writarcade/
 │   ├── mini-app/           # Farcaster mini-app
 │   └── games/              # Web app routes
 ├── components/             # Shared React components
+├── contracts/              # Solidity contracts (Foundry)
+│   └── openzeppelin-contracts/  # Vendored OpenZeppelin source (build artifact)
+├── docs/                   # Architecture, features, roadmap
+│   └── plans/              # Roadmap & reflection plans
 ├── domains/                # Business logic by domain
 │   ├── games/              # Game generation & management
 │   ├── assets/             # Asset creation & marketplace
 │   ├── payments/           # Payment processing (Strategy Pattern + Factory)
 │   ├── content/            # Article processing
 │   └── users/              # User management
-├── services/               # Domain-adjacent services moved from lib/
-│   ├── analytics.ts        # Event tracking
-│   ├── error-handler.ts    # User-facing error formatting
-│   ├── rate-limit.ts       # API rate limiting
-│   └── auth.ts             # Authentication helpers
 ├── hooks/                  # Custom React hooks
 │   └── useMezoBalance.ts   # On-chain MEZO balance detection
 ├── lib/                    # Cross-cutting infrastructure
-│   ├── api-response.ts     # Standardized API response helpers (ok/fail/paginated)
-│   ├── request-dedup.ts    # In-flight request deduplication
-│   ├── ai-cache.ts         # AI generation result caching + dedup
-│   ├── latency-monitor.ts  # P50/P95/P99 latency monitoring
-│   ├── wallet/             # Runtime wallet abstraction
-│   ├── story-protocol.*    # Story Protocol integration
-│   ├── inco.ts             # Inco confidential compute (secret panels)
-│   ├── hypercerts.*        # Impact certificates
-│   └── contracts.ts        # On-chain contract helpers
-├── contracts/              # Solidity contracts
+│   ├── basepaint/          # Daily Challenge & BasePaint source layer
+│   ├── config.ts           # Central config (API keys, feature flags)
+│   ├── contracts.ts        # On-chain contract helpers
+│   ├── daily-challenge/    # Daily Challenge session & modifier logic
+│   ├── integrations/       # Third-party integration modules
+│   │   ├── etherfuse.ts    # Fiat onramp (credits)
+│   │   ├── hypercerts.ts   # Impact certificates
+│   │   ├── superrare.ts    # NFT collectibles
+│   │   └── tenderly.ts     # Transaction simulation
+│   ├── paragraph-sdk.ts    # Paragraph.xyz article fetching
+│   ├── wallet/             # Wallet abstraction + chain config
+│   └── writer-coins.ts     # Writer coin registry & pricing
 ├── prisma/                 # Database schema
-└── scripts/                # Operational scripts
+├── public/                 # Static assets
+├── scripts/                # Operational scripts
+│   ├── deploy/             # Deployment scripts (Base, Mezo, API, goldsky)
+│   ├── cron/               # Daily challenge cron + systemd unit
+│   ├── maintenance/        # Data migrations, repairs, debugging tools
+│   └── ci/                 # CI helpers, git hooks, setup verification
+└── services/               # Domain-adjacent services moved from lib/
+    ├── analytics.ts        # Event tracking
+    ├── auth.ts             # Authentication helpers (actor resolution)
+    ├── error-handler.ts    # User-facing error formatting
+    └── rate-limit.ts       # API rate limiting
 ```
 
 ### API Response Standardization

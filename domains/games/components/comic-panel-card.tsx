@@ -14,7 +14,7 @@ import {
   MODIFIER_CATEGORY_FLAVOR,
   MODIFIER_CATEGORY_LABEL,
   MODIFIER_CATEGORY_COLOR,
-} from '@/lib/daily-challenge-ui'
+} from '@/lib/daily-challenge/daily-challenge-ui'
 import { getBasePaintCanvasProxyUrl } from '@/lib/basepaint'
 
 interface ImageVersion {

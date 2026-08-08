@@ -1,0 +1,13 @@
+[Unit]
+Description=writersarcade Daily Challenge setup (Inco shuffle + Paragraph featured pick)
+Documentation=https://github.com/thisyearnofear/writersarcade/blob/main/docs/BASEPAINT.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=WRITERSARCADE_CRON_ENV=/opt/writersarcade-api/cron/daily-challenge.env
+ExecStart=/opt/writersarcade-api/cron/cron-daily-challenge.sh
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true

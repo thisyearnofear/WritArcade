@@ -25,7 +25,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { GridSkeleton } from '@/components/effects'
-import { WRITER_COINS } from '@/lib/writerCoins'
+import { WRITER_COINS } from '@/lib/writer-coins'
 import { config } from '@/lib/config'
 import { ConceptTerm } from '@/lib/concept-definitions'
 

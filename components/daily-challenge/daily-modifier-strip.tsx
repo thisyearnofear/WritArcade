@@ -5,7 +5,7 @@ import {
   getModifierCategoryForPanel,
   MODIFIER_CATEGORY_HINT,
   MODIFIER_CATEGORY_LABEL,
-} from '@/lib/daily-challenge-ui'
+} from '@/lib/daily-challenge/daily-challenge-ui'
 
 interface DailyModifierStripProps {
   /** 0-based index of the panel currently in play */
