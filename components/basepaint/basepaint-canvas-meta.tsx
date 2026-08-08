@@ -63,7 +63,6 @@ export function BasePaintCanvasMeta({
               controls
             />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={getBasePaintCanvasProxyUrl(day)}
               alt={theme}

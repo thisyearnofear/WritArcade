@@ -256,7 +256,6 @@ export function ArticleStep({
           {!isLoadingBasePaintStage && basePaintStage && (
             <div className="px-4 pb-3 space-y-3">
               <div className="overflow-hidden rounded-lg border border-purple-500/20">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getBasePaintCanvasProxyUrl(basePaintStage.day)}
                   alt={basePaintStage.theme}

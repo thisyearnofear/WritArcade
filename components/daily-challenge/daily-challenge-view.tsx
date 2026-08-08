@@ -273,7 +273,6 @@ export function DailyChallengeView({ variant = 'arcade' }: DailyChallengeViewPro
                 className="relative overflow-hidden rounded-2xl border border-white/10"
               >
                 <div className="relative min-h-[420px] md:min-h-[480px]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={getBasePaintCanvasProxyUrl(challenge.day)}
                     alt={challenge.canvasTheme || challenge.theme}

@@ -104,7 +104,6 @@ export function BasePaintDayArchiveView({ day }: { day: number }) {
                         className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.02] p-3 transition-colors hover:border-purple-500/40"
                       >
                         {game.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={game.imageUrl}
                             alt=""

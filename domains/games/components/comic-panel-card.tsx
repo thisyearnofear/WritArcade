@@ -243,7 +243,6 @@ export function ComicPanelCard({
             {basePaintDay != null && (
               <>
                 {/* Tiny canvas watermark */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getBasePaintCanvasProxyUrl(basePaintDay)}
                   alt=""

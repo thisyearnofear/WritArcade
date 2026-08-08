@@ -17,6 +17,7 @@ module.exports = [
       'scripts/**',
       'public/client.min.js',
       'lib/openzeppelin-contracts/**',
+      'contracts/openzeppelin-contracts/**',
       'apps/**',
     ],
   },

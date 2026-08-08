@@ -99,7 +99,6 @@ export function BasePaintCollectionView() {
                   >
                     <div className="flex flex-col sm:flex-row">
                       <div className="relative aspect-square w-full shrink-0 sm:w-40">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={getBasePaintCanvasProxyUrl(canvas.day)}
                           alt={`Day ${canvas.day}`}
