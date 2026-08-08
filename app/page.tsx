@@ -1,9 +1,12 @@
 'use client'
 
 import { Suspense, useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { GameGrid } from '@/domains/games/components/game-grid'
 import { SimpleGameForm } from '@/domains/games/components/simple-game-form'
+import { HeroGameStrip, type SampleGame } from '@/domains/games/components/hero-game-strip'
 import { RecentlyPlayedSection } from '@/domains/games/components/recently-played-section'
 import { DailyChallengeBanner } from '@/components/daily-challenge/daily-challenge-banner'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
@@ -23,6 +26,7 @@ import {
   BarChart3,
   ArrowUpRight,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react'
 import { GridSkeleton } from '@/components/effects'
 import { WRITER_COINS } from '@/lib/writer-coins'
@@ -30,6 +34,9 @@ import { config } from '@/lib/config'
 import { ConceptTerm } from '@/lib/concept-definitions'
 
 /* ─── How It Works ──────────────────────────────────────────────────────── */
+
+/** Used by the hero's primary CTA so cold visitors never need a URL of their own. */
+const SAMPLE_ARTICLE_URL = 'https://paragraph.com/@papajams/the-infra-problem-defi-struggled-to-solve'
 
 const baseSteps = [
   {
@@ -159,44 +166,41 @@ function useGameCount() {
   return count
 }
 
-/* ─── Hero Components ────────────────────────────────────────────────────── */
-
-function WriterTicker() {
-  const [index, setIndex] = useState(0)
+/**
+ * Backs both the hero strip and the hero's primary CTA from one request.
+ *
+ * The primary CTA needs a real, already-generated game: playing one is instant,
+ * whereas /generate only prefills the form and still costs a pipeline run, so
+ * pointing the loudest button there would make the fast path decorative.
+ */
+function useSampleGames() {
+  const [games, setGames] = useState<SampleGame[]>([])
   useEffect(() => {
-    const id = setInterval(() => setIndex((i) => (i + 1) % WRITER_COINS.length), 4500)
-    return () => clearInterval(id)
+    let cancelled = false
+    fetch('/api/games?limit=5&requireImage=true')
+      .then((r) => r.json())
+      .then((result) => {
+        if (cancelled || !result?.success) return
+        setGames(result.data?.games ?? [])
+      })
+      .catch(() => {
+        // Silent: the hero falls back to the create-from-sample path below.
+      })
+    return () => { cancelled = true }
   }, [])
-  const coin = WRITER_COINS[index]
-  return (
-    <span className="inline-flex items-center gap-1.5 align-middle">
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={coin.id}
-          initial={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
-          transition={{ duration: 0.35, ease: 'easeInOut' }}
-          className="inline-flex items-center gap-1.5"
-        >
-          <a
-            href={`/writers/${coin.id}`}
-            className="font-semibold text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground transition-all"
-          >
-            {coin.writer}
-          </a>
-          <span className="text-xs font-mono text-muted-foreground">{coin.symbol}</span>
-        </motion.span>
-      </AnimatePresence>
-    </span>
-  )
+  return games
 }
 
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
-  const { showOnboarding, dismissOnboarding } = useOnboarding('welcome')
+  // The hero explains the product, so the tour is opt-in via "New here?" rather
+  // than auto-opening a modal over the first impression.
+  const { showOnboarding, dismissOnboarding, startTour } = useOnboarding()
+  const router = useRouter()
   const gameCount = useGameCount()
+  const sampleGames = useSampleGames()
+  const featuredSample = sampleGames[0]
   const [hasFeatured, setHasFeatured] = useState<boolean | null>(null)
   const featuredLoadedRef = useRef(false)
   const [hasMostPlayed, setHasMostPlayed] = useState<boolean | null>(null)
@@ -240,9 +244,8 @@ export default function HomePage() {
                   <span className="underline decoration-dotted underline-offset-2 cursor-help text-foreground font-medium">Paragraph</span>
                 </ConceptTooltip>{' '}
                 article URL. AI reads it and turns it into a{' '}
-                <span className="text-foreground font-medium">free word puzzle</span>{' '}
-                or a{' '}
-                <span className="text-foreground font-medium">5-panel interactive comic</span>.
+                <span className="text-foreground font-medium">5-panel interactive comic</span>{' '}
+                you play by making choices.
               </motion.p>
 
               {gameCount !== null && gameCount.publicGames >= 10 && (
@@ -257,86 +260,129 @@ export default function HomePage() {
                 </motion.p>
               )}
 
+              {/* Visual proof of the headline's promise, before the visitor has to act. */}
+              <HeroGameStrip games={sampleGames} />
+
+              {/* The one loud action, and the fastest path to value: an already
+                  generated game opens instantly. It demonstrates the headline
+                  rather than restating it. Falls back to the create-from-sample
+                  path only if no public game with a cover has loaded. */}
               <motion.div
-                className="mb-6 flex flex-col items-center gap-3"
+                className="mt-8 flex flex-col items-center gap-2"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25, duration: 0.5 }}
               >
-                <div className="grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
-                  <a
-                    href="/games"
-                    className="group inline-flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl bg-foreground px-4 py-3 text-sm font-bold text-background transition-all hover:-translate-y-0.5 hover:opacity-90"
+                {featuredSample ? (
+                  <Link
+                    href={`/games/${featuredSample.slug}`}
+                    className="inline-flex h-14 w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-foreground px-6 text-sm font-bold uppercase tracking-widest text-background transition-all hover:-translate-y-0.5 hover:opacity-90"
                   >
-                    <span className="inline-flex items-center gap-2"><Gamepad2 className="w-4 h-4" /> Play</span>
-                    <span className="text-[11px] font-normal opacity-70">Jump into a story</span>
-                  </a>
-                  <a
-                    href="/generate"
-                    className="group inline-flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground transition-all hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-muted"
+                    <Sparkles className="h-4 w-4" />
+                    See what an article becomes
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push(`/generate?${new URLSearchParams({ url: SAMPLE_ARTICLE_URL }).toString()}`)
+                    }}
+                    className="inline-flex h-14 w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-foreground px-6 text-sm font-bold uppercase tracking-widest text-background transition-all hover:-translate-y-0.5 hover:opacity-90"
                   >
-                    <span className="inline-flex items-center gap-2"><Wand2 className="w-4 h-4 text-primary" /> Create</span>
-                    <span className="text-[11px] font-normal text-muted-foreground">Turn writing into play</span>
-                  </a>
-                  {config.features.dailyChallenge && (
-                    <a
-                      href="/basepaint"
-                      className="group inline-flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-purple-500/40 bg-purple-500/10 px-4 py-3 text-sm font-semibold text-purple-700 transition-all hover:-translate-y-0.5 hover:border-purple-400/60 hover:bg-purple-500/15 dark:text-purple-200"
-                    >
-                      <span className="inline-flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Daily</span>
-                      <span className="text-[11px] font-normal text-purple-700/70 dark:text-purple-200/70">Writer × today&apos;s canvas</span>
-                    </a>
-                  )}
-                </div>
+                    <Sparkles className="h-4 w-4" />
+                    Try it with a sample article
+                  </button>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Play free · create from any article · Daily stages a writer inside today&apos;s BasePaint world
+                  {featuredSample ? 'Free to play · no wallet, no signup' : 'Free · no wallet, no signup'}
                 </p>
+                {config.features.dailyChallenge && (
+                  <Link
+                    href="/basepaint"
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-purple-500/40 bg-purple-500/10 px-3 py-1.5 text-xs font-semibold text-purple-700 transition-colors hover:border-purple-400/60 hover:bg-purple-500/15 dark:text-purple-200"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    New: today&apos;s BasePaint canvas as a playable comic
+                  </Link>
+                )}
               </motion.div>
 
-              {/* Primary CTA card — just URL input, no wallet, no payment toggle */}
+              {/* Secondary block: creating is the commitment step, so it sits below
+                  the free demo and carries no loud button of its own. */}
               <motion.div
-                className="max-w-xl mx-auto"
+                className="max-w-xl mx-auto mt-8"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
               >
                 <ErrorBoundary>
-                  <div className="p-6 rounded-2xl bg-card border border-border shadow-xl space-y-4 text-left">
+                  <div className="p-6 rounded-2xl bg-card border border-border shadow-sm space-y-4 text-left">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-primary">Create</p>
-                      <p className="mt-1 text-sm text-muted-foreground">Turn an article into a five-panel playable story. Your first story is free; public games are always free to play.</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-primary">Make your own</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Turn an article into a 5-panel interactive comic. Your first story is free; public games are always free to play.
+                      </p>
                     </div>
+
                     <SimpleGameForm
                       onGenerate={(url: string) => {
-                        window.location.href = `/generate?${new URLSearchParams({ url }).toString()}`
+                        router.push(`/generate?${new URLSearchParams({ url }).toString()}`)
                       }}
                       isGenerating={false}
                     />
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+                    <div className="flex flex-col gap-2 border-t border-border pt-3">
                       <button
                         type="button"
                         onClick={() => {
-                          const demoUrl = 'https://paragraph.com/@papajams/the-infra-problem-defi-struggled-to-solve'
-                          window.location.href = `/generate?${new URLSearchParams({ url: demoUrl }).toString()}`
+                          router.push(`/generate?${new URLSearchParams({ url: SAMPLE_ARTICLE_URL }).toString()}`)
                         }}
-                        className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-left text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        Try with a sample article
+                        <Wand2 className="w-3.5 h-3.5" />
+                        No article handy? Build one from a sample
                       </button>
-                      <a
+                      <Link
                         href="/generate?mode=wordle"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1.5 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <Puzzle className="w-3.5 h-3.5" />
-                        Free Wordle — no wallet
-                      </a>
+                        Prefer something shorter? Make a word puzzle instead
+                      </Link>
                     </div>
                   </div>
                 </ErrorBoundary>
               </motion.div>
 
-              {/* Social proof — just the writer names, no chain/coin mentions */}
+              {/* Secondary routes, deliberately quiet so the hero has one loud CTA. */}
+              <motion.div
+                className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
+                <Link href="/games" className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground">
+                  <Gamepad2 className="h-3.5 w-3.5" />
+                  Browse the arcade
+                </Link>
+                {config.features.dailyChallenge && (
+                  <Link href="/basepaint" className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Daily challenge
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => startTour('welcome')}
+                  className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  New here?
+                </button>
+              </motion.div>
+
+              {/* Social proof that is also a way in: each chip leads to the writer's
+                  page, where their Paragraph publication is one click away. This is
+                  the answer to "I don't have an article URL." */}
               <motion.div
                 className="mt-6 flex flex-col items-center gap-2"
                 initial={{ opacity: 0 }}
@@ -348,43 +394,30 @@ export default function HomePage() {
                 </span>
                 <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xl">
                   {WRITER_COINS.map((coin) => (
-                    <span
+                    <Link
                       key={coin.id}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground border border-border/60 rounded-full px-2.5 py-1"
+                      href={`/writers/${coin.id}`}
+                      title={`${coin.writer} — find an article to turn into a game`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
                     >
                       <span className="font-mono text-blue-600 dark:text-blue-400">{coin.symbol}</span>
                       <span className="hidden sm:inline truncate max-w-[8rem]">{coin.writer}</span>
-                    </span>
+                    </Link>
                   ))}
-                  <span className="text-[11px] text-muted-foreground">and more</span>
+                  <Link
+                    href="/writers"
+                    className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+                  >
+                    and more
+                  </Link>
                 </div>
               </motion.div>
             </div>
           </section>
 
+          {/* BasePaint Daily sits directly under the hero: it's the most distinctive
+              thing the product does, and the reason to come back tomorrow. */}
           <DailyChallengeBanner />
-
-          {/* Creator value proposition — insight is a product outcome, not a hidden dashboard feature. */}
-          <section className="border-t border-border px-4 py-12" aria-labelledby="creator-signal-heading">
-            <div className="mx-auto flex max-w-5xl flex-col gap-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-500">For creators</p>
-                  <h2 id="creator-signal-heading" className="mt-1 text-xl font-bold text-foreground">See what your readers actually choose</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Turn passive content into a measurable experience. Creator insights show starts, completions, panel drop-off, choice splits, and which placements drive plays.</p>
-                </div>
-              </div>
-              <a
-                href="/studio"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-500"
-              >
-                Create for insights <ArrowUpRight className="h-4 w-4" />
-              </a>
-            </div>
-          </section>
 
           {/* Continue playing — only renders for returning users with play history */}
           <RecentlyPlayedSection />
@@ -397,9 +430,9 @@ export default function HomePage() {
                   <h2 id="featured-heading" className="text-sm font-semibold text-foreground uppercase tracking-wider">
                     Featured works
                   </h2>
-                  <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     View all
-                  </a>
+                  </Link>
                 </div>
                 <Suspense fallback={<GridSkeleton count={3} columns={3} />}>
                   <GameGrid
@@ -418,15 +451,8 @@ export default function HomePage() {
               </div>
             </section>
           )}
-          {hasFeatured === false && (
-            <section className="py-12 px-4 border-t border-border">
-              <div className="max-w-6xl mx-auto">
-                <p className="text-sm text-muted-foreground text-center">
-                  Featured games will appear here once published.
-                </p>
-              </div>
-            </section>
-          )}
+          {/* No empty state when Featured is unpopulated — an absent section is
+              invisible to visitors, whereas an apology for an absent section is not. */}
 
           {/* Most played — leaderboard sorted by playCount. Only rendered
               once there are at least a few plays AND the filtered query
@@ -439,9 +465,9 @@ export default function HomePage() {
                   <h2 id="most-played-heading" className="text-sm font-semibold text-foreground uppercase tracking-wider">
                     Most played
                   </h2>
-                  <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     View all
-                  </a>
+                  </Link>
                 </div>
                 <Suspense fallback={<GridSkeleton count={6} columns={3} />}>
                   <GameGrid
@@ -459,15 +485,8 @@ export default function HomePage() {
               </div>
             </section>
           )}
-          {gameCount !== null && gameCount.totalPlays < 3 && hasMostPlayed === false && (
-            <section className="py-12 px-4 border-t border-border">
-              <div className="max-w-6xl mx-auto">
-                <p className="text-sm text-muted-foreground text-center">
-                  Most played games will appear here once the community starts playing.
-                </p>
-              </div>
-            </section>
-          )}
+          {/* Likewise no empty state for Most played — it self-hides until there
+              are enough plays to make a leaderboard meaningful. */}
 
           {/* Recent */}
           <section className="py-16 px-4 border-t border-border" aria-labelledby="recent-heading">
@@ -476,9 +495,9 @@ export default function HomePage() {
                 <h2 id="recent-heading" className="text-sm font-semibold text-foreground uppercase tracking-wider">
                   Recent
                 </h2>
-                <a href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   View all
-                </a>
+                </Link>
               </div>
               <Suspense fallback={<GridSkeleton count={4} columns={3} />}>
                 <GameGrid limit={4} requireImage={true} />
@@ -486,13 +505,30 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* Social proof — writers ticker */}
-          <section className="py-12 px-4 border-t border-border text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">Featuring writers like</p>
-            <WriterTicker />
-          </section>
-
           <HowItWorksSection />
+
+          {/* Creator value proposition — moved below the proof. The analytics
+              argument lands better once a visitor has seen games work. */}
+          <section className="border-t border-border px-4 py-12" aria-labelledby="creator-signal-heading">
+            <div className="mx-auto flex max-w-5xl flex-col gap-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-500">For creators</p>
+                  <h2 id="creator-signal-heading" className="mt-1 text-xl font-bold text-foreground">See what your readers actually choose</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Turn passive content into a measurable experience. Creator insights show starts, completions, panel drop-off, choice splits, and which placements drive plays.</p>
+                </div>
+              </div>
+              <Link
+                href="/studio"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-500"
+              >
+                Create for insights <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </section>
         </main>
 
         <Footer />

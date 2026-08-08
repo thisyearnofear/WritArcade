@@ -34,6 +34,11 @@ const SOCIAL_LINKS = [
   { label: 'Farcaster', href: 'https://warpcast.com/~/channel/writarcade' },
 ]
 
+const CONTRACT_LINKS = [
+  { label: 'GameNFT', address: BASE_GAME_NFT_ADDRESS },
+  { label: 'WriterCoinPayment', address: BASE_WRITER_COIN_PAYMENT_ADDRESS },
+]
+
 function AnimatedFooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   const prefersReducedMotion = useReducedMotion()
 
@@ -79,7 +84,7 @@ export function Footer() {
               writersarcade
             </motion.p>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-              Turn writing into playable experiences, then measure what readers choose and bring the story to life on-chain.
+              Paste an article. Get a playable game.
             </p>
           </div>
 
@@ -121,24 +126,28 @@ export function Footer() {
                 </li>
               ))}
             </ul>
+
+            {/* Contract verification lives here rather than the bottom bar, so the
+                bar makes one chain claim instead of three. */}
+            <p className="text-muted-foreground/70 text-[10px] font-semibold uppercase tracking-wider mt-5 mb-2">
+              Contracts · Base
+            </p>
+            <ul className="space-y-2">
+              {CONTRACT_LINKS.map((link) => (
+                <li key={link.label}>
+                  <AnimatedExternalLink href={`https://basescan.org/address/${link.address}`}>
+                    <span className="font-mono">{link.label}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </AnimatedExternalLink>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-border pt-6 flex flex-col lg:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span>© {year} writersarcade. Built on Base · Story Protocol.</span>
-          <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-            <span>Contracts · Base Mainnet:</span>
-            <a href={`https://basescan.org/address/${BASE_GAME_NFT_ADDRESS}`} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-mono hover:text-foreground transition-colors">
-              GameNFT <ExternalLink className="w-3 h-3" />
-            </a>
-            <span aria-hidden="true">·</span>
-            <a href={`https://basescan.org/address/${BASE_WRITER_COIN_PAYMENT_ADDRESS}`} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-mono hover:text-foreground transition-colors">
-              WriterCoinPayment <ExternalLink className="w-3 h-3" />
-            </a>
-          </span>
+        <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span>© {year} writersarcade. Built on Base and Story Protocol.</span>
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" aria-hidden="true" />
             Base Mainnet Live

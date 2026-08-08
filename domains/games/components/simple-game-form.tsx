@@ -55,7 +55,7 @@ export function SimpleGameForm({ onGenerate, isGenerating }: SimpleGameFormProps
           animate={{ opacity: 1, y: 0 }}
           className="text-xs text-muted-foreground text-center"
         >
-          Paste a Paragraph article URL above. Generate a free word puzzle or a playable comic story.{' '}
+          Paste a Paragraph article URL above to generate a 5-panel interactive comic.{' '}
           <span className="text-emerald-500 font-medium">No wallet needed to start.</span>
         </motion.p>
       )}

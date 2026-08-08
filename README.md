@@ -2,6 +2,41 @@
 
 Turn Paragraph.xyz articles into interactive, mintable games. Players pay with writer coins, creators mint and share games, and revenue splits are enforced on-chain.
 
+## BasePaint Hackathon submission (Aug 1–8)
+
+**Category:** Art projects — games and remixes made with BasePaint.
+
+**What it does with BasePaint.** The Daily Challenge (`/basepaint`, also `/daily`) stages a
+featured writer's Paragraph article *inside today's BasePaint canvas*. Everyone plays the same
+world each day; each player is dealt a private hand of five encrypted modifier cards held in
+Inco vaults on Base mainnet, so the same source produces a different story per player. Scores
+compare on a leaderboard. Canvas art is read from BasePaint's own APIs — the theme endpoint for
+the day's palette and prompt, and `api/art/image` for the artwork itself, which is fed to a
+vision model so generated comics are grounded in the actual pixels rather than just the theme
+text.
+
+**Why it's useful to BasePaint.** It gives each daily canvas a second life as something
+playable, and routes readers of writers like Fred Wilson and Debbie Soon into BasePaint art
+they would not otherwise encounter. The daily cadence is the point, not a feature: a new canvas
+becomes a new game every day, on a cron, indefinitely.
+
+**Built during the hackathon window** (42 commits, Aug 4–8):
+
+| Change | Commits |
+|---|---|
+| Dual-source Daily — featured Paragraph article auto-picked from writer-coin publications, staged in today's BasePaint world | `feat(daily): dual-source Daily with Paragraph auto-pick and BasePaint world` |
+| Comics grounded in the real canvas via vision model, not just the theme string | `feat(daily): ground BasePaint comics in the actual canvas` |
+| Encrypted modifier deck + NFT-gated secret panels migrated to on-chain Inco vaults | `feat(inco): migrate secret panels and daily challenge to on-chain vaults` |
+| BasePaint generate flow wired end to end; deck shuffle hardened with fallbacks | `feat(daily): wire BasePaint generate flow and harden deck shuffle`, `feat(daily): add deck shuffle fallbacks for Hobby Vercel cron` |
+| Daily vault redeployed on Base mainnet; VPS daily cron wired | `feat(daily): harden DailyChallenge + redeploy vault on Base mainnet`, `chore: finish lib/scripts reorg and wire VPS daily cron` |
+| Canvas URL fix, Base as default chain, client-bundle feature flag | `fix(daily): repair BasePaint canvas URL and default wallet to Base`, `fix(daily): enable feature flag in client bundle` |
+| Paid-session resume + money-safe onboarding for the Daily path | `fix(daily): resume paid sessions and add money-safe onboarding UX` |
+| Landing page rebuilt around the work: today's canvas rendered in the Daily banner, BasePaint surfaced above the fold, one primary CTA, progressive disclosure | `feat(ux)` series |
+
+Implementation notes and the dual-source design live in [`docs/BASEPAINT.md`](docs/BASEPAINT.md).
+BasePaint constants, canvas/theme URLs, and the day-epoch calculation are in
+[`lib/basepaint/`](lib/basepaint/).
+
 ## What it does
 
 - **Generate playable stories** from article URLs, marketing copy, or any pasted text (`/studio`)

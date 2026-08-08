@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, ArrowRight, Gamepad2 } from 'lucide-react'
 import { getBasePaintDay } from '@/lib/daily-challenge/daily-challenge-ui'
+import { getBasePaintCanvasProxyUrl } from '@/lib/basepaint/urls'
 
 interface DailyChallengeBannerProps {
   className?: string
@@ -133,6 +134,28 @@ export function DailyChallengeBanner({ className = '', compact = false }: DailyC
         <h2 className="text-xl font-bold text-foreground mb-1">
           {headline(preview, loaded)}
         </h2>
+
+        {/* Today's actual BasePaint canvas. The Daily Challenge stages a writer's
+            article inside this world, so showing the real artwork is the clearest
+            statement of what the mode is. */}
+        {preview?.day && (
+          <Link
+            href="/basepaint"
+            className="mx-auto mb-3 mt-3 block w-fit overflow-hidden rounded-lg border border-purple-500/30 shadow-lg transition-transform hover:-translate-y-0.5"
+            title={`BasePaint Day ${preview.day}${preview.canvasTheme ? ` · ${preview.canvasTheme}` : ''}`}
+          >
+            {/* Plain img: proxied remote canvas, matches the rest of the app. */}
+            <img
+              src={getBasePaintCanvasProxyUrl(preview.day)}
+              alt={`BasePaint canvas for day ${preview.day}${preview.canvasTheme ? `: ${preview.canvasTheme}` : ''}`}
+              width={160}
+              height={160}
+              loading="lazy"
+              className="h-40 w-40 bg-black/20 object-contain [image-rendering:pixelated]"
+            />
+          </Link>
+        )}
+
         {preview?.sourceType === 'dual' && preview.articleAuthor && (
           <p className="text-xs text-muted-foreground mb-1">by {preview.articleAuthor}</p>
         )}

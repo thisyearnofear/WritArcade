@@ -133,6 +133,9 @@ __pycache__/
 tmp/
 temp/
 
+# HyperFrames / local video projects
+videos/
+
 # Output of 'npm pack'
 *.tgz
 
