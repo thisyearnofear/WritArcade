@@ -205,6 +205,16 @@ describe('verifyPaymentEvidence — Base writer-coin mint', () => {
     const wrong = { ...evidence(), transaction: { from: USER, to: CONTRACT, input: genCalldata(COIN) } }
     expect(() => verifyPaymentEvidence(wrong)).toThrow(/expected payment function/i)
   })
+
+  it('rejects a mint when the token ID does not match the on-chain event', () => {
+    const ev = { ...evidence(), expectedTokenId: '999' } // event tokenId is 7n
+    expect(() => verifyPaymentEvidence(ev)).toThrow(/token ID does not match/i)
+  })
+
+  it('accepts a mint when the token ID matches the on-chain event', () => {
+    const ev = { ...evidence(), expectedTokenId: '7' }
+    expect(() => verifyPaymentEvidence(ev)).not.toThrow()
+  })
 })
 
 describe('verifyPaymentEvidence — Mezo (MUSD) generate', () => {

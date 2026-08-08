@@ -5,6 +5,7 @@ import { fetchCoinConfigOnChain, fetchConfiguredGameNFT } from '@/lib/contracts'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
 import { getActor } from '@/services/auth'
 import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
+import { verifyOnChainPayment } from '@/services/payments/payment-verifier'
 import { BASE_MAINNET_CHAIN_ID } from '@/lib/wallet/chains'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
@@ -247,6 +248,39 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         { error: ownershipError() },
         { status: 403 }
+      )
+    }
+
+    // Independently verify the mint on-chain before persisting anything: receipt
+    // succeeded, correct function (payAndMintGame), destination = payment contract,
+    // sender = recipient wallet, GameMinted event present, and token ID matches.
+    const funding = await GameFundingService.getGameFunding(game.id)
+    const fundingWriterCoinId = funding?.writerCoinId
+    if (!fundingWriterCoinId) {
+      return NextResponse.json(
+        { error: 'This game is missing its payment token. Please contact support before minting.' },
+        { status: 400 }
+      )
+    }
+    const mintChainId = getMintConfig(fundingWriterCoinId)?.chainId ?? BASE_MAINNET_CHAIN_ID
+    try {
+      await verifyOnChainPayment({
+        transactionHash: transactionHash as `0x${string}`,
+        writerCoinId: fundingWriterCoinId,
+        userAddress: actorWallet,
+        action: 'mint-nft',
+        chainId: mintChainId,
+        expectedTokenId: nftTokenId?.toString(),
+      })
+    } catch (verifyError) {
+      console.error('[Mint Confirm] On-chain mint verification failed:', verifyError)
+      return NextResponse.json(
+        {
+          error: verifyError instanceof Error
+            ? `Mint verification failed: ${verifyError.message}`
+            : 'Mint verification failed',
+        },
+        { status: 400 }
       )
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getActor } from '@/services/auth'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
-import { authorizeGameOwner, isWalletAddress } from '@/domains/games/services/game-ownership.service'
+import { authorizeGameOwner } from '@/domains/games/services/game-ownership.service'
 
 const SECRET_PANEL_VAULT_ADDRESS =
   (process.env.NEXT_PUBLIC_SECRET_PANEL_VAULT_ADDRESS as `0x${string}` | undefined) || ''
@@ -34,12 +35,10 @@ export async function POST(
 ) {
   try {
     const { slug } = await params
-    const body = await request.json()
-    const { walletAddress } = body
+    await request.json().catch(() => ({}))
 
-    if (!isWalletAddress(walletAddress)) {
-      return NextResponse.json({ error: 'Valid wallet address is required' }, { status: 400 })
-    }
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
 
     const game = await GameDatabaseService.getGameBySlug(slug)
 
@@ -54,9 +53,9 @@ export async function POST(
       )
     }
 
-    // Check game is accessible (public or the requester is the owner)
+    // Check game is accessible (public or the requester is the authenticated owner)
     const isPublic = !game.private
-    const ownership = authorizeGameOwner({ game, wallet: walletAddress })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet ?? undefined })
 
     if (!isPublic && !ownership.authorized) {
       return NextResponse.json({ error: 'This game is private' }, { status: 403 })

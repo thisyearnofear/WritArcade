@@ -11,6 +11,8 @@ export interface VerifyPaymentParams {
   userAddress: string
   action: PaymentAction
   chainId: number
+  /** For mint, the on-chain token ID that must match the emitted GameMinted event. */
+  expectedTokenId?: string
 }
 
 /**
@@ -241,6 +243,14 @@ export function verifyPaymentEvidence(params: VerifyEvidenceParams): VerifiedPay
     const writerCoin = getWriterCoinById(params.writerCoinId)
     if (!writerCoin || typeof eventCoin !== 'string' || eventCoin.toLowerCase() !== writerCoin.address.toLowerCase()) {
       throw new Error('Payment event writer coin does not match the selected coin')
+    }
+  }
+
+  // Mint: the emitted token ID must match the expected minted token.
+  if (!mezo && params.action === 'mint-nft' && params.expectedTokenId !== undefined) {
+    const eventTokenId = evArgs.tokenId
+    if (eventTokenId === undefined || toNativeBigInt(eventTokenId).toString() !== params.expectedTokenId) {
+      throw new Error('Minted token ID does not match the on-chain event')
     }
   }
 
