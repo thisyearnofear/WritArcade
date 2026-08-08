@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isAdmin } from '@/lib/constants'
-import { authorizeGameOwner, isWalletAddress } from '@/domains/games/services/game-ownership.service'
+import { getActor } from '@/services/auth'
+import { authorizeGameOwner } from '@/domains/games/services/game-ownership.service'
 
 /**
  * PATCH /api/games/[slug]/settings
- * Update game settings (play fee, visibility, featured status)
+ * Update game settings (play fee, visibility, featured status).
+ *
+ * Ownership and admin status are derived from the authenticated session cookie,
+ * never from a caller-supplied body field.
  */
 export async function PATCH(
     request: NextRequest,
@@ -14,23 +18,14 @@ export async function PATCH(
     try {
         const { slug } = await params
         const body = await request.json()
-        const { playFee, private: isPrivate, featured, wallet } = body
+        const { playFee, private: isPrivate, featured } = body
 
-        if (!wallet) {
-            return NextResponse.json(
-                { error: 'Wallet address is required for verification' },
-                { status: 400 }
-            )
+        const actor = await getActor()
+        const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+        if (!actorWallet) {
+            return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
         }
 
-        if (!isWalletAddress(wallet)) {
-            return NextResponse.json(
-                { error: 'Invalid wallet address format' },
-                { status: 400 }
-            )
-        }
-
-        // Get current game to verify ownership
         const game = await prisma.game.findUnique({
             where: { slug },
             include: {
@@ -43,10 +38,9 @@ export async function PATCH(
             return NextResponse.json({ error: 'Game not found' }, { status: 404 })
         }
 
-        // Verify ownership or Admin status
-        const ownership = authorizeGameOwner({ game, wallet })
+        const ownership = authorizeGameOwner({ game, wallet: actorWallet })
         const isOwner = ownership.authorized
-        const isUserAdmin = isAdmin(wallet)
+        const isUserAdmin = isAdmin(actorWallet)
 
         if (!isOwner && !isUserAdmin) {
             return NextResponse.json(
@@ -57,17 +51,12 @@ export async function PATCH(
 
         const updateData: Record<string, unknown> = {}
 
-        // Privacy toggle (Owner or Admin)
         if (typeof isPrivate === 'boolean') {
             updateData.private = isPrivate
         }
 
-        // Featured toggle (Admin Only)
-        // IMPORTANT: Verify Admin again explicitly for this field
         if (typeof featured === 'boolean') {
             if (!isUserAdmin) {
-                // Silently ignore or throw 403? 
-                // Throwing 403 is safer to prevent hacking
                 return NextResponse.json(
                     { error: 'Unauthorized. Only admins can feature games.' },
                     { status: 403 }
@@ -76,7 +65,6 @@ export async function PATCH(
             updateData.featured = featured
         }
 
-        // Play Fee (Owner or Admin)
         if (playFee !== undefined) {
             const fee = Number(playFee)
             if (isNaN(fee) || fee < 0) {
@@ -88,7 +76,6 @@ export async function PATCH(
             updateData.playFee = playFee.toString()
         }
 
-        // Update game
         const updatedGame = await prisma.game.update({
             where: { slug },
             data: updateData,
@@ -100,15 +87,12 @@ export async function PATCH(
                 slug,
                 private: updatedGame.private,
                 playFee: updatedGame.playFee,
-                featured: updatedGame.featured
+                featured: updatedGame.featured,
             },
         })
 
     } catch (error) {
         console.error('Settings update error:', error)
-        return NextResponse.json(
-            { error: 'Failed to update game settings' },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: 'Failed to update game settings' }, { status: 500 })
     }
 }

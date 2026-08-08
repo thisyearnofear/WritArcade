@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
+import { getActor } from '@/services/auth'
+import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
 
 /**
  * PATCH /api/games/[slug]/visibility
- * Toggle game visibility (public/private)
- * 
- * Body:
- * - visible: boolean (true for public, false for private)
- * - wallet: string (user's wallet, for ownership verification)
+ * Toggle game visibility (public/private).
+ *
+ * Ownership is derived from the authenticated wallet session cookie — never
+ * from a caller-supplied body field.
  */
 export async function PATCH(
   request: NextRequest,
@@ -17,24 +17,18 @@ export async function PATCH(
   try {
     const { slug } = await params
     const body = await request.json()
-    const { visible, wallet } = body
+    const { visible } = body
 
-    if (typeof visible !== 'boolean' || !wallet) {
-      return NextResponse.json(
-        { error: 'Missing required fields: visible (boolean), wallet' },
-        { status: 400 }
-      )
+    if (typeof visible !== 'boolean') {
+      return NextResponse.json({ error: 'Missing required field: visible (boolean)' }, { status: 400 })
     }
 
-    // Validate wallet format
-    if (!isWalletAddress(wallet)) {
-      return NextResponse.json(
-        { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
-    // Fetch game
     const game = await prisma.game.findUnique({
       where: { slug },
       include: {
@@ -44,21 +38,14 @@ export async function PATCH(
     })
 
     if (!game) {
-      return NextResponse.json(
-        { error: 'Game not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const ownership = authorizeGameOwner({ game, wallet })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
-      return NextResponse.json(
-        { error: ownershipError() },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: ownershipError() }, { status: 403 })
     }
 
-    // Update visibility
     const updated = await prisma.game.update({
       where: { slug },
       data: { private: !visible },
@@ -66,17 +53,10 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      data: {
-        slug,
-        private: updated.private,
-        message: `Game is now ${!updated.private ? 'public' : 'private'}`,
-      },
+      data: { slug, private: updated.private, message: `Game is now ${!updated.private ? 'public' : 'private'}` },
     })
   } catch (error) {
     console.error('Visibility update error:', error)
-    return NextResponse.json(
-      { error: 'Failed to update visibility' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to update visibility' }, { status: 500 })
   }
 }

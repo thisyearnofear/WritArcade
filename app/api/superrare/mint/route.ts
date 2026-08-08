@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { mintNFT } from '@/lib/integrations/superrare'
-import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
+import { getActor } from '@/services/auth'
+import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
 import { z } from 'zod'
 
 const superrareMintSchema = z.object({
   gameId: z.string().min(1),
-  wallet: z.string().min(1),
   chainId: z.number().optional().default(8453),
 })
 
@@ -14,13 +14,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validated = superrareMintSchema.parse(body)
-    const { gameId, wallet } = validated
+    const { gameId } = validated
 
-    if (!isWalletAddress(wallet)) {
-      return NextResponse.json(
-        { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
     const game = await prisma.game.findUnique({
@@ -29,25 +28,16 @@ export async function POST(request: NextRequest) {
     })
 
     if (!game) {
-      return NextResponse.json(
-        { error: 'Game not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const ownership = authorizeGameOwner({ game, wallet })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
-      return NextResponse.json(
-        { error: ownershipError() },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: ownershipError() }, { status: 403 })
     }
 
     if (game.superrareTokenId) {
-      return NextResponse.json(
-        { error: 'Game already minted as SuperRare NFT' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Game already minted as SuperRare NFT' }, { status: 400 })
     }
 
     const mintResult = await mintNFT({
@@ -56,7 +46,7 @@ export async function POST(request: NextRequest) {
       title: game.title,
       description: game.description,
       imageUrl: game.imageUrl || undefined,
-      creatorAddress: wallet,
+      creatorAddress: actorWallet,
       genre: game.genre,
       attributes: [
         { trait_type: 'difficulty', value: game.difficulty || 'easy' },
@@ -85,10 +75,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[SuperRare Mint] Error:', error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid request', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid request', details: error.errors }, { status: 400 })
     }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to prepare SuperRare mint' },
@@ -100,20 +87,19 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { gameId, transactionHash, tokenId, wallet } = body
+    const { gameId, transactionHash, tokenId } = body
 
-    if (!gameId || !transactionHash || !tokenId || !wallet) {
+    if (!gameId || !transactionHash || !tokenId) {
       return NextResponse.json(
-        { error: 'Missing required fields: gameId, transactionHash, tokenId, wallet' },
+        { error: 'Missing required fields: gameId, transactionHash, tokenId' },
         { status: 400 }
       )
     }
 
-    if (!isWalletAddress(wallet)) {
-      return NextResponse.json(
-        { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
     const game = await prisma.game.findUnique({
@@ -122,18 +108,12 @@ export async function PATCH(request: NextRequest) {
     })
 
     if (!game) {
-      return NextResponse.json(
-        { error: 'Game not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const ownership = authorizeGameOwner({ game, wallet })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
-      return NextResponse.json(
-        { error: ownershipError() },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: ownershipError() }, { status: 403 })
     }
 
     const contractAddress = process.env.SUPERRARE_CONTRACT_ADDRESS || '0xb932a70a57673d89f4acffbe830e8ed7f75fb9e0'
@@ -160,9 +140,6 @@ export async function PATCH(request: NextRequest) {
     })
   } catch (error) {
     console.error('[SuperRare Confirm] Error:', error)
-    return NextResponse.json(
-      { error: 'Failed to confirm SuperRare mint' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to confirm SuperRare mint' }, { status: 500 })
   }
 }

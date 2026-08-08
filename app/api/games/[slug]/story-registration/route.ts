@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getActor } from '@/services/auth'
 import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
 
 function isAddress(value: unknown): value is string {
@@ -17,11 +18,7 @@ export async function POST(
   try {
     const { slug } = await params
     const body = await request.json()
-    const { walletAddress, storyIpId, transactionHash } = body
-
-    if (!isAddress(walletAddress)) {
-      return NextResponse.json({ error: 'Valid wallet address is required' }, { status: 400 })
-    }
+    const { storyIpId, transactionHash } = body
 
     if (!isAddress(storyIpId)) {
       return NextResponse.json({ error: 'Valid Story IP ID is required' }, { status: 400 })
@@ -29,6 +26,12 @@ export async function POST(
 
     if (!isHash(transactionHash)) {
       return NextResponse.json({ error: 'Valid transaction hash is required' }, { status: 400 })
+    }
+
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
     const game = await prisma.game.findUnique({
@@ -43,7 +46,7 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const ownership = authorizeGameOwner({ game, wallet: walletAddress })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
       return NextResponse.json({ error: ownershipError() }, { status: 403 })
     }
@@ -67,7 +70,7 @@ export async function POST(
     // Fire-and-forget: add the game IP to the writer's group IP Asset
     try {
       const { ensureGroupForWriter } = await import('@/domains/story/story-grouping-server')
-      const groupResult = await ensureGroupForWriter(walletAddress, storyIpId)
+      const groupResult = await ensureGroupForWriter(actorWallet, storyIpId)
       console.log(`[grouping] Result for ${storyIpId}: ${JSON.stringify(groupResult)}`)
     } catch (groupError) {
       console.warn(`[grouping] Non-critical failure:`, groupError)

@@ -606,12 +606,27 @@ export const videoProviderRegistry = new ProviderRegistry()
 export class VideoGenerationService {
   static async generate(req: VideoGenerationRequest): Promise<VideoGenerationResult> {
     const excluded = new Set(req.excludeProviders ?? [])
-    const requestedProvider = req.providerOverride
-      ? videoProviderRegistry.get(req.providerOverride)
-      : undefined
-    const providers: VideoProvider[] = requestedProvider
-      ? (excluded.has(requestedProvider.name) ? [] : [requestedProvider])
-      : videoProviderRegistry.getCandidates().filter((provider) => !excluded.has(provider.name))
+    let providers: VideoProvider[]
+
+    if (req.providerOverride) {
+      const requestedProvider = videoProviderRegistry.get(req.providerOverride)
+      if (!requestedProvider) {
+        // Explicit override that is not a known provider must fail — never
+        // silently fall back to the provider list (or mock).
+        return {
+          provider: 'failed',
+          providerJobId: null,
+          status: 'failed',
+          videoUrl: null,
+          model: 'unknown',
+          error: `Unknown video provider: ${req.providerOverride}`,
+        }
+      }
+      providers = excluded.has(requestedProvider.name) ? [] : [requestedProvider]
+    } else {
+      providers = videoProviderRegistry.getCandidates().filter((provider) => !excluded.has(provider.name))
+    }
+
     let lastError = 'Video generation failed'
 
     for (const provider of providers) {

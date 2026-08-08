@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
+import { getActor } from '@/services/auth'
+import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
 
 /**
  * DELETE /api/games/[slug]/delete
- * Permanently delete a game
- * 
- * Body:
- * - wallet: string (user's wallet, for ownership verification)
+ * Permanently delete a game.
+ *
+ * Ownership is derived from the authenticated wallet session cookie — never
+ * from a caller-supplied body field.
  */
 export async function DELETE(
   request: NextRequest,
@@ -15,25 +16,14 @@ export async function DELETE(
 ) {
   try {
     const { slug } = await params
-    const body = await request.json()
-    const { wallet } = body
+    await request.json().catch(() => ({}))
 
-    if (!wallet) {
-      return NextResponse.json(
-        { error: 'Missing required field: wallet' },
-        { status: 400 }
-      )
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
-    // Validate wallet format
-    if (!isWalletAddress(wallet)) {
-      return NextResponse.json(
-        { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
-    }
-
-    // Fetch game
     const game = await prisma.game.findUnique({
       where: { slug },
       include: {
@@ -43,48 +33,29 @@ export async function DELETE(
     })
 
     if (!game) {
-      return NextResponse.json(
-        { error: 'Game not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const ownership = authorizeGameOwner({ game, wallet })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
-      return NextResponse.json(
-        { error: ownershipError() },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: ownershipError() }, { status: 403 })
     }
 
-    // Prevent deletion if NFT minted (preserve on-chain record)
     if (game.nftTokenId) {
       return NextResponse.json(
-        {
-          error: 'Cannot delete game: Already minted as NFT. NFT records are permanent on-chain.',
-        },
+        { error: 'Cannot delete game: Already minted as NFT. NFT records are permanent on-chain.' },
         { status: 400 }
       )
     }
 
-    // Delete game
-    await prisma.game.delete({
-      where: { slug },
-    })
+    await prisma.game.delete({ where: { slug } })
 
     return NextResponse.json({
       success: true,
-      data: {
-        slug,
-        deletedAt: new Date(),
-        message: 'Game permanently deleted',
-      },
+      data: { slug, deletedAt: new Date(), message: 'Game permanently deleted' },
     })
   } catch (error) {
     console.error('Game deletion error:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete game' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to delete game' }, { status: 500 })
   }
 }

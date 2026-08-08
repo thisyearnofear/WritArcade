@@ -1,95 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock next/headers cookies (used by getCurrentUser inside the route)
-const mockCookieGet = vi.fn(() => undefined)
-vi.mock('next/headers', () => ({
-  cookies: async () => ({
-    get: mockCookieGet,
-  }),
+const mockGetActor = vi.fn()
+vi.mock('@/services/auth', () => ({ getActor: () => mockGetActor() }))
+
+const mockVerify = vi.fn()
+vi.mock('@/services/payments/payment-verifier', () => ({
+  verifyOnChainPayment: (...args: unknown[]) => mockVerify(...args),
 }))
 
-// Mock prisma
-const mockPaymentUpsert = vi.fn()
+const mockFindUnique = vi.fn()
+const mockCreate = vi.fn()
+const mockUpdate = vi.fn()
 vi.mock('@/lib/database', () => ({
   prisma: {
     payment: {
-      upsert: (...args: unknown[]) => mockPaymentUpsert(...args),
+      findUnique: (...args: unknown[]) => mockFindUnique(...args),
+      create: (...args: unknown[]) => mockCreate(...args),
+      update: (...args: unknown[]) => mockUpdate(...args),
     },
   },
 }))
 
-// Mock auth — no user by default
-const mockGetCurrentUser = vi.fn()
-vi.mock('@/services/auth', () => ({
-  getCurrentUser: () => mockGetCurrentUser(),
-}))
-
-// Mock config logger
 vi.mock('@/lib/config', () => ({
-  logger: {
-    payment: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
+  logger: { payment: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }))
 
-// Mock error reporting
-vi.mock('@/services/error-reporting', () => ({
-  reportServerError: vi.fn(),
-}))
-
-// Mock writerCoins
-const mockGetWriterCoinById = vi.fn()
-vi.mock('@/lib/writer-coins', () => ({
-  getWriterCoinById: (...args: unknown[]) => mockGetWriterCoinById(...args),
-  MUSD_CONFIG: {
-    testnet: {
-      address: '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503',
-      paymentSplitter: '0x5eEb15C32F54B242B07B5Dc23859a3DC71D0C592',
-      chainId: 31611,
-      decimals: 18,
-      symbol: 'MUSD',
-      name: 'Mezo USD',
-      gameGenerationCost: 1000000000000000000n,
-      mintCost: 500000000000000000n,
-    },
-    mainnet: {
-      address: '0x0',
-      paymentSplitter: '0x0',
-      chainId: 31612,
-      decimals: 18,
-      symbol: 'MUSD',
-      name: 'Mezo USD',
-      gameGenerationCost: 1000000000000000000n,
-      mintCost: 500000000000000000n,
-    },
-  },
-}))
-
-// Mock viem — receipt verification is stubbed per-test
-const mockGetTransactionReceipt = vi.fn()
-const mockGetTransaction = vi.fn()
-vi.mock('viem', () => ({
-  createPublicClient: () => ({
-    getTransactionReceipt: (...args: unknown[]) => mockGetTransactionReceipt(...args),
-    getTransaction: (...args: unknown[]) => mockGetTransaction(...args),
-  }),
-  http: () => ({}),
-}))
-
-// Mock chains
-vi.mock('@/lib/wallet/chains', () => ({
-  BASE_MAINNET_CHAIN_ID: 8453,
-  MEZO_TESTNET_CHAIN_ID: 31611,
-}))
+vi.mock('@/services/error-reporting', () => ({ reportServerError: vi.fn() }))
 
 import type { NextRequest } from 'next/server'
 import { POST } from '@/app/api/payments/verify/route'
 
-const USER_ADDRESS = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+const USER = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
 const TX_HASH = '0x' + 'a'.repeat(64)
-const MUSD_SPLITTER = '0x5eEb15C32F54B242B07B5Dc23859a3DC71D0C592'
+
+function walletActor(address = USER) {
+  return { identity: 'wallet', user: { id: 'u1', walletAddress: address } }
+}
 
 function makeRequest(body: unknown): NextRequest {
   return new Request('http://localhost:3000/api/payments/verify', {
@@ -99,159 +45,136 @@ function makeRequest(body: unknown): NextRequest {
   }) as unknown as NextRequest
 }
 
-describe('POST /api/payments/verify', () => {
+function validBody(overrides?: Record<string, unknown>) {
+  return {
+    transactionHash: TX_HASH,
+    writerCoinId: 'avc',
+    action: 'generate-game',
+    userAddress: USER,
+    chainId: 8453,
+    ...overrides,
+  }
+}
+
+describe('POST /api/payments/verify — auth', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetCurrentUser.mockResolvedValue(null)
-    mockCookieGet.mockReturnValue(undefined)
-    mockPaymentUpsert.mockResolvedValue({
+    mockGetActor.mockResolvedValue(null)
+  })
+
+  it('rejects when there is no authenticated wallet session', async () => {
+    const res = await POST(makeRequest(validBody()))
+    expect(res.status).toBe(401)
+  })
+
+  it('rejects when the session is email/guest identity (not a wallet)', async () => {
+    mockGetActor.mockResolvedValue({ identity: 'email', user: { id: 'u9', walletAddress: null } })
+    const res = await POST(makeRequest(validBody()))
+    expect(res.status).toBe(401)
+  })
+
+  it('rejects when userAddress does not match the authenticated wallet', async () => {
+    mockGetActor.mockResolvedValue(walletActor())
+    const res = await POST(makeRequest(validBody({ userAddress: '0x' + 'b'.repeat(40) })))
+    expect(res.status).toBe(403)
+  })
+})
+
+describe('POST /api/payments/verify — validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetActor.mockResolvedValue(walletActor())
+  })
+
+  it('rejects an invalid transaction hash', async () => {
+    const res = await POST(makeRequest(validBody({ transactionHash: '0xnotahash' })))
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects an invalid user address', async () => {
+    const res = await POST(makeRequest(validBody({ userAddress: 'nope' })))
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects an invalid action', async () => {
+    const res = await POST(makeRequest(validBody({ action: 'nope' })))
+    expect(res.status).toBe(400)
+  })
+})
+describe('POST /api/payments/verify — success + hash immutability', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetActor.mockResolvedValue(walletActor())
+    mockVerify.mockResolvedValue({ txHash: TX_HASH, amount: '100000000000000000000', functionName: 'payForGameGeneration' })
+  })
+
+  it('records a verified payment and returns paymentId', async () => {
+    mockFindUnique.mockResolvedValue(null)
+    mockCreate.mockResolvedValue({ id: 'pay-1', status: 'verified' })
+    const res = await POST(makeRequest(validBody()))
+    expect(res.status).toBe(200)
+    expect(mockVerify).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionHash: TX_HASH, writerCoinId: 'avc', action: 'generate-game' })
+    )
+    expect(mockCreate).toHaveBeenCalledWith(
+      { data: expect.objectContaining({ transactionHash: TX_HASH, status: 'verified', userId: 'u1', walletAddress: USER }) }
+    )
+  })
+
+  it('is idempotent when the same hash is re-submitted with identical metadata', async () => {
+    mockFindUnique.mockResolvedValue({
       id: 'pay-1',
+      action: 'generate-game',
+      walletAddress: USER,
+      chainId: 8453,
+      writerCoinId: 'avc',
       status: 'verified',
       transactionHash: TX_HASH,
     })
-  })
-
-  it('returns 200 and paymentId for a valid verified MUSD payment', async () => {
-    mockGetTransactionReceipt.mockResolvedValue({ status: 'success' })
-    mockGetTransaction.mockResolvedValue({
-      from: USER_ADDRESS,
-      to: MUSD_SPLITTER,
-    })
-
-    const res = await POST(
-      makeRequest({
-        transactionHash: TX_HASH,
-        writerCoinId: 'musd-testnet',
-        action: 'generate-game',
-        userAddress: USER_ADDRESS,
-        chainId: 31611,
-      })
-    )
-    const body = await res.json()
-
+    const res = await POST(makeRequest(validBody()))
     expect(res.status).toBe(200)
-    expect(body.success).toBe(true)
-    expect(body.paymentId).toBe('pay-1')
-    expect(body.status).toBe('verified')
+    const body = await res.json()
+    expect(body.idempotent).toBe(true)
+    expect(mockVerify).not.toHaveBeenCalled()
+    expect(mockCreate).not.toHaveBeenCalled()
+    expect(mockUpdate).not.toHaveBeenCalled()
   })
 
-  it('returns 400 when transactionHash is malformed', async () => {
-    const res = await POST(
-      makeRequest({
-        transactionHash: '0xnotahash',
-        writerCoinId: 'musd-testnet',
-        action: 'generate-game',
-        userAddress: USER_ADDRESS,
-        chainId: 31611,
-      })
-    )
-    expect(res.status).toBe(400)
-  })
-
-  it('returns 400 when userAddress is invalid', async () => {
-    const res = await POST(
-      makeRequest({
-        transactionHash: TX_HASH,
-        writerCoinId: 'musd-testnet',
-        action: 'generate-game',
-        userAddress: 'not-an-address',
-        chainId: 31611,
-      })
-    )
-    expect(res.status).toBe(400)
-  })
-
-  it('returns 400 when action is invalid', async () => {
-    const res = await POST(
-      makeRequest({
-        transactionHash: TX_HASH,
-        writerCoinId: 'musd-testnet',
-        action: 'invalid-action',
-        userAddress: USER_ADDRESS,
-        chainId: 31611,
-      })
-    )
-    expect(res.status).toBe(400)
-  })
-
-  it('rejects when the transaction failed on-chain', async () => {
-    mockGetTransactionReceipt.mockResolvedValue({ status: 'reverted' })
-    mockGetTransaction.mockResolvedValue({
-      from: USER_ADDRESS,
-      to: MUSD_SPLITTER,
+  it('returns 409 when the same hash is reused for a different action or coin', async () => {
+    mockFindUnique.mockResolvedValue({
+      id: 'pay-1',
+      action: 'generate-game',
+      walletAddress: USER,
+      chainId: 8453,
+      writerCoinId: 'avc',
+      status: 'verified',
+      transactionHash: TX_HASH,
     })
-
-    const res = await POST(
-      makeRequest({
-        transactionHash: TX_HASH,
-        writerCoinId: 'musd-testnet',
-        action: 'generate-game',
-        userAddress: USER_ADDRESS,
-        chainId: 31611,
-      })
-    )
-    expect(res.status).toBe(400)
-    const body = await res.json()
-    expect(body.error).toMatch(/did not succeed/i)
+    const res = await POST(makeRequest(validBody({ action: 'mint-nft' })))
+    expect(res.status).toBe(409)
+    expect(mockUpdate).not.toHaveBeenCalled()
   })
 
-  it('rejects when sender does not match the connected wallet', async () => {
-    mockGetTransactionReceipt.mockResolvedValue({ status: 'success' })
-    mockGetTransaction.mockResolvedValue({
-      from: '0x' + 'b'.repeat(40), // different sender
-      to: MUSD_SPLITTER,
+  it('returns 409 when the same hash is reused for a different wallet', async () => {
+    mockFindUnique.mockResolvedValue({
+      id: 'pay-1',
+      action: 'generate-game',
+      walletAddress: '0x' + 'b'.repeat(40),
+      chainId: 8453,
+      writerCoinId: 'avc',
+      status: 'verified',
+      transactionHash: TX_HASH,
     })
-
-    const res = await POST(
-      makeRequest({
-        transactionHash: TX_HASH,
-        writerCoinId: 'musd-testnet',
-        action: 'generate-game',
-        userAddress: USER_ADDRESS,
-        chainId: 31611,
-      })
-    )
-    expect(res.status).toBe(400)
-    const body = await res.json()
-    expect(body.error).toMatch(/sender/i)
+    const res = await POST(makeRequest(validBody({ userAddress: USER })))
+    expect(res.status).toBe(409)
   })
 
-  it('rejects when payment was sent to the wrong contract', async () => {
-    mockGetTransactionReceipt.mockResolvedValue({ status: 'success' })
-    mockGetTransaction.mockResolvedValue({
-      from: USER_ADDRESS,
-      to: '0x' + 'c'.repeat(40), // wrong contract
-    })
-
-    const res = await POST(
-      makeRequest({
-        transactionHash: TX_HASH,
-        writerCoinId: 'musd-testnet',
-        action: 'generate-game',
-        userAddress: USER_ADDRESS,
-        chainId: 31611,
-      })
-    )
+  it('surfaces on-chain verification errors as 400', async () => {
+    mockFindUnique.mockResolvedValue(null)
+    mockVerify.mockRejectedValue(new Error('Expected payment event was not found in the transaction logs'))
+    const res = await POST(makeRequest(validBody()))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toMatch(/expected payment contract/i)
-  })
-
-  it('returns an error on RPC failure', async () => {
-    mockGetTransactionReceipt.mockRejectedValue(new Error('RPC timeout'))
-
-    const res = await POST(
-      makeRequest({
-        transactionHash: TX_HASH,
-        writerCoinId: 'musd-testnet',
-        action: 'generate-game',
-        userAddress: USER_ADDRESS,
-        chainId: 31611,
-      })
-    )
-    // The route surfaces Error instances as 400 with the message
-    expect(res.status).toBe(400)
-    const body = await res.json()
-    expect(body.error).toMatch(/RPC timeout/i)
+    expect(body.error).toMatch(/event was not found/i)
   })
 })

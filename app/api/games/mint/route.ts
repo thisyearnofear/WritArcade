@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getWriterCoinById, getMintConfig } from '@/lib/writer-coins'
 import { fetchCoinConfigOnChain, fetchConfiguredGameNFT } from '@/lib/contracts'
 import { GameDatabaseService } from '@/domains/games/services/game-database.service'
-import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
+import { getActor } from '@/services/auth'
+import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
 import { BASE_MAINNET_CHAIN_ID } from '@/lib/wallet/chains'
 import { GameFundingService } from '@/domains/payments/services/game-funding.service'
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
@@ -11,7 +12,6 @@ import { PaymentCostService } from '@/domains/payments/services/payment-cost.ser
 interface MintRequest {
   gameId: string
   gameSlug: string
-  wallet: string
   writerCoinId?: string
 }
 
@@ -29,22 +29,20 @@ interface MintRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: MintRequest = await request.json()
-    const { gameId, gameSlug, wallet, writerCoinId } = body
+    const { gameId, gameSlug, writerCoinId } = body
 
     // Validation
-    if (!gameId || !gameSlug || !wallet) {
+    if (!gameId || !gameSlug) {
       return NextResponse.json(
-        { error: 'Missing required fields: gameId, gameSlug, wallet' },
+        { error: 'Missing required fields: gameId, gameSlug' },
         { status: 400 }
       )
     }
 
-    // Validate wallet format
-    if (!isWalletAddress(wallet)) {
-      return NextResponse.json(
-        { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
     // Fetch game from database
@@ -89,7 +87,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const ownership = authorizeGameOwner({ game, wallet })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
       return NextResponse.json(
         { error: ownershipError() },
@@ -132,7 +130,7 @@ export async function POST(request: NextRequest) {
       attributes: [
         { trait_type: 'genre', value: game.genre },
         { trait_type: 'difficulty', value: game.difficulty },
-        { trait_type: 'creator', value: wallet },
+        { trait_type: 'creator', value: actorWallet },
         { trait_type: 'created_at', value: new Date(game.createdAt).toISOString() },
         ...(game.artifactManifestUri ? [{ trait_type: 'artifact_manifest', value: game.artifactManifestUri }] : []),
       ],
@@ -166,7 +164,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         gameId,
-        wallet,
+        wallet: actorWallet,
         writerCoinId: canonicalWriterCoinId,
         metadata,
         tokenURI,
@@ -202,7 +200,6 @@ export async function PATCH(request: NextRequest) {
       gameId,
       transactionHash,
       nftTokenId,
-      wallet,
       contractAddress,
       chainId,
       nftMetadataUri,
@@ -210,14 +207,13 @@ export async function PATCH(request: NextRequest) {
       artifactManifestUri,
     } = body
 
-    if (!gameId || !transactionHash || !wallet) {
+    if (!gameId || !transactionHash) {
       return NextResponse.json(
-        { error: 'Missing required fields: gameId, transactionHash, wallet' },
+        { error: 'Missing required fields: gameId, transactionHash' },
         { status: 400 }
       )
     }
 
-    // Validate transaction hash format
     if (!transactionHash.match(/^0x[a-fA-F0-9]{64}$/)) {
       return NextResponse.json(
         { error: 'Invalid transaction hash format' },
@@ -225,11 +221,10 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    if (!isWalletAddress(wallet)) {
-      return NextResponse.json(
-        { error: 'Invalid wallet address format' },
-        { status: 400 }
-      )
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
     const game = await prisma.game.findUnique({
@@ -247,7 +242,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const ownership = authorizeGameOwner({ game, wallet })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
       return NextResponse.json(
         { error: ownershipError() },
@@ -319,7 +314,7 @@ export async function PATCH(request: NextRequest) {
           amount: mintAmount.toString(),
           status: 'verified',
           userId: updatedGame.userId,
-          walletAddress: wallet,
+          walletAddress: actorWallet,
           chainId: typeof chainId === 'number' ? chainId : null,
           writerCoinId,
           verifiedAt: new Date(),
@@ -340,7 +335,7 @@ export async function PATCH(request: NextRequest) {
           await fetch(`${request.nextUrl.origin}/api/games/${game.slug}/inco-store`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nftTokenId: nftTokenId.toString(), walletAddress: wallet }),
+            body: JSON.stringify({ nftTokenId: nftTokenId.toString(), walletAddress: actorWallet }),
           })
         }
       } catch (incoError) {

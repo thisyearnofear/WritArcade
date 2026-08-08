@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { getActor } from '@/services/auth'
 import { uploadToIPFS } from '@/domains/story/services/ipfs-utils'
-import { authorizeGameOwner, isWalletAddress, ownershipError } from '@/domains/games/services/game-ownership.service'
+import { authorizeGameOwner, ownershipError } from '@/domains/games/services/game-ownership.service'
 
 const artifactPanelSchema = z.object({
   id: z.string().optional(),
@@ -14,7 +15,6 @@ const artifactPanelSchema = z.object({
 })
 
 const artifactSchema = z.object({
-  wallet: z.string(),
   panels: z.array(artifactPanelSchema).min(1).max(8),
 })
 
@@ -40,8 +40,10 @@ export async function POST(
     const { slug } = await params
     const body = artifactSchema.parse(await request.json())
 
-    if (!isWalletAddress(body.wallet)) {
-      return NextResponse.json({ error: 'Invalid wallet address format' }, { status: 400 })
+    const actor = await getActor()
+    const actorWallet = actor?.identity === 'wallet' ? actor.user.walletAddress?.toLowerCase() : null
+    if (!actorWallet) {
+      return NextResponse.json({ error: 'Wallet authentication is required' }, { status: 401 })
     }
 
     const game = await prisma.game.findUnique({
@@ -56,13 +58,13 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const ownership = authorizeGameOwner({ game, wallet: body.wallet })
+    const ownership = authorizeGameOwner({ game, wallet: actorWallet })
     if (!ownership.authorized) {
       return NextResponse.json({ error: ownershipError() }, { status: 403 })
     }
 
     const createdAt = new Date().toISOString()
-    const creatorWallet = game.ownerWallet || game.creatorWallet || body.wallet
+    const creatorWallet = game.ownerWallet || game.creatorWallet || actorWallet
     const panels = body.panels.map((panel, index) => ({
       id: panel.id || `${game.id}-panel-${index + 1}`,
       panelIndex: index,
