@@ -9,7 +9,7 @@ import { Search, Filter, BookOpen, Compass, Zap, Brain, Sword, Store, ChevronLef
 import { GenreFilterList } from '@/domains/games/components/genre-filter-list'
 import type { GenreOption } from '@/domains/games/components/genre-filter-list'
 import { DailyChallengeBanner } from '@/components/daily-challenge/daily-challenge-banner'
-import { WRITER_COINS } from '@/lib/writerCoins'
+import { WRITER_COINS } from '@/lib/writer-coins'
 import Link from 'next/link'
 
 const genres: GenreOption[] = [

@@ -200,8 +200,10 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 - `GET/POST /api/daily-challenge/start` - Today's challenge (dual from DB featured article, else env bootstrap, else BasePaint-only); lazy-shuffles deck if missing
 - `GET /api/daily-challenge/featured` - Resolved dual/BasePaint source for today (public)
 - `POST /api/daily-challenge/featured` - Upsert today's featured article (`CRON_SECRET` bearer); no redeploy needed
-- `GET /api/daily-challenge/setup` - Cron: shuffle Inco deck + auto-pick featured Paragraph article (`CRON_SECRET`)
-- `POST /api/daily-challenge/setup` - Manual setup; body `{ day?, forceFeatured? }` (`CRON_SECRET`)
+- `GET /api/daily-challenge/setup` - Setup (legacy GET); prefer POST (`CRON_SECRET`)
+- `POST /api/daily-challenge/setup` - Shuffle Inco deck + auto-pick featured article; body `{ day?, forceFeatured? }` (`CRON_SECRET`)
+- **VPS cron (primary):** `pnpm cron:daily-challenge:install` → systemd timer `00:05 UTC` (`scripts/cron/cron-daily-challenge.sh`)
+- **GitHub Actions (backup):** `.github/workflows/daily-challenge-shuffle.yml` at 00:15 UTC
 - `GET /api/basepaint/day/[day]` - Day archive (stats, games, vision description)
 - `GET /api/basepaint/strokes/[day]` - On-chain stroke bundle for replay
 - `GET /api/basepaint/collection?address=0x…` - Owned BasePaint canvases + linked stories

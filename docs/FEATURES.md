@@ -89,13 +89,14 @@ Finale: completeAndReveal() → attestedDecrypt → leaderboard + dual attributi
 ```
 
 **Smart Contract**: [`DailyChallengeVault`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce) on Base mainnet  
-**Cron**: Three-layer deck shuffle (idempotent on-chain):
-1. **Vercel Cron** — `vercel.json` at ~00:05 UTC (`CRON_SECRET` bearer); Hobby timing is hour-granular
-2. **GitHub Actions** — `.github/workflows/daily-challenge-shuffle.yml` at 00:10 UTC backup (set repo secret `CRON_SECRET`)
-3. **Lazy shuffle** — `GET/POST /api/daily-challenge/start` shuffles if today's deck is missing when Daily Challenge loads or a session starts
+**Cron** (Inco shuffle + Paragraph featured pick — idempotent):
+1. **VPS systemd timer (primary)** — `scripts/cron/install-daily-challenge-cron.sh` → `00:05 UTC` curls `POST /api/daily-challenge/setup`
+2. **GitHub Actions (backup)** — `.github/workflows/daily-challenge-shuffle.yml` at 00:15 UTC (repo secret `CRON_SECRET`)
+3. **Lazy fallback** — `GET /api/daily-challenge/start` runs setup if today's deck/featured row is missing when Daily loads
 **SDK**: `@inco/lightning-js` — `attestedDecrypt` for modifier/score reveal  
-**Modifier Deck**: `lib/modifiers.json` — 52 cards across 4 categories  
+**Modifier Deck**: `lib/daily-challenge/modifiers.json` — 52 cards across 4 categories  
 **Config**: Featured article auto-picked daily from Paragraph allowlist (writer coins / `DAILY_CHALLENGE_FEATURED_PUBLICATIONS`); manual override via `POST /api/daily-challenge/featured`; env URL is fallback only  
+
 
 **Pages**: `/basepaint` (canonical Daily Challenge UI); `/daily` redirects there; `/basepaint/day/[n]` archive; `/basepaint/collection`
 

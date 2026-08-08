@@ -9,7 +9,7 @@ import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { Badge } from '@/components/ui/badge'
 import { LicenseConfigurator } from './LicenseConfigurator'
-import { WRITER_COINS } from '@/lib/writerCoins'
+import { WRITER_COINS } from '@/lib/writer-coins'
 import {
   createStoryClientFromWallet,
   isOnStoryNetwork,

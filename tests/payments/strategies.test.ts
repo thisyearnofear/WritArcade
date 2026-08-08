@@ -13,7 +13,7 @@ const mockWalletClient = {
 // Use real implementations for testing
 import { WriterCoinStrategy } from '@/domains/payments/strategies/writer-coin.strategy'
 import { MUSDStrategy } from '@/domains/payments/strategies/musd.strategy'
-import type { PaymentToken } from '@/lib/writerCoins'
+import type { PaymentToken } from '@/lib/writer-coins'
 
 const USER_ADDRESS = '0x1234567890123456789012345678901234567890'
 const SAMPLE_TX_HASH = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd'

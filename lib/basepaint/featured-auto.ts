@@ -1,5 +1,5 @@
 import { fetchPublicationPosts } from '@/lib/paragraph-sdk'
-import { WRITER_COINS } from '@/lib/writerCoins'
+import { WRITER_COINS } from '@/lib/writer-coins'
 import { config } from '@/lib/config'
 import { prisma } from '@/lib/prisma'
 import { getBasePaintDay } from '@/lib/basepaint/day'

@@ -41,7 +41,7 @@ vi.mock('@/services/error-reporting', () => ({
 
 // Mock writerCoins
 const mockGetWriterCoinById = vi.fn()
-vi.mock('@/lib/writerCoins', () => ({
+vi.mock('@/lib/writer-coins', () => ({
   getWriterCoinById: (...args: unknown[]) => mockGetWriterCoinById(...args),
   MUSD_CONFIG: {
     testnet: {
@@ -79,7 +79,7 @@ vi.mock('viem', () => ({
 }))
 
 // Mock chains
-vi.mock('@/lib/chains', () => ({
+vi.mock('@/lib/wallet/chains', () => ({
   BASE_MAINNET_CHAIN_ID: 8453,
   MEZO_TESTNET_CHAIN_ID: 31611,
 }))

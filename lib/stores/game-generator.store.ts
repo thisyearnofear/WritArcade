@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { type GameGenre } from '@/components/game/GenreSelector'
 import { type GameDifficulty } from '@/components/game/DifficultySelector'
 import type { GameMode } from '@/domains/games/types'
-import type { WriterCoin } from '@/lib/writerCoins'
+import type { WriterCoin } from '@/lib/writer-coins'
 import type { PaymentPath, ImageQuality, GenerateErrorState, ArticlePreview } from '@/domains/games/components/game-generator-helpers'
 import type { GenerateStep } from '@/components/ui/step-indicator'
 

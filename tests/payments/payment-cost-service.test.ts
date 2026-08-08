@@ -18,7 +18,7 @@ vi.mock('@/lib/contracts', () => ({
 
 // Use actual writerCoins for realistic test data
 import { PaymentCostService } from '@/domains/payments/services/payment-cost.service'
-import type { PaymentToken } from '@/lib/writerCoins'
+import type { PaymentToken } from '@/lib/writer-coins'
 
 describe('PaymentCostService', () => {
   beforeEach(() => {

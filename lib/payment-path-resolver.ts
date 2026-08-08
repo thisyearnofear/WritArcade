@@ -13,7 +13,7 @@
  * - /generate page — falls back to URL detection when `pay` query param missing
  * - /mini-app/create — same fallback
  *
- * Reuses `getWriterCoinByAuthor` from lib/writerCoins.ts so all author
+ * Reuses `getWriterCoinByAuthor` from lib/writer-coins.ts so all author
  * matching logic lives in one place.
  */
 

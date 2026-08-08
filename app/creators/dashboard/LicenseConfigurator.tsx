@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi';
 import { PILFlavor } from '@story-protocol/core-sdk';
-import type { WriterCoin } from '@/lib/writerCoins';
+import type { WriterCoin } from '@/lib/writer-coins';
 import {
     createStoryClientFromWallet,
     isOnStoryNetwork,

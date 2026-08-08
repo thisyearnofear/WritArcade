@@ -6,7 +6,7 @@
 const { createPublicClient, http } = require('viem');
 const { base } = require('viem/chains');
 
-// Writer coin registry (matches lib/writerCoins.ts)
+// Writer coin registry (matches lib/writer-coins.ts)
 const WRITER_COINS = {
   avc: {
     symbol: '$AVC',

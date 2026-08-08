@@ -2,9 +2,9 @@
 # Install the Daily Challenge systemd timer on the VPS (primary scheduler).
 #
 # Usage:
-#   CRON_SECRET=... ./scripts/install-daily-challenge-cron.sh
-#   HOST=snel-bot APP_URL=https://writersarcade.vercel.app ./scripts/install-daily-challenge-cron.sh
-#   ./scripts/install-daily-challenge-cron.sh --dry-run
+#   CRON_SECRET=... ./scripts/cron/install-daily-challenge-cron.sh
+#   HOST=snel-bot APP_URL=https://writersarcade.vercel.app ./scripts/cron/install-daily-challenge-cron.sh
+#   ./scripts/cron/install-daily-challenge-cron.sh --dry-run
 
 set -euo pipefail
 
@@ -17,7 +17,7 @@ usage() {
   cat <<EOF
 Usage: $0 [options]
 
-Installs scripts/cron-daily-challenge.sh + systemd timer on the VPS.
+Installs scripts/cron/cron-daily-challenge.sh + systemd timer on the VPS.
 Primary Daily Challenge scheduler (shuffle + featured auto-pick).
 
 Options:
@@ -50,7 +50,7 @@ if [[ -z "${CRON_SECRET:-}" ]]; then
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-SCRIPT_SRC="${REPO_ROOT}/scripts/cron-daily-challenge.sh"
+SCRIPT_SRC="${REPO_ROOT}/scripts/cron/cron-daily-challenge.sh"
 SERVICE_SRC="${REPO_ROOT}/scripts/systemd/writersarcade-daily-challenge.service"
 TIMER_SRC="${REPO_ROOT}/scripts/systemd/writersarcade-daily-challenge.timer"
 

@@ -126,14 +126,38 @@ Dual Daily resolves featured article in order: **DB row → env bootstrap → Ba
 
 ### Auto-pick (default)
 
-Implemented in `lib/basepaint/featured-auto.ts`. Daily cron (`GET /api/daily-challenge/setup`) and lazy `/basepaint` load both call `ensureTodaysFeaturedArticle`:
+Implemented in `lib/basepaint/featured-auto.ts`. Schedulers call `POST /api/daily-challenge/setup` (also lazy on Daily page load):
 
 1. Rotate through the Paragraph allowlist (writer-coin `paragraphAuthor` slugs, or `DAILY_CHALLENGE_FEATURED_PUBLICATIONS`)
 2. Fetch recent posts via `@paragraph_xyz/sdk` for that publication
 3. Skip URLs featured in the last `DAILY_CHALLENGE_FEATURED_LOOKBACK_DAYS` (default 14)
 4. Upsert today’s dual `DailyChallenge` row (title/author cached)
 
-Does **not** overwrite an existing dual row for the day (manual override wins). Use `forceFeatured` to re-pick:
+Does **not** overwrite an existing dual row for the day (manual override wins).
+
+### Scheduler (VPS primary)
+
+Vercel Hobby cron is unreliable (hour-granular). Primary wake-up is a **systemd timer on the VPS** that hits the Next.js setup route:
+
+```bash
+# From a machine with SSH to the VPS (default host: snel-bot)
+CRON_SECRET=... pnpm cron:daily-challenge:install
+# or: CRON_SECRET=... ./scripts/cron/install-daily-challenge-cron.sh
+```
+
+- Timer: `00:05 UTC` daily (`writersarcade-daily-challenge.timer`)
+- Script: `/opt/writersarcade-api/cron/cron-daily-challenge.sh`
+- Secrets: `/opt/writersarcade-api/cron/daily-challenge.env` (mode 600)
+
+```bash
+# Manual run on the VPS
+ssh snel-bot sudo systemctl start writersarcade-daily-challenge.service
+
+# Force featured re-pick
+ssh snel-bot 'FORCE_FEATURED=true /opt/writersarcade-api/cron/cron-daily-challenge.sh'
+```
+
+Backup: GitHub Actions at 00:15 UTC. Lazy setup still runs if both miss.
 
 ```bash
 curl -X POST "$APP_URL/api/daily-challenge/setup" \
