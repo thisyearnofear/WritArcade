@@ -24,18 +24,20 @@ export async function POST(req: Request) {
 
         const SIWEObject = new SiweMessage(message as string)
 
-        // Use the domain from the message itself to verify, 
-        // as we trusts the frontend provided domain in the message 
-        // (the signature proves the user signed *that* domain).
-        // The security comes from checking if that domain is *ours*.
-        // But for standard login, we can be slightly lenient in dev.
+        // Enforce that the signed message belongs to OUR domain. The request host
+        // is authoritative for requests to this deployment; falling back to the
+        // configured public site host keeps preview/local deploys working.
+        const host = req.headers.get('host')
+        const siteHost =
+          (process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
+        const expectedDomain = (host || siteHost || 'writersarcade.vercel.app').toLowerCase()
 
         const { data: fields } = await SIWEObject.verify({
             signature,
             nonce,
-            // domain: req.headers.get('host') ?? undefined 
-            // We skip enforcing domain check against server header here manually
-            // because SiweMessage.verify checks it against the message.domain.
+            // Never skip domain enforcement: a message signed for any other
+            // origin (phishing) must be rejected.
+            domain: expectedDomain,
         })
 
         // Check if the nonce matches (already checked by verify, but double check logic if needed)

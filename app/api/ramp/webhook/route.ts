@@ -32,6 +32,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Idempotency: never credit a completed order twice (webhook replay guard).
+    if (transaction.status === 'completed') {
+      return NextResponse.json({ received: true, idempotent: true })
+    }
+
     if (payload.event === 'order.completed') {
       await prisma.$transaction([
         prisma.creditTransaction.update({

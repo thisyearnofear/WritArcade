@@ -12,6 +12,8 @@ const mockCreditTxCreate = vi.fn()
 const mockPaymentCreate = vi.fn()
 const mockPaymentFindUnique = vi.fn()
 const mockTransaction = vi.fn()
+let fakePaymentCreate: ReturnType<typeof vi.fn>
+let fakeCreditTxCreate: ReturnType<typeof vi.fn>
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction: (...args: unknown[]) => mockTransaction(...args),
@@ -56,9 +58,21 @@ describe('POST /api/credits/spend', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetActor.mockResolvedValue(null)
-    // $transaction resolves the ops in order: [userUpdate, creditTx, payment]
-    mockTransaction.mockImplementation(async (ops: Promise<unknown>[]) => Promise.all(ops))
-    mockUserUpdate.mockResolvedValue({ ...GUEST_USER, credits: 40 })
+    // Interactive transaction: reserve credits via conditional updateMany (count 1),
+    // then record the credit transaction + payment inside the same tx.
+    mockTransaction.mockImplementation(async (callback: unknown) => {
+      fakePaymentCreate = vi.fn().mockResolvedValue({ id: 'pay-credits-1' })
+      fakeCreditTxCreate = vi.fn().mockResolvedValue({ id: 'ctx-1' })
+      const tx = {
+        user: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          findUniqueOrThrow: vi.fn().mockResolvedValue({ id: GUEST_USER.id, credits: 40 }),
+        },
+        creditTransaction: { create: fakeCreditTxCreate },
+        payment: { create: fakePaymentCreate },
+      }
+      return (callback as (t: unknown) => Promise<unknown>)(tx)
+    })
     mockCreditTxCreate.mockResolvedValue({ id: 'ctx-1' })
     mockPaymentCreate.mockResolvedValue({ id: 'pay-credits-1' })
   })
@@ -76,7 +90,7 @@ describe('POST /api/credits/spend', () => {
     )
     expect(res.status).toBe(200)
 
-    const paymentData = mockPaymentCreate.mock.calls[0][0].data
+    const paymentData = fakePaymentCreate.mock.calls[0][0].data
     expect(paymentData.userId).toBe(GUEST_USER.id)
     expect(paymentData.walletAddress).toBeNull()
   })
@@ -91,7 +105,7 @@ describe('POST /api/credits/spend', () => {
     expect(body.data.paymentId).toBe('pay-credits-1')
     expect(body.data.creditsRemaining).toBe(40)
 
-    const paymentData = mockPaymentCreate.mock.calls[0][0].data
+    const paymentData = fakePaymentCreate.mock.calls[0][0].data
     expect(paymentData.status).toBe('verified')
     expect(paymentData.writerCoinId).toBe('credits')
     expect(paymentData.action).toBe('generate-game')

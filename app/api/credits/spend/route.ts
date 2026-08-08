@@ -10,6 +10,9 @@ const spendSchema = z.object({
   gameId: z.string().optional(),
 })
 
+/** Signal an atomic-spend conflict (insufficient or concurrently-consumed balance). */
+const SPEND_CONFLICT = Symbol('credits-spend-conflict')
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -34,13 +37,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Fast-fail for an obviously insufficient balance (keeps the 402 contract).
+    // The atomic guard below is what prevents concurrent overspend.
     if (user.credits < cost) {
       return NextResponse.json(
-        {
-          error: `Insufficient credits. You need ${cost} credits but have ${user.credits}.`,
-          credits: user.credits,
-          required: cost,
-        },
+        { error: `Insufficient credits. You need ${cost} credits but have ${user.credits}.`, credits: user.credits, required: cost },
         { status: 402 }
       )
     }
@@ -50,41 +51,71 @@ export async function POST(request: NextRequest) {
     // through the same Payment lookup as on-chain payments.
     const sentinelHash = `credits:${randomBytes(16).toString('hex')}`
 
-    const [updatedUser, , payment] = await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: { credits: { decrement: cost } },
-      }),
-      prisma.creditTransaction.create({
-        data: {
-          userId: user.id,
-          fiatAmount: 0,
-          creditAmount: -cost,
-          status: 'completed',
-          completedAt: new Date(),
-        },
-      }),
-      prisma.payment.create({
-        data: {
-          transactionHash: sentinelHash,
-          action,
-          amount: cost,
-          status: 'verified',
-          verifiedAt: new Date(),
-          writerCoinId: 'credits',
-          userId: user.id,
-          walletAddress: user.walletAddress ?? null,
-        },
-      }),
-    ])
+    // Atomic spend: decrement ONLY if the user still has >= cost. The conditional
+    // updateMany makes the check-and-spend a single statement, so two concurrent
+    // requests cannot both pass a stale balance check and overspend.
+    let result: { updatedUser: { credits: number }; payment: { id: string } }
+    try {
+      result = await prisma.$transaction(async (tx) => {
+        const reserved = await tx.user.updateMany({
+          where: { id: user.id, credits: { gte: cost } },
+          data: { credits: { decrement: cost } },
+        })
+        if (reserved.count === 0) {
+          throw SPEND_CONFLICT
+        }
+
+        const updatedUser = await tx.user.findUniqueOrThrow({
+          where: { id: user.id },
+          select: { credits: true },
+        })
+
+        await tx.creditTransaction.create({
+          data: {
+            userId: user.id,
+            fiatAmount: 0,
+            creditAmount: -cost,
+            status: 'completed',
+            completedAt: new Date(),
+          },
+        })
+
+        const payment = await tx.payment.create({
+          data: {
+            transactionHash: sentinelHash,
+            action,
+            amount: cost,
+            status: 'verified',
+            verifiedAt: new Date(),
+            writerCoinId: 'credits',
+            userId: user.id,
+            walletAddress: user.walletAddress ?? null,
+          },
+        })
+
+        return { updatedUser, payment }
+      })
+    } catch (txError) {
+      if (txError === SPEND_CONFLICT) {
+        return NextResponse.json(
+          {
+            error: `Insufficient credits. You need ${cost} credits but your balance was already consumed.`,
+            credits: user.credits,
+            required: cost,
+          },
+          { status: 409 }
+        )
+      }
+      throw txError
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        creditsRemaining: updatedUser.credits,
+        creditsRemaining: result.updatedUser.credits,
         cost,
         action,
-        paymentId: payment.id,
+        paymentId: result.payment.id,
         message: `Paid ${cost} credits for ${action}`,
       },
     })
