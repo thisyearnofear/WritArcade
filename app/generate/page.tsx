@@ -9,6 +9,8 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { CardSkeleton } from '@/components/effects'
+import { DailyChallengeSubnav } from '@/components/daily-challenge/daily-challenge-subnav'
+import { BasePaintTrack } from '@/components/basepaint/basepaint-track'
 import { GAME_MODE_EXPLOAINER } from '@/lib/game-mode-labels'
 import { getBasePaintDay } from '@/lib/daily-challenge-ui'
 import { Sparkles, ArrowLeft } from 'lucide-react'
@@ -52,41 +54,41 @@ function GeneratePageContent() {
         {isBasePaintSource && basePaintDay && !Number.isNaN(basePaintDay) ? (
           <>
             <Link
-              href="/daily"
-              className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 mb-4"
+              href="/basepaint"
+              className="mb-4 inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Back to daily challenge
+              Back to Daily Challenge
             </Link>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-xs font-bold tracking-widest uppercase text-purple-400">
-                {isDailyChallenge ? 'Daily Challenge' : 'BasePaint theme'}
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-950/40 px-3 py-1">
+              <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+              <span className="text-xs font-bold uppercase tracking-widest text-purple-400">
+                Daily Challenge · BasePaint Day {basePaintDay}
               </span>
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-center mb-2 text-foreground">
+            <h1 className="mb-2 text-center font-serif text-3xl font-bold text-foreground sm:text-4xl">
               {isDailyChallenge ? "Generate today's daily game" : 'Create from BasePaint'}
             </h1>
-            <p className="text-center text-muted-foreground mb-6 text-sm max-w-lg mx-auto">
+            <p className="mx-auto mb-6 max-w-lg text-center text-sm text-muted-foreground">
               {isDailyChallenge
-                ? 'Your on-chain modifier hand is ready. Pick genre and difficulty, then generate — no article URL or story payment needed.'
+                ? "Your on-chain modifier hand is ready. Pick genre and difficulty, then generate — today's BasePaint canvas is the shared source."
                 : `BasePaint Day ${basePaintDay} is your story seed. Customize and generate a comic from today's canvas theme.`}
             </p>
           </>
         ) : (
           <>
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-center mb-2 text-foreground">
+            <h1 className="mb-2 text-center font-serif text-3xl font-bold text-foreground sm:text-4xl">
               {isWordleMode ? 'Create a word puzzle' : 'Create your game'}
             </h1>
-            <p className="text-center text-muted-foreground mb-2 text-sm max-w-md mx-auto">
+            <p className="mx-auto mb-2 max-w-md text-center text-sm text-muted-foreground">
               {isWordleMode
                 ? 'Paste a Paragraph article URL to create a free word puzzle. No wallet needed.'
                 : 'Paste a Paragraph article URL. AI turns it into a playable 5-panel comic.'}
             </p>
             {!isWordleMode && (
-              <p className="text-center text-xs text-muted-foreground mb-6 max-w-lg mx-auto sm:mb-8 px-4">
+              <p className="mx-auto mb-6 max-w-lg px-4 text-center text-xs text-muted-foreground sm:mb-8">
                 {GAME_MODE_EXPLOAINER}.{' '}
-                <a href="/generate?mode=wordle" className="text-amber-600 dark:text-amber-400 hover:underline">
+                <a href="/generate?mode=wordle" className="text-amber-600 hover:underline dark:text-amber-400">
                   Try Wordle instead
                 </a>
               </p>
@@ -107,24 +109,46 @@ function GeneratePageContent() {
   )
 }
 
+function GenerateChrome({ children }: { children: React.ReactNode }) {
+  const searchParams = useSearchParams()
+  const sourceParam = searchParams.get('source')
+  const isDailyPath = sourceParam === 'basepaint' || sourceParam === 'daily' || searchParams.get('daily') === '1'
+
+  return (
+    <>
+      {isDailyPath && <BasePaintTrack />}
+      <Header />
+      {isDailyPath && <DailyChallengeSubnav />}
+      <main id="main-content" className="flex-1 py-8 sm:py-12">
+        {children}
+      </main>
+      <Footer />
+    </>
+  )
+}
+
 export default function GeneratePage() {
   return (
     <ThemeWrapper theme="arcade">
-      <div className="flex flex-col min-h-screen">
-        <Header />
-
-        <main id="main-content" className="flex-1 py-8 sm:py-12">
-          <Suspense fallback={
-            <div className="max-w-4xl mx-auto px-4 space-y-4 py-12">
-              <CardSkeleton />
-              <CardSkeleton />
-            </div>
-          }>
+      <div className="flex min-h-screen flex-col">
+        <Suspense
+          fallback={
+            <>
+              <Header />
+              <main className="flex-1 py-8 sm:py-12">
+                <div className="mx-auto max-w-4xl space-y-4 px-4 py-12">
+                  <CardSkeleton />
+                  <CardSkeleton />
+                </div>
+              </main>
+              <Footer />
+            </>
+          }
+        >
+          <GenerateChrome>
             <GeneratePageContent />
-          </Suspense>
-        </main>
-
-        <Footer />
+          </GenerateChrome>
+        </Suspense>
       </div>
     </ThemeWrapper>
   )

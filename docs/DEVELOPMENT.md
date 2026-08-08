@@ -191,16 +191,20 @@ Runs `pnpm type-check` before every push. Bypass with `git push --no-verify`.
 - `POST /api/auth/verify` - Verify SIWE message and set wallet session cookie; merges guest/email identity
 
 ### Games
-- `POST /api/games/generate` - Generate game from article URL or marketing copy (`contentType: 'marketing-copy'`)
+- `POST /api/games/generate` - Generate from article URL, marketing copy, BasePaint (`contentType: 'basepaint'`), or dual (`contentType: 'dual'` = featured article + canvas)
 - `POST /api/games/mint` - Mint game as NFT with WriterCoinPayment
 - `GET /api/games/my-games` - List user's games
 - `POST /api/games/[slug]/fund` - Link a verified payment to an unfunded game (enables minting)
 - `POST /api/games/[slug]/secret-panel` - NFT-gated secret panel handle(s) for Inco decrypt
 - `POST /api/games/[slug]/inco-store` - Store secret panel on-chain after mint
-- `POST /api/daily-challenge/start` - Start / fetch today's challenge
-- `GET /api/daily-challenge/setup` - Shuffle deck via Vercel Cron (`CRON_SECRET` bearer)
-- `POST /api/daily-challenge/setup` - Manual shuffle (same `CRON_SECRET` auth)
-- `GET/POST /api/daily-challenge/start` - Lazy-shuffles deck if missing when `/daily` loads or a session starts
+- `GET/POST /api/daily-challenge/start` - Today's challenge (dual from DB featured article, else env bootstrap, else BasePaint-only); lazy-shuffles deck if missing
+- `GET /api/daily-challenge/featured` - Resolved dual/BasePaint source for today (public)
+- `POST /api/daily-challenge/featured` - Upsert today's featured article (`CRON_SECRET` bearer); no redeploy needed
+- `GET /api/daily-challenge/setup` - Cron: shuffle Inco deck + auto-pick featured Paragraph article (`CRON_SECRET`)
+- `POST /api/daily-challenge/setup` - Manual setup; body `{ day?, forceFeatured? }` (`CRON_SECRET`)
+- `GET /api/basepaint/day/[day]` - Day archive (stats, games, vision description)
+- `GET /api/basepaint/strokes/[day]` - On-chain stroke bundle for replay
+- `GET /api/basepaint/collection?address=0x…` - Owned BasePaint canvases + linked stories
 - GitHub Actions backup: `.github/workflows/daily-challenge-shuffle.yml` (repo secret `CRON_SECRET`)
 - `POST /api/daily-challenge/[id]/record-choice` - Record encrypted score delta
 - `POST /api/daily-challenge/[id]/reveal` - Submit leaderboard after on-chain reveal

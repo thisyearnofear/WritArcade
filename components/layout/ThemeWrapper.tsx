@@ -20,8 +20,8 @@ export function ThemeWrapper({ children, theme = 'default' }: ThemeWrapperProps)
   // CONSOLIDATION: Only add arcade-specific classes, use CSS variables for colors
   const themeClasses = useMemo(() => {
     if (theme === 'arcade') {
-      return isDarkMode 
-        ? 'writersarcade-theme dark min-h-screen' 
+      return isDarkMode
+        ? 'writersarcade-theme dark min-h-screen'
         : 'writersarcade-theme min-h-screen'
     }
     return 'min-h-screen'

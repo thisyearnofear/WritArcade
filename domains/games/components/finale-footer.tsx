@@ -8,6 +8,8 @@ import { VideoUpsellCTA } from './finale-video-screen'
 import type { useVideoMotion } from './finale-video-motion'
 import type { useNarration } from './finale-narration'
 import type { ComicBookFinalePanelData } from './comic-book-finale'
+import { DualSourceCredits } from '@/components/basepaint/dual-source-credits'
+import { parseBasePaintDayFromSource } from '@/lib/basepaint/source-url'
 
 interface FinaleFooterProps {
   genre: string
@@ -77,6 +79,8 @@ export function FinaleFooter({
   onOpenVideoStyleModal,
   onWatchCinematic,
 }: FinaleFooterProps) {
+  const basePaintDay = parseBasePaintDayFromSource(articleUrl)
+
   return (
     <div
       id="finale-mint-section"
@@ -94,7 +98,16 @@ export function FinaleFooter({
             layout="horizontal"
           />
           <div className="text-xs text-muted-foreground">
-            {totalPanels} panels • {genre} • Inspired by <a href={articleUrl} target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground underline">original article</a>
+            {totalPanels} panels • {genre} • Inspired by{' '}
+            {basePaintDay != null || articleUrl ? (
+              <DualSourceCredits
+                articleUrl={articleUrl}
+                basePaintDay={basePaintDay}
+                variant="compact"
+              />
+            ) : (
+              'this story'
+            )}
           </div>
         </div>
 

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { buildBasePaintPromptText, pickAccentColor } from '@/lib/daily-challenge'
+import {
+  buildBasePaintPromptText,
+  buildDualSourcePromptText,
+  pickAccentColor,
+} from '@/lib/basepaint'
+import { formatBasePaintDayPadded, getBasePaintDay } from '@/lib/basepaint/day'
+import {
+  buildDualSourceUrl,
+  parseArticleUrlFromDualSource,
+  parseBasePaintDayFromSource,
+} from '@/lib/basepaint/source-url'
+import { getBasePaintAnimationUrl, getBasePaintDayUrl } from '@/lib/basepaint/urls'
 
 describe('buildBasePaintPromptText', () => {
   it('grounds the story in the canvas description when available', () => {
@@ -36,6 +47,39 @@ describe('buildBasePaintPromptText', () => {
   })
 })
 
+describe('buildDualSourcePromptText', () => {
+  it('merges article plot with BasePaint world', () => {
+    const prompt = buildDualSourcePromptText({
+      articleTitle: 'On Hard Hats',
+      articleAuthor: 'Ada',
+      articleThemes: 'labor, safety, pride',
+      articleText: 'The hard hat is a symbol of care.',
+      articleUrl: 'https://paragraph.xyz/@ada/hard-hats',
+      theme: 'Hard Hat',
+      palette: ['#ff8800', '#223344'],
+      canvasDescription: 'A giant yellow hard hat floats over a gray city.',
+    })
+
+    expect(prompt).toContain('On Hard Hats')
+    expect(prompt).toContain('Ada')
+    expect(prompt).toContain('labor, safety, pride')
+    expect(prompt).toContain('giant yellow hard hat')
+    expect(prompt).toContain('Hard Hat')
+    expect(prompt).toContain('#ff8800')
+    expect(prompt).toContain('inside')
+  })
+})
+
+describe('dual source urls', () => {
+  it('embeds article URL while preserving day parse', () => {
+    const tagged = buildDualSourceUrl(847, 'https://paragraph.xyz/@ada/hard-hats')
+    expect(parseBasePaintDayFromSource(tagged)).toBe(847)
+    expect(parseArticleUrlFromDualSource(tagged)).toBe(
+      'https://paragraph.xyz/@ada/hard-hats'
+    )
+  })
+})
+
 describe('pickAccentColor', () => {
   it('picks a saturated mid-lightness color', () => {
     expect(pickAccentColor(['#000000', '#ff8800', '#ffffff'])).toBe('#ff8800')
@@ -53,5 +97,25 @@ describe('pickAccentColor', () => {
     expect(pickAccentColor([])).toBeNull()
     expect(pickAccentColor(undefined)).toBeNull()
     expect(pickAccentColor(['not-a-color'])).toBeNull()
+  })
+})
+
+describe('getBasePaintDay', () => {
+  it('matches the official epoch formula', () => {
+    const epochMs = 1691599315 * 1000
+    expect(getBasePaintDay(epochMs)).toBe(1)
+    expect(getBasePaintDay(epochMs + 86400 * 1000)).toBe(2)
+  })
+})
+
+describe('basepaint urls', () => {
+  it('zero-pads animation day', () => {
+    expect(formatBasePaintDayPadded(847)).toBe('0847')
+    expect(getBasePaintAnimationUrl(847)).toBe('https://basepaint.net/animations/0847.mp4')
+  })
+
+  it('builds day page URLs', () => {
+    expect(getBasePaintDayUrl(100)).toContain('day=100')
+    expect(getBasePaintDayUrl(100)).toContain('basepaint.xyz')
   })
 })

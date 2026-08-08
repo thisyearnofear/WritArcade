@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   getBasePaintDay,
   getBasePaintDailySource,
+  getTodaysDailySource,
   getBasePaintCanvasDescription,
   fetchBasePaintTheme,
   getBasePaintCanvasUrl,
-} from '@/lib/daily-challenge'
+  fetchBasePaintCanvasStats,
+} from '@/lib/basepaint'
+import { config } from '@/lib/config'
 
 /**
  * GET /api/daily-challenge/basepaint/[day]
@@ -25,7 +28,11 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid day number' }, { status: 400 })
     }
 
-    const theme = await fetchBasePaintTheme(day)
+    const [theme, canvasStats] = await Promise.all([
+      fetchBasePaintTheme(day),
+      fetchBasePaintCanvasStats(day),
+    ])
+
     if (!theme) {
       return NextResponse.json(
         { error: 'BasePaint theme not found for this day' },
@@ -34,21 +41,38 @@ export async function GET(
     }
 
     const canvasUrl = getBasePaintCanvasUrl(day)
-    // Vision-describe what the community actually drew so generated stories
-    // are grounded in the artwork, not just the theme word. Cached per day;
-    // null is fine — the source falls back to a theme-only prompt.
     const canvasDescription = await getBasePaintCanvasDescription(day)
-    const source = await getBasePaintDailySource(day, canvasDescription)
+    const isToday = day === getBasePaintDay()
+    const source =
+      isToday && config.dailyChallenge.featuredArticleUrl
+        ? await getTodaysDailySource(day, {
+            canvasDescription,
+            enrichArticle: true,
+          })
+        : await getBasePaintDailySource(day, canvasDescription)
 
     return NextResponse.json({
       day,
-      theme: theme.theme,
+      sourceType: source.sourceType,
+      sourceUrl: 'sourceUrl' in source ? source.sourceUrl : undefined,
+      articleTitle: 'articleTitle' in source ? source.articleTitle : undefined,
+      articleAuthor: 'articleAuthor' in source ? source.articleAuthor : undefined,
+      theme: source.theme,
+      canvasTheme: theme.theme,
       proposer: theme.proposer,
       palette: theme.palette,
       canvasSize: theme.size,
       canvasUrl,
       canvasDescription: canvasDescription || undefined,
       promptText: source.promptText,
+      stats: canvasStats
+        ? {
+            pixelsCount: canvasStats.pixelsCount,
+            totalArtists: canvasStats.totalArtists,
+            totalMints: canvasStats.totalMints,
+            topContributors: canvasStats.topContributors,
+          }
+        : undefined,
     })
   } catch (error) {
     console.error('BasePaint fetch failed:', error)

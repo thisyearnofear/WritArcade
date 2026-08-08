@@ -14,6 +14,10 @@ interface DailyPreview {
   theme: string
   day: number
   live?: boolean
+  sourceType?: string
+  articleTitle?: string
+  articleAuthor?: string
+  canvasTheme?: string
 }
 
 async function fetchDailyPreview(): Promise<DailyPreview | null> {
@@ -21,10 +25,19 @@ async function fetchDailyPreview(): Promise<DailyPreview | null> {
     const response = await fetch('/api/daily-challenge/start')
     if (response.ok) {
       const data = await response.json()
-      const theme = data.challenge?.theme || data.source?.theme
-      const day = data.challenge?.day || data.source?.day
+      const challenge = data.challenge || data.source
+      const theme = challenge?.theme || data.source?.theme
+      const day = challenge?.day || data.source?.day
       if (theme && day) {
-        return { theme, day, live: data.deckShuffled !== false }
+        return {
+          theme,
+          day,
+          live: data.deckShuffled !== false,
+          sourceType: challenge?.sourceType || data.source?.sourceType,
+          articleTitle: challenge?.articleTitle || data.source?.articleTitle,
+          articleAuthor: challenge?.articleAuthor || data.source?.articleAuthor,
+          canvasTheme: challenge?.canvasTheme || data.source?.canvasTheme,
+        }
       }
     }
   } catch {
@@ -37,13 +50,43 @@ async function fetchDailyPreview(): Promise<DailyPreview | null> {
     if (!response.ok) return null
     const data = await response.json()
     if (data.theme && data.day) {
-      return { theme: data.theme, day: data.day, live: false }
+      return {
+        theme: data.theme,
+        day: data.day,
+        live: false,
+        sourceType: data.sourceType || 'basepaint',
+        articleTitle: data.articleTitle,
+        articleAuthor: data.articleAuthor,
+        canvasTheme: data.canvasTheme,
+      }
     }
   } catch {
     return null
   }
 
   return null
+}
+
+function headline(preview: DailyPreview | null, loaded: boolean): string {
+  if (!preview) return loaded ? 'The arcade is open' : 'Loading…'
+  if (preview.sourceType === 'dual') {
+    return preview.articleTitle || preview.theme
+  }
+  return preview.theme
+}
+
+function supportingCopy(preview: DailyPreview | null): string {
+  if (!preview) {
+    return 'Pick a public game and play in seconds — or paste an article to create your own.'
+  }
+  if (preview.sourceType === 'dual') {
+    return preview.live === false
+      ? `A featured writer’s piece staged in today’s BasePaint canvas${preview.canvasTheme ? ` (${preview.canvasTheme})` : ''}. Leaderboard scoring joins when setup finishes.`
+      : `A featured writer’s piece inside today’s BasePaint canvas — same world, your secret hand of five encrypted modifiers.`
+  }
+  return preview.live === false
+    ? "Today's BasePaint canvas is ready to preview. Play in the arcade while the Daily Challenge leaderboard finishes setup."
+    : "writersarcade Daily Challenge — today's BasePaint canvas, 5 encrypted modifier cards on Base. Same source, different story."
 }
 
 export function DailyChallengeBanner({ className = '', compact = false }: DailyChallengeBannerProps) {
@@ -59,17 +102,17 @@ export function DailyChallengeBanner({ className = '', compact = false }: DailyC
   if (compact) {
     return (
       <Link
-        href={preview ? '/daily' : '/games'}
+        href={preview ? '/basepaint' : '/games'}
         className={`flex items-center justify-between gap-3 rounded-lg border border-purple-500/25 bg-purple-950/10 px-4 py-3 transition-colors hover:border-purple-500/40 ${className}`}
       >
         <div className="flex items-center gap-2 min-w-0">
           <Sparkles className="h-4 w-4 shrink-0 text-purple-400" />
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wider text-purple-400">
-              {preview?.live === false ? 'Today\'s theme' : 'Daily Challenge'}
+              {preview?.live === false ? "Today's theme" : 'Daily Challenge'}
             </p>
             <p className="truncate text-sm font-medium text-foreground">
-              {preview?.theme ?? (loaded ? 'Explore the arcade' : 'Loading today\'s theme…')}
+              {headline(preview, loaded)}
             </p>
           </div>
         </div>
@@ -84,28 +127,31 @@ export function DailyChallengeBanner({ className = '', compact = false }: DailyC
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 mb-3">
           <Sparkles className="w-3.5 h-3.5 text-purple-400" />
           <span className="text-xs font-bold tracking-widest uppercase text-purple-400">
-            {preview?.live === false ? 'Today\'s theme' : 'Daily Challenge'}
+            {preview?.live === false ? "Today's theme" : 'Daily Challenge'}
           </span>
         </div>
         <h2 className="text-xl font-bold text-foreground mb-1">
-          {preview?.theme ?? (loaded ? 'The arcade is open' : 'Loading…')}
+          {headline(preview, loaded)}
         </h2>
+        {preview?.sourceType === 'dual' && preview.articleAuthor && (
+          <p className="text-xs text-muted-foreground mb-1">by {preview.articleAuthor}</p>
+        )}
         {preview?.day && (
-          <p className="text-xs text-muted-foreground mb-2">Day {preview.day}</p>
+          <p className="text-xs text-muted-foreground mb-2">
+            {preview.sourceType === 'dual'
+              ? `World · BasePaint Day ${preview.day}${preview.canvasTheme ? ` · ${preview.canvasTheme}` : ''}`
+              : `Day ${preview.day}`}
+          </p>
         )}
         <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-          {preview
-            ? preview.live === false
-              ? 'Today\'s BasePaint theme is ready to preview. Play public games in the arcade while the daily leaderboard finishes setup.'
-              : 'Play today\'s featured source with 5 encrypted modifier cards dealt on-chain. Same source, different story — compare scores on the leaderboard.'
-            : 'Pick a public game and play in seconds — or paste an article to create your own.'}
+          {supportingCopy(preview)}
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href={preview ? '/daily' : '/games'}
+            href={preview ? '/basepaint' : '/games'}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm bg-purple-600 hover:bg-purple-500 text-white transition-colors"
           >
-            {preview ? 'View today\'s theme' : 'Browse the arcade'}
+            {preview ? 'Open Daily Challenge' : 'Browse the arcade'}
             <ArrowRight className="w-4 h-4" />
           </Link>
           {!preview && loaded && (

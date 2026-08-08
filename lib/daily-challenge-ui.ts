@@ -41,10 +41,4 @@ export function getModifierCategoryForPanel(panelIndex: number): Modifier['categ
   return PANEL_CATEGORIES[Math.max(0, Math.min(panelIndex, PANEL_CATEGORIES.length - 1))] ?? 'tone'
 }
 
-const BASEPAINT_EPOCH = 1691599315
-const DAY_SECONDS = 86400
-
-/** Client-safe BasePaint day index (matches server getBasePaintDay). */
-export function getBasePaintDay(): number {
-  return Math.floor((Math.floor(Date.now() / 1000) - BASEPAINT_EPOCH) / DAY_SECONDS) + 1
-}
+export { getBasePaintDay } from '@/lib/basepaint/day'

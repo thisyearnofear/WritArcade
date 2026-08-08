@@ -4,6 +4,8 @@ import { config, logger } from '@/lib/config'
 import {
   getBasePaintDay,
   getBasePaintDailySource,
+  getTodaysDailySource,
+  ensureTodaysFeaturedArticle,
   getVaultAddress,
   ensureDailyDeckShuffled,
   isDailyDeckShuffled,
@@ -36,17 +38,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { sourceType } = body as { sourceType?: 'article' | 'marketing-copy' | 'basepaint' }
+    const { sourceType } = body as {
+      sourceType?: 'dual' | 'article' | 'marketing-copy' | 'basepaint'
+    }
 
     // Resolve today's challenge source
-    const today = new Date()
-    const day = Math.floor((Math.floor(today.getTime() / 1000) - 1691599315) / 86400) + 1
+    const day = getBasePaintDay()
 
     let source: DailyChallengeSource
 
-    if (sourceType === 'basepaint' || !sourceType) {
-      // Default: use today's BasePaint canvas as the source
-      source = await getBasePaintDailySource(getBasePaintDay())
+    if (sourceType === 'dual' || sourceType === 'basepaint' || !sourceType) {
+      // Default: dual (featured article + BasePaint) when configured, else BasePaint-only
+      source = await getTodaysDailySource(day, { enrichArticle: true })
+      if (sourceType === 'basepaint' && source.sourceType === 'dual') {
+        // Explicit BasePaint-only override
+        source = await getBasePaintDailySource(day)
+      }
     } else if (sourceType === 'article') {
       const articleUrl = body.articleUrl
       if (!articleUrl) {
@@ -78,13 +85,26 @@ export async function POST(request: NextRequest) {
         sourceUrl: source.sourceUrl || null,
         basePaintDay: source.basePaintDay || null,
         theme: source.theme,
+        articleTitle: source.articleTitle || null,
+        articleAuthor: source.articleAuthor || null,
         palette: source.palette || [],
         canvasUrl: source.canvasUrl || null,
         active: true,
       },
-      update: {
-        // Don't overwrite if already exists
-      },
+      update:
+        source.sourceType === 'dual'
+          ? {
+              // Allow upgrading today's row from BasePaint-only → dual
+              sourceType: source.sourceType,
+              sourceUrl: source.sourceUrl || null,
+              basePaintDay: source.basePaintDay || null,
+              theme: source.theme,
+              articleTitle: source.articleTitle || null,
+              articleAuthor: source.articleAuthor || null,
+              palette: source.palette || [],
+              canvasUrl: source.canvasUrl || null,
+            }
+          : {},
     })
 
     // Ensure today's deck is shuffled before the client starts a session
@@ -121,7 +141,10 @@ export async function POST(request: NextRequest) {
         id: challenge.id,
         day: challenge.day,
         sourceType: challenge.sourceType,
+        sourceUrl: challenge.sourceUrl,
         theme: challenge.theme,
+        articleTitle: source.articleTitle,
+        articleAuthor: source.articleAuthor,
         palette: challenge.palette,
         canvasUrl: challenge.canvasUrl,
         promptText: source.promptText,
@@ -168,7 +191,14 @@ export async function GET() {
     }
 
     const day = getBasePaintDay()
-    const source = await getBasePaintDailySource(day)
+    // Lazy auto-pick if cron hasn't curated today's dual source yet
+    try {
+      await ensureTodaysFeaturedArticle({ day })
+    } catch (err) {
+      logger.error('Lazy featured article pick failed on page load', err, { day })
+    }
+    // Fast path: skip article fetch on page load; generate/start enrich fully.
+    const source = await getTodaysDailySource(day, { enrichArticle: false })
 
     let deckShuffled = false
     let deckSetupError: string | null = null
@@ -210,14 +240,32 @@ export async function GET() {
       },
     })
 
+    const challengePayload = {
+      day: existing?.day ?? source.day,
+      sourceType: source.sourceType,
+      sourceUrl:
+        ('sourceUrl' in source ? source.sourceUrl : undefined) ||
+        existing?.sourceUrl ||
+        undefined,
+      theme: source.theme,
+      articleTitle:
+        ('articleTitle' in source ? source.articleTitle : undefined) ||
+        existing?.articleTitle ||
+        undefined,
+      articleAuthor:
+        ('articleAuthor' in source ? source.articleAuthor : undefined) ||
+        existing?.articleAuthor ||
+        undefined,
+      canvasTheme:
+        'canvasTheme' in source ? source.canvasTheme : undefined,
+      palette: source.palette?.length ? source.palette : existing?.palette,
+      canvasUrl: source.canvasUrl || existing?.canvasUrl || undefined,
+      promptText: source.promptText,
+      id: existing?.id,
+    }
+
     return NextResponse.json({
-      challenge: existing || {
-        day: source.day,
-        sourceType: source.sourceType,
-        theme: source.theme,
-        palette: source.palette,
-        canvasUrl: source.canvasUrl,
-      },
+      challenge: challengePayload,
       source,
       deckShuffled,
       deckSetupError,

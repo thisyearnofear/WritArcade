@@ -23,6 +23,19 @@ export interface DailyGenerateFlow {
   promptText: string
   canvasUrl?: string
   palette?: string[]
+  sourceType?: 'basepaint' | 'dual'
+  articleUrl?: string
+  articleTitle?: string
+  articleAuthor?: string
+  canvasTheme?: string
+}
+
+/** Create-flow preview of today's BasePaint world (optional staging). */
+export interface BasePaintStagePreview {
+  day: number
+  theme: string
+  canvasUrl?: string
+  palette?: string[]
 }
 
 const initialStepStatuses: Record<LoadingStep, StepStatus> = {
@@ -65,6 +78,11 @@ interface GameGeneratorState {
 
   dailyFlow: DailyGenerateFlow | null
 
+  /** Create: stage the writer's article inside today's BasePaint canvas. */
+  stageWithBasePaint: boolean
+  basePaintStage: BasePaintStagePreview | null
+  isLoadingBasePaintStage: boolean
+
   // ── Actions ─────────────────────────────────────────────────────────
   setUrl: (url: string) => void
   setMode: (mode: GameMode) => void
@@ -93,6 +111,9 @@ interface GameGeneratorState {
   setStepStatuses: (statuses: Record<LoadingStep, StepStatus>) => void
   setError: (error: GenerateErrorState | null) => void
   setDailyFlow: (flow: DailyGenerateFlow | null) => void
+  setStageWithBasePaint: (enabled: boolean) => void
+  setBasePaintStage: (stage: BasePaintStagePreview | null) => void
+  setIsLoadingBasePaintStage: (loading: boolean) => void
 
   reset: () => void
   resetForm: () => void
@@ -124,6 +145,9 @@ export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
   stepStatuses: { ...initialStepStatuses },
   error: null,
   dailyFlow: null,
+  stageWithBasePaint: false,
+  basePaintStage: null,
+  isLoadingBasePaintStage: false,
 
   // ── Actions ─────────────────────────────────────────────────────────
   setUrl: (url) => set({ url }),
@@ -160,6 +184,9 @@ export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
   setStepStatuses: (stepStatuses) => set({ stepStatuses }),
   setError: (error) => set({ error }),
   setDailyFlow: (dailyFlow) => set({ dailyFlow }),
+  setStageWithBasePaint: (stageWithBasePaint) => set({ stageWithBasePaint }),
+  setBasePaintStage: (basePaintStage) => set({ basePaintStage }),
+  setIsLoadingBasePaintStage: (isLoadingBasePaintStage) => set({ isLoadingBasePaintStage }),
 
   reset: () => set({
     isGenerating: false,
@@ -175,5 +202,8 @@ export const useGameGeneratorStore = create<GameGeneratorState>((set) => ({
     previewedUrl: '',
     error: null,
     dailyFlow: null,
+    stageWithBasePaint: false,
+    basePaintStage: null,
+    isLoadingBasePaintStage: false,
   }),
 }))

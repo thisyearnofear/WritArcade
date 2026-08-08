@@ -29,7 +29,7 @@ function ThemeToggle() {
 // Nav link definitions — single source of truth for desktop + mobile
 const NAV_LINKS = [
   { href: '/games',    label: 'Play',        title: 'Browse all generated games' },
-  ...(config.features.dailyChallenge ? [{ href: '/daily', label: 'Daily', title: 'Today\'s shared daily challenge' }] : []),
+  ...(config.features.dailyChallenge ? [{ href: '/basepaint', label: 'Daily', title: "Today's BasePaint canvas challenge" }] : []),
   { href: '/my-games', label: 'My Games',    title: 'Your game library' },
   { href: '/writers',  label: 'Writers',     title: 'Explore supported writers and their coins' },
 ]
@@ -130,7 +130,7 @@ export function Header() {
         {[
           { href: '/games', label: 'Play' },
           { href: '/generate', label: 'Create' },
-          ...(config.features.dailyChallenge ? [{ href: '/daily', label: 'Daily' }] : []),
+          ...(config.features.dailyChallenge ? [{ href: '/basepaint', label: 'Daily' }] : []),
         ].map((link) => (
           <Link
             key={link.href}

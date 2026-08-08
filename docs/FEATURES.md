@@ -16,11 +16,12 @@ See the [Creation UX Contract](./CREATION_UX.md) for the decision record, feedba
 
 ### Article → Game (Classic)
 1. **Input**: Paste article URL → AI extracts assets
-2. **Customize** (Optional): Edit characters & mechanics in Workshop
-3. **Generate**: Compile assets into 5-panel comic story
-4. **Refine**: Regenerate images with custom prompts + edit text
-5. **Register**: Mint NFT & register IP on Story Protocol (user-owned)
-6. **Revenue**: Splits executed on-chain (Writer/Platform/Creator)
+2. **Optional**: After preview, **Today's world** card — stage the article in today's BasePaint canvas (suggested when Daily is live) or keep article-only
+3. **Customize** (Optional): Edit characters & mechanics in Workshop
+4. **Generate**: Compile assets into 5-panel comic story (`contentType: 'dual'` when staged)
+5. **Refine**: Regenerate images with custom prompts + edit text
+6. **Register**: Mint NFT & register IP on Story Protocol (user-owned)
+7. **Revenue**: Splits executed on-chain (Writer/Platform/Creator)
 
 ### Marketing Copy → Playable Story (`/studio`)
 1. **Input**: Paste landing page copy, email, or campaign text
@@ -53,16 +54,22 @@ This flow is wallet-free for the first story and targets marketers, copywriters,
 
 ### Daily Challenge (Inco Confidential Game Sessions)
 
-**Integration**: `DailyChallengeVault.sol` + `@inco/lightning-js` + BasePaint API
+**Product role**: Shared daily ritual inside writersarcade — same dual source for everyone, unique run per player.  
+**Dual source (default when configured)**: Featured article (plot / writer voice) + today's [BasePaint](https://basepaint.xyz) canvas (world / palette / visuals).  
+**Fallback source**: BasePaint-only when no featured article URL is set.  
+**Mechanic**: Inco encrypted modifier hand — independent of source composition.  
+**Integration**: `DailyChallengeVault.sol` + `@inco/lightning-js` + `lib/basepaint/` (REST + GraphQL).  
+**Docs**: [`docs/BASEPAINT.md`](./BASEPAINT.md)
 
-Each day, a featured source (BasePaint daily canvas, article, or marketing copy) becomes a shared challenge. Every playthrough deals 5 encrypted modifier cards from a 52-card deck — same source, different story constraints, provably fair.
+Each day, everyone shares the same article × canvas mashup. Every playthrough deals 5 encrypted modifier cards from a 52-card deck — same story material, different constraints, provably fair.
 
+- **Dual source**: Article supplies plot, voice, and themes; BasePaint supplies theme word, palette, canvas image, and vision description. Prompt assembly merges both.
 - **Encrypted Modifier Deck**: 52 narrative constraint cards shuffled once per day on-chain via `e.shuffledRange()`. The order is encrypted — nobody can predict it.
 - **5 Encrypted Cards Per Player**: Each player draws the next 5 cards from the shared deck via `startSession()` (no duplicates within a session). Only the player can decrypt at reveal.
 - **Hidden AI Constraints**: The backend decrypts each panel's card (via `narrativeOperator`) to shape AI generation. The player never sees the modifier until the finale.
 - **Encrypted Scoring**: Player choices are compared against the hidden modifier's optimal path via `e.select()` and `e.eq()`. Score stays encrypted until reveal.
 - **Reveal at Finale**: `completeAndReveal()` publishes handles; the client decrypts via `attestedDecrypt` and submits to the leaderboard.
-- **BasePaint Crossover**: Today's BasePaint theme + canvas image becomes the story source. The pixel art aesthetic and palette shape the AI-generated comic panels.
+- **Attribution**: Writer / article credit + BasePaint contributors + mint CTA.
 
 **Flow**:
 ```
@@ -70,23 +77,27 @@ Cron or POST /api/daily-challenge/setup
   ↓
 DailyChallengeVault.createDailyChallenge(day) → e.shuffledRange(1..52)
   ↓
+Resolve dual source: featured article + BasePaint day (or BasePaint-only fallback)
+  ↓
 Player calls startSession(day) → 5 encrypted cards dealt (narrativeOperator + player get allow)
   ↓
 Each panel: server decrypts card for AI only → generatePanelWithModifier()
   ↓
 Player choice → POST /record-choice → encrypted score delta on-chain
   ↓
-Finale: completeAndReveal() → attestedDecrypt → leaderboard
+Finale: completeAndReveal() → attestedDecrypt → leaderboard + dual attribution
 ```
 
 **Smart Contract**: [`DailyChallengeVault`](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce) on Base mainnet  
 **Cron**: Three-layer deck shuffle (idempotent on-chain):
 1. **Vercel Cron** — `vercel.json` at ~00:05 UTC (`CRON_SECRET` bearer); Hobby timing is hour-granular
 2. **GitHub Actions** — `.github/workflows/daily-challenge-shuffle.yml` at 00:10 UTC backup (set repo secret `CRON_SECRET`)
-3. **Lazy shuffle** — `GET/POST /api/daily-challenge/start` shuffles if today's deck is missing when `/daily` loads or a session starts
-**SDK**: `@inco/lightning-js` — `attestedDecrypt` for modifier/score reveal
-**Modifier Deck**: `lib/modifiers.json` — 52 cards across 4 categories
-**Page**: `/daily` — challenge card, leaderboard, play button
+3. **Lazy shuffle** — `GET/POST /api/daily-challenge/start` shuffles if today's deck is missing when Daily Challenge loads or a session starts
+**SDK**: `@inco/lightning-js` — `attestedDecrypt` for modifier/score reveal  
+**Modifier Deck**: `lib/modifiers.json` — 52 cards across 4 categories  
+**Config**: Featured article auto-picked daily from Paragraph allowlist (writer coins / `DAILY_CHALLENGE_FEATURED_PUBLICATIONS`); manual override via `POST /api/daily-challenge/featured`; env URL is fallback only  
+
+**Pages**: `/basepaint` (canonical Daily Challenge UI); `/daily` redirects there; `/basepaint/day/[n]` archive; `/basepaint/collection`
 
 ### Embeddable Wallet-Free Player
 - `/embed/[slug]` serves an lightweight iframe player

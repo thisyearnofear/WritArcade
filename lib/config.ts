@@ -15,7 +15,7 @@
  * Daily challenge is enabled when explicitly turned on, or when the public
  * vault address is configured (client-safe). Server-only FEATURE_DAILY_CHALLENGE
  * alone does not reach the browser bundle — NEXT_PUBLIC_* or vault auto-enable
- * is required for client components (/daily, banners, nav).
+ * is required for client components (/basepaint, banners, nav).
  */
 function isDailyChallengeEnabled(): boolean {
   if (
@@ -137,6 +137,28 @@ export const config = {
     enabled: features.dailyChallenge,
     vaultAddress: process.env.NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS || '',
     managerPrivateKey: process.env.DAILY_CHALLENGE_MANAGER_PRIVATE_KEY || process.env.STORY_PLATFORM_PRIVATE_KEY || '',
+    /** Featured article URL for dual-source Daily (plot). Empty = BasePaint-only / auto-pick. */
+    featuredArticleUrl: (process.env.DAILY_CHALLENGE_FEATURED_ARTICLE_URL || '').trim(),
+    /** Optional display title when article fetch is skipped or fails. */
+    featuredArticleTitle: (process.env.DAILY_CHALLENGE_FEATURED_ARTICLE_TITLE || '').trim(),
+    /**
+     * Cron auto-picks a featured post from the Paragraph allowlist.
+     * Default on when Daily Challenge is enabled. Set "false" to disable.
+     */
+    autoFeatured: process.env.DAILY_CHALLENGE_AUTO_FEATURED !== 'false',
+    /**
+     * Comma-separated Paragraph publication slugs (without @).
+     * Empty = use WRITER_COINS.paragraphAuthor allowlist.
+     */
+    featuredPublications: (process.env.DAILY_CHALLENGE_FEATURED_PUBLICATIONS || '')
+      .split(',')
+      .map((s) => s.trim().replace(/^@/, '').toLowerCase())
+      .filter(Boolean),
+    /** Skip posts featured within this many prior days. */
+    featuredLookbackDays: Math.max(
+      1,
+      parseInt(process.env.DAILY_CHALLENGE_FEATURED_LOOKBACK_DAYS || '14', 10) || 14
+    ),
   },
 
   /**

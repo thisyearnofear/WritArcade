@@ -9,6 +9,10 @@ import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-
 import { EpilogueGoalStrip } from '@/components/game/epilogue-goal-strip'
 import { FinaleUnlocksStrip } from '@/components/game/finale-unlocks-strip'
 import { getModifierCategoryForPanel } from '@/lib/daily-challenge-ui'
+import {
+  parseArticleUrlFromDualSource,
+  parseBasePaintDayFromSource,
+} from '@/lib/basepaint/source-url'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry, ChoiceFeedback } from '../../hooks/use-game-session'
 import { trackEvent } from '@/services/analytics'
@@ -129,6 +133,19 @@ export function GameplayScreen({
   hasMintedNft = false,
   sidebarExtra,
 }: GameplayScreenProps) {
+
+  const basePaintDay = parseBasePaintDayFromSource(game.articleUrl)
+  const dualArticleUrl = parseArticleUrlFromDualSource(game.articleUrl)
+  const dualArticleTitle = dualArticleUrl
+    ? (() => {
+        try {
+          const slug = new URL(dualArticleUrl).pathname.split('/').filter(Boolean).pop()
+          return slug ? decodeURIComponent(slug).replace(/[-_]/g, ' ') : 'Featured article'
+        } catch {
+          return 'Featured article'
+        }
+      })()
+    : null
 
   const handleViewComic = useCallback(() => {
     trackEvent('view_comic_clicked', {
@@ -383,6 +400,8 @@ export function GameplayScreen({
                             ? getModifierCategoryForPanel(panelIndex)
                             : undefined
                         }
+                        basePaintDay={basePaintDay}
+                        dualArticleTitle={dualArticleTitle}
                       />
                     </div>
                   )

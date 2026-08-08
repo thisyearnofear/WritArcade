@@ -69,7 +69,7 @@ export function getDailyVaultAddress(): `0x${string}` | null {
 }
 
 export async function fetchDailyChallengeStart(
-  sourceType: DailyChallengeSource['sourceType'] = 'basepaint'
+  sourceType: DailyChallengeSource['sourceType'] = 'dual'
 ): Promise<DailyChallengeStartResponse> {
   const response = await fetch('/api/daily-challenge/start', {
     method: 'POST',

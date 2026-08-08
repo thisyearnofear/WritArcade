@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { config } from '@/lib/config'
-import { ensureDailyDeckShuffled, getBasePaintDay } from '@/lib/daily-challenge'
+import { config, logger } from '@/lib/config'
+import {
+  ensureDailyDeckShuffled,
+  ensureTodaysFeaturedArticle,
+  getBasePaintDay,
+} from '@/lib/daily-challenge'
 
 export const maxDuration = 60
 
@@ -11,10 +15,38 @@ function isAuthorizedCron(request: NextRequest): boolean {
   return authHeader === `Bearer ${cronSecret}`
 }
 
+async function runDailySetup(day: number) {
+  const shuffle = await ensureDailyDeckShuffled(day)
+  const featured = await ensureTodaysFeaturedArticle({ day })
+
+  logger.info('Daily challenge setup complete', {
+    day,
+    shuffleAlready: shuffle.alreadyShuffled,
+    featuredStatus: featured.status,
+    featuredReason: featured.reason,
+    publicationSlug: featured.publicationSlug,
+  })
+
+  return {
+    day,
+    shuffle,
+    featured: {
+      status: featured.status,
+      reason: featured.reason,
+      publicationSlug: featured.publicationSlug,
+      sourceType: featured.source?.sourceType,
+      sourceUrl: featured.source?.sourceUrl,
+      theme: featured.source?.theme,
+      articleTitle: featured.source?.articleTitle,
+    },
+  }
+}
+
 /**
  * GET /api/daily-challenge/setup
  *
  * Vercel Cron entry point (see vercel.json). Requires CRON_SECRET bearer token.
+ * Shuffles the Inco deck (if needed) and auto-picks today's featured Paragraph article.
  */
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
@@ -26,7 +58,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Daily challenge feature is not enabled' }, { status: 400 })
     }
 
-    const result = await ensureDailyDeckShuffled(getBasePaintDay())
+    const result = await runDailySetup(getBasePaintDay())
     return NextResponse.json(result)
   } catch (error) {
     console.error('Daily challenge cron setup failed:', error)
@@ -40,8 +72,8 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/daily-challenge/setup
  *
- * Manual ops trigger (requires CRON_SECRET). Creates today's on-chain challenge
- * and shuffles the deck when missing.
+ * Manual ops trigger (requires CRON_SECRET).
+ * Body: { day?, forceFeatured? } — forceFeatured re-runs Paragraph auto-pick even if dual exists.
  */
 export async function POST(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
@@ -55,8 +87,24 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}))
     const day = typeof body.day === 'number' ? body.day : getBasePaintDay()
-    const result = await ensureDailyDeckShuffled(day)
-    return NextResponse.json(result)
+    const forceFeatured = body.forceFeatured === true
+
+    const shuffle = await ensureDailyDeckShuffled(day)
+    const featured = await ensureTodaysFeaturedArticle({ day, force: forceFeatured })
+
+    return NextResponse.json({
+      day,
+      shuffle,
+      featured: {
+        status: featured.status,
+        reason: featured.reason,
+        publicationSlug: featured.publicationSlug,
+        sourceType: featured.source?.sourceType,
+        sourceUrl: featured.source?.sourceUrl,
+        theme: featured.source?.theme,
+        articleTitle: featured.source?.articleTitle,
+      },
+    })
   } catch (error) {
     console.error('Daily challenge setup failed:', error)
     return NextResponse.json(

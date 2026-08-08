@@ -29,6 +29,8 @@ import {
   generationError,
 } from './game-generator-helpers'
 import { useGameGeneratorStore } from '@/lib/stores'
+import { config } from '@/lib/config'
+import { getBasePaintDay } from '@/lib/basepaint/day'
 
 const DEFAULT_WRITER_COIN = WRITER_COINS[0]
 
@@ -70,6 +72,7 @@ export function useGameGenerator({
   const autoPreviewedUrlRef = useRef<string | null>(null)
   const paymentPathExposureRef = useRef<string | null>(null)
   const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stagingOptOutRef = useRef(false)
 
   // ── Media query ──────────────────────────────────────────────────────
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -137,24 +140,36 @@ export function useGameGenerator({
         const data = await response.json()
         if (cancelled) return
 
-        const sourceUrl = `basepaint://day/${data.day}`
+        const isDual = data.sourceType === 'dual' && data.sourceUrl
+        const sourceUrl = isDual
+          ? `basepaint://day/${data.day}?article=${encodeURIComponent(data.sourceUrl)}`
+          : `basepaint://day/${data.day}`
         store.setDailyFlow({
           day: data.day,
           theme: data.theme,
           promptText: data.promptText || data.theme,
           canvasUrl: data.canvasUrl,
           palette: data.palette,
+          sourceType: isDual ? 'dual' : 'basepaint',
+          articleUrl: isDual ? data.sourceUrl : undefined,
+          articleTitle: data.articleTitle,
+          articleAuthor: data.articleAuthor,
+          canvasTheme: data.canvasTheme,
         })
         store.setArticlePreview({
-          title: `Daily: ${data.theme}`,
-          author: 'BasePaint',
+          title: isDual
+            ? data.articleTitle || data.theme
+            : `Daily: ${data.theme}`,
+          author: isDual
+            ? data.articleAuthor || 'Featured writer'
+            : 'BasePaint',
           wordCount: 120,
           estimatedReadTime: 1,
           excerpt: (data.promptText || data.theme).slice(0, 240),
-          sourceUrl,
+          sourceUrl: isDual ? data.sourceUrl : sourceUrl,
         })
         store.setPreviewedUrl(sourceUrl)
-        store.setUrl(sourceUrl)
+        store.setUrl(isDual ? data.sourceUrl : sourceUrl)
 
         if (initialDailyChallenge) {
           store.setPaymentApproved(true)
@@ -172,6 +187,51 @@ export function useGameGenerator({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialBasePaintDay, initialDailyChallenge])
+
+  // Create: prefetch today's world after article preview; default-suggest staging
+  useEffect(() => {
+    if (!config.features.dailyChallenge || store.dailyFlow) return
+    if (store.mode !== 'story') return
+    if (!hasPreviewedCurrentUrl) return
+    if (store.basePaintStage || store.isLoadingBasePaintStage) return
+
+    let cancelled = false
+
+    async function loadStage() {
+      store.setIsLoadingBasePaintStage(true)
+      try {
+        const day = getBasePaintDay()
+        const response = await fetch(`/api/daily-challenge/basepaint/${day}`)
+        if (!response.ok) throw new Error('Failed to load BasePaint day')
+        const data = await response.json()
+        if (cancelled) return
+        store.setBasePaintStage({
+          day: data.day,
+          theme: data.canvasTheme || data.theme,
+          canvasUrl: data.canvasUrl,
+          palette: data.palette,
+        })
+        // Suggest staging once the world loads, unless the user opted out
+        if (!stagingOptOutRef.current) {
+          store.setStageWithBasePaint(true)
+        }
+      } catch (err) {
+        console.error('Failed to load BasePaint stage preview:', err)
+        if (!cancelled) {
+          store.setBasePaintStage(null)
+          store.setStageWithBasePaint(false)
+        }
+      } finally {
+        if (!cancelled) store.setIsLoadingBasePaintStage(false)
+      }
+    }
+
+    void loadStage()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPreviewedCurrentUrl, store.dailyFlow, store.mode, store.basePaintStage, store.isLoadingBasePaintStage])
 
   // ── Helpers ────────────────────────────────────────────────────────
   // Declared before the effects below so they can reference it safely.
@@ -408,6 +468,18 @@ export function useGameGenerator({
         throw new Error('Please provide a Paragraph.xyz article URL')
       }
 
+      if (
+        !store.dailyFlow &&
+        store.stageWithBasePaint &&
+        (store.isLoadingBasePaintStage || !store.basePaintStage)
+      ) {
+        throw new Error(
+          store.isLoadingBasePaintStage
+            ? "Still loading today's BasePaint canvas — wait a moment, then generate."
+            : "Couldn't load today's BasePaint canvas. Turn off staging or try again."
+        )
+      }
+
       if (!store.dailyFlow && store.mode !== 'wordle' && !isMusdPath && !validateArticleUrl(store.url.trim(), writerCoin.id)) {
         throw new Error(`This URL does not match ${writerCoin.name}. Pick a matching article or switch to MUSD for any Paragraph article.`)
       }
@@ -432,16 +504,39 @@ export function useGameGenerator({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               ...(store.dailyFlow
-                ? {
-                    contentType: 'basepaint',
-                    promptText: store.dailyFlow.promptText,
-                    basePaintDay: store.dailyFlow.day,
-                    dailyChallengeDay: initialDailyChallenge ? store.dailyFlow.day : undefined,
-                    theme: store.dailyFlow.theme,
-                    palette: store.dailyFlow.palette,
-                    canvasUrl: store.dailyFlow.canvasUrl,
-                  }
-                : { url: store.url.trim() }),
+                ? store.dailyFlow.sourceType === 'dual' && store.dailyFlow.articleUrl
+                  ? {
+                      contentType: 'dual' as const,
+                      url: store.dailyFlow.articleUrl,
+                      basePaintDay: store.dailyFlow.day,
+                      dailyChallengeDay: initialDailyChallenge
+                        ? store.dailyFlow.day
+                        : undefined,
+                      theme: store.dailyFlow.theme,
+                      palette: store.dailyFlow.palette,
+                      canvasUrl: store.dailyFlow.canvasUrl,
+                    }
+                  : {
+                      contentType: 'basepaint' as const,
+                      promptText: store.dailyFlow.promptText,
+                      basePaintDay: store.dailyFlow.day,
+                      dailyChallengeDay: initialDailyChallenge
+                        ? store.dailyFlow.day
+                        : undefined,
+                      theme: store.dailyFlow.theme,
+                      palette: store.dailyFlow.palette,
+                      canvasUrl: store.dailyFlow.canvasUrl,
+                    }
+                : store.stageWithBasePaint && store.basePaintStage
+                  ? {
+                      contentType: 'dual' as const,
+                      url: store.url.trim(),
+                      basePaintDay: store.basePaintStage.day,
+                      theme: store.basePaintStage.theme,
+                      palette: store.basePaintStage.palette,
+                      canvasUrl: store.basePaintStage.canvasUrl,
+                    }
+                  : { url: store.url.trim() }),
               mode: store.mode,
               wallet: accountAddress || undefined,
               ...( (hasPaymentProof || isDailyFlow) && {
@@ -622,6 +717,9 @@ export function useGameGenerator({
     store.setArticlePreview(null)
     store.setPreviewedUrl('')
     paymentPathExposureRef.current = null
+    stagingOptOutRef.current = false
+    store.setStageWithBasePaint(false)
+    store.setBasePaintStage(null)
   }, [store, resetPaymentProgress])
 
   // ── Payment path handlers ─────────────────────────────────────────
@@ -669,15 +767,30 @@ export function useGameGenerator({
 
   const handleSelectWordle = useCallback(() => {
     store.setMode('wordle')
+    store.setStageWithBasePaint(false)
     resetPaymentProgress()
     trackEvent('game_mode_selected', { mode: 'wordle', paymentPath: store.paymentPath })
   }, [store, resetPaymentProgress])
 
   const handleSetModeWordle = useCallback(() => {
     store.setMode('wordle')
+    store.setStageWithBasePaint(false)
     resetPaymentProgress()
     trackEvent('game_mode_selected', { mode: 'wordle', paymentPath: store.paymentPath, source: 'post_preview_link' })
   }, [store, resetPaymentProgress])
+
+  const handleStageWithBasePaintChange = useCallback(
+    (enabled: boolean) => {
+      stagingOptOutRef.current = !enabled
+      store.setStageWithBasePaint(enabled)
+      trackEvent('basepaint_stage_toggled', {
+        enabled,
+        mode: store.mode,
+        paymentPath: store.paymentPath,
+      })
+    },
+    [store]
+  )
 
   // ── Writer coin handlers ───────────────────────────────────────────
   const handleWriterCoinSelect = useCallback((coin: WriterCoin) => {
@@ -764,6 +877,11 @@ export function useGameGenerator({
     hasPreviewedCurrentUrl,
     isDailyFlow,
     dailyFlow: store.dailyFlow,
+    showBasePaintStageToggle:
+      config.features.dailyChallenge && !isDailyFlow && isStoryMode,
+    stageWithBasePaint: store.stageWithBasePaint,
+    basePaintStage: store.basePaintStage,
+    isLoadingBasePaintStage: store.isLoadingBasePaintStage,
     isStoryMode,
     isMusdPath,
     writerCoin,
@@ -786,6 +904,7 @@ export function useGameGenerator({
     handleSelectStory,
     handleSelectWordle,
     handleSetModeWordle,
+    handleStageWithBasePaintChange,
     handleWriterCoinSelect,
     handleToggleWriterSelector,
     handleToggleCustomization,

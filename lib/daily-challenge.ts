@@ -17,25 +17,48 @@ import type { WalletClient, Transport, Chain, Account } from 'viem'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
+export type {
+  BasePaintTheme,
+  BasePaintCanvasStats,
+  BasePaintContributor,
+  BasePaintDailySource,
+  DualDailySource,
+  ResolvedDailySource,
+} from '@/lib/basepaint/types'
+export {
+  getBasePaintDay,
+  fetchBasePaintTheme,
+  getBasePaintCanvasUrl,
+  getBasePaintCanvasProxyUrl,
+  getBasePaintAnimationUrl,
+  getBasePaintDayUrl,
+  buildBasePaintPromptText,
+  buildDualSourcePromptText,
+  pickAccentColor,
+  getBasePaintCanvasDescription,
+  describeBasePaintCanvas,
+  getBasePaintDailySource,
+  getDualDailySource,
+  getTodaysDailySource,
+  setFeaturedDailyArticle,
+  ensureTodaysFeaturedArticle,
+  fetchBasePaintCanvasStats,
+} from '@/lib/basepaint'
+
 export interface DailyChallengeSource {
   day: number
-  sourceType: 'article' | 'marketing-copy' | 'basepaint'
+  sourceType: 'dual' | 'article' | 'marketing-copy' | 'basepaint'
   sourceUrl?: string
   basePaintDay?: number
   theme: string
+  canvasTheme?: string
+  articleTitle?: string
+  articleAuthor?: string
   palette?: string[]
   canvasUrl?: string
   canvasDescription?: string
   promptText?: string
 }
-
-export interface BasePaintTheme {
-  theme: string
-  proposer: string
-  size: number
-  palette: string[]
-}
-
 export interface Modifier {
   id: number
   category: 'tone' | 'complication' | 'stakes' | 'resolution'
@@ -87,223 +110,6 @@ export function getModifiersForPanel(panelIndex: number): Modifier[] {
   ]
   const category = categories[panelIndex] || 'tone'
   return MODIFIER_DECK.filter((m) => m.category === category)
-}
-
-// ── BasePaint Integration ───────────────────────────────────────────────────
-
-/**
- * Calculate the current BasePaint day number.
- * Day 1 started at Unix time 1691599315, each day is 86400 seconds.
- */
-export function getBasePaintDay(): number {
-  const BP_EPOCH = 1691599315
-  const DAY_SECONDS = 86400
-  return Math.floor((Math.floor(Date.now() / 1000) - BP_EPOCH) / DAY_SECONDS) + 1
-}
-
-/**
- * Fetch today's BasePaint theme (name, palette, canvas size).
- */
-export async function fetchBasePaintTheme(day: number): Promise<BasePaintTheme | null> {
-  try {
-    const response = await fetch(`https://basepaint.xyz/api/theme/${day}`)
-    if (!response.ok) return null
-    const data = await response.json()
-    return {
-      theme: data.theme,
-      proposer: data.proposer || '',
-      size: data.size || 256,
-      palette: data.palette || [],
-    }
-  } catch (err) {
-    console.error('[DailyChallenge] Failed to fetch BasePaint theme:', err)
-    return null
-  }
-}
-
-/**
- * Get the BasePaint canvas image URL for a given day.
- * Official API: https://basepaint.xyz/api/art/image?day=N
- */
-export function getBasePaintCanvasUrl(day: number): string {
-  return `https://basepaint.xyz/api/art/image?day=${day}`
-}
-
-/** Client-safe URL via our image proxy (avoids dead CDN paths + hotlink quirks). */
-export function getBasePaintCanvasProxyUrl(day: number): string {
-  return `/api/image-proxy?url=${encodeURIComponent(getBasePaintCanvasUrl(day))}`
-}
-
-/**
- * Build the story-generation prompt for a BasePaint daily source.
- *
- * When a vision-derived canvas description is available, the story is grounded
- * in what the community actually drew (subjects, composition, mood) rather
- * than the theme word alone — this is what ties the comic to the artwork.
- */
-export function buildBasePaintPromptText(input: {
-  theme?: string
-  palette?: string[]
-  canvasDescription?: string | null
-}): string {
-  const { theme, palette = [], canvasDescription } = input
-  const paletteText = palette.join(', ')
-
-  if (canvasDescription) {
-    return [
-      `Create a 5-panel interactive comic game set inside today's BasePaint collaborative canvas: "${theme ?? 'untitled'}".`,
-      ``,
-      `What the canvas actually shows: ${canvasDescription}`,
-      ``,
-      `Build the story from these drawn elements — the characters, objects, and scenes the community painted today. ` +
-        `Visual style: pixel art honoring this exact palette: ${paletteText}. ` +
-        `The story should reflect the theme "${theme ?? 'untitled'}" and feel recognizably connected to this specific artwork.`,
-    ].join('\n')
-  }
-
-  return `Create a 5-panel interactive comic game inspired by today's BasePaint artwork: "${theme}". The visual style should match a pixel art aesthetic with this color palette: ${paletteText}. The story should reflect the theme "${theme}" and feel connected to the collaborative pixel art canvas.`
-}
-
-/**
- * Describe what is actually drawn on today's canvas using a vision-capable
- * model (Gemini preferred, OpenAI fallback). Returns null when no vision
- * provider is configured or the canvas can't be fetched/described — callers
- * must tolerate null and fall back to theme-only prompts.
- *
- * Server-only (uses Node fetch of the image bytes + AI SDK); kept behind
- * dynamic imports because this module is also used client-side.
- */
-export async function describeBasePaintCanvas(day: number): Promise<string | null> {
-  try {
-    const response = await fetch(getBasePaintCanvasUrl(day))
-    if (!response.ok) return null
-
-    const mimeType = response.headers.get('content-type') || 'image/png'
-    const image = new Uint8Array(await response.arrayBuffer())
-    if (image.length === 0) return null
-
-    const { generateText } = await import('ai')
-    const { getCompatibleGoogleModel, getCompatibleOpenAIModel } = await import(
-      './ai-model-compatibility'
-    )
-
-    const model = process.env.GOOGLE_API_KEY
-      ? getCompatibleGoogleModel('gemini-2.0-flash')
-      : process.env.OPENAI_API_KEY
-        ? getCompatibleOpenAIModel('gpt-4o-mini')
-        : null
-    if (!model) {
-      console.warn('[DailyChallenge] No vision-capable provider configured (GOOGLE_API_KEY / OPENAI_API_KEY)')
-      return null
-    }
-
-    const { text } = await generateText({
-      model,
-      maxTokens: 220,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text:
-                'This is a collaborative pixel-art canvas drawn by many people on one shared theme. ' +
-                'Describe what is concretely drawn: main subjects, objects, characters, scenes, ' +
-                'their spatial arrangement, and the overall mood. Use concrete nouns, no speculation. ' +
-                '3-5 sentences.',
-            },
-            { type: 'image', image, mimeType },
-          ],
-        },
-      ],
-    })
-
-    const description = text.trim()
-    return description || null
-  } catch (err) {
-    console.error('[DailyChallenge] Canvas vision description failed:', err)
-    return null
-  }
-}
-
-// Per-day in-memory cache: the description is stable enough within a day, and
-// this avoids a vision call on every generate request. Serverless instances
-// each describe once per day at most.
-const canvasDescriptionCache = new Map<number, Promise<string | null>>()
-
-export function getBasePaintCanvasDescription(day: number): Promise<string | null> {
-  let pending = canvasDescriptionCache.get(day)
-  if (!pending) {
-    pending = describeBasePaintCanvas(day)
-    canvasDescriptionCache.set(day, pending)
-    if (canvasDescriptionCache.size > 14) {
-      const oldest = canvasDescriptionCache.keys().next().value
-      if (oldest !== undefined) canvasDescriptionCache.delete(oldest)
-    }
-  }
-  return pending
-}
-
-/**
- * Pick the most usable accent color from a BasePaint palette: saturated,
- * mid-lightness colors read well as a game identity on dark UI; pure
- * black/white/mud fall through to the next candidate.
- */
-export function pickAccentColor(palette?: string[]): string | null {
-  if (!palette?.length) return null
-
-  let best: string | null = null
-  let bestScore = 0
-
-  for (const hex of palette) {
-    const match = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim())
-    if (!match) continue
-
-    const n = parseInt(match[1], 16)
-    const r = ((n >> 16) & 0xff) / 255
-    const g = ((n >> 8) & 0xff) / 255
-    const b = (n & 0xff) / 255
-
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    const lightness = (max + min) / 2
-    const saturation = max === min ? 0 : (max - min) / (1 - Math.abs(2 * lightness - 1))
-
-    // Favor saturated colors centered around ~50% lightness
-    const score = saturation * (1 - Math.abs(lightness - 0.5) * 2)
-    if (score > bestScore) {
-      bestScore = score
-      best = `#${match[1].toLowerCase()}`
-    }
-  }
-
-  return bestScore > 0.15 ? best : null
-}
-
-/**
- * Build a daily challenge source from today's BasePaint canvas.
- */
-export async function getBasePaintDailySource(
-  day: number,
-  canvasDescription?: string | null
-): Promise<DailyChallengeSource> {
-  const theme = await fetchBasePaintTheme(day)
-  const canvasUrl = getBasePaintCanvasUrl(day)
-
-  return {
-    day,
-    sourceType: 'basepaint',
-    basePaintDay: day,
-    theme: theme?.theme || `BasePaint Day ${day}`,
-    palette: theme?.palette || [],
-    canvasUrl,
-    canvasDescription: canvasDescription || undefined,
-    promptText: buildBasePaintPromptText({
-      theme: theme?.theme,
-      palette: theme?.palette || [],
-      canvasDescription,
-    }),
-  }
 }
 
 // ── Inco Contract Interaction ──────────────────────────────────────────────

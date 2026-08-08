@@ -19,15 +19,17 @@ import { reportServerError } from '@/services/error-reporting'
 import {
   getBasePaintDay,
   getBasePaintDailySource,
+  getDualDailySource,
   getBasePaintCanvasDescription,
   pickAccentColor,
 } from '@/lib/daily-challenge'
+import { buildBasePaintSourceUrl, buildDualSourceUrl } from '@/lib/basepaint/source-url'
 
 // Request validation schema
 const generateGameSchema = z.object({
   promptText: z.string().max(20_000).optional(),
   url: z.string().url().optional(),
-  contentType: z.enum(['marketing-copy', 'basepaint']).optional(),
+  contentType: z.enum(['marketing-copy', 'basepaint', 'dual']).optional(),
   basePaintDay: z.number().int().positive().optional(),
   dailyChallengeDay: z.number().int().positive().optional(),
   theme: z.string().max(200).optional(),
@@ -53,8 +55,14 @@ const generateGameSchema = z.object({
   // users log in before generating).
   wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
 }).refine(
-  (data) => Boolean(data.promptText || data.url || data.contentType === 'basepaint'),
-  { message: 'Either promptText, url, or basepaint contentType must be provided' }
+  (data) =>
+    Boolean(
+      data.promptText ||
+        data.url ||
+        data.contentType === 'basepaint' ||
+        data.contentType === 'dual'
+    ),
+  { message: 'Either promptText, url, basepaint, or dual contentType must be provided' }
 )
 
 export async function POST(request: NextRequest) {
@@ -87,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Exception: one free demo game per actor (marketer tier entry point).
     // Exception: today's daily challenge BasePaint source (wallet session pays on-chain separately).
     const isDailyChallengeGeneration =
-      validatedData.contentType === 'basepaint' &&
+      (validatedData.contentType === 'basepaint' || validatedData.contentType === 'dual') &&
       typeof validatedData.dailyChallengeDay === 'number' &&
       validatedData.dailyChallengeDay === getBasePaintDay() &&
       config.features.dailyChallenge
@@ -184,6 +192,7 @@ export async function POST(request: NextRequest) {
 
     let processedPrompt = validatedData.promptText || ''
     let basePaintPalette: string[] | undefined = validatedData.palette
+    let basePaintDay: number | undefined
     let processedContent: import('@/domains/content/services/content-processor.service').ProcessedContent | undefined
 
     // Marketing copy (studio flow): clean the pasted markdown and frame it
@@ -194,7 +203,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (validatedData.contentType === 'basepaint') {
-      const day = validatedData.basePaintDay ?? getBasePaintDay()
+      basePaintDay = validatedData.basePaintDay ?? getBasePaintDay()
+      const day = basePaintDay
       const source = validatedData.promptText
         ? {
             day,
@@ -208,8 +218,53 @@ export async function POST(request: NextRequest) {
       processedPrompt = source.promptText || `Create a game inspired by BasePaint Day ${day}: "${source.theme}".`
     }
 
-    // If URL provided, extract and process content
-    if (validatedData.url && ContentProcessorService.isValidUrl(validatedData.url)) {
+    if (validatedData.contentType === 'dual') {
+      basePaintDay = validatedData.basePaintDay ?? getBasePaintDay()
+      const articleUrl =
+        validatedData.url || config.dailyChallenge.featuredArticleUrl || undefined
+      if (!articleUrl || !ContentProcessorService.isValidUrl(articleUrl)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Dual-source generation requires a featured article URL.',
+            code: 'DUAL_ARTICLE_REQUIRED',
+          },
+          { status: 400 }
+        )
+      }
+
+      try {
+        processedContent = await ContentProcessorService.processUrl(articleUrl)
+        const articleThemes = ContentProcessorService.extractArticleThemes(
+          processedContent.text,
+          processedContent.title
+        )
+        const source = await getDualDailySource(
+          basePaintDay,
+          {
+            url: articleUrl,
+            title: processedContent.title,
+            author: processedContent.author,
+            themes: articleThemes,
+            text: processedContent.text,
+          },
+          await getBasePaintCanvasDescription(basePaintDay)
+        )
+        basePaintPalette = source.palette ?? validatedData.palette
+        processedPrompt = source.promptText
+      } catch (error) {
+        console.error('Dual-source content processing failed:', error)
+        const message = error instanceof Error ? error.message : 'Failed to process dual source'
+        throw new Error(`Dual-source processing failed: ${message}`)
+      }
+    }
+
+    // If URL provided (and not already handled as dual), extract and process content
+    if (
+      validatedData.contentType !== 'dual' &&
+      validatedData.url &&
+      ContentProcessorService.isValidUrl(validatedData.url)
+    ) {
       try {
         processedContent = await ContentProcessorService.processUrl(validatedData.url)
 
@@ -330,7 +385,10 @@ Your game MUST authentically interpret this article's core themes. Players shoul
 
       // Ground the game's visual identity in today's canvas palette — the
       // play UI (background gradient, progress bars, accents) keys off this.
-      if (validatedData.contentType === 'basepaint') {
+      if (
+        validatedData.contentType === 'basepaint' ||
+        validatedData.contentType === 'dual'
+      ) {
         const accent = pickAccentColor(basePaintPalette)
         if (accent) gameData.primaryColor = accent
       }
@@ -365,23 +423,59 @@ Your game MUST authentically interpret this article's core themes. Players shoul
     }
 
     // Save to database using enhanced database service
-    const miniAppData = processedContent ? {
-      articleUrl: validatedData.url,
-      difficulty: validatedData.customization?.difficulty,
-      writerCoinId: canonicalWriterCoinId,
-      wordleAnswerVaultUuid: gameData.wordleAnswerVaultUuid,
-      authorWallet: processedContent.authorWallet,
-      authorParagraphUsername: processedContent.author, // Extract from URL parsing
-      publicationName: processedContent.publicationName,
-      publicationSummary: processedContent.publicationSummary,
-      subscriberCount: normalizeSubscriberCount(processedContent.subscriberCount),
-      articlePublishedAt: normalizePublishedAt(processedContent.publishedAt),
-      ownerWallet: ownership.ownerWallet,
-      ownershipSource: ownership.ownershipSource,
-      paymentId: ownership.paymentId,
-      // Include comprehensive article context for authentic game narrative continuity
-      articleContext: `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nPublication: ${processedContent.publicationName || 'Unknown'}\n\nCore Themes:\n${ContentProcessorService.extractArticleThemes(processedContent.text, processedContent.title)}\n\nKey excerpt:\n${processedContent.text.substring(0, 800)}...`,
-    } : undefined
+    const dualArticleUrl =
+      validatedData.contentType === 'dual'
+        ? validatedData.url || config.dailyChallenge.featuredArticleUrl || null
+        : null
+
+    const miniAppData =
+      validatedData.contentType === 'dual' && processedContent && basePaintDay && dualArticleUrl
+        ? {
+            articleUrl: buildDualSourceUrl(basePaintDay, dualArticleUrl),
+            difficulty: validatedData.customization?.difficulty,
+            writerCoinId: canonicalWriterCoinId,
+            wordleAnswerVaultUuid: gameData.wordleAnswerVaultUuid,
+            authorWallet: processedContent.authorWallet,
+            authorParagraphUsername: processedContent.author,
+            publicationName: processedContent.publicationName || 'Daily Challenge',
+            publicationSummary: processedContent.publicationSummary,
+            subscriberCount: normalizeSubscriberCount(processedContent.subscriberCount),
+            articlePublishedAt: normalizePublishedAt(processedContent.publishedAt),
+            ownerWallet: ownership.ownerWallet,
+            ownershipSource: ownership.ownershipSource,
+            paymentId: ownership.paymentId,
+            articleContext: processedPrompt.substring(0, 1200),
+          }
+        : processedContent
+          ? {
+              articleUrl: validatedData.url,
+              difficulty: validatedData.customization?.difficulty,
+              writerCoinId: canonicalWriterCoinId,
+              wordleAnswerVaultUuid: gameData.wordleAnswerVaultUuid,
+              authorWallet: processedContent.authorWallet,
+              authorParagraphUsername: processedContent.author,
+              publicationName: processedContent.publicationName,
+              publicationSummary: processedContent.publicationSummary,
+              subscriberCount: normalizeSubscriberCount(processedContent.subscriberCount),
+              articlePublishedAt: normalizePublishedAt(processedContent.publishedAt),
+              ownerWallet: ownership.ownerWallet,
+              ownershipSource: ownership.ownershipSource,
+              paymentId: ownership.paymentId,
+              articleContext: `Article: "${processedContent.title}"\nAuthor: ${processedContent.author || 'Unknown'}\nPublication: ${processedContent.publicationName || 'Unknown'}\n\nCore Themes:\n${ContentProcessorService.extractArticleThemes(processedContent.text, processedContent.title)}\n\nKey excerpt:\n${processedContent.text.substring(0, 800)}...`,
+            }
+          : basePaintDay
+            ? {
+                articleUrl: buildBasePaintSourceUrl(basePaintDay),
+                publicationName: 'BasePaint',
+                authorParagraphUsername: 'BasePaint',
+                difficulty: validatedData.customization?.difficulty,
+                writerCoinId: canonicalWriterCoinId,
+                ownerWallet: ownership.ownerWallet,
+                ownershipSource: ownership.ownershipSource,
+                paymentId: ownership.paymentId,
+                articleContext: processedPrompt.substring(0, 1200),
+              }
+            : undefined
 
     // Enhance game data with attribution
     const enhancedGameData = {

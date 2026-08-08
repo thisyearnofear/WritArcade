@@ -657,10 +657,12 @@ model FarcasterNotificationToken {
 model DailyChallenge {
   id          String   @id @default(cuid())
   day         Int      @unique // 1-based day number (matches BasePaint day)
-  sourceType  String   // "article" | "marketing-copy" | "basepaint"
-  sourceUrl   String?  // article URL or BasePaint day URL
-  basePaintDay Int?    // BasePaint day number if sourceType = "basepaint"
-  theme       String?  // BasePaint theme name or article title
+  sourceType  String   // "dual" | "basepaint" | "article" | "marketing-copy"
+  sourceUrl   String?  // featured article URL (dual/article) or BasePaint day URL
+  basePaintDay Int?    // BasePaint day number when canvas is part of the source
+  theme       String?  // Display theme (e.g. "Article × Canvas" for dual)
+  articleTitle String? // Cached featured article title (dual)
+  articleAuthor String? // Cached featured article author (dual)
   palette     String[] // color palette (BasePaint) or empty
   canvasUrl   String?  // BasePaint canvas image URL
   active      Boolean  @default(true)

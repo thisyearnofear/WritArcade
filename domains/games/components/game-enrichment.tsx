@@ -11,6 +11,7 @@ import {
   type DailyChallengeClientState,
 } from '@/lib/daily-challenge-client'
 import { config } from '@/lib/config'
+import { resolveBasePaintDay } from '@/components/basepaint/basepaint-finale-attribution'
 
 interface GameEnrichmentProps {
   gameId: string
@@ -33,6 +34,7 @@ interface GameEnrichmentProps {
   dailyDisplay?: 'full' | 'teaser' | 'hidden'
   /** Panels completed, forwarded to the teaser for its progress note. */
   dailyPanelsDone?: number
+  articleUrl?: string | null
 }
 
 /**
@@ -53,6 +55,7 @@ export function GameEnrichment({
   storyComplete,
   dailyDisplay = 'full',
   dailyPanelsDone,
+  articleUrl,
 }: GameEnrichmentProps) {
   const { address, isConnected } = useAccount()
   const [dailyState, setDailyState] = useState<DailyChallengeClientState | null>(null)
@@ -67,6 +70,7 @@ export function GameEnrichment({
   const showSecretPanel = secretPanelGenerated
   const showHypercert = !!hypercertUri
   const showDailyReveal = Boolean(dailyState?.incoSessionId) && dailyDisplay !== 'hidden'
+  const basePaintDay = resolveBasePaintDay(articleUrl, dailyState?.day)
 
   if (!showSecretPanel && !showHypercert && !showDailyReveal) return null
 
@@ -86,6 +90,8 @@ export function GameEnrichment({
             scoreHandle={dailyState.scoreHandle}
             isComplete={!!storyComplete}
             primaryColor={primaryColor}
+            basePaintDay={basePaintDay}
+            articleUrl={articleUrl}
           />
         )
       )}

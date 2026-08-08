@@ -13,7 +13,7 @@ const NAV_LINKS = [
 ]
 
 const MORE_LINKS = [
-  { href: '/daily', label: 'Daily Challenge' },
+  { href: '/basepaint', label: 'Daily Challenge' },
   { href: '/writers', label: 'Writers' },
   { href: '/assets', label: 'Marketplace' },
   { href: '/#how-it-works', label: 'How it works' },

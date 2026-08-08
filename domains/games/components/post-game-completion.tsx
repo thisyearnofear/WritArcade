@@ -11,6 +11,10 @@ import { ShareDropdown } from '@/components/ui/share-dropdown'
 import { useToast } from '@/components/ui/use-toast'
 import { SecretEpilogueFinaleCta } from '@/components/game/secret-epilogue-finale-cta'
 import { useVideoStatus } from '../hooks/use-video-status'
+import { resolveBasePaintDay } from '@/components/basepaint/basepaint-finale-attribution'
+import { DualSourceCredits } from '@/components/basepaint/dual-source-credits'
+import { loadDailyChallengeState } from '@/lib/daily-challenge-client'
+import { config } from '@/lib/config'
 
 interface PostGameCompletionProps {
   game: Game
@@ -79,6 +83,14 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
 
   const panelCount = messages.filter(m => m.role === 'assistant').length
   const totalChoices = userChoices.length
+
+  const basePaintDay = useMemo(() => {
+    const dailyDay =
+      config.features.dailyChallenge && typeof window !== 'undefined'
+        ? loadDailyChallengeState()?.day
+        : undefined
+    return resolveBasePaintDay(game.articleUrl, dailyDay)
+  }, [game.articleUrl])
 
   const baseUrl =
     (typeof window !== 'undefined'
@@ -204,7 +216,7 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link href="/daily" className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-amber-400">
+            <Link href="/basepaint" className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-amber-400">
               <CalendarDays className="h-3.5 w-3.5" />
               Open Daily Challenge
             </Link>
@@ -341,22 +353,21 @@ export function PostGameCompletion({ game, messages, userChoices, showEpilogueCt
         </div>
       </motion.div>
 
-      {/* Article context */}
-      {game.articleUrl && (
+      {/* Source attribution — paired writer + canvas when dual */}
+      {(basePaintDay != null ||
+        (game.articleUrl && !game.articleUrl.startsWith('basepaint://'))) && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.4 }}
-          className="mt-6 text-center"
+          className="mt-6 mx-auto max-w-lg"
         >
-          <a
-            href={game.articleUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
-          >
-            Read the original article <ExternalLink className="w-3 h-3" />
-          </a>
+          <DualSourceCredits
+            articleUrl={game.articleUrl}
+            basePaintDay={basePaintDay}
+            primaryColor={game.primaryColor || '#a78bfa'}
+            variant="full"
+          />
         </motion.div>
       )}
 

@@ -14,8 +14,10 @@ Turn Paragraph.xyz articles into interactive, mintable games. Players pay with w
 - Mint games as NFTs on Base; browse and play recent games
 - Pay with writer coins (ERC-20 on Base) using RainbowKit/WalletConnect, or buy credits with fiat
 - **Story Protocol Integration**: Register games and assets as IP with configurable licenses
-- **Inco Integration**: NFT-gated secret panels + daily challenge modifier deck on Base mainnet
-- **Daily Challenge**: `/daily` — encrypted 52-card deck, BasePaint crossover, leaderboard
+- **Inco Integration**: NFT-gated secret panels + Daily Challenge modifier deck on Base mainnet
+- **Daily Challenge**: `/basepaint` (also `/daily`) — dual source (Paragraph featured article + today's BasePaint canvas), encrypted Inco modifier hand, leaderboard
+- **Featured article**: auto-picked daily from writer-coin Paragraph pubs (override via ops API); Create can optionally stage any article in today's canvas
+- **BasePaint docs**: [`docs/BASEPAINT.md`](docs/BASEPAINT.md) — dual-source Daily + Paragraph auto-pick inside writersarcade
 - **Hypercerts Integration**: Auto-created impact certificates certifying creative collaboration
 - Configurable, on-chain revenue splits for generation and minting
 
@@ -50,6 +52,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 | [Architecture](./docs/ARCHITECTURE.md) | System design, tech stack, data models, smart contracts |
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
 | [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Inco, Hypercerts), writer coins |
+| [BasePaint](./docs/BASEPAINT.md) | Dual-source Daily, Paragraph auto-pick, Create staging, Inco |
 | [Video Artifact Pipeline](./docs/VIDEO_ARTIFACT_PIPELINE.md) | Hero animation flow, Runware fallbacks, limits, persistence, recovery, and analytics |
 | [Creation UX](./docs/CREATION_UX.md) | Compact mobile-first creation contract, optionality, validation, and success metrics |
 | [Roadmap](./docs/ROADMAP.md) | Completed phases, current status, future plans |
@@ -198,4 +201,4 @@ SUPERRARE_CONTRACT_ADDRESS="0xb932a70a57673d89f4acffbe830e8ed7f75fb9e0"
 
 ---
 
-**writersarcade**: Turn articles into playable, ownable games.
+**writersarcade**: Turn writing into playable, ownable games — Daily Challenge stages a featured article inside today's BasePaint canvas, with your secret Inco hand.

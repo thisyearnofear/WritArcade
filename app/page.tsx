@@ -71,7 +71,8 @@ const dailyStep = {
   title: 'Daily Challenge',
   description: (
     <>
-      Same source for everyone today — your hand of five encrypted{' '}
+      A featured writer&apos;s piece staged inside today&apos;s BasePaint canvas — same world for everyone,
+      your hand of five encrypted{' '}
       <ConceptTerm concept="dailyChallenge">
         <span className="underline decoration-dotted underline-offset-2 cursor-help">modifier cards</span>
       </ConceptTerm>{' '}
@@ -279,15 +280,17 @@ export default function HomePage() {
                   </a>
                   {config.features.dailyChallenge && (
                     <a
-                      href="/daily"
+                      href="/basepaint"
                       className="group inline-flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-purple-500/40 bg-purple-500/10 px-4 py-3 text-sm font-semibold text-purple-700 transition-all hover:-translate-y-0.5 hover:border-purple-400/60 hover:bg-purple-500/15 dark:text-purple-200"
                     >
                       <span className="inline-flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Daily</span>
-                      <span className="text-[11px] font-normal text-purple-700/70 dark:text-purple-200/70">Build the habit</span>
+                      <span className="text-[11px] font-normal text-purple-700/70 dark:text-purple-200/70">Writer × today&apos;s canvas</span>
                     </a>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">Play public games free · create your first story free · return daily for a new challenge</p>
+                <p className="text-xs text-muted-foreground">
+                  Play free · create from any article · Daily stages a writer inside today&apos;s BasePaint world
+                </p>
               </motion.div>
 
               {/* Primary CTA card — just URL input, no wallet, no payment toggle */}

@@ -65,6 +65,11 @@ export function GameGeneratorForm({
               onSelectStory={g.handleSelectStory}
               onSelectWordle={g.handleSelectWordle}
               dailyFlow={g.dailyFlow}
+              showBasePaintStageToggle={g.showBasePaintStageToggle}
+              stageWithBasePaint={g.stageWithBasePaint}
+              onStageWithBasePaintChange={g.handleStageWithBasePaintChange}
+              basePaintStage={g.basePaintStage}
+              isLoadingBasePaintStage={g.isLoadingBasePaintStage}
             />
           </div>
 

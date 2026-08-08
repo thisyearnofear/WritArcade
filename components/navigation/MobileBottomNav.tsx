@@ -11,7 +11,7 @@ import { useIsActive } from '@/hooks/useIsActive';
 // CONSOLIDATION: Removed 'Home' (Logo link) and 'Profile' (Header UserMenu) to make room
 const navItems = [
   { href: '/games', label: 'Arcade', icon: Gamepad2 },
-  { href: '/daily', label: 'Daily', icon: CalendarDays },
+  { href: '/basepaint', label: 'Daily', icon: CalendarDays },
   { href: '/generate', label: 'Create', icon: Sparkles },
   { href: '/my-games', label: 'Library', icon: Library },
 ];

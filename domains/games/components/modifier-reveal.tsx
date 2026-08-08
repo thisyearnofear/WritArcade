@@ -13,6 +13,8 @@ import {
   DAILY_CHALLENGE_CHAIN_ID,
 } from '@/lib/daily-challenge-client'
 import { DailySessionRecap } from '@/components/daily-challenge/daily-session-recap'
+import { DualSourceCredits } from '@/components/basepaint/dual-source-credits'
+import { BasePaintFinaleAttribution } from '@/components/basepaint/basepaint-finale-attribution'
 
 interface ModifierRevealProps {
   gameId: string
@@ -24,6 +26,8 @@ interface ModifierRevealProps {
   scoreHandle: string | null
   isComplete: boolean
   primaryColor: string
+  basePaintDay?: number | null
+  articleUrl?: string | null
 }
 
 const CATEGORY_LABEL: Record<Modifier['category'], string> = {
@@ -50,6 +54,8 @@ export function ModifierReveal({
   scoreHandle,
   isComplete,
   primaryColor,
+  basePaintDay,
+  articleUrl,
 }: ModifierRevealProps) {
   const { address } = useAccount()
   const { data: walletClient } = useWalletClient()
@@ -245,6 +251,16 @@ export function ModifierReveal({
                   primaryColor={primaryColor}
                 />
               )}
+
+              {(basePaintDay != null || articleUrl) && (
+                <DualSourceCredits
+                  articleUrl={articleUrl}
+                  basePaintDay={basePaintDay}
+                  primaryColor={primaryColor}
+                  variant="full"
+                  className="mt-4"
+                />
+              )}
             </motion.div>
           ) : (
             <motion.div key="locked" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -289,6 +305,16 @@ export function ModifierReveal({
               )}
 
               {error && <p className="text-xs text-red-400 text-center mt-2">{error}</p>}
+
+              {basePaintDay != null && (
+                <div className="mt-4 pt-4 border-t border-purple-500/20">
+                  <BasePaintFinaleAttribution
+                    day={basePaintDay}
+                    variant="mint-only"
+                    primaryColor={primaryColor}
+                  />
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

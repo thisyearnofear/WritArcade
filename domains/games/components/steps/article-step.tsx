@@ -9,7 +9,10 @@ import {
   type ArticlePreview,
   articlePreviewMeta,
 } from '@/domains/games/components/game-generator-helpers'
-import type { DailyGenerateFlow } from '@/lib/stores/game-generator.store'
+import type {
+  BasePaintStagePreview,
+  DailyGenerateFlow,
+} from '@/lib/stores/game-generator.store'
 import { getBasePaintCanvasProxyUrl } from '@/lib/daily-challenge'
 import { GAME_MODE_EXPLOAINER } from '@/lib/game-mode-labels'
 
@@ -29,6 +32,12 @@ interface ArticleStepProps {
   onSelectStory: () => void
   onSelectWordle: () => void
   dailyFlow?: DailyGenerateFlow | null
+  /** Create: optional BasePaint world staging (hidden on Daily flow). */
+  showBasePaintStageToggle?: boolean
+  stageWithBasePaint?: boolean
+  onStageWithBasePaintChange?: (enabled: boolean) => void
+  basePaintStage?: BasePaintStagePreview | null
+  isLoadingBasePaintStage?: boolean
 }
 
 /**
@@ -52,27 +61,68 @@ export function ArticleStep({
   onSelectStory,
   onSelectWordle,
   dailyFlow,
+  showBasePaintStageToggle = false,
+  stageWithBasePaint = false,
+  onStageWithBasePaintChange,
+  basePaintStage = null,
+  isLoadingBasePaintStage = false,
 }: ArticleStepProps) {
   if (dailyFlow) {
+    const isDual = dailyFlow.sourceType === 'dual'
     return (
       <div className="rounded-xl border border-purple-500/25 bg-purple-950/10 p-4 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Today&apos;s source</h2>
           <p className="text-sm text-muted-foreground">
-            BasePaint Day {dailyFlow.day} — {dailyFlow.theme}
+            {isDual
+              ? 'Featured article (plot) staged inside today\'s BasePaint canvas (world).'
+              : `BasePaint Day ${dailyFlow.day} — ${dailyFlow.theme}`}
           </p>
         </div>
-        {dailyFlow.canvasUrl && (
-          <div className="overflow-hidden rounded-lg border border-purple-500/20">
-            <img
-              src={getBasePaintCanvasProxyUrl(dailyFlow.day)}
-              alt={dailyFlow.theme}
-              className="w-full aspect-video object-cover"
-              style={{ imageRendering: 'pixelated' }}
-            />
+        {isDual && (
+          <div className="rounded-lg border border-border bg-card/80 p-3 text-left space-y-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-purple-400">
+              Plot — writer
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {dailyFlow.articleTitle || articlePreview?.title || dailyFlow.theme}
+            </p>
+            {(dailyFlow.articleAuthor || articlePreview?.author) && (
+              <p className="text-xs text-muted-foreground">
+                {dailyFlow.articleAuthor || articlePreview?.author}
+              </p>
+            )}
+            {dailyFlow.articleUrl && (
+              <a
+                href={dailyFlow.articleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-purple-300 hover:underline"
+              >
+                Open article
+              </a>
+            )}
           </div>
         )}
-        {articlePreview && (
+        {dailyFlow.canvasUrl && (
+          <div className="space-y-2">
+            {isDual && (
+              <p className="text-xs font-bold uppercase tracking-wider text-purple-400">
+                World — BasePaint Day {dailyFlow.day}
+                {dailyFlow.canvasTheme ? ` — ${dailyFlow.canvasTheme}` : ''}
+              </p>
+            )}
+            <div className="overflow-hidden rounded-lg border border-purple-500/20">
+              <img
+                src={getBasePaintCanvasProxyUrl(dailyFlow.day)}
+                alt={dailyFlow.canvasTheme || dailyFlow.theme}
+                className="w-full aspect-video object-cover"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
+          </div>
+        )}
+        {!isDual && articlePreview && (
           <div className="rounded-lg border border-border bg-card/80 p-3 text-left">
             <p className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-1">Story seed</p>
             <p className="text-sm text-muted-foreground line-clamp-4">{articlePreview.excerpt}</p>
@@ -179,6 +229,96 @@ export function ArticleStep({
             </div>
           </div>
         </motion.div>
+      )}
+
+      {showBasePaintStageToggle &&
+        mode === 'story' &&
+        onStageWithBasePaintChange &&
+        articlePreview &&
+        hasPreviewedCurrentUrl && (
+        <div className="rounded-xl border border-purple-500/25 bg-purple-950/10 overflow-hidden">
+          <div className="px-4 pt-4 pb-2 space-y-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-purple-300">
+              Today&apos;s world
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Keep your article as the plot. Optionally stage it inside today&apos;s BasePaint canvas for world, palette, and visuals.
+            </p>
+          </div>
+
+          {isLoadingBasePaintStage && (
+            <div className="flex items-center gap-2 px-4 py-6 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Loading today&apos;s canvas…
+            </div>
+          )}
+
+          {!isLoadingBasePaintStage && basePaintStage && (
+            <div className="px-4 pb-3 space-y-3">
+              <div className="overflow-hidden rounded-lg border border-purple-500/20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getBasePaintCanvasProxyUrl(basePaintStage.day)}
+                  alt={basePaintStage.theme}
+                  className="w-full aspect-[2/1] object-cover"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-purple-200/90">
+                  Day {basePaintStage.day}
+                  {basePaintStage.theme ? ` — ${basePaintStage.theme}` : ''}
+                </p>
+                {basePaintStage.palette && basePaintStage.palette.length > 0 && (
+                  <div className="flex gap-1">
+                    {basePaintStage.palette.slice(0, 8).map((color) => (
+                      <div
+                        key={color}
+                        className="h-3 w-3 rounded-sm border border-white/10"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => onStageWithBasePaintChange(true)}
+                  className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                    stageWithBasePaint
+                      ? 'bg-purple-600 text-white'
+                      : 'border border-purple-500/40 bg-purple-500/10 text-purple-100 hover:bg-purple-500/20'
+                  }`}
+                >
+                  Stage in today&apos;s world
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onStageWithBasePaintChange(false)}
+                  className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                    !stageWithBasePaint
+                      ? 'bg-muted text-foreground border border-border'
+                      : 'border border-border bg-transparent text-muted-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  Article only
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {stageWithBasePaint
+                  ? 'Your article stays the plot; panels will lean on today’s canvas palette and world.'
+                  : 'Generate from the article alone — you can stage later by switching back.'}
+              </p>
+            </div>
+          )}
+
+          {!isLoadingBasePaintStage && !basePaintStage && (
+            <p className="px-4 pb-4 text-xs text-amber-300/90">
+              Couldn&apos;t load today&apos;s canvas. Continuing with article only.
+            </p>
+          )}
+        </div>
       )}
 
       {!articlePreview && (

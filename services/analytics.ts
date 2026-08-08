@@ -36,6 +36,7 @@ export const ANALYTICS_EVENT_NAMES = [
   'animation_completed',
   'animation_failed',
   'hero_artifact_shared',
+  'basepaint_stage_toggled',
 ] as const
 
 export type AnalyticsEventName = typeof ANALYTICS_EVENT_NAMES[number]

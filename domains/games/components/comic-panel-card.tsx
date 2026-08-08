@@ -15,6 +15,7 @@ import {
   MODIFIER_CATEGORY_LABEL,
   MODIFIER_CATEGORY_COLOR,
 } from '@/lib/daily-challenge-ui'
+import { getBasePaintCanvasProxyUrl } from '@/lib/basepaint'
 
 interface ImageVersion {
   url: string | null
@@ -59,6 +60,10 @@ interface ComicPanelCardProps {
   showAIPromptSuggestions?: boolean
   storyComplete?: boolean
   dailyModifierCategory?: 'tone' | 'complication' | 'stakes' | 'resolution'
+  /** When set, tint panel with canvas atmosphere + plot/world chip. */
+  basePaintDay?: number | null
+  /** Dual-source: featured article title for the plot chip. */
+  dualArticleTitle?: string | null
 }
 
 export function ComicPanelCard({
@@ -88,6 +93,8 @@ export function ComicPanelCard({
   showAIPromptSuggestions,
   storyComplete,
   dailyModifierCategory,
+  basePaintDay,
+  dualArticleTitle,
 }: ComicPanelCardProps) {
   const { narrative, options: parsedOptions } = parsePanel(narrativeText)
   const [imageRating, setImageRating] = useState<number | null>(null)
@@ -221,15 +228,42 @@ export function ComicPanelCard({
             boxShadow: `0 20px 40px rgba(0,0,0,0.6), 0 0 20px ${primaryColor}20`,
           }}
         >
-          {/* Image Section - Full Width */}
+          {/* Image section — canvas atmosphere when dual/BasePaint-sourced (no demo split) */}
           <div className="w-full bg-black relative overflow-hidden group">
-            {/* Comic book frame effect */}
+            <div className="relative overflow-hidden">
+            {/* Palette wash from canvas accent */}
             <div
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none z-[1]"
               style={{
-                background: `linear-gradient(90deg, transparent 0%, ${primaryColor}08 50%, transparent 100%)`,
+                background: basePaintDay
+                  ? `linear-gradient(135deg, ${primaryColor}18 0%, transparent 45%, ${primaryColor}10 100%)`
+                  : `linear-gradient(90deg, transparent 0%, ${primaryColor}08 50%, transparent 100%)`,
               }}
             />
+            {basePaintDay != null && (
+              <>
+                {/* Tiny canvas watermark */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getBasePaintCanvasProxyUrl(basePaintDay)}
+                  alt=""
+                  aria-hidden
+                  className="pointer-events-none absolute bottom-2 right-2 z-[2] h-12 w-12 rounded border border-white/15 object-cover opacity-40 md:h-14 md:w-14"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+                <div className="absolute left-2 top-2 z-10 max-w-[85%] rounded bg-black/65 px-2 py-1 text-[10px] uppercase tracking-wider text-white/85 backdrop-blur-sm">
+                  <span className="font-semibold text-white/90">
+                    {dualArticleTitle ? 'Plot · World' : 'World'}
+                  </span>
+                  <span className="mx-1.5 text-white/40">·</span>
+                  <span className="normal-case tracking-normal text-white/70">
+                    {dualArticleTitle
+                      ? `${dualArticleTitle.length > 28 ? `${dualArticleTitle.slice(0, 28)}…` : dualArticleTitle} · Day ${basePaintDay}`
+                      : `BasePaint Day ${basePaintDay}`}
+                  </span>
+                </div>
+              </>
+            )}
 
             {/* Image container - responsive height with better mobile scaling */}
             {/* P0: Optimistic space reservation - use aspect-ratio + min-height to prevent CLS */}
@@ -426,6 +460,7 @@ export function ComicPanelCard({
                   </div>
                 </div>
               )}
+            </div>
             </div>
           </div>
 

@@ -192,6 +192,7 @@ export function GamePlayInterface({ game, isOwner = false }: GamePlayInterfacePr
       storyComplete={storyComplete}
       dailyDisplay={dailyDisplay}
       dailyPanelsDone={session.assistantMessageCount}
+      articleUrl={liveGame.articleUrl}
     />
   )
 

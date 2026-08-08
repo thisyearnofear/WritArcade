@@ -150,14 +150,18 @@ const data = await deduplicate('games:featured', () =>
 - Inco fee reads from Lightning singleton (`0x4b9911b0191B0b6a6eA8F2Ed562e20Cff5AC8624`)
 - Access control enforced by Inco covalidators (`e.allow(handle, nftOwner)`)
 
-**`lib/daily-challenge.ts`** - Daily challenge server helpers
-- Modifier deck (`lib/modifiers.json`), BasePaint source fetching
+**`lib/daily-challenge.ts`** - Daily Challenge server helpers (re-exports BasePaint I/O from `lib/basepaint/`)
+- Modifier deck (`lib/modifiers.json`); Inco vault session lifecycle
 - Server-side modifier decrypt for AI prompts (`narrativeOperator` wallet)
 - Session manager wallet client for `recordChoice` / deck shuffle
 
-**`lib/daily-challenge-client.ts`** - Daily challenge browser helpers
+**`lib/basepaint/`** - BasePaint source layer for Daily Challenge (and Create-from-canvas)
+- Day math, theme REST, GraphQL stats/strokes/balances, vision prompts, `basepaint://day/N` tagging
+- See [`docs/BASEPAINT.md`](./BASEPAINT.md)
+
+**`lib/daily-challenge-client.ts`** - Daily Challenge browser helpers
 - On-chain `startSession` / `completeAndReveal` via wagmi
-- Session state in `sessionStorage` (no private keys)
+- Session state in localStorage (resume paid hands across tabs)
 
 **`lib/hypercerts.service.ts`** - Impact certificates  
 - AT Protocol (AtpAgent) for PDS record creation
@@ -187,7 +191,9 @@ Game
 └─ createdAt
 
 DailyChallenge
-├─ id, day (unique), sourceType, theme, palette, canvasUrl
+├─ id, day (unique), sourceType ("dual" | "basepaint" | …)
+├─ sourceUrl (featured article when dual), basePaintDay
+├─ theme, articleTitle, articleAuthor, palette, canvasUrl
 └─ sessions → DailyChallengeSession
 
 DailyChallengeSession
