@@ -85,6 +85,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 | Doc | Purpose |
 |-----|---------|
 | [Architecture](./docs/ARCHITECTURE.md) | System design, tech stack, data models, smart contracts |
+| [Inco Integration](./docs/INCO_INTEGRATION.md) | How Inco powers the game — encrypted deck, FHE scoring, NFT-gated content (Summer Game Jam submission) |
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
 | [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Inco, Hypercerts), writer coins |
 | [BasePaint](./docs/BASEPAINT.md) | Dual-source Daily, Paragraph auto-pick, Create staging, Inco |

@@ -48,6 +48,10 @@ interface GameplayScreenProps {
   handleAIPromptSelect: (prompt: string) => void
   embedded?: boolean
   isDailyActive?: boolean
+  /** Encrypted modifier handles from the on-chain session (for confidentiality indicator) */
+  dailyModifierHandles?: string[]
+  /** Encrypted score handle from the on-chain session */
+  dailyScoreHandle?: string | null
   hasSecretEpilogue?: boolean
   hasMintedNft?: boolean
   /** Extra card rendered at the top of the desktop sidebar (e.g. daily Hidden Hand teaser). */
@@ -129,6 +133,8 @@ export function GameplayScreen({
   handleAIPromptSelect,
   embedded = false,
   isDailyActive = false,
+  dailyModifierHandles,
+  dailyScoreHandle,
   hasSecretEpilogue = false,
   hasMintedNft = false,
   sidebarExtra,
@@ -284,6 +290,8 @@ export function GameplayScreen({
               <DailyModifierStrip
                 panelIndex={Math.max(0, assistantMessageCount - 1)}
                 primaryColor={game.primaryColor}
+                modifierHandle={dailyModifierHandles?.[Math.max(0, assistantMessageCount - 1)]}
+                scoreHandle={dailyScoreHandle}
               />
             )}
             <div className="w-full max-w-5xl mb-4 rounded-lg border border-white/10 bg-black/30 px-4 py-3 flex items-center gap-3">
