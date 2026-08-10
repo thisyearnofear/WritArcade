@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Lock, Eye, Loader2, Sparkles, Trophy, ShieldCheck, Zap, Info } from 'lucide-react'
+import { Lock, Eye, Loader2, Sparkles, Trophy, ShieldCheck, Zap, Info, Users } from 'lucide-react'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import type { WalletClient } from 'viem'
 import { getModifierById, type Modifier } from '@/lib/daily-challenge'
@@ -486,6 +486,12 @@ export function ModifierReveal({
                   />
                 )}
 
+                <LeaderboardComparison
+                  challengeId={loadDailyChallengeState()?.challengeId || ''}
+                  playerScore={score}
+                  primaryColor={primaryColor}
+                />
+
                 {(basePaintDay != null || articleUrl) && (
                   <DualSourceCredits
                     articleUrl={articleUrl}
@@ -720,6 +726,110 @@ function PhaseIndicator({ phase }: { phase: RevealPhase }) {
   )
 }
 
+/** Fetches and displays other players' revealed hands for competitive comparison */
+function LeaderboardComparison({
+  challengeId,
+  playerScore,
+  primaryColor,
+}: {
+  challengeId: string
+  playerScore: number | null
+  primaryColor: string
+}) {
+  const [entries, setEntries] = useState<Array<{
+    rank: number
+    playerAddress: string
+    score: number
+    gameTitle?: string
+    modifierIds?: number[]
+  }>>([])
+  const [loading, setLoading] = useState(Boolean(challengeId))
+
+  useEffect(() => {
+    if (!challengeId) return
+    fetch(`/api/daily-challenge/${challengeId}/reveal`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.leaderboard) setEntries(data.leaderboard.slice(0, 5))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [challengeId])
+
+  if (loading || entries.length === 0) return null
+
+  const avgScore = Math.round(entries.reduce((a, e) => a + e.score, 0) / entries.length)
+  const beatAverage = playerScore !== null && playerScore > avgScore
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+      className="mt-4 rounded-lg border border-white/10 bg-white/[0.02] p-4"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-muted-foreground" />
+          <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+            Today&apos;s Players
+          </span>
+        </div>
+        {playerScore !== null && (
+          <span className={`text-[10px] font-semibold ${beatAverage ? 'text-emerald-400' : 'text-amber-400'}`}>
+            {beatAverage ? 'You beat the average!' : `Average: ${avgScore}/50`}
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {entries.map((entry, i) => {
+          const mods = (entry.modifierIds || [])
+            .map(id => getModifierById(id))
+            .filter((m): m is Modifier => m !== undefined)
+
+          return (
+            <div
+              key={i}
+              className="flex items-center gap-3 rounded-md border border-white/5 bg-white/[0.02] px-3 py-2"
+            >
+              <span className={`text-xs font-bold w-5 text-center ${
+                i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : 'text-muted-foreground'
+              }`}>
+                #{entry.rank}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">
+                  {entry.gameTitle || `Player ${entry.playerAddress?.slice(2, 8)}`}
+                </p>
+                {mods.length > 0 && (
+                  <div className="flex gap-1 mt-1">
+                    {mods.slice(0, 5).map((mod, j) => (
+                      <span
+                        key={j}
+                        className="text-[8px] px-1.5 py-0.5 rounded border"
+                        style={{
+                          color: CATEGORY_COLOR[mod.category],
+                          borderColor: `${CATEGORY_COLOR[mod.category]}30`,
+                          backgroundColor: `${CATEGORY_COLOR[mod.category]}08`,
+                        }}
+                      >
+                        {mod.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <span className="text-sm font-bold tabular-nums" style={{ color: primaryColor }}>
+                {entry.score}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
 
 /** Collapsible "What just happened?" explainer — addresses Hidden Mechanics judging criterion */
 function IncoExplainer({ primaryColor }: { primaryColor: string }) {

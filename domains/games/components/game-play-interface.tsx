@@ -44,6 +44,26 @@ export function GamePlayInterface({ game, isOwner = false }: GamePlayInterfacePr
   const dailyChallenge = useDailyChallengeOnchain()
   const isDailyGame = config.features.dailyChallenge && dailyChallenge.isActive
 
+  // Fetch leaderboard stats for competitive framing during gameplay
+  const [dailyStats, setDailyStats] = useState<{ playerCount: number; averageScore: number | null; topScore: number | null }>({
+    playerCount: 0, averageScore: null, topScore: null,
+  })
+  useEffect(() => {
+    if (!isDailyGame) return
+    fetch('/api/daily-challenge/start')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data?.leaderboard?.length) return
+        const scores = data.leaderboard.map((e: { score: number }) => e.score)
+        setDailyStats({
+          playerCount: scores.length,
+          averageScore: Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length),
+          topScore: Math.max(...scores),
+        })
+      })
+      .catch(() => {})
+  }, [isDailyGame])
+
   // 2. Session & Gameplay Logic
   const session = useGameSession(liveGame, { isDailyActive: isDailyGame })
 
@@ -313,6 +333,9 @@ export function GamePlayInterface({ game, isOwner = false }: GamePlayInterfacePr
         isDailyActive={isDailyGame}
         dailyModifierHandles={dailyChallenge.state?.modifierHandles}
         dailyScoreHandle={dailyChallenge.state?.scoreHandle}
+        dailyPlayerCount={dailyStats.playerCount}
+        dailyAverageScore={dailyStats.averageScore}
+        dailyTopScore={dailyStats.topScore}
         hasSecretEpilogue={hasSecretEpilogue}
         hasMintedNft={Boolean(liveGame.nftTokenId)}
         sidebarExtra={

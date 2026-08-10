@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { BookOpen, ChevronDown, Sparkles, Clock3, ArrowUp, ArrowDown } from 'lucide-react'
 import { ComicPanelCard } from '../comic-panel-card'
 import { MoodIndicator } from '@/components/game/MoodIndicator'
 import { DailyModifierStrip } from '@/components/daily-challenge/daily-modifier-strip'
+import { ResonancePulse, CompetitiveContextBar, PlayPaceTimer } from '@/components/daily-challenge/daily-gameplay-hud'
 import { EpilogueGoalStrip } from '@/components/game/epilogue-goal-strip'
 import { FinaleUnlocksStrip } from '@/components/game/finale-unlocks-strip'
 import { getModifierCategoryForPanel } from '@/lib/daily-challenge/daily-challenge-ui'
@@ -52,6 +53,10 @@ interface GameplayScreenProps {
   dailyModifierHandles?: string[]
   /** Encrypted score handle from the on-chain session */
   dailyScoreHandle?: string | null
+  /** Leaderboard stats for competitive framing */
+  dailyPlayerCount?: number
+  dailyAverageScore?: number | null
+  dailyTopScore?: number | null
   hasSecretEpilogue?: boolean
   hasMintedNft?: boolean
   /** Extra card rendered at the top of the desktop sidebar (e.g. daily Hidden Hand teaser). */
@@ -114,7 +119,7 @@ export function GameplayScreen({
   userInput,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onUserInputChange,
-  onOptionClick,
+  onOptionClick: onOptionClickRaw,
   onImagesReady,
   onImageRegenerate,
   onImageRating,
@@ -135,12 +140,47 @@ export function GameplayScreen({
   isDailyActive = false,
   dailyModifierHandles,
   dailyScoreHandle,
+  dailyPlayerCount = 0,
+  dailyAverageScore = null,
+  dailyTopScore = null,
   hasSecretEpilogue = false,
   hasMintedNft = false,
   sidebarExtra,
 }: GameplayScreenProps) {
 
   const basePaintDay = parseBasePaintDayFromSource(game.articleUrl)
+
+  // ── Daily challenge play pace timing ──────────────────────────────────────
+  const [sessionStartTime] = useState(() => isDailyActive ? Date.now() : null)
+  const [panelStartTime, setPanelStartTime] = useState<number | null>(() => isDailyActive ? Date.now() : null)
+  const lastPanelCountRef = useRef(assistantMessageCount)
+
+  // Reset panel timer when a new panel arrives
+  useEffect(() => {
+    if (isDailyActive && assistantMessageCount > lastPanelCountRef.current) {
+      setPanelStartTime(Date.now()) // eslint-disable-line react-hooks/set-state-in-effect -- sync to external event
+      lastPanelCountRef.current = assistantMessageCount
+    }
+  }, [assistantMessageCount, isDailyActive])
+
+  // Track the most recent choice text for the resonance pulse
+  const [lastChoiceTextState, setLastChoiceTextState] = useState('')
+  const [showResonance, setShowResonance] = useState(false)
+
+  // Show resonance pulse briefly after each choice feedback arrives
+  useEffect(() => {
+    if (!isDailyActive || !lastChoiceFeedback) return
+    setShowResonance(true) // eslint-disable-line react-hooks/set-state-in-effect -- response to prop change
+    const timeout = setTimeout(() => setShowResonance(false), 4000)
+    return () => clearTimeout(timeout)
+  }, [lastChoiceFeedback, isDailyActive])
+
+  // Wrap onOptionClick to capture the choice text for the resonance pulse
+  const onOptionClick = useCallback((option: GameplayOption) => {
+    setLastChoiceTextState(option.text)
+    onOptionClickRaw(option)
+  }, [onOptionClickRaw])
+
   const dualArticleUrl = parseArticleUrlFromDualSource(game.articleUrl)
   const dualArticleTitle = dualArticleUrl
     ? (() => {
@@ -294,17 +334,43 @@ export function GameplayScreen({
                 scoreHandle={dailyScoreHandle}
               />
             )}
-            <div className="w-full max-w-5xl mb-4 rounded-lg border border-white/10 bg-black/30 px-4 py-3 flex items-center gap-3">
-              <Clock3 className="w-4 h-4 shrink-0 text-emerald-300" aria-hidden="true" />
-              <p className="text-xs text-muted-foreground">
-                No countdown. Take the time you need to read — your choices shape the story, not your speed.
-              </p>
+            {isDailyActive && dailyPlayerCount > 0 && (
+              <CompetitiveContextBar
+                playerCount={dailyPlayerCount}
+                averageScore={dailyAverageScore}
+                topScore={dailyTopScore}
+              />
+            )}
+            <div className="w-full max-w-5xl mb-4 rounded-lg border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Clock3 className="w-4 h-4 shrink-0 text-emerald-300" aria-hidden="true" />
+                <p className="text-xs text-muted-foreground">
+                  {isDailyActive
+                    ? 'Take your time — read carefully, your choices shape both the story and your encrypted score.'
+                    : 'No countdown. Take the time you need to read — your choices shape the story, not your speed.'}
+                </p>
+              </div>
+              {isDailyActive && (
+                <PlayPaceTimer
+                  panelStartTime={panelStartTime}
+                  sessionStartTime={sessionStartTime}
+                  panelNumber={Math.min(assistantMessageCount, 5)}
+                  primaryColor={game.primaryColor}
+                />
+              )}
             </div>
             {showChoiceFeedback && lastChoiceFeedback && (
               <ChoiceFeedbackBanner
                 feedback={lastChoiceFeedback}
                 primaryColor={game.primaryColor}
                 isDailyActive={isDailyActive}
+              />
+            )}
+            {isDailyActive && lastChoiceFeedback && (
+              <ResonancePulse
+                choiceText={lastChoiceTextState}
+                panelIndex={lastChoiceFeedback.panelIndex}
+                visible={showResonance}
               />
             )}
             {hasSecretEpilogue && (
