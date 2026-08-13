@@ -150,3 +150,6 @@ deploy_output.txt
 
 # Optional REPL history
 .node_repl_history
+
+# local bun installs — pnpm-lock.yaml is canonical (see pnpm-workspace.yaml)
+bun.lock
