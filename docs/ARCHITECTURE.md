@@ -248,7 +248,7 @@ WriterCoin
 - `VAULT_MANAGER_ROLE` held by server wallet (never commit private keys)
 
 **DailyChallengeVault** (`NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS`)  
-- Base mainnet (hardened, deck-cycle fix): [`0xb420a5cd42be2bae6003ac828c7ed0975aa44693`](https://basescan.org/address/0xb420a5cd42be2bae6003ac828c7ed0975aa44693)
+- Base mainnet (v3 — per-panel FHE verdicts, gradient scoring, 2026-08-12): [`0xcc271a53e4286012f3289273fdaa32f66fa64a33`](https://basescan.org/address/0xcc271a53e4286012f3289273fdaa32f66fa64a33)
 - Shared shuffled modifier deck, per-player sessions, encrypted scoring, self-reshuffling before deck exhaustion
 - `narrativeOperator` = server wallet (decrypts cards for AI only); `SESSION_MANAGER_ROLE` on server wallet
 

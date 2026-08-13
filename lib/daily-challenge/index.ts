@@ -169,6 +169,16 @@ export const DAILY_CHALLENGE_VAULT_ABI = [
     outputs: [{ name: '', type: 'bytes32' }],
   },
   {
+    name: 'getPanelVerdictHandle',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'sessionId', type: 'bytes32' },
+      { name: 'panelIndex', type: 'uint8' },
+    ],
+    outputs: [{ name: '', type: 'bytes32' }],
+  },
+  {
     name: 'isSessionRevealed',
     type: 'function',
     stateMutability: 'view',

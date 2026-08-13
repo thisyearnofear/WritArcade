@@ -16,6 +16,7 @@ import {
 } from '@/lib/basepaint/source-url'
 import type { Game, GameplayOption } from '../../types'
 import type { ChatEntry, ChoiceFeedback } from '../../hooks/use-game-session'
+import type { PanelVerdict } from '@/lib/daily-challenge/daily-challenge-client'
 import { trackEvent } from '@/services/analytics'
 
  
@@ -53,6 +54,12 @@ interface GameplayScreenProps {
   dailyModifierHandles?: string[]
   /** Encrypted score handle from the on-chain session */
   dailyScoreHandle?: string | null
+  /**
+   * Per-panel FHE verdicts (10 | 6 | 3 | 1) decrypted after each recorded
+   * choice. Index matches the panel. Null entries fall back to the keyword
+   * resonance pulse (older vault, ACL miss, or decrypt still in flight).
+   */
+  dailyPanelVerdicts?: (PanelVerdict | null)[]
   /** Leaderboard stats for competitive framing */
   dailyPlayerCount?: number
   dailyAverageScore?: number | null
@@ -140,6 +147,7 @@ export function GameplayScreen({
   isDailyActive = false,
   dailyModifierHandles,
   dailyScoreHandle,
+  dailyPanelVerdicts = [],
   dailyPlayerCount = 0,
   dailyAverageScore = null,
   dailyTopScore = null,
@@ -368,6 +376,7 @@ export function GameplayScreen({
             )}
             {isDailyActive && lastChoiceFeedback && (
               <ResonancePulse
+                verdict={dailyPanelVerdicts[lastChoiceFeedback.panelIndex] ?? null}
                 choiceText={lastChoiceTextState}
                 panelIndex={lastChoiceFeedback.panelIndex}
                 visible={showResonance}

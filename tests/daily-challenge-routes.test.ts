@@ -28,7 +28,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 vi.mock('@/lib/config', () => ({
   config: { features: { dailyChallenge: true } },
-  logger: { info: vi.fn() },
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 vi.mock('@/lib/daily-challenge', () => ({
   DAILY_CHALLENGE_VAULT_ABI: [],
@@ -75,6 +75,9 @@ beforeEach(() => {
     if (functionName === 'getSessionPlayer') return Promise.resolve(PLAYER)
     if (functionName === 'getSessionChallengeDay') return Promise.resolve(321n)
     if (functionName === 'isSessionRevealed') return Promise.resolve(true)
+    if (functionName === 'getPanelVerdictHandle') {
+      return Promise.resolve('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    }
     throw new Error(`Unexpected read: ${functionName}`)
   })
   mockGetAddresses.mockResolvedValue([PLAYER])
@@ -129,6 +132,28 @@ describe('POST /api/daily-challenge/[id]/record-choice', () => {
       functionName: 'recordChoice',
       args: [SESSION_ID, 0, 3],
     }))
+    const body = await response.json()
+    expect(body.panelVerdictHandle).toBe(
+      '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    )
+  })
+  it('succeeds with a null panelVerdictHandle when the vault lacks the getter', async () => {
+    mockWalletActor()
+    mockReadContract.mockImplementation(({ functionName }: { functionName: string }) => {
+      if (functionName === 'getSessionPlayer') return Promise.resolve(PLAYER)
+      if (functionName === 'getSessionChallengeDay') return Promise.resolve(321n)
+      if (functionName === 'getPanelVerdictHandle') {
+        return Promise.reject(new Error('execution reverted'))
+      }
+      throw new Error(`Unexpected read: ${functionName}`)
+    })
+    const response = await recordChoice(
+      request({ sessionId: SESSION_ID, panelIndex: 1, choiceIndex: 2 }),
+      routeParams()
+    )
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.panelVerdictHandle).toBeNull()
   })
 })
 

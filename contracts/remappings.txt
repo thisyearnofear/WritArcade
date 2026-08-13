@@ -3,3 +3,5 @@
 forge-std/=../node_modules/forge-std/src/
 @inco/lightning/=../node_modules/@inco/lightning/
 @inco/=../node_modules/@inco/
+safe-smart-account/=../node_modules/@safe-global/safe-smart-account/contracts/
+ds-test/=../node_modules/ds-test/src/

@@ -1,0 +1,7 @@
+# pnpm settings (not a workspace — config only).
+# Contract-related transitive deps ship postinstall compile scripts we never
+# need at install time; explicitly opt them out so CI/Vercel installs stay fast.
+neverBuiltDependencies:
+  - "@safe-global/safe-smart-account"
+  - ds-test
+  - forge-std

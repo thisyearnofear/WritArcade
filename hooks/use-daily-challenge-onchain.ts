@@ -5,6 +5,7 @@ import { useAccount, useChainId, usePublicClient, useSwitchChain, useWalletClien
 import {
   clearDailyChallengeState,
   DAILY_CHALLENGE_CHAIN_ID,
+  decryptPanelVerdict,
   fetchDailyChallengeStart,
   loadDailyChallengeState,
   recordDailyChoice,
@@ -12,6 +13,7 @@ import {
   saveDailyChallengeState,
   startOnChainSession,
   type DailyChallengeClientState,
+  type PanelVerdict,
 } from '@/lib/daily-challenge/daily-challenge-client'
 
 export function useDailyChallengeOnchain() {
@@ -25,6 +27,12 @@ export function useDailyChallengeOnchain() {
   const [isStarting, setIsStarting] = useState(false)
   const [isDetecting, setIsDetecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Per-panel FHE verdicts (10 | 6 | 3 | 1) from DailyChallengeVault.panelVerdicts,
+  // decrypted via attested-only-eoa signatures. panelVerdicts[i] === null means the
+  // handle existed but the wallet could not decrypt it (older vault / wrong chain /
+  // ACL miss) — the UI still has a keyword-based pulse in that case.
+  const [panelVerdicts, setPanelVerdicts] = useState<(PanelVerdict | null)[]>([])
 
   useEffect(() => {
     setState(loadDailyChallengeState())
@@ -72,6 +80,7 @@ export function useDailyChallengeOnchain() {
 
       saveDailyChallengeState(nextState)
       setState(nextState)
+      setPanelVerdicts([])
       return nextState
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start daily challenge session'
@@ -118,6 +127,7 @@ export function useDailyChallengeOnchain() {
         }
         saveDailyChallengeState(nextState)
         setState(nextState)
+        setPanelVerdicts([])
         return nextState
       } catch (err) {
         console.warn('[DailyChallenge] Existing-session detection failed:', err)
@@ -130,28 +140,47 @@ export function useDailyChallengeOnchain() {
   )
 
   const recordChoice = useCallback(
-    async (panelIndex: number, choiceIndex: number) => {
+    async (panelIndex: number, choiceIndex: number): Promise<void> => {
       const current = state ?? loadDailyChallengeState()
       if (!current?.incoSessionId || !current.challengeId) return
 
-      await recordDailyChoice({
+      const result = await recordDailyChoice({
         challengeId: current.challengeId,
         sessionId: current.incoSessionId,
         panelIndex,
         choiceIndex,
       })
+
+      // Decrypt this panel's FHE verdict when the vault supports it. Resolve to
+      // null on any failure so the UI can fall back to the keyword pulse.
+      let verdict: PanelVerdict | null = null
+      if (result.panelVerdictHandle && walletClient) {
+        try {
+          verdict = await decryptPanelVerdict(result.panelVerdictHandle, walletClient)
+        } catch (err) {
+          console.warn('[DailyChallenge] Panel verdict decrypt failed:', err)
+        }
+      }
+
+      setPanelVerdicts((prev) => {
+        const next = [...prev]
+        next[panelIndex] = verdict
+        return next
+      })
     },
-    [state]
+    [state, walletClient]
   )
 
   const reset = useCallback(() => {
     clearDailyChallengeState()
     setState(null)
     setError(null)
+    setPanelVerdicts([])
   }, [])
 
   return {
     state,
+    panelVerdicts,
     isStarting,
     isDetecting,
     isSwitchingChain,

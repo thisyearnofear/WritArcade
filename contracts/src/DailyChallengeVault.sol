@@ -38,6 +38,12 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
     uint256 public constant CHOICES_PER_PANEL = 4;
     uint256 public constant SCORE_PER_HIT = 10;
 
+    /// @notice Gradient scoring bands — verdicts per panel as encrypted euint256.
+    uint256 public constant SCORE_DIRECT_HIT = 10;
+    uint256 public constant SCORE_NEAR_MISS = 6;
+    uint256 public constant SCORE_FAINT = 3;
+    uint256 public constant SCORE_MISS = 1; // never 0, so "resonance" is never empty
+
     struct Challenge {
         uint256 day;
         elist shuffledDeck;
@@ -52,6 +58,10 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         address player;
         uint256 challengeDay;
         euint256[] drawnModifiers;
+        /// @notice Per-panel verdicts (10 | 6 | 3 | 1). Each handle is allowed to the
+        /// player after recordChoice so the UI can show honest per-choice feedback
+        /// without opening the running total before reveal.
+        euint256[] panelVerdicts;
         euint256 score;
         uint8 panelsCompleted;
         bool completed;
@@ -155,19 +165,75 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
         require(panelIndex < PANELS_PER_GAME, "DailyChallengeVault: out of range");
         require(choiceIndex < CHOICES_PER_PANEL, "DailyChallengeVault: invalid choice");
 
-        euint256 modifierCard = session.drawnModifiers[panelIndex];
-        euint256 optimalChoice = modifierCard.rem(CHOICES_PER_PANEL);
-        euint256 playerChoice = uint256(choiceIndex).asEuint256();
+        euint256 verdict = _computePanelVerdict(session.drawnModifiers[panelIndex], choiceIndex);
 
-        ebool isHit = optimalChoice.eq(playerChoice);
-        euint256 scoreDelta = e.select(isHit, uint256(SCORE_PER_HIT).asEuint256(), uint256(0).asEuint256());
-        session.score = session.score.add(scoreDelta);
+        // The player is not msg.sender here (the session manager relays) — grant
+        // session.player access so the UI can decrypt this panel's verdict.
+        // The running total (session.score) stays sealed until completeAndReveal.
+        verdict.allow(session.player);
+        verdict.allowThis();
+        _allowNarrativeOperator(verdict);
+        session.panelVerdicts.push(verdict);
+
+        session.score = session.score.add(verdict);
         session.score.allowThis();
         _allowNarrativeOperator(session.score);
 
         session.panelsCompleted++;
 
         emit PanelCompleted(sessionId, panelIndex, choiceIndex);
+    }
+
+    /**
+     * @dev Score one panel choice as a gradient verdict against the hidden optimal.
+     * Returns 10 | 6 | 3 | 1 as an encrypted euint256.
+     *
+     * Branch-safe under the FHE constraint: `e.select(c, a, b)` eagerly evaluates
+     * *both* branches, so the naive `select(ge, sub(p, o), sub(o, p))` still runs
+     * the under-flowing branch and panics. We avoid subtraction by computing the
+     * clockwise distance from player → optimal in modular arithmetic, and the
+     * counter-clockwise distance under the same pattern, then take the min.
+     */
+    function _computePanelVerdict(euint256 modifierCard, uint8 choiceIndex) internal returns (euint256) {
+        // Labels are already in [0, CHOICES_PER_PANEL).
+        euint256 optimalChoice = modifierCard.rem(CHOICES_PER_PANEL);
+        euint256 playerChoice = uint256(choiceIndex).asEuint256();
+
+        ebool isHit = optimalChoice.eq(playerChoice);
+
+        // Clockwise distance from playerChoice to optimalChoice:
+        //        clockwise = (optimal + N - player) mod N, for N = CHOICES_PER_PANEL.
+        // We express it as ((optimal + N) - player) mod N. Adding N to optimalChoice
+        // (max 7) and subtracting playerChoice (min 0) is always non-negative, so
+        // the sub never underflows regardless of the ebool branch.
+        euint256 clockwise = optimalChoice
+            .add(CHOICES_PER_PANEL)
+            .sub(playerChoice)
+            .rem(CHOICES_PER_PANEL); // 0 | 1 | 2 | 3
+
+        // Counter-clockwise distance: (player + N - optimal) mod N — same trick.
+        euint256 counterClockwise = playerChoice
+            .add(CHOICES_PER_PANEL)
+            .sub(optimalChoice)
+            .rem(CHOICES_PER_PANEL); // 0 | 1 | 2 | 3
+
+        // Ring distance is the shorter arc; on a 4-dial the max is 2.
+        euint256 distance = clockwise.min(counterClockwise); // 0 | 1 | 2
+
+        euint256 verdict = e.select(
+            isHit,
+            uint256(SCORE_DIRECT_HIT).asEuint256(),
+            e.select(
+                distance.eq(uint256(1).asEuint256()),
+                uint256(SCORE_NEAR_MISS).asEuint256(),
+                e.select(
+                    distance.eq(uint256(2).asEuint256()),
+                    uint256(SCORE_FAINT).asEuint256(),
+                    uint256(SCORE_MISS).asEuint256()
+                )
+            )
+        );
+        return verdict;
     }
 
     /**
@@ -239,6 +305,21 @@ contract DailyChallengeVault is AccessControl, Ownable2Step {
             "DailyChallengeVault: not authorized"
         );
         return euint256.unwrap(session.score);
+    }
+
+    /**
+     * @notice Handle for one panel's encrypted verdict (10 | 6 | 3 | 1).
+     * @dev Same ACL as getSessionScore. The client attested-decrypts this handle
+     * after recordChoice to show per-choice feedback without opening the total.
+     */
+    function getPanelVerdictHandle(bytes32 sessionId, uint8 panelIndex) external view returns (bytes32) {
+        Session storage session = sessions[sessionId];
+        require(
+            msg.sender == session.player || hasRole(SESSION_MANAGER_ROLE, msg.sender),
+            "DailyChallengeVault: not authorized"
+        );
+        require(panelIndex < session.panelVerdicts.length, "DailyChallengeVault: panel not recorded");
+        return euint256.unwrap(session.panelVerdicts[panelIndex]);
     }
 
     function isSessionRevealed(bytes32 sessionId) external view returns (bool) {

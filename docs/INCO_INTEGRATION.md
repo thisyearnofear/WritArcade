@@ -14,7 +14,7 @@ Two smart contracts power the integration:
 
 | Contract | Address | Role |
 |----------|---------|------|
-| `DailyChallengeVault` | [`0xb420a5cd42be2bae6003ac828c7ed0975aa44693`](https://basescan.org/address/0xb420a5cd42be2bae6003ac828c7ed0975aa44693) | Encrypted modifier deck, per-player sessions, FHE scoring, on-chain reveal |
+| `DailyChallengeVault` | [`0xcc271a53e4286012f3289273fdaa32f66fa64a33`](https://basescan.org/address/0xcc271a53e4286012f3289273fdaa32f66fa64a33) | Encrypted modifier deck, per-player sessions, gradient FHE scoring (10 \| 6 \| 3 \| 1 per panel), on-chain reveal |
 | `SecretPanelVault` | [`0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8`](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8) | Multi-chunk encrypted epilogue content, NFT-gated decryption |
 
 ---
@@ -41,19 +41,30 @@ card.allow(narrativeOperator); // Backend can read for AI narrative
 
 Each card is `allow()`-ed only to the player and the narrative operator — no other player or observer can see the dealt hand. When fewer than 5 cards remain, the contract automatically reshuffles a new cycle (so the challenge is never capped at 10 players).
 
-### 3. Encrypted Scoring via FHE
+### 3. Encrypted Gradient Scoring via FHE
 
-Panel choices are scored against the hidden optimal answer using fully homomorphic comparison:
+Panel choices are scored against the hidden optimal answer using fully homomorphic comparison. Rather than binary hit/miss, each choice earns a **gradient** verdict (10 | 6 | 3 | 1) derived from ring distance on the 4-option dial — near-the-right-intent choices give partial credit, so the per-panel UI signal is honest instead of decorative.
 
 ```solidity
 euint256 optimalChoice = modifierCard.rem(CHOICES_PER_PANEL);
 euint256 playerChoice = uint256(choiceIndex).asEuint256();
 ebool isHit = optimalChoice.eq(playerChoice);
-euint256 scoreDelta = e.select(isHit, uint256(10).asEuint256(), uint256(0).asEuint256());
-session.score = session.score.add(scoreDelta);
+
+// Branch-free FHE ring distance: min(clockwise, counterClockwise) on a 4-dial
+euint256 clockwise  = optimalChoice.add(N).sub(playerChoice).rem(N);
+euint256 counterCw  = playerChoice.add(N).sub(optimalChoice).rem(N);
+euint256 distance   = clockwise.min(counterCw); // 0 | 1 | 2
+
+euint256 verdict = e.select(isHit, 10,
+                 e.select(distance == 1, 6,
+                 e.select(distance == 2, 3, 1)));
+
+session.score = session.score.add(verdict);   // stays sealed until reveal
+session.panelVerdicts.push(verdict);          // per-panel, allow(player)
+verdict.allow(session.player);                // enables the resonance pulse
 ```
 
-The score accumulates in ciphertext. Nobody — not the player, not the backend, not the contract owner — can observe the running total until the player explicitly reveals.
+The running total stays ciphertext. Each panel's verdict is `allow()`-ed to the player when `recordChoice` lands, so the UI can `attestedDecrypt` just that one value and show real feedback (direct hit / near miss / faint / missed) without leaking the season total. Player-initiated reveal still opens only the final score + full hand.
 
 ### 4. Player-Initiated Reveal
 

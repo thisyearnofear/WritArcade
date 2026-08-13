@@ -102,6 +102,28 @@ export async function POST(
       return NextResponse.json({ error: 'On-chain recordChoice failed' }, { status: 500 })
     }
 
+    // Handle for THIS panel's encrypted verdict (10 | 6 | 3 | 1). The player's
+    // wallet uses it for attestedDecrypt to show honest per-choice feedback.
+    // The running session score stays sealed until completeAndReveal.
+    let panelVerdictHandle: string | null = null
+    try {
+      panelVerdictHandle = (await publicClient.readContract({
+        address: vaultAddress,
+        abi: DAILY_CHALLENGE_VAULT_ABI,
+        functionName: 'getPanelVerdictHandle',
+        args: [sessionId as `0x${string}`, panelIndex],
+        account: actorWallet as `0x${string}`,
+      })) as string
+    } catch (err) {
+      // Non-fatal: older vault deployments lack getPanelVerdictHandle. The client
+      // falls back to the keyword-based resonance pulse when the handle is null.
+      logger.warn('panelVerdictHandle unavailable, falling back to keyword pulse', {
+        sessionId,
+        panelIndex,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+
     logger.info('Daily challenge choice recorded on-chain', {
       challengeId,
       sessionId,
@@ -110,7 +132,7 @@ export async function POST(
       txHash,
     })
 
-    return NextResponse.json({ success: true, sessionId, panelIndex, choiceIndex, txHash })
+    return NextResponse.json({ success: true, sessionId, panelIndex, choiceIndex, txHash, panelVerdictHandle })
   } catch (error) {
     console.error('Daily challenge record-choice failed:', error)
     return NextResponse.json(

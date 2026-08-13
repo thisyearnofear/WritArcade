@@ -333,6 +333,7 @@ export function GamePlayInterface({ game, isOwner = false }: GamePlayInterfacePr
         isDailyActive={isDailyGame}
         dailyModifierHandles={dailyChallenge.state?.modifierHandles}
         dailyScoreHandle={dailyChallenge.state?.scoreHandle}
+        dailyPanelVerdicts={dailyChallenge.panelVerdicts}
         dailyPlayerCount={dailyStats.playerCount}
         dailyAverageScore={dailyStats.averageScore}
         dailyTopScore={dailyStats.topScore}

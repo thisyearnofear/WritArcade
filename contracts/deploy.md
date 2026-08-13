@@ -9,9 +9,26 @@ These contracts are deployed on Base mainnet:
 - `SecretPanelVault`: `0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8` ([Basescan](https://basescan.org/address/0x36a3931f1acb69033f98e6eb8c3aa7d59cc6e5e8))
 - `DailyChallengeVault`: `0x0bb738ee11839baa44aa46984997f9417733dcce` ([Basescan](https://basescan.org/address/0x0bb738ee11839baa44aa46984997f9417733dcce))
 
-> **Hardened DailyChallengeVault redeploy (2026-08-08)**
+> **Hardened DailyChallengeVault redeploy (2026-08-08)** — supersedes the initial deploy.
 > New address: `0xb420a5cd42be2bae6003ac828c7ed0975aa44693`
 > Deploy tx: `0x5bb62ec5e939ab74185cabe33215f279fe727d27f7cbcf333ee9ee07eb39eb9a`
+
+> **DailyChallengeVault v3 (2026-08-12) — per-panel FHE verdicts.** Replaces the
+> hardened v2 vault. Adds `panelVerdicts` state, `getPanelVerdictHandle`, and a
+> branch-free gradient `_computePanelVerdict` (10 | 6 | 3 | 1) built from
+> `min(clockwise, counterClockwise)` ring distance, so the frontend can show
+> honest per-choice resonance pings. Branch-free because Inco's `e.select`
+> eagerly evaluates both branches and `sub` on a losing branch panics;
+> verified by `testPanelVerdictsStoreGradientBands`. `completeAndReveal` is unchanged.
+> New address: `0xcc271a53e4286012f3289273fdaa32f66fa64a33`
+> Deploy tx: `0x9f836a2e37339c667352e3398884ee359bc8ecfd06f3d1965f266f99c8c2f6ea`
+> Note: an intermediate draft of `_computePanelVerdict` was deployed to
+> `0xee0573adca0f0bbfcd9cf274b6047fdc32518a74` and `0x556b633914584b9bd12da96123f06d40167dd5ec`
+> during testing — both burned a deck on day 1099 and are abandoned.
+> Update `NEXT_PUBLIC_DAILY_CHALLENGE_VAULT_ADDRESS` to `0xcc271a53e4286012f3289273fdaa32f66fa64a33`
+> in `.env.local`, `.env.production.example`, and the Vercel project. The earlier
+> `0xb420a5cd42be2bae6003ac828c7ed0975aa44693` and `0xee0573adca0f0bbfcd9cf274b6047fdc32518a74`
+> are NOT the live vault any more and should not be referenced by any consumers.
 >
 > - Deck exhaustion fix (fresh encrypted cycle before the 11th hand), canonical 1–52
 >   modifier IDs, owner-relay + day-match verified `record-choice`, server-driven

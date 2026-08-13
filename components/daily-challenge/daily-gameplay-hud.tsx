@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, Users, Clock, Zap, TrendingUp } from 'lucide-react'
 import type { Modifier } from '@/lib/daily-challenge'
+import type { PanelVerdict } from '@/lib/daily-challenge/daily-challenge-client'
 import {
   getModifierCategoryForPanel,
   MODIFIER_CATEGORY_COLOR,
@@ -11,10 +12,11 @@ import {
 } from '@/lib/daily-challenge/daily-challenge-ui'
 
 // ── Resonance Pulse ──────────────────────────────────────────────────────────
-// After each choice, shows a thematic "resonance" indicator that gives players
-// the *feeling* of alignment without revealing the encrypted score.
-// The resonance is derived from keyword matching between the choice text and the
-// panel's modifier category — it's a narrative signal, not the actual FHE result.
+// After each choice, shows how the panel actually scored against the hidden
+// modifier card. When the on-chain FHE verdict (10 | 6 | 3 | 1) is available
+// via attestedDecrypt, that value drives the indicator. While it decrypts, or
+// when it fails (older vault, wrong network), we fall back to a keyword pulse
+// from the choice text so the slot still feels alive.
 
 const CATEGORY_KEYWORDS: Record<Modifier['category'], string[]> = {
   tone: ['feel', 'emotion', 'mood', 'quiet', 'loud', 'gentle', 'harsh', 'calm', 'tense', 'warm', 'cold', 'dark', 'light', 'soft', 'intense'],
@@ -23,7 +25,41 @@ const CATEGORY_KEYWORDS: Record<Modifier['category'], string[]> = {
   resolution: ['resolve', 'end', 'together', 'finally', 'peace', 'accept', 'conclude', 'settle', 'answer', 'truth', 'reveal', 'understand', 'connect', 'close', 'complete'],
 }
 
-function getResonanceLevel(choiceText: string, panelIndex: number): 'strong' | 'moderate' | 'faint' {
+const VERDICT_CONFIG: Record<PanelVerdict, { label: string; sublabel: string; intensity: number; color: string }> = {
+  10: {
+    label: 'Direct hit',
+    sublabel: 'Your choice matched the hidden modifier exactly',
+    intensity: 3,
+    color: '#34d399', // emerald
+  },
+  6: {
+    label: 'Near miss',
+    sublabel: 'One step off the hidden modifier — partial credit',
+    intensity: 2,
+    color: '#fbbf24', // amber
+  },
+  3: {
+    label: 'Faint signal',
+    sublabel: 'Far from the hidden modifier — small credit',
+    intensity: 1,
+    color: '#94a3b8', // slate
+  },
+  1: {
+    label: 'Missed',
+    sublabel: 'No alignment with the hidden modifier',
+    intensity: 1,
+    color: '#6b7280', // gray
+  },
+}
+
+const PENDING_CONFIG = {
+  label: 'Reading the hidden card…',
+  sublabel: 'Decrypting this panel’s verdict from Inco',
+  intensity: 2,
+  color: '#8b5cf6', // violet
+}
+
+function getKeywordResonanceLevel(choiceText: string, panelIndex: number): 'strong' | 'moderate' | 'faint' {
   const category = getModifierCategoryForPanel(panelIndex)
   const keywords = CATEGORY_KEYWORDS[category]
   const lower = choiceText.toLowerCase()
@@ -34,37 +70,48 @@ function getResonanceLevel(choiceText: string, panelIndex: number): 'strong' | '
   return 'faint'
 }
 
-const RESONANCE_CONFIG = {
-  strong: {
-    label: 'Strong resonance',
-    sublabel: 'Your instinct aligns with the hidden card',
-    intensity: 3,
-    color: '#34d399', // emerald
-  },
-  moderate: {
-    label: 'Faint resonance',
-    sublabel: 'Something stirs beneath the surface',
-    intensity: 2,
-    color: '#fbbf24', // amber
-  },
-  faint: {
-    label: 'The card stays silent',
-    sublabel: 'No clear signal from the hidden modifier',
-    intensity: 1,
-    color: '#6b7280', // gray
-  },
-}
-
 interface ResonancePulseProps {
-  choiceText: string
+  /** The decrypted FHE verdict for this panel, or null while it is still decrypting. */
+  verdict: PanelVerdict | null
+  /** Choice text — used only for the fallback copy when verdict is null. */
+  choiceText?: string
   panelIndex: number
   /** Whether to show (triggers on new choice) */
   visible: boolean
 }
 
-export function ResonancePulse({ choiceText, panelIndex, visible }: ResonancePulseProps) {
-  const level = useMemo(() => getResonanceLevel(choiceText, panelIndex), [choiceText, panelIndex])
-  const config = RESONANCE_CONFIG[level]
+export function ResonancePulse({ verdict, choiceText = '', panelIndex, visible }: ResonancePulseProps) {
+  const fallbackLevel = useMemo(
+    () => getKeywordResonanceLevel(choiceText, panelIndex),
+    [choiceText, panelIndex]
+  )
+
+  const config = verdict !== null ? VERDICT_CONFIG[verdict] : {
+    // Fallback while decrypting, or when the vault has no panel verdict handle.
+    ...(choiceText
+      ? {
+          strong: {
+            label: 'Strong resonance',
+            sublabel: 'Your instinct feels aligned — decrypting the real result…',
+            intensity: 3,
+            color: '#34d399',
+          },
+          moderate: {
+            label: 'Faint resonance',
+            sublabel: 'Something stirs — decrypting the real result…',
+            intensity: 2,
+            color: '#fbbf24',
+          },
+          faint: {
+            label: 'Reading the hidden card…',
+            sublabel: 'Decrypting this panel’s verdict from Inco',
+            intensity: 1,
+            color: '#6b7280',
+          },
+        }[fallbackLevel]
+      : PENDING_CONFIG),
+  }
+
   const category = getModifierCategoryForPanel(panelIndex)
   const categoryColor = MODIFIER_CATEGORY_COLOR[category]
 
@@ -115,7 +162,7 @@ export function ResonancePulse({ choiceText, panelIndex, visible }: ResonancePul
               </p>
             </div>
 
-            {level === 'strong' && (
+            {verdict === 10 && (
               <motion.div
                 animate={{ rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 0.5, delay: 0.3 }}

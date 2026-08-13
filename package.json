@@ -30,8 +30,10 @@
     "@ai-sdk/openai": "^0.0.66",
     "@atproto/api": "0.19.5",
     "@farcaster/miniapp-sdk": "^0.2.1",
+    "@inco/lightning": "1.0.2",
     "@inco/lightning-js": "1.0.2",
     "@mezo-org/passport": "0.17.2",
+    "@openzeppelin/contracts": "5.3.0",
     "@paragraph_xyz/sdk": "^0.0.13",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-select": "^2.2.6",
@@ -96,6 +98,9 @@
   },
   "pnpm": {
     "overrides": {
+      "forge-std": "https://codeload.github.com/foundry-rs/forge-std/tar.gz/2f05b30",
+      "ds-test": "https://codeload.github.com/dapphub/ds-test/tar.gz/e282159",
+      "@safe-global/safe-smart-account": "1.5.0",
       "@base-org/account": "2.4.0",
       "@coinbase/wallet-sdk": "3.9.3",
       "@rainbow-me/rainbowkit": "2.2.11",

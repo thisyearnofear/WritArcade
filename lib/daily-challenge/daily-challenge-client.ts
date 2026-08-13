@@ -1,6 +1,6 @@
 'use client'
 
-import type { WalletClient, PublicClient, Hex, Log } from 'viem'
+import type { WalletClient, PublicClient, Hex, Log, Transport, Chain, Account } from 'viem'
 import { decodeEventLog } from 'viem'
 import {
   DAILY_CHALLENGE_VAULT_ABI,
@@ -302,12 +302,28 @@ export async function completeOnChainReveal(params: {
   return hash
 }
 
+/**
+ * Per-panel verdict from the FHE scoring in DailyChallengeVault.
+ * 10 = direct hit, 6 = near miss (distance 1), 3 = faint (distance 2), 1 = miss.
+ */
+export type PanelVerdict = 10 | 6 | 3 | 1
+
+export interface RecordChoiceResult {
+  txHash: `0x${string}`
+  /**
+   * Handle for this panel's encrypted verdict on the vault.
+   * Null when the route could not read it (e.g. an older vault without
+   * getPanelVerdictHandle) — the UI falls back to the keyword pulse.
+   */
+  panelVerdictHandle: `0x${string}` | null
+}
+
 export async function recordDailyChoice(params: {
   challengeId: string
   sessionId: string
   panelIndex: number
   choiceIndex: number
-}): Promise<void> {
+}): Promise<RecordChoiceResult> {
   const response = await fetch(`/api/daily-challenge/${params.challengeId}/record-choice`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -321,6 +337,37 @@ export async function recordDailyChoice(params: {
   if (!response.ok) {
     const data = await response.json().catch(() => ({}))
     throw new Error(data.error || 'Failed to record choice on-chain')
+  }
+
+  const data = await response.json()
+  return {
+    txHash: data.txHash as `0x${string}`,
+    panelVerdictHandle: (data.panelVerdictHandle as `0x${string}` | undefined) ?? null,
+  }
+}
+
+/**
+ * Attested-decrypt one panel's verdict handle to a number. Returns null when
+ * decryption fails (ACL issue, wrong network, older vault) — the UI falls back
+ * to the keyword-based resonance pulse.
+ */
+export async function decryptPanelVerdict(
+  handle: `0x${string}`,
+  walletClient: WalletClient
+): Promise<PanelVerdict | null> {
+  try {
+    const { getIncoLightning, formatHandle } = await import('@/lib/daily-challenge/inco')
+    const zap = await getIncoLightning()
+    const results = await zap.attestedDecrypt(
+      walletClient as WalletClient<Transport, Chain, Account>,
+      [formatHandle(handle)]
+    )
+    const value = results[0]?.plaintext?.value
+    if (typeof value !== 'bigint') return null
+    const n = Number(value)
+    return n === 10 || n === 6 || n === 3 || n === 1 ? (n as PanelVerdict) : null
+  } catch {
+    return null
   }
 }
 
