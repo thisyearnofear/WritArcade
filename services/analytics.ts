@@ -32,9 +32,11 @@ export const ANALYTICS_EVENT_NAMES = [
   'share_clicked',
   'make_another_clicked',
   'ownership_clicked',
-  'animation_started',
+    'animation_started',
   'animation_completed',
   'animation_failed',
+  'panel_previewed',
+  'panel_drafted',
   'hero_artifact_shared',
   'basepaint_stage_toggled',
 ] as const

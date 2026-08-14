@@ -353,14 +353,16 @@ export const CREDITS_CONFIG = {
   decimals: 0,
   symbol: 'Credits',
   name: 'Credits',
-  gameGenerationCost: 10n, // 10 credits per game generation
+    gameGenerationCost: 10n, // 10 credits per game generation
   mintCost: 5n,            // 5 credits per NFT mint
   videoUpsellCost: 50n,    // 50 credits to animate a completed comic
+  videoMontageCost: 100n,  // 100 credits to animate the WHOLE comic (all panels)
   cost: {
     'generate-game': 10,
     'mint-nft': 5,
     'play-wordle': 1,
     'video-upsell': 50,
+    'video-montage': 100,
   } as Record<string, number>,
 } as const
 

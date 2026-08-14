@@ -9,6 +9,11 @@ export type VideoPanelStatus = {
   videoUrl: string | null
   videoProvider?: string | null
   videoError?: string | null
+  videoStillUrl?: string | null
+  videoCompanionUrl?: string | null
+  videoCompanionStatus?: 'idle' | 'pending' | 'completed' | 'failed'
+  videoDraftUrl?: string | null
+  videoDraftStatus?: 'idle' | 'pending' | 'completed' | 'failed'
 }
 
 export interface UseVideoStatusResult {

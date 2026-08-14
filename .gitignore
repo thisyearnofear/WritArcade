@@ -131,6 +131,7 @@ __pycache__/
 
 # Temporary folders
 tmp/
+.tmp/
 temp/
 
 # HyperFrames / local video projects

@@ -14,6 +14,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ThemeWrapper } from '@/components/layout/ThemeWrapper'
 import { getActor } from '@/services/auth'
+import { prisma } from '@/lib/prisma'
 
 // Play mode includes viewer-specific ownership and insights capabilities, so
 // avoid caching one visitor's owner state for other visitors. Read-only
@@ -193,6 +194,28 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
     ? `${siteUrl}/api/games/${encodeURIComponent(slug)}/unlock-og`
     : `${siteUrl}/api/games/${encodeURIComponent(slug)}/og`
 
+  // When a completed hero animation exists, expose it as a video embed so the
+  // shared link plays in-app instead of degrading to a static card. Never emit
+  // a placeholder/pending URL.
+  let heroVideoUrl: string | null = null
+  try {
+    const hero = await prisma.game.findFirst({
+      where: { slug },
+      select: {
+        artifactPanels: {
+          where: { videoStatus: 'completed' },
+          select: { videoUrl: true },
+          orderBy: { panelIndex: 'desc' },
+          take: 1,
+        },
+      },
+    })
+    heroVideoUrl = hero?.artifactPanels?.[0]?.videoUrl ?? null
+  } catch {
+    heroVideoUrl = null
+  }
+  const hasVideo = Boolean(!isUnlockShare && heroVideoUrl)
+
   return {
     title: isUnlockShare
       ? `Secret panel unlocked: ${game.title}`
@@ -207,12 +230,26 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
         : game.description,
       type: 'article',
       images: [{ url: ogImage, width: 1200, height: 630 }],
+      ...(hasVideo && heroVideoUrl
+        ? {
+            videos: [{
+              url: heroVideoUrl,
+              secureUrl: heroVideoUrl,
+              type: 'video/mp4',
+              width: 1080,
+              height: 1920,
+            }],
+          }
+        : {}),
     },
     twitter: {
-      card: 'summary_large_image',
+      card: hasVideo ? 'player' : 'summary_large_image',
       title: isUnlockShare ? `I unlocked the secret panel of ${game.title}` : game.title,
       description: isUnlockShare ? 'Verified unlock proof on writersarcade.' : game.description,
       images: [ogImage],
+      ...(hasVideo && heroVideoUrl
+        ? { players: [{ url: heroVideoUrl, width: 1080, height: 1920 }] }
+        : {}),
     },
   }
 }

@@ -15,6 +15,7 @@
 
 import { randomUUID } from 'node:crypto'
 import {
+  type VideoAspectRatio,
   type VideoGenerationRequest,
   type VideoGenerationResult,
   type VideoGenerationStatus,
@@ -23,6 +24,7 @@ import {
 } from './video-generation.types'
 
 export type {
+  VideoAspectRatio,
   VideoGenerationRequest,
   VideoGenerationResult,
   VideoGenerationStatus,
@@ -30,7 +32,7 @@ export type {
   VideoStyle,
 } from './video-generation.types'
 
-export { VIDEO_STYLE_LABELS } from './video-generation.types'
+export { VIDEO_STYLE_LABELS, VIDEO_ASPECT_RATIO_LABELS } from './video-generation.types'
 
 const VIDEO_REQUEST_TIMEOUT_MS = 20_000
 
@@ -60,6 +62,17 @@ export function getVideoDurationSeconds(): number {
   return Number.isFinite(configuredDuration)
     ? Math.min(8, Math.max(3, configuredDuration))
     : 5
+}
+
+/**
+ * Native output ratio for a job. Defaults to vertical 9:16 (the documented
+ * social hero format). Video should be generated at its native ratio rather
+ * than cropped after upload — cropping a wide clip for Stories cuts the object.
+ */
+export function resolveAspectRatio(
+  req: { aspectRatio?: VideoAspectRatio },
+): string {
+  return req.aspectRatio ?? '9:16'
 }
 
 export interface VideoProvider {
@@ -107,7 +120,10 @@ export class RunwareProvider implements VideoProvider {
         deliveryMethod: 'async',
         outputType: 'URL',
         outputFormat: 'MP4',
-        duration: this.duration,
+        // Draft clips override duration (short = cheap). Clamp to the same
+        // 3–8s window as the configured default.
+        duration: Math.min(8, Math.max(3, req.durationSeconds ?? this.duration)),
+        aspectRatio: resolveAspectRatio(req),
         ttl: 604800,
         includeCost: true,
       }]),
@@ -193,25 +209,29 @@ export class RunwareProvider implements VideoProvider {
 function buildMotionPrompt(req: VideoGenerationRequest): string {
   const style = req.style ?? 'cinematic'
 
+  // The still carries the look; the motion prompt supplies only motion.
+  // Keep it to 5-12 words, ONE camera move. Do not re-describe the scene —
+  // re-describing it makes the model redesign the image.
   const styleMotion: Record<VideoStyle, string> = {
-    cinematic: 'slow cinematic camera drift, gentle dolly, dramatic lighting, preserve the scene',
-    loop: 'seamless looping motion, gentle ambient movement, no cuts, preserve the scene',
-    subtle: 'very subtle atmospheric motion, slight parallax, preserve the scene',
-    dynamic: 'dynamic camera movement, expressive environmental motion, energetic but smooth, preserve the scene',
+    cinematic: 'slow push-in',
+    loop: 'seamless ambient loop',
+    subtle: 'subtle parallax drift',
+    dynamic: 'slow dolly push',
   }
 
   const genreMotion: Record<string, string> = {
-    horror: 'moody cinematic lighting, eerie atmosphere',
-    mystery: 'dramatic shadows, noir pan',
-    comedy: 'light atmosphere, playful motion',
-    adventure: 'cinematic dolly, environmental motion',
-    'sci-fi': 'neon glow pulse, futuristic atmosphere',
-    fantasy: 'magical particle motion, ethereal atmosphere',
+    horror: 'eerie atmosphere',
+    mystery: 'noir mood',
+    comedy: 'playful energy',
+    adventure: 'forward cinematic dolly',
+    'sci-fi': 'neon pulse',
+    fantasy: 'ethereal glow',
   }
 
-  const genre = genreMotion[req.genre.toLowerCase()] || 'cinematic atmosphere'
   const motion = styleMotion[style] ?? styleMotion.cinematic
-  return `${motion}. ${genre}. No text, no speech bubbles, no typography. Short clip.`
+  const mood = genreMotion[req.genre.toLowerCase()] ?? ''
+  // One move + one mood + one instruction to hold the locked first frame.
+  return `${motion}.${mood ? ` ${mood}.` : ''} Keep the first frame identical.`
 }
 
 /**
@@ -241,7 +261,7 @@ export class LumaProvider implements VideoProvider {
       body: JSON.stringify({
         prompt: buildMotionPrompt(req),
         model: this.model,
-        aspect_ratio: '16:9',
+        aspect_ratio: resolveAspectRatio(req),
         keyframes: {
           frame0: {
             type: 'image',
@@ -341,7 +361,7 @@ export class FalProvider implements VideoProvider {
       body: JSON.stringify({
         image_url: req.imageUrl,
         prompt: buildMotionPrompt(req),
-        aspect_ratio: '16:9',
+        aspect_ratio: resolveAspectRatio(req),
       }),
     })
 
@@ -439,7 +459,7 @@ export class ReplicateProvider implements VideoProvider {
           prompt: buildMotionPrompt(req),
           image: req.imageUrl,
           duration: 5,
-          aspect_ratio: '16:9',
+          aspect_ratio: resolveAspectRatio(req),
         },
       }),
     })

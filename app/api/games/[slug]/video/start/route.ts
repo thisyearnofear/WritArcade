@@ -13,6 +13,7 @@ import { CREDITS_CONFIG } from '@/lib/writer-coins'
 import { config } from '@/lib/config'
 import { persistMediaUrl } from '@/domains/story/services/media-upload'
 import { refundVideoCharge } from '@/domains/games/services/video-charge.service'
+import { generateHeroStill } from '@/domains/games/services/video-hero-still.service'
 
 export async function POST(
   request: NextRequest,
@@ -186,15 +187,50 @@ export async function POST(
       throw error
     }
 
+    // Pre-production (Move 1): lock a type-free "real scene" hero still as the
+    // first frame for I2V instead of animating the comic page itself. The
+    // motion prompt only adds a camera move; the still carries the look. If the
+    // still generation fails, fall back to the comic panel so the flow, cost,
+    // and refund semantics are unchanged. The still is persisted so the
+    // companion wide clip and the share card reuse the same master frame.
+    let motionFrameUrl = heroPanel.imageUrl
+    let heroStillUrl: string | null = null
+    // Reuse a still already locked via the free "Preview the look" stage so the
+    // paid reveal and any later wide/draft clips share the SAME master frame.
+    if (heroPanel.videoStillUrl) {
+      motionFrameUrl = heroPanel.videoStillUrl
+      heroStillUrl = heroPanel.videoStillUrl
+    } else if (process.env.VIDEO_PRE_PRODUCTION_STILL !== 'false') {
+      try {
+        const heroStill = await generateHeroStill({
+          narrative: heroPanel.narrativeText,
+          genre: game.genre,
+          primaryColor: game.primaryColor ?? undefined,
+        })
+        if (heroStill.imageUrl) {
+          motionFrameUrl = heroStill.imageUrl
+          heroStillUrl =
+            (await persistMediaUrl(heroStill.imageUrl, `writersarcade-${slug}-hero-still.jpg`)) ??
+            heroStill.imageUrl
+        }
+      } catch (error) {
+        console.warn('[Video Start] Hero-still pre-production failed; animating comic panel', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+
     let result
     try {
       result = await VideoGenerationService.generate({
-        imageUrl: heroPanel.imageUrl,
+        imageUrl: motionFrameUrl,
         narrative: heroPanel.narrativeText,
         genre: game.genre,
         panelIndex: heroPanel.panelIndex,
         primaryColor: game.primaryColor ?? undefined,
         style,
+        // Native ratio: vertical 9:16 hero for social. Never crop a wide clip.
+        aspectRatio: '9:16',
       })
     } catch (error) {
       await refundVideoCharge({
@@ -227,6 +263,7 @@ export async function POST(
         videoStyle: style,
         videoPolledAt: null,
         videoUrl,
+        videoStillUrl: heroStillUrl,
         videoError: effectiveResult.error ?? null,
       },
     })

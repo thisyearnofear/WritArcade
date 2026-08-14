@@ -23,13 +23,33 @@ export interface VideoMotionProps {
 export interface VideoMotion {
   enabled: boolean
   status: 'idle' | 'pending' | 'completed' | 'failed'
+  panels: VideoPanelStatus[]
   isStarting: boolean
   error: string | null
   style: VideoStyle
   setStyle: (style: VideoStyle) => void
   firstVideoUrl: string | null
   getPanelVideo: (panelId: string) => VideoPanelStatus | undefined
-  start: () => Promise<void>
+    start: () => Promise<void>
+  /**
+   * Stage 3 — paid whole-comic "Animate the whole comic" montage. Charges the
+   * `video-montage` cost and renders a final clip for every panel, watched by
+   * polling status per panel.
+   */
+  startMontage: () => Promise<void>
+  /**
+   * Stage 1 — free per-panel "Preview the look": lock the master still for the
+   * panel at `panelIndex` (defaults to the hero) so it can be validated.
+   */
+  preview: (panelIndex?: number) => Promise<boolean>
+  /**
+   * Stage 2 — free per-panel "Check the motion": draft a short 3s clip from the
+   * locked still of panel `panelIndex` (defaults to the hero). Idempotent and
+   * rate-limited; no credit charge.
+   */
+  draft: (panelIndex?: number) => Promise<boolean>
+  /** Re-fetch video status (used after starting a companion wide clip). */
+  refresh: () => Promise<void>
 }
 
 /**
@@ -70,7 +90,7 @@ export function useVideoMotion(gameSlug: string): VideoMotion {
       if (!response.ok || !json.success) {
         throw new Error(json.error || 'Failed to start video generation')
       }
-      if (json.data?.status === 'pending' || json.data?.status === 'completed') {
+            if (json.data?.status === 'pending' || json.data?.status === 'completed') {
         trackEvent('animation_started', { surface: 'finale', mode: 'hero', style })
       }
       await mutateVideoStatus()
@@ -80,6 +100,74 @@ export function useVideoMotion(gameSlug: string): VideoMotion {
       setIsStarting(false)
     }
   }, [gameSlug, mutateVideoStatus, style])
+
+  const startMontage = useCallback(async () => {
+    setIsStarting(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/games/${gameSlug}/video/montage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ style }),
+      })
+      const json = (await response.json()) as { success: boolean; error?: string; data?: { status: string } }
+      if (!response.ok || !json.success) {
+        throw new Error(json.error || 'Failed to start the whole-comic animation')
+      }
+      if (json.data?.status === 'pending' || json.data?.status === 'completed') {
+        trackEvent('animation_started', { surface: 'finale', mode: 'montage', style })
+      }
+      await mutateVideoStatus()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start the whole-comic animation')
+    } finally {
+      setIsStarting(false)
+    }
+  }, [gameSlug, mutateVideoStatus, style])
+
+  const preview = useCallback(async (panelIndex?: number) => {
+    setIsStarting(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/games/${gameSlug}/video/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ panelIndex }),
+      })
+      const json = (await response.json()) as { success?: boolean; error?: string }
+      if (!response.ok || !json.success) throw new Error(json.error || 'Could not preview this panel')
+      trackEvent('panel_previewed', { surface: 'finale', panelIndex })
+      await mutateVideoStatus()
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not preview this panel')
+      return false
+    } finally {
+      setIsStarting(false)
+    }
+  }, [gameSlug, mutateVideoStatus])
+
+  const draft = useCallback(async (panelIndex?: number) => {
+    setIsStarting(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/games/${gameSlug}/video/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ panelIndex }),
+      })
+      const json = (await response.json()) as { success?: boolean; error?: string }
+      if (!response.ok || !json.success) throw new Error(json.error || 'Could not check motion for this panel')
+      trackEvent('panel_drafted', { surface: 'finale', panelIndex })
+      await mutateVideoStatus()
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not check motion for this panel')
+      return false
+    } finally {
+      setIsStarting(false)
+    }
+  }, [gameSlug, mutateVideoStatus])
 
   const getPanelVideo = useCallback(
     (panelId: string) => videoStatusByPanel.get(panelId),
@@ -96,5 +184,5 @@ export function useVideoMotion(gameSlug: string): VideoMotion {
     if (status === 'failed') trackEvent('animation_failed', { surface: 'finale', mode: 'hero' })
   }, [status])
 
-  return { enabled, status, isStarting, error, style, setStyle, firstVideoUrl, getPanelVideo, start }
+  return { enabled, status, panels: videoPanels, isStarting, error, style, setStyle, firstVideoUrl, getPanelVideo, start, startMontage, preview, draft, refresh: mutateVideoStatus }
 }

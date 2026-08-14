@@ -134,10 +134,11 @@ export function FinaleFooter({
           {video.enabled && (
             <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-2 py-1">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Optional</span>
-              <VideoUpsellCTA
+                            <VideoUpsellCTA
                 video={video}
                 onOpenStyleModal={onOpenVideoStyleModal}
                 onWatch={onWatchCinematic}
+                onStartMontage={() => video.startMontage()}
               />
             </div>
           )}

@@ -234,6 +234,23 @@ model GameArtifactPanel {
   videoStatus String @default("idle") // 'idle' | 'pending' | 'completed' | 'failed'
   videoError String?    // Failure reason for support/debugging
 
+  // Phase 2 — pre-production + native-ratio companion clip
+  videoStillUrl String? // Durable locked "real scene" first frame (the through-line object)
+  videoCompanionUrl String? // Native complement clip (16:9 wide version of the 9:16 hero)
+  videoCompanionStatus String @default("idle") // 'idle' | 'pending' | 'completed' | 'failed'
+  videoCompanionJobId String? // Provider job id for the companion clip
+  videoCompanionProvider String? // Provider slug for the companion clip
+  videoCompanionError String? // Companion failure reason
+  videoCompanionPolledAt DateTime? // Lease timestamp for the companion upstream poll
+
+  // Stage 2 — free motion draft (validate before the big spend)
+  videoDraftUrl String? // Short 3s draft clip for motion validation before the final
+  videoDraftStatus String @default("idle") // 'idle' | 'pending' | 'completed' | 'failed'
+  videoDraftJobId String? // Provider job id for the draft clip
+  videoDraftProvider String? // Provider slug for the draft clip
+  videoDraftError String? // Draft failure reason
+  videoDraftPolledAt DateTime? // Lease timestamp for the draft upstream poll
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

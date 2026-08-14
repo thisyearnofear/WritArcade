@@ -116,6 +116,7 @@ FAL_KEY="..."                      # Fallback; FAL_API_KEY is also accepted
 REPLICATE_API_TOKEN="..."          # Fallback
 FEATURE_VIDEO_PIPELINE="true"     # Enable the server-side optional finale animation path
 NEXT_PUBLIC_FEATURE_VIDEO_PIPELINE="true" # Also show the animation CTA in the browser
+VIDEO_PRE_PRODUCTION_STILL="true" # Lock a type-free "real scene" first frame before I2V (default on)
 
 # Mezo Hackathon
 NEXT_PUBLIC_MEZO_TESTNET_RPC="https://rpc.test.mezo.org"

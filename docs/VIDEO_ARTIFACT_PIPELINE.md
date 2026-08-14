@@ -7,12 +7,41 @@ Animation is an optional post-completion upgrade. The launch path creates one **
 The intended sequence is:
 
 1. Finish the five-panel story.
-2. Offer **Animate ending** as an optional 50-credit action.
-3. Generate one muted, vertical, 5-second hero clip.
-4. Show the clip in the cinematic view and include it in the canonical share payload.
-5. Keep the existing per-panel video fields available for a later full montage product.
+2. **Stage 1 — Preview the look (free).** For any panel, lock one type-free “real scene” still as that panel’s image-to-video first frame, instead of feeding the comic page itself. Idempotent, rate-limited, no charge. `POST /api/games/[slug]/video/preview` with `{ panelIndex }` (defaults to the hero/ending panel).
+3. **Stage 2 — Check the motion (free).** For any panel, render a short 3-second single-camera draft from the SAME locked still so the writer sees exactly how the final should move before paying anything. Idempotent, concurrency-guarded, rate-limited, no charge. `POST /api/games/[slug]/video/draft` with `{ panelIndex }` (defaults to the hero). Panels already validated show their draft clip in the showcase, so the montage grows on screen panel by panel.
+4. **Stage 3 — Animate the whole comic (paid, 100 credits).** Once at least one panel’s look is locked, pay one charge and render the final clip for every panel in a single, sequential (non-fan-out) pass — no burst of parallel jobs. Mirrors the hero upsell’s atomic debit + total-failure refund semantics. `POST /api/games/[slug]/video/montage`. The whole-comic action and the single-hero upsell share one reservation per game, so they are mutually exclusive.
+5. Show the resulting clips in the cinematic view (caption composited over the type-free frame at display time) and include them in the canonical share payload.
 
 The shared artifact should communicate the user's ending and invite the recipient to make their own version.
+
+## Storyboard-first pre-production (2026 playbook)
+
+The durable lesson from the image-to-video playbook is **storyboard-first**:
+
+- **Do not animate the comic page.** Feeding a comic panel to I2V makes the model "film a comic." Instead generate one photorealistic still that locks the object, lighting, and color grade (`video-hero-still.service.ts` → `generateHeroStill`), phrased as a first-frame reference.
+- The **still is the through-line**: same object, same night, same grade → landing, OG, Stats, share PNG. Type (Instrument Serif / DM Mono) is **banned in the model** and composited over the frame afterward, so the look survives a model swap.
+- **Motion prompts are short** (5–12 words, ONE camera move, one mood — e.g. `slow push-in. Keep the first frame identical.`). We never re-describe the scene; re-describing makes the model redesign the image.
+- A **3×3 shot grid** (`generateShotGrid`) is available as visual DNA for the later full-montage tier — one timeline grid instead of N disconnected frames. It is intentionally **not** generated in the single-hero path (that would spend credits on a grid the single-clip providers do not consume).
+
+Pre-production is gated by `VIDEO_PRE_PRODUCTION_STILL` (default on). If the locked-still generation fails, the route falls back to the original comic panel so the flow, cost, and refund semantics are unchanged.
+
+## Phase 2 — persisted locked still, native companion clip, video OG card
+
+Migrated by `prisma/migrations/202608140001_video_phase2_still_companion` (additive columns on `game_artifact_panels`).
+
+- **Persisted still (`videoStillUrl`).** The locked pre-production still is durable-persisted at animate time. It is the master frame / through-line object reused by the companion wide clip and available as a future share/OG thumbnail.
+- **Companion native clip (`videoCompanionUrl` + status/job columns).** A best-effort `POST /api/games/[slug]/video/companion` generates the **16:9 wide** version of the vertical 9:16 hero from the *same* still. It is included in the already-paid 50-credit upsell (no extra charge), idempotent (returns the existing wide clip), concurrency-guarded, and never overwrites the primary hero clip's URL/status. The status route polls it independently and recovers a stale sentinel reservation after 15 minutes. Failure of the companion never affects the primary artifact.
+- **`og:video` / `twitter:player`.** When a completed hero clip exists, the game page's `generateMetadata` exposes it as a video embed (`openGraph.videos`, `twitter:card = player`) so a shared link plays in-app instead of degrading to a static card. The hero remain native ratio (9:16, 1080×1920) — never crop a wide clip for Stories, the object gets cut.
+
+## Validation-first credit model ("see it, then commit")
+
+Stills are cheap and video is where credits die, so the upsell is staged to let the writer validate before the big spend:
+
+- **Stage 1 — Preview & lock the look (FREE).** `POST /api/games/[slug]/video/preview` generates + persists the locked, type-free master frame (`videoStillUrl`) with **no credit charge**. Idempotent; rate-limited (`video-preview:<userId>`). The animate modal surfaces this as "Step 1 · Lock the look (free)" before offering the paid reveal.
+- **Stage 2 — Motion draft (FREE, short).** `POST /api/games/[slug]/video/draft` generates a 3-second, single-move clip from the *same* locked still (requires `videoStillUrl`). It is free to the writer and rate-limited (`video-draft:<userId>`) — because provider pricing is per-second, the 3s draft is genuinely cheaper than the 5s final, and making it free means no credit ledger change and no "charged twice": the 50-credit final is the only paid step. Mirrors the companion-clip async columns/polling; failure never affects the final.
+- **Stage 3 — Final reveal.** The existing 50-credit 5s, native-ratio, 720p hero clip. Reuses the locked still (never regenerates it) so every artifact — draft, final, wide — shares one master.
+
+Design guardrails from the playbook: drafts must be native-ratio, single-move, retry- and rate-capped, and free (so the writer is never charged twice); the whole package is bounded so the ceiling stays ~$3–8 of platform spend.
 
 ## Provider order
 
@@ -41,7 +70,7 @@ Runware uses asynchronous `videoInference` tasks and `getResponse` polling. The 
 - Vertical 9:16 presentation for social sharing.
 - 720p-class output initially.
 - Two animation starts per user per minute, with a single active job.
-- Immediate provider rejection refunds the 50-credit charge.
+- Immediate provider rejection refunds the 50-credit hero charge, and the 100-credit whole-comic charge is refunded only if NO panel produces a completed clip (total failure; partial success is non-refunded).
 - Provider retry is server-side and does not charge the user again.
 
 ## Reliability requirements
@@ -85,6 +114,17 @@ The key growth metric is not animation completion alone. Measure:
 
 `animation started → hero artifact shared → attributed landing visit → creation started → story completed`
 
-## Future full montage
+## Whole-comic montage (Stage 3) — shipped
 
-A full five-panel montage should be a separate product tier. It should be queued with bounded concurrency, use permanent storage, and charge based on successful outputs. It should not replace the hero-ending path or block the first shareable result.
+The all-panel montage is now implemented as the paid 100-credit tier (`POST /api/games/[slug]/video/montage`, `'video-montage'` in `CREDITS_CONFIG.cost`). Design decisions:
+
+- **Sequential, bounded:** panels render one at a time in `panelIndex` order — no 5-way fan-out, so upstream concurrency stays bounded (per the reliability contract).
+- **Idempotent per panel:** panels with an existing final `videoUrl` are skipped; a `pending` guard prevents a retry from starting a second job on the same panel.
+- **Charging:** atomic debit + `payment` row (`action:'video-montage'`) mirror the hero upsell. Refunded on **total failure** only.
+- **Still first:** each panel reuses its locked still (`videoStillUrl`) when present, otherwise best-effort produces one; falling back to the frozen comic panel keeps flow/cost/refund semantics unchanged.
+- **Reservation:** shares the single-per-game video reservation with the hero upsell, so hero + montage are mutually exclusive. The `video-montage` payment action is a plain `String`, so no schema migration is required for this tier.
+
+### Deferred visuals (not in this change)
+
+- Per-panel "Preview the look" / "Check the motion" **buttons** in the comic grid/single-panel views still need `panelIndex` threaded into `ComicBookFinalePanelData` plus a small per-panel control strip — mechanical JSX, kept out of the core pipeline change.
+- A grid-based shot timeline (`generateShotGrid`) remains available as future visual DNA for a premium montage, but is intentionally not generated in the hero or current montage paths.

@@ -10,6 +10,11 @@ export interface VideoShowcasePanel {
   narrativeText: string
   videoUrl: string | null
   imageUrl?: string | null
+  /** Native complement clip (16:9 wide version) generated from the same still. */
+  videoCompanionUrl?: string | null
+  /** Free motion draft (per-panel). Shown so the montage can be previewed
+   * as each panel is validated, BEFORE the paid final clip is rendered. */
+  videoDraftUrl?: string | null
 }
 
 export interface VideoShowcaseProps {
@@ -18,6 +23,8 @@ export interface VideoShowcaseProps {
   gameTitle: string
   autoPlay?: boolean
   aspectRatio?: 'landscape' | 'vertical'
+  /** Skip-trigger to request the native 16:9 companion clip from the same still. */
+  onRequestCompanion?: () => Promise<boolean>
 }
 
 export function VideoShowcase({
@@ -26,16 +33,24 @@ export function VideoShowcase({
   gameTitle,
   autoPlay = false,
   aspectRatio = 'landscape',
+  onRequestCompanion,
 }: VideoShowcaseProps) {
-  const validPanels = panels.filter((p) => p.videoUrl)
+    const validPanels = panels.filter((p) => p.videoUrl || p.videoDraftUrl)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(autoPlay)
   const [isMuted, setIsMuted] = useState(true)
   const [showControls, setShowControls] = useState(true)
+  const [showWide, setShowWide] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const currentPanel = validPanels[currentIndex]
+
+    const activeVideoUrl = currentPanel
+    ? showWide
+      ? currentPanel.videoCompanionUrl ?? currentPanel.videoUrl
+      : currentPanel.videoUrl ?? currentPanel.videoDraftUrl
+    : null
 
   const handleNext = useCallback(() => {
     if (currentIndex < validPanels.length - 1) {
@@ -137,12 +152,12 @@ export function VideoShowcase({
       }}
     >
       {/* Main video stage */}
-      <div className={`relative w-full bg-black ${aspectRatio === 'vertical' ? 'aspect-[9/16] max-h-[70vh] sm:max-w-[405px] mx-auto' : 'aspect-video'}`}>
-        {currentPanel?.videoUrl ? (
+      <div className={`relative w-full bg-black ${showWide ? 'aspect-video' : aspectRatio === 'vertical' ? 'aspect-[9/16] max-h-[70vh] sm:max-w-[405px] mx-auto' : 'aspect-video'}`}>
+        {activeVideoUrl ? (
           <video
-            key={currentPanel.id}
+            key={`${currentPanel?.id}-${showWide ? 'w' : 'v'}`}
             ref={videoRef}
-            src={currentPanel.videoUrl}
+            src={activeVideoUrl}
             autoPlay={isPlaying}
             loop={false}
             muted={isMuted}
@@ -177,9 +192,9 @@ export function VideoShowcase({
                 >
                   {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 </button>
-                {currentPanel?.videoUrl && (
+                {activeVideoUrl && (
                   <a
-                    href={currentPanel.videoUrl}
+                    href={activeVideoUrl}
                     download
                     className="rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
                     aria-label={`Download clip for panel ${currentIndex + 1}`}
@@ -187,6 +202,25 @@ export function VideoShowcase({
                   >
                     <Download className="h-4 w-4" />
                   </a>
+                )}
+                {currentPanel?.videoUrl && !currentPanel.videoCompanionUrl && onRequestCompanion && (
+                  <button
+                    onClick={() => { void onRequestCompanion() }}
+                    className="rounded-full bg-purple-600/90 px-3 py-2 text-[11px] font-bold text-white backdrop-blur-sm transition-colors hover:bg-purple-600"
+                    title="Generate a native 16:9 wide version from the same still"
+                  >
+                    + Wide
+                  </button>
+                )}
+                {currentPanel?.videoCompanionUrl && (
+                  <button
+                    onClick={() => { setShowWide(w => !w); setIsPlaying(false) }}
+                    className="rounded-full bg-purple-600/90 px-3 py-2 text-[11px] font-bold text-white backdrop-blur-sm transition-colors hover:bg-purple-600"
+                    aria-pressed={showWide}
+                    title={showWide ? 'Switch to vertical 9:16' : 'Switch to wide 16:9'}
+                  >
+                    {showWide ? '9:16' : '16:9'}
+                  </button>
                 )}
               </div>
             </div>
@@ -219,6 +253,24 @@ export function VideoShowcase({
                 Next →
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Composite type AFTER generation (Move 3): the animated frame is
+            intentionally type-free; the caption is drawn over the player at
+            display time so it survives a model swap and never reads as
+            model-invented captions. */}
+        {currentPanel?.narrativeText && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-16 z-20 px-6 py-3"
+            aria-hidden="true"
+          >
+            <p
+              className="text-center text-sm font-semibold leading-snug text-white line-clamp-3 md:text-base"
+              style={{ textShadow: '0 1px 10px rgba(0,0,0,0.9)' }}
+            >
+              {currentPanel.narrativeText}
+            </p>
           </div>
         )}
       </div>

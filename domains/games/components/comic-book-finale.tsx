@@ -401,6 +401,7 @@ export function ComicBookFinale({
                 genre={genre}
                 gameInsights={gameInsights}
                 insightsLoading={insightsLoading}
+                slug={gameSlug}
                 />
               </section>
             )}
@@ -535,6 +536,7 @@ export function ComicBookFinale({
             style={video.style}
             onStyleChange={video.setStyle}
             primaryColor={primaryColor}
+            slug={gameSlug}
             onClose={() => setShowVideoStyleModal(false)}
             onStart={() => {
               setShowVideoStyleModal(false)

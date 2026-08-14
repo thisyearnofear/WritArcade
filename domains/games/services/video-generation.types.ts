@@ -22,6 +22,15 @@ export interface VideoGenerationRequest {
   providerOverride?: VideoProviderName
   excludeProviders?: VideoProviderName[]
   style?: VideoStyle
+  /**
+   * Native output ratio. Video must be composited at its native ratio — never
+   * crop a wide clip for Stories (the object gets cut). Defaults to vertical
+   * 9:16 for the social hero clip. See docs/VIDEO_ARTIFACT_PIPELINE.md.
+   */
+  aspectRatio?: VideoAspectRatio
+  /** Per-request duration override (seconds). Draft/preview clips use a short
+   *  3s window so motion can be validated cheaply before the final commit. */
+  durationSeconds?: number
 }
 
 export type VideoStyle = 'cinematic' | 'loop' | 'subtle' | 'dynamic'
@@ -31,4 +40,12 @@ export const VIDEO_STYLE_LABELS: Record<VideoStyle, string> = {
   loop: 'Seamless Loop',
   subtle: 'Subtle Motion',
   dynamic: 'Dynamic Action',
+}
+
+export type VideoAspectRatio = '16:9' | '9:16' | '1:1'
+
+export const VIDEO_ASPECT_RATIO_LABELS: Record<VideoAspectRatio, string> = {
+  '16:9': 'Landscape (X / web)',
+  '9:16': 'Vertical (Stories / social)',
+  '1:1': 'Square (feed)',
 }

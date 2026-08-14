@@ -100,6 +100,11 @@ export async function GET(
                 videoUrl: panel.videoUrl,
                 videoProvider: panel.videoProvider,
                 videoError: panel.videoError,
+                videoStillUrl: panel.videoStillUrl,
+                videoCompanionUrl: panel.videoCompanionUrl,
+                videoCompanionStatus: panel.videoCompanionStatus,
+                videoDraftUrl: panel.videoDraftUrl,
+                videoDraftStatus: panel.videoDraftStatus,
               }
             }
 
@@ -142,10 +147,156 @@ export async function GET(
                 videoUrl,
                 videoProvider: effectiveResult.provider,
                 videoError: effectiveResult.error ?? null,
+                videoStillUrl: panel.videoStillUrl,
+                videoCompanionUrl: panel.videoCompanionUrl,
+                videoCompanionStatus: panel.videoCompanionStatus,
+                videoDraftUrl: panel.videoDraftUrl,
+                videoDraftStatus: panel.videoDraftStatus,
               }
             }
           }
         }
+        // Poll the companion wide clip (native 16:9) independently so it never
+        // overwrites the primary hero clip's URL or status. Sentinel job ids
+        // ('companion-…') are placeholders reserved before the real provider job
+        // exists and must not be polled.
+        let companionUrl = panel.videoCompanionUrl
+        let companionStatus = panel.videoCompanionStatus
+        const companionJobId = panel.videoCompanionJobId
+
+        // Recover a stale sentinel reservation: a job id left as 'companion-…'
+        // means the route crashed before the real provider job was registered.
+        // Release it after the window so a retry can start fresh.
+        if (
+          panel.videoCompanionStatus === 'pending' &&
+          companionJobId?.startsWith('companion-')
+        ) {
+          const companionAge = panel.videoCompanionPolledAt
+            ? Date.now() - new Date(panel.videoCompanionPolledAt).getTime()
+            : Infinity
+          if (companionAge > 15 * 60 * 1000) {
+            await prisma.gameArtifactPanel.update({
+              where: { id: panel.id },
+              data: { videoCompanionStatus: 'idle', videoCompanionJobId: null, videoCompanionPolledAt: null },
+            })
+            companionStatus = 'idle'
+          }
+        }
+
+        if (
+          panel.videoCompanionStatus === 'pending' &&
+          companionJobId &&
+          !companionJobId.startsWith('companion-')
+        ) {
+          const companionLease = await prisma.gameArtifactPanel.updateMany({
+            where: {
+              id: panel.id,
+              videoCompanionStatus: 'pending',
+              videoCompanionJobId: companionJobId,
+              OR: [
+                { videoCompanionPolledAt: null },
+                { videoCompanionPolledAt: { lt: new Date(Date.now() - STATUS_POLL_MIN_INTERVAL_MS) } },
+              ],
+            },
+            data: { videoCompanionPolledAt: new Date() },
+          })
+          if (companionLease.count === 1) {
+            const companionProvider = (panel.videoCompanionProvider as VideoProviderName | null) ?? 'mock'
+            const companionResult = await VideoGenerationService.poll(companionJobId, companionProvider)
+            if (
+              !companionResult.retryable &&
+              (companionResult.status !== panel.videoCompanionStatus ||
+              companionResult.videoUrl ||
+              companionResult.provider !== panel.videoCompanionProvider)
+            ) {
+              const durableCompanion = companionResult.status === 'completed' && companionResult.videoUrl
+                ? await persistMediaUrl(companionResult.videoUrl, `writersarcade-${slug}-hero-wide.mp4`)
+                : null
+              const companionUrlFinal = (durableCompanion ?? companionResult.videoUrl) || null
+              await prisma.gameArtifactPanel.update({
+                where: { id: panel.id },
+                data: {
+                  videoCompanionStatus: companionResult.status,
+                  videoCompanionProvider: companionResult.provider,
+                  videoCompanionJobId: companionResult.providerJobId ?? companionJobId,
+                  videoCompanionError: companionResult.error ?? null,
+                  videoCompanionUrl: companionUrlFinal,
+                  videoCompanionPolledAt: companionResult.status === 'pending' ? new Date() : null,
+                },
+              })
+              companionUrl = companionUrlFinal
+              companionStatus = companionResult.status
+            }
+          }
+        }
+
+        // Poll the free motion draft clip independently (mirrors companion).
+        let draftUrl = panel.videoDraftUrl
+        let draftStatus = panel.videoDraftStatus
+        const draftJobId = panel.videoDraftJobId
+
+        // Recover a stale sentinel reservation ('draft-…' = crashed before the
+        // real provider job was registered).
+        if (panel.videoDraftStatus === 'pending' && draftJobId?.startsWith('draft-')) {
+          const draftAge = panel.videoDraftPolledAt
+            ? Date.now() - new Date(panel.videoDraftPolledAt).getTime()
+            : Infinity
+          if (draftAge > 15 * 60 * 1000) {
+            await prisma.gameArtifactPanel.update({
+              where: { id: panel.id },
+              data: { videoDraftStatus: 'idle', videoDraftJobId: null, videoDraftPolledAt: null },
+            })
+            draftStatus = 'idle'
+          }
+        }
+
+        if (
+          panel.videoDraftStatus === 'pending' &&
+          draftJobId &&
+          !draftJobId.startsWith('draft-')
+        ) {
+          const draftLease = await prisma.gameArtifactPanel.updateMany({
+            where: {
+              id: panel.id,
+              videoDraftStatus: 'pending',
+              videoDraftJobId: draftJobId,
+              OR: [
+                { videoDraftPolledAt: null },
+                { videoDraftPolledAt: { lt: new Date(Date.now() - STATUS_POLL_MIN_INTERVAL_MS) } },
+              ],
+            },
+            data: { videoDraftPolledAt: new Date() },
+          })
+          if (draftLease.count === 1) {
+            const draftProvider = (panel.videoDraftProvider as VideoProviderName | null) ?? 'mock'
+            const draftResult = await VideoGenerationService.poll(draftJobId, draftProvider)
+            if (
+              !draftResult.retryable &&
+              (draftResult.status !== panel.videoDraftStatus ||
+              draftResult.videoUrl ||
+              draftResult.provider !== panel.videoDraftProvider)
+            ) {
+              const durableDraft = draftResult.status === 'completed' && draftResult.videoUrl
+                ? await persistMediaUrl(draftResult.videoUrl, `writersarcade-${slug}-hero-draft.mp4`)
+                : null
+              const draftUrlFinal = (durableDraft ?? draftResult.videoUrl) || null
+              await prisma.gameArtifactPanel.update({
+                where: { id: panel.id },
+                data: {
+                  videoDraftStatus: draftResult.status,
+                  videoDraftProvider: draftResult.provider,
+                  videoDraftJobId: draftResult.providerJobId ?? draftJobId,
+                  videoDraftError: draftResult.error ?? null,
+                  videoDraftUrl: draftUrlFinal,
+                  videoDraftPolledAt: draftResult.status === 'pending' ? new Date() : null,
+                },
+              })
+              draftUrl = draftUrlFinal
+              draftStatus = draftResult.status
+            }
+          }
+        }
+
         return {
           id: panel.id,
           panelIndex: panel.panelIndex,
@@ -153,6 +304,11 @@ export async function GET(
           videoUrl: panel.videoUrl,
           videoProvider: panel.videoProvider,
           videoError: panel.videoError,
+          videoStillUrl: panel.videoStillUrl,
+          videoCompanionUrl: companionUrl,
+          videoCompanionStatus: companionStatus,
+          videoDraftUrl: draftUrl,
+          videoDraftStatus: draftStatus,
         }
       })
     )
