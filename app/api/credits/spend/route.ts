@@ -6,7 +6,7 @@ import { getActor } from '@/services/auth'
 import { z } from 'zod'
 
 const spendSchema = z.object({
-  action: z.enum(['generate-game', 'mint-nft', 'play-wordle', 'video-upsell']),
+  action: z.enum(['generate-game', 'mint-nft', 'play-wordle', 'video-upsell', 'video-montage']),
   gameId: z.string().optional(),
 })
 
