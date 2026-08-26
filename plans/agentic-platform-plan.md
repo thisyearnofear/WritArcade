@@ -151,13 +151,24 @@ Gate: `isFeatureEnabled('agentTools')` + budget gate; unchanged procedural start
 
 ## Phase 3 — Verify-and-fix self-reflection (v7 structured critic)
 
-New `domains/games/services/panel-critique.service.ts`:
-- `generateText` + `output: Output.object({ schema: panelCritiqueSchema })` over the produced
-  `{ narrative, imagePrompt }` → `{ passes, issues[], action: 'keep'|'regenerate'|'revise_image_prompt' }`.
-- `regenerate` → re-run the panel agent with `CRITIQUE: <issues>` appended to instructions, capped at 2.
-- `revise_image_prompt` → rebuild from `buildNarrativePrompt` + mood (`MoodModifierService`).
-- Budget & retry ceilings enforced by the same `budgetExceeded` StopCondition (Phase 2); idempotent
-  /refund discipline like `video-charge.service.ts` if a paid panel is re-issued.
+> **STATUS: implemented & verified locally (type-check ✅, 267 tests ✅ incl. new criticschema tests, eslint ✅).**
+> - New `domains/games/services/panel-critique.service.ts`:
+>   - `panelCritiqueSchema` (zod) → `{ passes, issues[], action: 'keep'|'regenerate'|'revise_image_prompt' }`.
+>   - `PanelCritiqueService.critique(input)` uses `generateText({ output: Output.object({ schema }) })`.
+>   - `critiqueDirective(critique)` builds the `CRITIQUE: <issues>` string for a regenerate.
+>   - `MAX_CRITIQUE_RETRIES = 2`.
+> - `panel-agent.service.ts`:
+>   - `buildPanelAgent(...)` now hard-enforces the **budget as a `StopCondition`** (`budget.spent >= budget.maxTokens`)
+>     alongside `isStepCount(8)` — closing the budget-enforcement gap noted at the end of Phase 2.
+>   - `runPanelPass(...)` factors one agent pass.
+>   - `generatePanelAgentic(...)` runs the agent, then, when `isFeatureEnabled('agentRefine')`, iterates a
+>     critique → regenerate loop capped at `MAX_CRITIQUE_RETRIES`, feeding `critiqueDirective` back into `instructions`.
+> - New test `tests/panel-critique.test.ts` (schema parse + directive + retry cap).
+> - To enable at runtime: `FEATURE_AGENT_REFINE=true` (with `FEATURE_AGENT_TOOLS=true` + a plan present).
+> - Known limitations carried forward: `revise_image_prompt` is normalized to `regenerate`-style (image rendering
+>   still not surfaced from `generatePanelArt`); refund discipline for re-issued paid panels deferred.
+
+New `domains/games/services/panel-critique.service.ts` (original spec, now implemented):
 
 Gate: `isFeatureEnabled('agentRefine')`.
 

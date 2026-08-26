@@ -1,4 +1,4 @@
-import { ToolLoopAgent, isStepCount } from 'ai'
+import { ToolLoopAgent, isStepCount, type StopCondition } from 'ai'
 import { z } from 'zod'
 import { getModel } from '@/lib/ai-model-compatibility'
 import { isFeatureEnabled } from '@/lib/config'
@@ -6,6 +6,7 @@ import type { StoryPlan } from './story-planner.service'
 import { ContentProcessorService } from '@/domains/content/services/content-processor.service'
 import { ImageGenerationService, type ImageGenerationResult } from './image-generation.service'
 import { clampCopy } from './generation-prompts'
+import { PanelCritiqueService, MAX_CRITIQUE_RETRIES, critiqueDirective } from './panel-critique.service'
 import type { GameplayResponse } from '../types'
 
 /** Thin budget/trace bookkeeping shared by the agent loop. */
@@ -138,24 +139,25 @@ function buildPanelTools(ctx: () => PanelAgentContext) {
   }
 }
 
-/**
- * Assemble a panel via a ToolLoopAgent that may call refreshArticle,
- * quoteForSnippet, and generatePanelArt before finalizing with `done`.
- *
- * Streaming decision: our routes push raw SSE via a custom ReadableStream, so we
- * run `agent.generate()` (assemble-then-push) and yield the assembled result.
- */
-export async function generatePanelAgentic(
+/** Build the agent once (so the budget + critique directives are captured). */
+function buildPanelAgent(
   context: PanelAgentContext,
   beat: StoryPlan['arc'][number],
-  prompt: string,
-  budgetLimit: number = 4000
-): Promise<GeneratedPanel> {
+  extraDirective: string
+) {
   const model = getModel(context.modelLabel || '')
-  const budget: AgentBudget = context.budget ?? { maxTokens: budgetLimit, spent: 0 }
+  const budget = context.budget
   const traces = context.traces ?? []
 
   const readCtx = () => ({ ...context, budget, traces })
+
+  const tools = buildPanelTools(readCtx)
+
+  // Phase 3: hard-enforce the budget as a stop condition alongside the step cap.
+  const stops: StopCondition<typeof tools>[] = [isStepCount(8)]
+  if (budget && budget.maxTokens > 0) {
+    stops.push(() => budget.spent >= budget.maxTokens)
+  }
 
   const agent = new ToolLoopAgent({
     id: 'writersarcade-panel-agent-v1',
@@ -168,15 +170,29 @@ export async function generatePanelAgentic(
       'FORMAT: exactly 2-3 sentences, then you may present 4 numbered options (1. 2. 3. 4.) on separate lines.',
       'Keep hidden stakes and the source thesis undramatized in plain text.',
       'Use tools only if helpful: refreshArticle to ground, quoteForSnippet for a verbatim callback, generatePanelArt to request panel art. Then call done() with the final narrative.',
-    ].join('\n'),
-    tools: buildPanelTools(readCtx),
-    stopWhen: isStepCount(8),
+      extraDirective,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    tools,
+    stopWhen: stops,
   })
 
+  return { agent, budget, traces }
+}
+
+/** Run one agent pass and collect the assembled narrative/options. */
+async function runPanelPass(
+  context: PanelAgentContext,
+  beat: StoryPlan['arc'][number],
+  prompt: string,
+  extraDirective: string
+): Promise<{ text: string; budget: AgentBudget; traces: AgentToolTrace[] }> {
+  const { agent, budget, traces } = buildPanelAgent(context, beat, extraDirective)
   const result = await agent.generate({
     prompt,
     onStepEnd: async (step) => {
-      const toolsUsed = (step.toolCalls as Array<{ toolName?: string }> | undefined) ?? []
+      const toolsUsed = ((step as { toolCalls?: Array<{ toolName?: string }> }).toolCalls as Array<{ toolName?: string }> | undefined) ?? []
       const toolNames = toolsUsed.map((t) => t.toolName ?? '').filter(Boolean)
       const usage = step.usage
       if (usage?.totalTokens) budget.spent += usage.totalTokens
@@ -192,9 +208,44 @@ export async function generatePanelAgentic(
       }
     },
   })
+  return { text: result.text ?? '', budget, traces }
+}
 
-  // Assembled narrative + options from the agent's final text.
-  const text = result.text ?? ''
+/**
+ * Assemble a panel via a ToolLoopAgent that may call refreshArticle,
+ * quoteForSnippet, and generatePanelArt before finalizing with `done`.
+ *
+ * Phase 3: when `agentRefine` is enabled, runs a cheap PanelCritiqueService pass
+ * and re-runs the agent (capped at MAX_CRITIQUE_RETRIES) with the issues fed back.
+ *
+ * Streaming decision: our routes push raw SSE via a custom ReadableStream, so we
+ * run `agent.generate()` (assemble-then-push) and yield the assembled result.
+ */
+export async function generatePanelAgentic(
+  context: PanelAgentContext,
+  beat: StoryPlan['arc'][number],
+  prompt: string,
+  budgetLimit: number = 4000
+): Promise<GeneratedPanel> {
+  const budget: AgentBudget = context.budget ?? { maxTokens: budgetLimit, spent: 0 }
+  const traces = context.traces ?? []
+  const fullCtx: PanelAgentContext = { ...context, budget, traces }
+
+  let pass = await runPanelPass(fullCtx, beat, prompt, '')
+
+  // Phase 3 verify-and-fix loop.
+  if (isFeatureEnabled('agentRefine')) {
+    for (let attempt = 0; attempt < MAX_CRITIQUE_RETRIES; attempt++) {
+      const critique = await PanelCritiqueService.critique({
+        narrative: pass.text,
+        genre: fullCtx.genre,
+      })
+      if (critique.action !== 'regenerate') break
+      pass = await runPanelPass(fullCtx, beat, prompt, critiqueDirective(critique))
+    }
+  }
+
+  const text = pass.text
   let narrative = text
   const options = text ? parseGameOptions(text) : []
   if (options.length > 0) {
@@ -202,7 +253,7 @@ export async function generatePanelAgentic(
     if (firstOption !== -1) narrative = text.slice(0, firstOption).trim()
   }
 
-  return { narrative: narrative || beat.intent, options, image: null, traces, budget }
+  return { narrative: narrative || beat.intent, options, image: null, traces: fullCtx.traces, budget: fullCtx.budget }
 }
 
 /**
