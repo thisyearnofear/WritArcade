@@ -50,6 +50,12 @@ export const features = {
   farcasterMiniApp: process.env.FEATURE_FARCASTER_MINI_APP === 'true',
   /** Hero video artifact pipeline */
   videoPipeline: process.env.FEATURE_VIDEO_PIPELINE === 'true',
+  /** Agentic: model-driven story plan (Phase 1) */
+  agentPlan: process.env.FEATURE_AGENT_PLAN === 'true',
+  /** Agentic: LLM tool-calling (Phase 2) */
+  agentTools: process.env.FEATURE_AGENT_TOOLS === 'true',
+  /** Agentic: verify-and-fix self-critique (Phase 3) */
+  agentRefine: process.env.FEATURE_AGENT_REFINE === 'true',
 } as const
 
 /** Shorthand: is a given feature enabled? */

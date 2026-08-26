@@ -30,7 +30,7 @@ export async function describeBasePaintCanvas(day: number): Promise<string | nul
 
     const { text } = await generateText({
       model,
-      maxTokens: 220,
+      maxOutputTokens: 220,
       messages: [
         {
           role: 'user',
@@ -43,7 +43,7 @@ export async function describeBasePaintCanvas(day: number): Promise<string | nul
                 'their spatial arrangement, and the overall mood. Use concrete nouns, no speculation. ' +
                 '3-5 sentences.',
             },
-            { type: 'image', image, mimeType },
+            { type: 'file', mediaType: mimeType, data: image },
           ],
         },
       ],

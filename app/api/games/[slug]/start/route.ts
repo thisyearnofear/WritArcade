@@ -4,6 +4,8 @@ import { GameAIService } from '@/domains/games/services/game-ai.service'
 import { prisma } from '@/lib/database'
 import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
+import { isFeatureEnabled } from '@/lib/config'
+import { Prisma } from '@prisma/client'
 
 const startGameSchema = z.object({
   sessionId: z.string().uuid(),
@@ -89,8 +91,44 @@ export async function POST(
           const userPreferences = await UserAIPreferenceService.getUserPreferences()
 
           let gameStream
+          let agenticUsed = false
 
-          if (dailyChallenge?.incoSessionId && process.env.FEATURE_DAILY_CHALLENGE === 'true') {
+          // Phase 2: agentic opening panel (ToolLoopAgent) when enabled + plan exists.
+          const openingBeat = game?.agentPlan?.arc?.[0]
+          if (isFeatureEnabled('agentTools') && openingBeat) {
+            try {
+              const { streamAgenticPanel, generateAgenticPanelOrThrow } = await import(
+                '@/domains/games/services/panel-agent.service'
+              )
+              const panel = await generateAgenticPanelOrThrow(
+                {
+                  genre: game.genre,
+                  title: game.title,
+                  articleText: game.articleContext || game.promptText || game.description,
+                  modelLabel: game.promptModel || 'gpt-4o-mini',
+                },
+                openingBeat,
+                `You are opening the comic "${game.title}". Begin the story for the player.`
+              )
+              gameStream = streamAgenticPanel(panel)
+              agenticUsed = true
+              if (panel.traces.length && game.id) {
+                try {
+                  const existing = ((game as unknown as { agentTraces?: unknown[] }).agentTraces as unknown[]) ?? []
+                  await prisma.game.update({
+                    where: { id: game.id },
+                    data: { agentTraces: [...existing, ...panel.traces] as Prisma.InputJsonValue },
+                  })
+                } catch (traceError) {
+                  console.error('agentTraces persist failed (non-blocking):', traceError)
+                }
+              }
+            } catch (agentError) {
+              console.error('Agentic opening panel failed, falling back:', agentError)
+            }
+          }
+
+          if (!agenticUsed && dailyChallenge?.incoSessionId && process.env.FEATURE_DAILY_CHALLENGE === 'true') {
             const { getModifierPromptForPanel } = await import('@/lib/daily-challenge')
             const modifierPrompt = await getModifierPromptForPanel(
               dailyChallenge.incoSessionId,
@@ -105,7 +143,8 @@ export async function POST(
                 0,
                 basePrompt,
                 [],
-                userPreferences
+                userPreferences,
+                game?.agentPlan
               )
             } else {
               gameStream = GameAIService.startGame(
@@ -119,7 +158,8 @@ export async function POST(
                 sessionId,
                 game.promptModel,
                 game.articleContext,
-                userPreferences
+                userPreferences,
+                game?.agentPlan
               )
             }
           } else {
@@ -134,7 +174,8 @@ export async function POST(
               sessionId,
               game.promptModel,
               game.articleContext,
-              userPreferences
+              userPreferences,
+              game?.agentPlan
             )
           }
 

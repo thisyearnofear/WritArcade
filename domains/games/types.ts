@@ -1,4 +1,6 @@
 // Core game types - consolidating from existing models
+import type { StoryPlan } from './services/story-planner.service'
+
 export type GameMode = 'story' | 'wordle'
 
 export interface Game {
@@ -115,6 +117,9 @@ export interface Game {
   videoUpsellStatus?: 'idle' | 'pending' | 'completed' | 'failed'
   videoUpsoldAt?: Date
 
+  // Agentic: model-driven story blueprint (Phase 1). Persisted on the Game row.
+  agentPlan?: StoryPlan
+
   // Timestamps
   createdAt: Date
   updatedAt: Date
@@ -189,6 +194,8 @@ export interface GameGenerationResponse {
   imageUrl?: string | null
   wordleAnswerVaultUuid?: string
   promptVaultUuid?: string
+  // Agentic: model-driven story blueprint (Phase 1).
+  agentPlan?: StoryPlan
 }
 
 export interface GameplayOption {

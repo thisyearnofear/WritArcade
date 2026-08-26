@@ -56,7 +56,7 @@ REFLECTION: <text>`
       model,
       prompt,
       temperature: 0.8,
-      maxTokens: 600,
+      maxOutputTokens: 600,
     })
 
     const parts = text.split('---REFLECTION---')

@@ -2,10 +2,10 @@ import { google } from '@ai-sdk/google';
 import { createOpenAI, openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import type { UserAIPreferences } from '@/lib/user-ai-preferences.service';
-import type { LanguageModelV1 } from 'ai';
+import type { LanguageModel } from 'ai';
 
 // Define a consistent interface for all AI models
-export type CompatibleLanguageModel = LanguageModelV1;
+export type CompatibleLanguageModel = LanguageModel;
 
 // Create a compatibility wrapper for Google models to match other providers
 export function getCompatibleGoogleModel(modelName: string, apiKey?: string): CompatibleLanguageModel {

@@ -9,6 +9,9 @@ import type {
 } from '../types'
 import type { UserAIPreferences } from '@/lib/user-ai-preferences.service'
 import { getModel, hasGeminiConfiguration, hasVeniceConfiguration } from '@/lib/ai-model-compatibility'
+import { isFeatureEnabled } from '@/lib/config'
+import { StoryPlannerService } from './story-planner.service'
+import type { StoryPlan } from './story-planner.service'
 
 
 // Game generation schema for structured output
@@ -135,7 +138,7 @@ export class GameAIService {
         }
       }
 
-      return {
+      const response: GameGenerationResponse = {
         title: game.title,
         description: game.description,
         tagline: game.tagline,
@@ -146,6 +149,28 @@ export class GameAIService {
         promptName: request.promptName || `GenerateGame-v2${retryCount > 0 ? `-retry${retryCount}` : ''}`,
         promptText: request.promptText,
       }
+
+      // Phase 1: model-driven story plan (additive, non-blocking on failure).
+      if (isFeatureEnabled('agentPlan')) {
+        try {
+          const plan = await StoryPlannerService.generateStoryPlan(
+            {
+              title: game.title,
+              description: game.description,
+              genre: game.genre,
+              subgenre: game.subgenre,
+              tagline: game.tagline,
+              articleContext: request.promptText,
+            },
+            userPreferences
+          )
+          response.agentPlan = plan
+        } catch (planError) {
+          console.error('Story plan generation failed (non-blocking):', planError)
+        }
+      }
+
+      return response
     } catch (error) {
       console.error('Game generation error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown AI generation error'
@@ -305,11 +330,12 @@ export class GameAIService {
     sessionId: string,
     model: string = 'gpt-4o-mini',
     articleContext?: string,
-    userPreferences?: UserAIPreferences
+    userPreferences?: UserAIPreferences,
+    plan?: StoryPlan
   ): AsyncGenerator<GameplayResponse> {
 
     const aiModel = getModel(model, userPreferences)
-    const prompt = this.buildStartGamePrompt(game, articleContext)
+    const prompt = this.buildStartGamePrompt(game, articleContext, plan)
 
     try {
       const { textStream } = await streamText({
@@ -363,13 +389,14 @@ export class GameAIService {
     currentPanel: number = 1,
     maxPanels: number = 5,
     articleContext?: string,
-    userPreferences?: UserAIPreferences
+    userPreferences?: UserAIPreferences,
+    plan?: StoryPlan
   ): AsyncGenerator<GameplayResponse> {
 
     const aiModel = getModel(model, userPreferences)
 
     // Build story pacing guidance based on position in narrative
-    const paceGuidance = this.getPacingGuidance(currentPanel, maxPanels)
+    const paceGuidance = this.getPacingGuidance(currentPanel, maxPanels, plan)
 
     // Add system message enforcing word count and pacing to conversation
     const conversationMessages = [
@@ -381,7 +408,7 @@ export class GameAIService {
       const { textStream } = await streamText({
         model: aiModel,
         messages: conversationMessages,
-        system: `You are a comic-style game engine for a ${maxPanels}-panel story (currently at panel ${currentPanel}).
+        instructions: `You are a comic-style game engine for a ${maxPanels}-panel story (currently at panel ${currentPanel}).
 
   SCENE FOCUS: Describe ONE scene only. Do NOT recap previous scenes or include flashbacks. Focus entirely on the NEW moment resulting from the user's choice.
 
@@ -445,7 +472,18 @@ export class GameAIService {
    * Provide pacing guidance based on story position
    * Helps AI understand narrative structure and when to escalate/resolve
    */
-  private static getPacingGuidance(currentPanel: number, _maxPanels: number): string {
+  private static getPacingGuidance(currentPanel: number, _maxPanels: number, plan?: StoryPlan): string {
+    // Phase 1: model-driven beat steering. Prefer the storyboard's intent/mood for
+    // this panel; fall back to the fixed arc template when no plan is present.
+    if (plan?.arc && plan.arc[currentPanel - 1]) {
+      const beat = plan.arc[currentPanel - 1]
+      return `PLANNED BEAT (panel ${currentPanel}): ${beat.beat}
+INTENT: ${beat.intent}
+MOOD: tension=${beat.mood.tension}, chaos=${beat.mood.chaos}, hope=${beat.mood.hope}
+${currentPanel === plan.arc.length
+      ? 'FINAL PANEL RULES: This story MUST conclude. The options should lead to different endings/resolutions, not continue the story. Make choices about HOW the story ends, not what happens next.'
+      : 'CRITICAL: Always end with exactly 4 numbered options (1. 2. 3. 4.) on separate lines.'}`
+    }
     if (currentPanel === 1) {
       return `PANEL 1/5: OPENING & HOOK
 Establish the setting and main character quickly. Introduce the central conflict or mystery. Hook the reader immediately with an engaging situation.`
@@ -698,10 +736,22 @@ CONCLUSION REQUIRED: This is the FINAL panel. You MUST bring the story to a sati
     * so players engage with the source material's ideas, not a generic adventure
     * Enforces 2-3 sentences for opening panel
     */
-  private static buildStartGamePrompt(game: { title: string, description: string, genre: string, subgenre: string, tagline: string, articleContext?: string }, articleContext?: string): string {
+  private static buildStartGamePrompt(game: { title: string, description: string, genre: string, subgenre: string, tagline: string, articleContext?: string }, articleContext?: string, plan?: StoryPlan): string {
+    const storyboard = plan?.arc?.[0] && plan.hero
+      ? [
+          '# STORYBOARD (Phase 1 plan — keep the protagonist\'s point of view and this beat)',
+          `HERO: ${plan.hero.name} (${plan.hero.role}) — ${plan.hero.desire}`,
+          `VOICE: ${plan.hero.voice}`,
+          `OPENING BEAT: ${plan.arc[0].beat} — ${plan.arc[0].intent}`,
+          `MOOD: tension=${plan.arc[0].mood.tension}, chaos=${plan.arc[0].mood.chaos}, hope=${plan.arc[0].mood.hope}`,
+          `Dilemmas to seed: ${plan.arc[0].dilemmas.join(' | ')}`,
+          '',
+        ].join('\n')
+      : ''
     const basePrompt = `You are an interactive text game engine designed for visual comic-style gameplay.
   The game's opening must ground players in the world and themes they're about to explore.
 
+  ${storyboard}
   # GAME DETAILS
   Title: ${game.title}
   Genre: ${game.genre}
@@ -892,12 +942,13 @@ Respond in JSON:
     panelIndex: number,
     basePrompt: string,
     previousPanels: Array<{ narrative: string; choice?: string }>,
-    userPreferences?: UserAIPreferences
+    userPreferences?: UserAIPreferences,
+    plan?: StoryPlan
   ): AsyncGenerator<GameplayResponse> {
     const model = getModel('', userPreferences)
     const maxPanels = 5
 
-    const paceGuidance = this.getPacingGuidance(panelIndex + 1, maxPanels)
+    const paceGuidance = this.getPacingGuidance(panelIndex + 1, maxPanels, plan)
 
     const contextPanel = previousPanels.length > 0
       ? `\nPREVIOUS PANELS:\n${previousPanels.map((p, i) => `Panel ${i + 1}: ${p.narrative}${p.choice ? ` → Player chose: ${p.choice}` : ''}`).join('\n')}\n`
@@ -922,7 +973,7 @@ ${panelIndex + 1 === maxPanels
     try {
       const { textStream } = await streamText({
         model,
-        system,
+        instructions: system,
         prompt: basePrompt,
       })
 

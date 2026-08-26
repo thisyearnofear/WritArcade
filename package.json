@@ -25,9 +25,9 @@
     "cron:daily-challenge:install": "bash scripts/cron/install-daily-challenge-cron.sh"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^0.0.55",
-    "@ai-sdk/google": "^3.0.21",
-    "@ai-sdk/openai": "^0.0.66",
+    "@ai-sdk/anthropic": "^4.0.42",
+    "@ai-sdk/google": "^4.0.51",
+    "@ai-sdk/openai": "^4.0.47",
     "@atproto/api": "0.19.5",
     "@farcaster/miniapp-sdk": "^0.2.1",
     "@inco/lightning": "1.0.2",
@@ -43,7 +43,7 @@
     "@sentry/nextjs": "10.62.0",
     "@story-protocol/core-sdk": "^1.4.4",
     "@tanstack/react-query": "5.90.10",
-    "ai": "^4.0.0",
+    "ai": "^7.0.79",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",

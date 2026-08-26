@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/database'
 import { createSlug } from '@/lib/utils'
 import type { Game, GameGenerationResponse, GameMode, SavedGamePanel } from '../types'
+import type { StoryPlan } from './story-planner.service'
 import { Prisma, Game as PrismaGameModel } from '@prisma/client'
 
 type GameChatSnapshot = {
@@ -97,6 +98,7 @@ export class GameDatabaseService {
         userId: userId || null,
         wordleAnswerVaultUuid: miniAppData?.wordleAnswerVaultUuid,
         promptVaultUuid: gameData.promptVaultUuid,
+        agentPlan: (gameData.agentPlan as Prisma.InputJsonValue | undefined) ?? undefined,
       }
 
       // Add asset relations if provided
@@ -284,7 +286,7 @@ export class GameDatabaseService {
           // User filter
           userId ? { userId } : {},
           // Featured filter - Cast to any until schema regen propagates
-          featured ? { featured: true } as Partial<Game> : {},
+          featured ? { featured: true } as Prisma.GameWhereInput : {},
           // Search filter
           search ? {
             OR: [
@@ -637,6 +639,7 @@ export class GameDatabaseService {
       featured: (prismaGame as { featured?: boolean }).featured || false,
       playCount: (prismaGame as { playCount?: number }).playCount || undefined,
       lastPlayedAt: (prismaGame as { lastPlayedAt?: Date | null }).lastPlayedAt || undefined,
+      agentPlan: (prismaGame as { agentPlan?: StoryPlan | null }).agentPlan || undefined,
       createdAt: prismaGame.createdAt,
       updatedAt: prismaGame.updatedAt,
     }

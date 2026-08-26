@@ -3,6 +3,9 @@ import { GameAIService } from '@/domains/games/services/game-ai.service'
 import { prisma } from '@/lib/database'
 import { z } from 'zod'
 import { UserAIPreferenceService } from '@/lib/user-ai-preferences.service'
+import { isFeatureEnabled } from '@/lib/config'
+import type { StoryPlan } from '@/domains/games/services/story-planner.service'
+import { Prisma } from '@prisma/client'
 
 const chatSchema = z.object({
   sessionId: z.string().uuid(),
@@ -37,6 +40,7 @@ export async function POST(request: NextRequest) {
     })
     
     const articleContext = game?.articleContext || undefined
+    const agentPlan = game?.agentPlan as StoryPlan | undefined
     
     // Save user message
     const userMessage = await prisma.chat.create({
@@ -116,7 +120,44 @@ export async function POST(request: NextRequest) {
           const modifierPanelIndex = assistantMessageCount
           let chatStream
 
-          if (dailyChallenge?.incoSessionId && process.env.FEATURE_DAILY_CHALLENGE === 'true') {
+          // Phase 2: agentic panel (ToolLoopAgent with tools) when enabled + plan exists.
+          const agenticBeat = agentPlan?.arc?.[currentPanelNumber - 1]
+          let agenticUsed = false
+          if (isFeatureEnabled('agentTools') && agenticBeat) {
+            try {
+              const { streamAgenticPanel, generateAgenticPanelOrThrow } = await import(
+                '@/domains/games/services/panel-agent.service'
+              )
+              const panel = await generateAgenticPanelOrThrow(
+                {
+                  genre: game?.genre ?? '',
+                  title: game?.title ?? '',
+                  articleText: articleContext,
+                  modelLabel: game?.promptModel || 'gpt-4o-mini',
+                },
+                agenticBeat,
+                message
+              )
+              chatStream = streamAgenticPanel(panel)
+              agenticUsed = true
+              // Persist tool-call telemetry (additive column; non-blocking).
+              if (panel.traces.length && game?.id) {
+                try {
+                  const existing = ((game as { agentTraces?: unknown[] }).agentTraces as unknown[]) ?? []
+                  await prisma.game.update({
+                    where: { id: game.id },
+                    data: { agentTraces: [...existing, ...panel.traces] as Prisma.InputJsonValue },
+                  })
+                } catch (traceError) {
+                  console.error('agentTraces persist failed (non-blocking):', traceError)
+                }
+              }
+            } catch (agentError) {
+              console.error('Agentic panel failed, falling back to procedural:', agentError)
+            }
+          }
+
+          if (!agenticUsed && dailyChallenge?.incoSessionId && process.env.FEATURE_DAILY_CHALLENGE === 'true') {
             const { getModifierPromptForPanel } = await import('@/lib/daily-challenge')
             const modifierPrompt = await getModifierPromptForPanel(
               dailyChallenge.incoSessionId,
@@ -136,7 +177,8 @@ export async function POST(request: NextRequest) {
                 modifierPanelIndex,
                 message,
                 previousPanels,
-                userPreferences
+                userPreferences,
+                agentPlan
               )
             } else {
               chatStream = GameAIService.chatGame(
@@ -146,7 +188,8 @@ export async function POST(request: NextRequest) {
                 currentPanelNumber,
                 maxPanels,
                 articleContext,
-                userPreferences
+                userPreferences,
+                agentPlan
               )
             }
           } else {
@@ -157,7 +200,8 @@ export async function POST(request: NextRequest) {
               currentPanelNumber,
               maxPanels,
               articleContext,
-              userPreferences
+              userPreferences,
+              agentPlan
             )
           }
           
