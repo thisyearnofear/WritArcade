@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
 import { streamAgenticPanel } from '@/domains/games/services/panel-agent.service'
 import { refundAgentMediaCharge } from '@/domains/games/services/panel-agent.service'
 
@@ -71,5 +71,60 @@ describe('refundAgentMediaCharge idempotency', () => {
     const result = await refundAgentMediaCharge({ ...charge, userId: null })
     expect(result).toBe(false)
     expect(tx.game.updateMany).not.toHaveBeenCalled()
+  })
+})
+
+// Paid-panel charge: atomic spend + sentinel payment, gated by FEATURE_AGENT_PAID_PANELS.
+describe('chargeAgentPanel', () => {
+  const tx = {
+    user: { updateMany: vi.fn() },
+    creditTransaction: { create: vi.fn() },
+    payment: { create: vi.fn() },
+  }
+  const prisma = { $transaction: vi.fn((fn) => fn(tx)) as never }
+  const origFlag = process.env.FEATURE_AGENT_PAID_PANELS
+
+  beforeAll(() => {
+    vi.doMock('@/lib/prisma', () => ({ prisma }))
+  })
+  afterEach(() => {
+    tx.user.updateMany.mockReset()
+    tx.creditTransaction.create.mockReset()
+    tx.payment.create.mockReset()
+    vi.resetModules()
+  })
+  afterAll(() => {
+    process.env.FEATURE_AGENT_PAID_PANELS = origFlag
+  })
+
+  it('returns null (no charge) when FEATURE_AGENT_PAID_PANELS is off', async () => {
+    process.env.FEATURE_AGENT_PAID_PANELS = 'false'
+    const { chargeAgentPanel } = await import('@/domains/games/services/panel-agent.service')
+    const res = await chargeAgentPanel({ userId: 'user-1', gameId: 'game-1', slug: 'g' })
+    expect(res).toBeNull()
+    expect(tx.user.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('returns mediaCharge after an atomic spend when enabled', async () => {
+    process.env.FEATURE_AGENT_PAID_PANELS = 'true'
+    tx.user.updateMany.mockResolvedValue({ count: 1 })
+    tx.creditTransaction.create.mockResolvedValue({})
+    tx.payment.create.mockResolvedValue({})
+    const { chargeAgentPanel } = await import('@/domains/games/services/panel-agent.service')
+    const res = await chargeAgentPanel({ userId: 'user-1', gameId: 'game-1', slug: 'g' })
+    expect(res).not.toBeNull()
+    expect(res?.paymentRef).toMatch(/^credits:/)
+    expect(res!.cost).toBe(1)
+    expect(tx.creditTransaction.create).toHaveBeenCalledOnce()
+    expect(tx.payment.create).toHaveBeenCalledOnce()
+  })
+
+  it('returns null on insufficient balance (reserved.count === 0)', async () => {
+    process.env.FEATURE_AGENT_PAID_PANELS = 'true'
+    tx.user.updateMany.mockResolvedValue({ count: 0 })
+    const { chargeAgentPanel } = await import('@/domains/games/services/panel-agent.service')
+    const res = await chargeAgentPanel({ userId: 'user-1', gameId: 'game-1', slug: 'g' })
+    expect(res).toBeNull()
+    expect(tx.creditTransaction.create).not.toHaveBeenCalled()
   })
 })

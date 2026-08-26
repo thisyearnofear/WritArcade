@@ -125,15 +125,22 @@ export async function POST(request: NextRequest) {
           let agenticUsed = false
           if (isFeatureEnabled('agentTools') && agenticBeat) {
             try {
-              const { streamAgenticPanel, generateAgenticPanelOrThrow } = await import(
+              const { streamAgenticPanel, generateAgenticPanelOrThrow, chargeAgentPanel } = await import(
                 '@/domains/games/services/panel-agent.service'
               )
+              // Wire a real paid-panel payment (no-op unless FEATURE_AGENT_PAID_PANELS).
+              const mediaCharge = await chargeAgentPanel({
+                userId: session.userId,
+                gameId: game?.id ?? '',
+                slug: game?.slug ?? '',
+              })
               const panel = await generateAgenticPanelOrThrow(
                 {
                   genre: game?.genre ?? '',
                   title: game?.title ?? '',
                   articleText: articleContext,
                   modelLabel: game?.promptModel || 'gpt-4o-mini',
+                  mediaCharge: mediaCharge ?? undefined,
                 },
                 agenticBeat,
                 message

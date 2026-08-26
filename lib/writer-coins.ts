@@ -363,6 +363,7 @@ export const CREDITS_CONFIG = {
     'play-wordle': 1,
     'video-upsell': 50,
     'video-montage': 100,
+    'agent-panel': 1,
   } as Record<string, number>,
 } as const
 

@@ -172,8 +172,21 @@ Gate: `isFeatureEnabled('agentTools')` + budget gate; unchanged procedural start
 >   - `refundAgentMediaCharge(charge)` refunds a failed paid panel at most once, idempotency-gated on a new additive
 >     `Game.agentMediaRefundedAt DateTime?` column + migration `202608260002_add_agent_media_refund` (conditional `updateMany`,
 >     mirrors `video-charge.service.ts`). Privileged in `panel-agent.service.ts` and covered by 3 new unit tests.
-> - Remaining (deferred, optional): wiring `mediaCharge` from an actual paid-panel payment source in the routes, and
->   `revise_image_prompt` still normalized to `regenerate`-style.
+> - **Both deferred items now implemented (verified: type-check ✅, 273 tests ✅, eslint ✅):**
+>   - **True `revise_image_prompt`**: `generatePanelAgentic` now branches on the critic's `action` — `regenerate`
+>     re-runs the whole agent pass (feeding `critiqueDirective` into `instructions`); `revise_image_prompt`
+>     keeps the narrative and rebuilds *only* the image via `buildImagePromptFromText(text, genre, beat, directive)`
+>     (MoodModifier-styled) → `ImageGenerationService.generateNarrativeImage`, swapped into `pass.image`.
+>     A regen failure keeps the prior art (logged, not thrown).
+>   - **Paid-panel `mediaCharge` from a real payment**: new `chargeAgentPanel({ userId, gameId, slug })` performs the
+>     atomic credit spend (decrement iff `credits >= cost`, write `CreditTransaction` + verified `Payment` row
+>     keyed by a `credits:` sentinel hash — mirroring `/api/credits/spend` and `video-charge.service.ts`).
+>     Returns a `mediaCharge` (`{ paymentRef, cost, userId, slug, gameId }`) the routes thread into the panel
+>     agent, or `null` (free path unchanged) unless `FEATURE_AGENT_PAID_PANELS=true`. Wired into both
+>     `app/api/games/chat/route.ts` and `app/api/games/[slug]/start/route.ts`.
+>   - Added `'agent-panel'` to the spend zod enum (`app/api/credits/spend/route.ts`) and `CREDITS_CONFIG.cost`
+>     (`lib/writer-coins.ts`, cost 1) — kept in sync per the AGENTS.md economics rule.
+>   - Added 3 unit tests for `chargeAgentPanel` (flag-off no-op, happy-path atomic spend, insufficient-balance null).
 >
 > ### ⚠️ Production finding from the end-to-end smoke test (FIXED)
 > - Live smoke test proved **Venice `llama-3.3-70b` does NOT support `response_format` (structured

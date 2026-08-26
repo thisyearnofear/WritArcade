@@ -8,6 +8,7 @@ import { ImageGenerationService, type ImageGenerationResult } from './image-gene
 import { clampCopy } from './generation-prompts'
 import { PanelCritiqueService, MAX_CRITIQUE_RETRIES, critiqueDirective } from './panel-critique.service'
 import { MoodModifierService } from './mood-modifier.service'
+import { CREDITS_CONFIG } from '@/lib/writer-coins'
 import type { GameplayResponse } from '../types'
 
 /** Thin budget/trace bookkeeping shared by the agent loop. */
@@ -46,6 +47,7 @@ export interface PanelAgentContext {
     cost: number
     userId: string | null
     slug: string
+    gameId: string
   }
 }
 
@@ -83,6 +85,22 @@ function quoteForSnippet(article: string | undefined, keyword: string): string {
     return article.slice(0, 140)
   }
   return article.slice(Math.max(0, idx - 60), Math.min(article.length, idx + keyword.length + 60))
+}
+
+/**
+ * Build a full image-generation prompt from narrative + genre + mood style,
+ * optionally appending a critique directive. MoodModifierService-steered.
+ */
+function buildImagePromptFromText(
+  narrative: string,
+  genre: string,
+  beat: StoryPlan['arc'][number],
+  directive?: string
+): string {
+  const mood = beat.mood
+  const moodStyle = MoodModifierService.getMoodModifiers(mood, genre)
+  const base = `${narrative}. ${moodStyle ? `Style: ${moodStyle}.` : ''}`
+  return directive ? `${base} ${directive}` : base
 }
 
 // Regex-based option parse reused from the procedural path.
@@ -268,10 +286,33 @@ export async function generatePanelAgentic(
     for (let attempt = 0; attempt < MAX_CRITIQUE_RETRIES; attempt++) {
       const critique = await PanelCritiqueService.critique({
         narrative: pass.text,
+        imagePrompt: pass.image ? buildImagePromptFromText(pass.text, fullCtx.genre, beat) : undefined,
         genre: fullCtx.genre,
       })
-      if (critique.action !== 'regenerate') break
-      pass = await runPanelPass(fullCtx, beat, prompt, critiqueDirective(critique))
+
+      if (critique.action === 'regenerate') {
+        // Re-run the whole agent pass feeding the issues back into instructions.
+        pass = await runPanelPass(fullCtx, beat, prompt, critiqueDirective(critique))
+        continue
+      }
+
+      if (critique.action === 'revise_image_prompt') {
+        // Keep the narrative; rebuild + re-generate ONLY the image from the critique issues.
+        const revisedPrompt = buildImagePromptFromText(pass.text, fullCtx.genre, beat, critiqueDirective(critique))
+        try {
+          const newImage = await ImageGenerationService.generateNarrativeImage({
+            narrative: revisedPrompt,
+            genre: fullCtx.genre,
+          })
+          pass = { ...pass, image: newImage }
+        } catch (e) {
+          console.error('revise_image_prompt image regen failed (keeping prior art):', e)
+        }
+        continue
+      }
+
+      // action === 'keep' → accept.
+      break
     }
   }
 
@@ -291,6 +332,65 @@ export async function generatePanelAgentic(
   }
 
   return { narrative: narrative || beat.intent, options, image, traces: fullCtx.traces, budget: fullCtx.budget }
+}
+
+/**
+ * Charge for an agent-generated panel via an atomic credit spend (mirrors the
+ * `/api/credits/spend` discipline: decrement iff gte cost, record a CreditTransaction
+ * and a verified Payment row keyed by a sentinel hash). Returns the `mediaCharge` the
+ * panel agent threads through for fail-refunds, or null if it cannot charge.
+ *
+ * No-op (returns null) unless `FEATURE_AGENT_PAID_PANELS` is enabled, so the free
+ * path stays unchanged until the platform opts paid panels in.
+ */
+export async function chargeAgentPanel(params: {
+  userId: string | null
+  gameId: string
+  slug: string
+}): Promise<NonNullable<PanelAgentContext['mediaCharge']> | null> {
+  if (!params.userId) return null
+  if (process.env.FEATURE_AGENT_PAID_PANELS !== 'true') return null
+
+  const cost = CREDITS_CONFIG.cost['agent-panel']
+  const { randomBytes } = await import('node:crypto')
+  const { prisma } = await import('@/lib/prisma')
+  const sentinelHash = `credits:${randomBytes(16).toString('hex')}`
+
+  try {
+    const ok = await prisma.$transaction(async (tx) => {
+      const reserved = await tx.user.updateMany({
+        where: { id: params.userId as string, credits: { gte: cost } },
+        data: { credits: { decrement: cost } },
+      })
+      if (reserved.count === 0) return false
+      await tx.creditTransaction.create({
+        data: {
+          userId: params.userId as string,
+          fiatAmount: 0,
+          creditAmount: -cost,
+          status: 'completed',
+          completedAt: new Date(),
+        },
+      })
+      await tx.payment.create({
+        data: {
+          transactionHash: sentinelHash,
+          action: 'agent-panel',
+          amount: cost,
+          status: 'verified',
+          verifiedAt: new Date(),
+          writerCoinId: 'credits',
+          userId: params.userId as string,
+        },
+      })
+      return true
+    })
+    if (!ok) return null
+    return { paymentRef: sentinelHash, cost, userId: params.userId as string, slug: params.slug, gameId: params.gameId }
+  } catch (e) {
+    console.error('Agent panel charge failed:', e)
+    return null
+  }
 }
 
 /**

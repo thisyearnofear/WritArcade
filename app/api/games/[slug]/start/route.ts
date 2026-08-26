@@ -97,15 +97,22 @@ export async function POST(
           const openingBeat = game?.agentPlan?.arc?.[0]
           if (isFeatureEnabled('agentTools') && openingBeat) {
             try {
-              const { streamAgenticPanel, generateAgenticPanelOrThrow } = await import(
+              const { streamAgenticPanel, generateAgenticPanelOrThrow, chargeAgentPanel } = await import(
                 '@/domains/games/services/panel-agent.service'
               )
+              // Wire a real paid-panel payment (no-op unless FEATURE_AGENT_PAID_PANELS).
+              const mediaCharge = await chargeAgentPanel({
+                userId: session.userId,
+                gameId: game.id,
+                slug: game.slug,
+              })
               const panel = await generateAgenticPanelOrThrow(
                 {
                   genre: game.genre,
                   title: game.title,
                   articleText: game.articleContext || game.promptText || game.description,
                   modelLabel: game.promptModel || 'gpt-4o-mini',
+                  mediaCharge: mediaCharge ?? undefined,
                 },
                 openingBeat,
                 `You are opening the comic "${game.title}". Begin the story for the player.`
