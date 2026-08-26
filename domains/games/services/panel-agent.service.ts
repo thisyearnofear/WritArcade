@@ -7,6 +7,7 @@ import { ContentProcessorService } from '@/domains/content/services/content-proc
 import { ImageGenerationService, type ImageGenerationResult } from './image-generation.service'
 import { clampCopy } from './generation-prompts'
 import { PanelCritiqueService, MAX_CRITIQUE_RETRIES, critiqueDirective } from './panel-critique.service'
+import { MoodModifierService } from './mood-modifier.service'
 import type { GameplayResponse } from '../types'
 
 /** Thin budget/trace bookkeeping shared by the agent loop. */
@@ -35,6 +36,17 @@ export interface PanelAgentContext {
   modelLabel: string
   budget: AgentBudget
   traces: AgentToolTrace[]
+  /**
+   * Optional paid-media charge for this panel. When present and the panel fails
+   * to produce a narrative, the charge is refunded at most once (idempotency-gated
+   * on Game.agentMediaRefundedAt). Mirrors the video-charge refund discipline.
+   */
+  mediaCharge?: {
+    paymentRef: string
+    cost: number
+    userId: string | null
+    slug: string
+  }
 }
 
 /** Result assembled from the agent's `done` tool (or fallback narrative). */
@@ -116,11 +128,19 @@ function buildPanelTools(ctx: () => PanelAgentContext) {
     },
     generatePanelArt: {
       description:
-        'Request a per-panel comic image from a narrative + genre. Returns an imageUrl; the final panel should reference this.',
+        'Request a per-panel comic image from a narrative + genre. Returns an imageUrl. Use it for a beat that needs a strong visual; the final panel should reference this image.',
       inputSchema: z.object({ narrative: z.string(), genre: z.string() }),
       execute: async ({ narrative, genre }: { narrative: string; genre: string }): Promise<{ ok: boolean; image?: ImageGenerationResult | null; error?: string }> => {
         try {
-          const image = await ImageGenerationService.generateNarrativeImage({ narrative, genre })
+          const c = ctx()
+          // MoodModifierService-driven style rebuild from the beat's mood (tension/chaos/hope).
+          const beat = c.plan?.arc?.find((b) => b.beat) ?? c.plan?.arc?.[0]
+          const mood = beat?.mood ?? { tension: 0, chaos: 0, hope: 0 }
+          const moodStyle = MoodModifierService.getMoodModifiers(mood, genre)
+          const image = await ImageGenerationService.generateNarrativeImage({
+            narrative: `${narrative} ${moodStyle ? `Style: ${moodStyle}.` : ''}`.trim(),
+            genre,
+          })
           return { ok: true, image }
         } catch (e) {
           return { ok: false, error: e instanceof Error ? e.message : 'image generation failed' }
@@ -181,13 +201,13 @@ function buildPanelAgent(
   return { agent, budget, traces }
 }
 
-/** Run one agent pass and collect the assembled narrative/options. */
+/** Run one agent pass and collect the assembled narrative/options + panel art. */
 async function runPanelPass(
   context: PanelAgentContext,
   beat: StoryPlan['arc'][number],
   prompt: string,
   extraDirective: string
-): Promise<{ text: string; budget: AgentBudget; traces: AgentToolTrace[] }> {
+): Promise<{ text: string; image?: ImageGenerationResult | null; budget: AgentBudget; traces: AgentToolTrace[] }> {
   const { agent, budget, traces } = buildPanelAgent(context, beat, extraDirective)
   const result = await agent.generate({
     prompt,
@@ -208,7 +228,17 @@ async function runPanelPass(
       }
     },
   })
-  return { text: result.text ?? '', budget, traces }
+
+  // Surface the panel art produced by the generatePanelArt tool, if any.
+  let image: ImageGenerationResult | null | undefined
+  const toolResults = result.toolResults as Array<{ toolName?: string; result?: unknown }> | undefined
+  const art = toolResults?.find((t) => t.toolName === 'generatePanelArt')
+  if (art) {
+    const r = art.result as { ok?: boolean; image?: ImageGenerationResult | null } | undefined
+    if (r?.ok && r.image) image = r.image
+  }
+
+  return { text: result.text ?? '', image, budget, traces }
 }
 
 /**
@@ -252,8 +282,62 @@ export async function generatePanelAgentic(
     const firstOption = text.search(/(?:^|\n)\s*1[.)]\s+/)
     if (firstOption !== -1) narrative = text.slice(0, firstOption).trim()
   }
+  const image = pass.image ?? null
 
-  return { narrative: narrative || beat.intent, options, image: null, traces: fullCtx.traces, budget: fullCtx.budget }
+  // Follow-up: refund idempotency. If a paid panel produced no narrative (total
+  // failure after retries), refund the media charge at most once.
+  if (!narrative && fullCtx.mediaCharge) {
+    await refundAgentMediaCharge(fullCtx.mediaCharge)
+  }
+
+  return { narrative: narrative || beat.intent, options, image, traces: fullCtx.traces, budget: fullCtx.budget }
+}
+
+/**
+ * At-most-once refund of a paid panel media charge. Idempotency is gated on the
+ * additive `Game.agentMediaRefundedAt` marker (conditional updateMany), mirroring
+ * the video-charge refund discipline. Fails safe (returns false) on missing ref/user.
+ * Exported for unit testing.
+ */
+export async function refundAgentMediaCharge(charge: {
+  paymentRef: string
+  cost: number
+  userId: string | null
+  slug: string
+  gameId?: string
+}): Promise<boolean> {
+  if (!charge.userId || !charge.paymentRef) return false
+  const { prisma } = await import('@/lib/prisma')
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const marked = await tx.game.updateMany({
+        where: {
+          id: charge.gameId ?? undefined as string | undefined,
+          agentMediaRefundedAt: null,
+        },
+        data: { agentMediaRefundedAt: new Date() },
+      })
+      if (marked.count !== 1) return false
+      await tx.user.update({
+        where: { id: charge.userId as string },
+        data: { credits: { increment: charge.cost } },
+      })
+      await tx.creditTransaction.create({
+        data: {
+          userId: charge.userId as string,
+          fiatAmount: 0,
+          creditAmount: charge.cost,
+          status: 'refunded',
+          completedAt: new Date(),
+          metadata: { reason: 'agent-panel-media-failure', slug: charge.slug },
+        },
+      })
+      return true
+    })
+  } catch (e) {
+    console.error('Agent media refund failed:', e)
+    return false
+  }
 }
 
 /**

@@ -165,8 +165,15 @@ Gate: `isFeatureEnabled('agentTools')` + budget gate; unchanged procedural start
 >     critique → regenerate loop capped at `MAX_CRITIQUE_RETRIES`, feeding `critiqueDirective` back into `instructions`.
 > - New test `tests/panel-critique.test.ts` (schema parse + directive + retry cap).
 > - To enable at runtime: `FEATURE_AGENT_REFINE=true` (with `FEATURE_AGENT_TOOLS=true` + a plan present).
-> - Known limitations carried forward: `revise_image_prompt` is normalized to `regenerate`-style (image rendering
->   still not surfaced from `generatePanelArt`); refund discipline for re-issued paid panels deferred.
+> - Follow-ups (image surfacing, MoodModifier-driven rebuild, refund idempotency) — **implemented**:
+>   - `generatePanelArt` now rebuilds the image prompt by appending a `MoodModifierService.getMoodModifiers(mood, genre)`
+>     style string (tension/chaos/hope) and surfaces the produced `ImageGenerationResult` via the agent's
+>     `toolResults` (read in `runPanelPass`) — returned as `GeneratedPanel.image`.
+>   - `refundAgentMediaCharge(charge)` refunds a failed paid panel at most once, idempotency-gated on a new additive
+>     `Game.agentMediaRefundedAt DateTime?` column + migration `202608260002_add_agent_media_refund` (conditional `updateMany`,
+>     mirrors `video-charge.service.ts`). Privileged in `panel-agent.service.ts` and covered by 3 new unit tests.
+> - Remaining (deferred, optional): wiring `mediaCharge` from an actual paid-panel payment source in the routes, and
+>   `revise_image_prompt` still normalized to `regenerate`-style.
 
 New `domains/games/services/panel-critique.service.ts` (original spec, now implemented):
 

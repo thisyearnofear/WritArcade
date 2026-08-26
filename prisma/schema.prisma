@@ -173,6 +173,7 @@ model Game {
   // Agentic state (additive) — model-driven story plan + tool trace telemetry
   agentPlan    Json?  // StoryPlannerService storyPlanSchema output (per-game blueprint)
   agentTraces  Json?  // [{ step, tool, argsHash, model, tokens, at }] for tool-call telemetry
+  agentMediaRefundedAt DateTime? // Idempotency marker: at-most-once refund of a failed paid agent panel
 
   // Relations
   userId String?
