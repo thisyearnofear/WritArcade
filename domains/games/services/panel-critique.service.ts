@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai'
 import { z } from 'zod'
-import { getModel } from '@/lib/ai-model-compatibility'
+import { getStructuredOutputModel } from '@/lib/ai-model-compatibility'
 import type { UserAIPreferences } from '@/lib/user-ai-preferences.service'
 
 export const panelCritiqueSchema = z.object({
@@ -28,7 +28,7 @@ export const MAX_CRITIQUE_RETRIES = 2
  */
 export class PanelCritiqueService {
   static async critique(input: CritiquedInput, userPreferences?: UserAIPreferences): Promise<PanelCritique> {
-    const model = getModel('', userPreferences)
+    const model = getStructuredOutputModel(userPreferences)
 
     const { output } = await generateText({
       model,

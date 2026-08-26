@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai'
 import { z } from 'zod'
-import { getModel } from '@/lib/ai-model-compatibility'
+import { getStructuredOutputModel } from '@/lib/ai-model-compatibility'
 import type { UserAIPreferences } from '@/lib/user-ai-preferences.service'
 import { clampCopy } from './generation-prompts'
 
@@ -60,7 +60,7 @@ export class StoryPlannerService {
     input: StoryPlanInput,
     userPreferences?: UserAIPreferences
   ): Promise<StoryPlan> {
-    const model = getModel('', userPreferences)
+    const model = getStructuredOutputModel(userPreferences)
 
     const context = [
       input.articleContext ? clampCopy(input.articleContext) : input.description ?? '',

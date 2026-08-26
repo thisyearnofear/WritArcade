@@ -134,3 +134,30 @@ export function getModel(modelName: string, userPreferences?: UserAIPreferences)
   }
   return getCompatibleOpenAIModel('gpt-4o-mini');
 }
+
+/**
+ * Resolve a model guaranteed to support structured output (JSON mode / response_format).
+ *
+ * IMPORTANT: Venice's default `llama-3.3-70b` supports TOOL CALLING but NOT
+ * `response_format` (JSON mode), so `generateObject` / `Output.object` fail against it.
+ * This helper therefore prefers OpenAI / Gemini (both support structured output) and
+ * only falls back to Venice when no other provider is configured. Use this for any
+ * agentic structured-output call (story plan, critique), NOT for tool-calling loops.
+ */
+export function getStructuredOutputModel(userPreferences?: UserAIPreferences): CompatibleLanguageModel {
+  // Prefer a JSON-mode-capable provider over Venice.
+  if (hasGeminiConfiguration(userPreferences)) {
+    const apiKey = userPreferences?.googleApiKey || process.env.GOOGLE_API_KEY;
+    if (apiKey) {
+      return getCompatibleGoogleModel('gemini-2.0-flash', apiKey);
+    }
+  }
+  if (hasOpenAIConfiguration()) {
+    return getCompatibleOpenAIModel('gpt-4o-mini');
+  }
+  // No structured-output-capable external provider configured → fall back to Venice.
+  if (hasVeniceConfiguration()) {
+    return getCompatibleVeniceModel(VENICE_DEFAULT_MODEL);
+  }
+  return getCompatibleOpenAIModel('gpt-4o-mini');
+}

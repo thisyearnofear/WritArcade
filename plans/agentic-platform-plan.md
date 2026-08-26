@@ -174,6 +174,18 @@ Gate: `isFeatureEnabled('agentTools')` + budget gate; unchanged procedural start
 >     mirrors `video-charge.service.ts`). Privileged in `panel-agent.service.ts` and covered by 3 new unit tests.
 > - Remaining (deferred, optional): wiring `mediaCharge` from an actual paid-panel payment source in the routes, and
 >   `revise_image_prompt` still normalized to `regenerate`-style.
+>
+> ### ⚠️ Production finding from the end-to-end smoke test (FIXED)
+> - Live smoke test proved **Venice `llama-3.3-70b` does NOT support `response_format` (structured
+>   output)** — `Output.object()` / `generateObject` fail against it ("response_format is not supported
+>   by this model"), even though Venice *does* support tool-calling (Phase 0 gate passed).
+> - Because `getModel('')` defaults to Venice when `VENICE_API_KEY` is set, the **Phase 1 story plan and
+>   Phase 3 critique would break in production** whenever Venice is configured.
+> - **Fix:** added `getStructuredOutputModel(userPreferences)` in `lib/ai-model-compatibility.ts` that
+>   prefers a JSON-mode-capable provider (Gemini → OpenAI) and only falls back to Venice when no other
+>   external provider is configured. `StoryPlannerService` and `PanelCritiqueService` now use it. The
+>   `ToolLoopAgent` (Phase 2) keeps `getModel()` (Venice tool-calling works).
+> - Verified: `pnpm type-check` ✅, `pnpm test` 270 ✅, eslint ✅.
 
 New `domains/games/services/panel-critique.service.ts` (original spec, now implemented):
 
