@@ -40,6 +40,7 @@ BasePaint constants, canvas/theme URLs, and the day-epoch calculation are in
 ## What it does
 
 - **Generate playable stories** from article URLs, marketing copy, or any pasted text (`/studio`)
+- **iMessage agent (Flynn)**: text a link to prose and get a playable story back, with optional natural-language tone
 - **No wallet required to start**: try one free story, then upgrade with credits or crypto
 - **Interactive comic player**: 5-panel narratives where reader choices shape the outcome
 - **Embeddable player**: wallet-free iframe (`/embed/[slug]`) with `?ref=` attribution and a "Made with WritersArcade" backlink
@@ -89,6 +90,7 @@ See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for full setup.
 | [Development](./docs/DEVELOPMENT.md) | Setup, commands, environment, API endpoints, troubleshooting |
 | [Features](./docs/FEATURES.md) | Platform features, integrations (Story, Inco, Hypercerts), writer coins |
 | [BasePaint](./docs/BASEPAINT.md) | Dual-source Daily, Paragraph auto-pick, Create staging, Inco |
+| [iMessage Agent (Flynn)](./docs/IMESSAGE_AGENT.md) | Spectrum iMessage agent that turns article links into playable stories |
 | [Video Artifact Pipeline](./docs/VIDEO_ARTIFACT_PIPELINE.md) | Hero animation flow, Runware fallbacks, limits, persistence, recovery, and analytics |
 | [Creation UX](./docs/CREATION_UX.md) | Compact mobile-first creation contract, optionality, validation, and success metrics |
 | [Roadmap](./docs/ROADMAP.md) | Completed phases, current status, future plans |

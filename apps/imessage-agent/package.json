@@ -1,0 +1,20 @@
+{
+  "name": "imessage-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@spectrum-ts/imessage-local": "latest",
+    "dotenv": "^16.4.5",
+    "spectrum-ts": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "typescript": "^5.6.3"
+  }
+}
