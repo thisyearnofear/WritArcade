@@ -59,7 +59,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
     '@type': 'VideoGame',
     name: game.title,
     description: game.description,
-    url: `${siteUrl}/games/${game.slug}`,
+    url: `${siteUrl}/games/${encodeURIComponent(game.slug)}`,
     gamePlatform: 'writersarcade',
     applicationCategory: 'Game',
     operatingSystem: 'Web',
@@ -74,7 +74,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
       name: game.authorParagraphUsername || 'Anonymous',
     },
     datePublished: game.createdAt.toISOString(),
-    image: game.imageUrl || `${siteUrl}/api/og-image`,
+    image: game.imageUrl || `${siteUrl}/og`,
   }
 
   if (!isPlayMode && !isUnlockShare) {
@@ -164,9 +164,7 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
 }
 
 function getSiteUrl() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return 'https://writersarcade.vercel.app'
+  return process.env.NEXT_PUBLIC_SITE_URL || 'https://writersarcade.vercel.app'
 }
 
 export async function generateMetadata({ params, searchParams }: GamePageProps) {
@@ -191,8 +189,8 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
   const siteUrl = getSiteUrl()
   // Branded composite card (cover + title + genre + panel strip + Animated badge).
   const ogImage = isUnlockShare
-    ? `${siteUrl}/api/games/${encodeURIComponent(slug)}/unlock-og`
-    : `${siteUrl}/api/games/${encodeURIComponent(slug)}/og`
+    ? `/games/${encodeURIComponent(slug)}/unlock-og`
+    : `/games/${encodeURIComponent(slug)}/og`
 
   // When a completed hero animation exists, expose it as a video embed so the
   // shared link plays in-app instead of degrading to a static card. Never emit
@@ -248,7 +246,7 @@ export async function generateMetadata({ params, searchParams }: GamePageProps) 
       description: isUnlockShare ? 'Verified unlock proof on writersarcade.' : game.description,
       images: [ogImage],
       ...(hasVideo && heroVideoUrl
-        ? { players: [{ url: heroVideoUrl, width: 1080, height: 1920 }] }
+        ? { players: [{ playerUrl: `${siteUrl}/embed/${encodeURIComponent(slug)}`, streamUrl: heroVideoUrl, width: 1080, height: 1920 }] }
         : {}),
     },
   }

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://writersarcade.vercel.app'
+
 export const metadata: Metadata = {
   title: 'writersarcade - Turn Articles into Games',
   description: 'Generate AI-powered games from articles using writer coins. Play, mint, and earn on Base.',
@@ -8,7 +10,7 @@ export const metadata: Metadata = {
     description: 'Turn articles into mintable games',
     images: [
       {
-        url: 'https://writersarcade.vercel.app/images/og-image.png',
+        url: `${siteUrl}/og`,
         width: 1200,
         height: 630,
         alt: 'writersarcade - Article Games',
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   other: {
     'fc:frame': JSON.stringify({
       version: 'next',
-      imageUrl: 'https://writersarcade.vercel.app/images/og-image.png',
+      imageUrl: `${siteUrl}/og`,
       button: {
         title: 'Launch writersarcade',
         action: {

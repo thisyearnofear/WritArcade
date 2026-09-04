@@ -70,6 +70,10 @@ const nextConfig = {
         { source: '/api/generate-image/:path*', destination: `${API_BACKEND_URL}/api/generate-image/:path*` },
         { source: '/api/generate-audio', destination: `${API_BACKEND_URL}/api/generate-audio` },
         { source: '/api/user/balance', destination: `${API_BACKEND_URL}/api/user/balance` },
+        // Public OG image paths — not blocked by robots.txt /api/ rule
+        { source: '/og', destination: '/api/og-image' },
+        { source: '/games/:slug/og', destination: '/api/games/:slug/og' },
+        { source: '/games/:slug/unlock-og', destination: '/api/games/:slug/unlock-og' },
       ],
       afterFiles: [],
       fallback: [],

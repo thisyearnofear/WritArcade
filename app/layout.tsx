@@ -7,6 +7,8 @@ import { ClientProvidersLoader } from '@/components/providers/ClientProvidersLoa
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const sourceSerif = Source_Serif_4({ subsets: ['latin'], variable: '--font-serif' })
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://writersarcade.vercel.app'
+
 // Viewport must be exported separately in Next.js 14+ (not nested inside metadata)
 // Allow user scaling up to 5x for accessibility (WCAG 1.4.4 Resize Text)
 // Double-tap zoom prevention is handled in JS (useMobileOptimizations hook)
@@ -18,6 +20,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: {
     default: 'writersarcade — Interactive fiction from the writers you follow',
     template: '%s — writersarcade',
@@ -27,9 +30,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'writersarcade — Interactive fiction from the writers you follow',
     description: 'Transform articles into interactive, mintable games. Support writers with their own coins and own on-chain IP.',
+    url: '/',
+    siteName: 'writersarcade',
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://writersarcade.vercel.app'}/api/og-image`,
+        url: '/og',
         width: 1200,
         height: 630,
         alt: 'writersarcade',
@@ -40,7 +45,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'writersarcade — Interactive fiction from the writers you follow',
     description: 'Transform articles into interactive, mintable games. Support writers with their own coins and own on-chain IP.',
-    images: [`${process.env.NEXT_PUBLIC_SITE_URL || 'https://writersarcade.vercel.app'}/api/og-image`],
+    images: ['/og'],
   },
 }
 
